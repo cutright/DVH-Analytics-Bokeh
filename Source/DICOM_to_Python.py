@@ -50,8 +50,8 @@ def Create_ROI_PyTable(StructureFile, DoseFile):
     # Import RT Structure and RT Dose files using dicompyler
     RT_St = dicomparser.DicomParser(StructureFile)
     Structures = RT_St.GetStructures()
-    # ROI_Count = len(Structures)
-    ROI_Count = 10
+    ROI_Count = len(Structures)
+    # ROI_Count = 10
 
     ROI_List = {}
 
@@ -78,9 +78,10 @@ def Create_ROI_PyTable(StructureFile, DoseFile):
     return ROI_List
 
 
-def Create_Plan_Py(PlanFile):
+def Create_Plan_Py(PlanFile, StructureFile):
     # Import RT Dose files using dicompyler
     RT_Plan = dicom.read_file(PlanFile)
+    RT_St = dicom.read_file(StructureFile)
 
     MRN = RT_Plan.PatientID
 
@@ -89,13 +90,19 @@ def Create_Plan_Py(PlanFile):
     PlanID = 1
 
     BirthDate = RT_Plan.PatientBirthDate
+    if not BirthDate:
+        BirthDate = '18000101'
     BirthYear = int(BirthDate[0:4])
     BirthMonth = int(BirthDate[4:6])
     BirthDay = int(BirthDate[6:8])
     BirthDateObj = datetime(BirthYear, BirthMonth, BirthDay)
 
     Sex = RT_Plan.PatientSex
-    if Sex is not 'M' or 'F':
+    if Sex == 'M':
+        pass
+    elif Sex == 'F':
+        pass
+    else:
         Sex = '-'
 
     PlanDate = RT_Plan.StudyDate
@@ -104,20 +111,30 @@ def Create_Plan_Py(PlanFile):
     PlanDay = int(PlanDate[6:8])
     PlanDateObj = datetime(PlanYear, PlanMonth, PlanDay)
 
-    Age = relativedelta(BirthDateObj, PlanDateObj).years
+    Age = relativedelta(PlanDateObj, BirthDateObj).years
 
     RadOnc = RT_Plan.ReferringPhysicianName
 
-    # StudyDescription from RT Plan DICOM is required to be named
-    # [TxSite] [fractions] x [RxDose]Gy
-    # The following code parses the StudyDescription (or plan name)
-    StudyName = RT_Plan.StudyDescription
-    FinalSpaceIndex = StudyName.rfind(' ')
-    TxSite_Fx = StudyName[0:StudyName.find(' x ')]
+    TxSite = RT_Plan.RTPlanLabel
 
-    TxSite = StudyName[0:TxSite_Fx.rfind(' ') - 1]
-    RxDose = float(StudyName[FinalSpaceIndex + 1:len(StudyName) - 2])
-    Fractions = int(TxSite_Fx[TxSite_Fx.rfind(' ') + 1:len(TxSite_Fx)])
+    # Because DICOM does not contain Rx's explicitly, the user must create
+    # a point in the RT Structure file called 'rx [fx's] x [fx dose]'
+    RxFound = 0
+    ROI_Counter = 0
+    ROI_Count = len(RT_St.StructureSetROISequence)
+    RxString = ''
+    ROI_Seq = RT_St.StructureSetROISequence
+    while (not RxFound) and (ROI_Counter < ROI_Count + 1):
+        if ROI_Seq[ROI_Counter].ROIName[0:2].lower() == 'rx':
+            RxString = ROI_Seq[ROI_Counter].ROIName
+            RxFound = 1
+        else:
+            ROI_Counter += 1
+
+    FractionalDose = float(RxString[RxString.rfind('x')+1:len(RxString)-2])
+    FractionTemp = RxString[0:RxString.rfind('x')-1]
+    Fractions = int(FractionTemp[3:len(FractionTemp)])
+    RxDose = Fractions * FractionalDose
 
     # This assumes that Plans are either 100% Arc plans or 100% Static Angle
     FirstCP = RT_Plan.BeamSequence[0].ControlPointSequence[0]

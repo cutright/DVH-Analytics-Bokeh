@@ -71,7 +71,7 @@ def Create_Table_PatientPlans(TableName):
     SQL_CreateTable.append('(MRN varchar(12),')
     SQL_CreateTable.append('PlanID tinyint(4) unsigned zerofill,')
     SQL_CreateTable.append('Birthdate date,')
-    SQL_CreateTable.append('Age tinint(3) unsigned,')
+    SQL_CreateTable.append('Age tinyint(3) unsigned,')
     SQL_CreateTable.append('Sex char(1),')
     SQL_CreateTable.append('PlanDate date,')
     SQL_CreateTable.append('RadOnc varchar(3),')
@@ -149,9 +149,9 @@ def Insert_Values_PatientPlan(Table_Name, Plan_Py):
 
     # Import each ROI from ROI_PyTable, append to output text file
     SQL_Values_Line = []
-    SQL_Values_Line.append(str(Plan_Py.Patient_UID))
     SQL_Values_Line.append(str(Plan_Py.MRN))
     SQL_Values_Line.append(str(Plan_Py.PlanID))
+    SQL_Values_Line.append(str(Plan_Py.Birthdate))
     SQL_Values_Line.append(str(Plan_Py.Age))
     SQL_Values_Line.append(Plan_Py.Sex)
     SQL_Values_Line.append(Plan_Py.PlanDate)
