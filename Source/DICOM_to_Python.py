@@ -99,7 +99,6 @@ def Create_Plan_Py(StructureFile, PlanFile):
     # querying the SQL database
     PlanID = 1
 
-    # Birthdate will not be written to SQL Database
     BirthDate = RT_Plan.PatientBirthDate
     BirthYear = int(BirthDate[0:4])
     BirthMonth = int(BirthDate[4:6])
