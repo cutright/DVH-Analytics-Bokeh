@@ -87,6 +87,8 @@ Currently this code is the least developed as it depends heavily on the previous
 
 * Adjust Connect_to_SQL() from SQL_Tools to read a config file for SQL server login information
 
+* Convert this to do list into a markdown task list
+
 
 # References
 Built on these Python libraries
