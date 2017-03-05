@@ -11,8 +11,7 @@ in the database 'DVH'.  This table contains the following data:
 
 Field | Type
 ----- | ----
-PatientUID | bigint(12) unsigned zerofill
-MRN | bigint(12) unsigned zerofill
+MRN | varchar(12)
 PlanID | tinyint(4) unsigned zerofill
 Birthdate | date
 Age | tinyint(3) unsigned
@@ -26,9 +25,8 @@ Modality | varchar(20)
 MUs | int(6) unsigned
 ROITableUID | varchar(19)
 
-PatientUID is generated based on existing data in the SQL database.  PlanID is is based on the plans currently associated with
-the PatientUID (e.g., no other plans with PatientUID then PlanID = 0001). ROITableUID is  'ROI' + PatientUID + PlanID (e.g., PatientUID =
-000111222333, PlanID = 0005, then ROITableUID = ROI0001112223330005.
+PlanID is based on the plans in the database currently associated with the MRN (e.g., no other plans with PatientUID then PlanID = 0001).  
+ROITableUID is  'ROI' + MRN + PlanID (e.g., MRN = 000111222333, PlanID = 0005, then ROITableUID = ROI0001112223330005.
 
 DICOM files do not explicitly contain prescriptions or treatment sites.  This code requires that the plan name follow a specific format.
 The plan name populated in the treatment planning system should be '[Tx Site] [fractions] x [Dose]Gy'.  For example, an a treatment of
@@ -78,7 +76,6 @@ Currently this code is the least developed as it depends heavily on the previous
   * calculate total MU of a plan from DICOM RT Plan
 
 * Write SQL_Tools fuctions to
-  * determine Patient_UID for current DICOM import
   * determine PlanID for current DICOM import
   * determine ROI_UID for current DICOM import
   * delete an ROI Table

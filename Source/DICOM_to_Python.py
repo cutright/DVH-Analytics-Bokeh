@@ -28,10 +28,9 @@ class ROI:
 
 
 class Plan:
-    def __init__(self, Patient_UID, MRN, PlanID, Birthdate, Age, Sex, PlanDate,
+    def __init__(self, MRN, PlanID, Birthdate, Age, Sex, PlanDate,
                  RadOnc, TxSite, RxDose, Fractions, Modality, MUs,
                  ROITableUID):
-        self.Patient_UID = Patient_UID
         self.MRN = MRN
         self.PlanID = PlanID
         self.Birthdate = Birthdate
@@ -86,14 +85,6 @@ def Create_Plan_Py(PlanFile):
     MRN = RT_Plan.PatientID
 
     # Will require a yet to be named function to determine this by
-    # querying the SQL database.
-    # It is possible for patients to have multiple MRNs, however routine
-    # importing will assume patient's have only one MRN and assign a new
-    # Patient_UID.  A seperate function after importing will be used to
-    # correct the datebase... this cannot be automated via DICOM information.
-    Patient_UID = 1
-
-    # Will require a yet to be named function to determine this by
     # querying the SQL database
     PlanID = 1
 
@@ -142,7 +133,7 @@ def Create_Plan_Py(PlanFile):
     # querying the SQL database
     ROI_UID = 1
 
-    Plan_Py = Plan(Patient_UID, MRN, PlanID, BirthDate, Age, Sex, PlanDate,
+    Plan_Py = Plan(MRN, PlanID, BirthDate, Age, Sex, PlanDate,
                    RadOnc, TxSite, RxDose, Fractions, Modality, MUs, ROI_UID)
 
     return Plan_Py

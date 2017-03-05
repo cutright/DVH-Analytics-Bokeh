@@ -68,8 +68,7 @@ def Create_Table_PatientPlans(TableName):
     SQL_CreateTable = []
     SQL_CreateTable.append('CREATE TABLE')
     SQL_CreateTable.append(TableName)
-    SQL_CreateTable.append('(PatientUID bigint(12) unsigned zerofill,')
-    SQL_CreateTable.append('MRN bigint(12) unsigned zerofill,')
+    SQL_CreateTable.append('(MRN varchar(12),')
     SQL_CreateTable.append('PlanID tinyint(4) unsigned zerofill,')
     SQL_CreateTable.append('Birthdate date,')
     SQL_CreateTable.append('Age tinint(3) unsigned,')
@@ -177,9 +176,8 @@ def Insert_Values_PatientPlan(Table_Name, Plan_Py):
 
 # Functions yet to be defined
 #
-# def Get_Patient_UID(cnx, Table_Name, MRN):
 # def Get_PlanID(cnx, Table_Name, Patient_UID):
-# def Get_ROI_UID(cnx, Table_Name, Patient_UID, PlanID)
+# def Get_ROI_UID(cnx, Table_Name, Patient_UID, PlanID):
 
 
 if __name__ == '__main__':
