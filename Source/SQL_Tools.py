@@ -81,7 +81,7 @@ def Create_Table_PatientPlans(TableName):
     SQL_CreateTable.append('Fractions tinyint(3) unsigned,')
     SQL_CreateTable.append('Modality varchar(20),')
     SQL_CreateTable.append('MUs int(6) unsigned,')
-    SQL_CreateTable.append('ROITableUID int(20));')
+    SQL_CreateTable.append('ROITableUID int(16));')
     SQL_CreateTable = ' '.join(SQL_CreateTable)
     FilePath = 'Create_Table_' + TableName + '.sql'
     with open(FilePath, "w") as text_file:

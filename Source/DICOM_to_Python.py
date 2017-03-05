@@ -79,12 +79,11 @@ def Create_ROI_PyTable(StructureFile, DoseFile):
     return ROI_List
 
 
-def Create_Plan_Py(StructureFile, PlanFile):
-    # Import RT Structure and RT Dose files using dicompyler
-    RT_St = dicom.read_file(StructureFile)
+def Create_Plan_Py(PlanFile):
+    # Import RT Dose files using dicompyler
     RT_Plan = dicom.read_file(PlanFile)
 
-    MRN = RT_St.PatientID
+    MRN = RT_Plan.PatientID
 
     # Will require a yet to be named function to determine this by
     # querying the SQL database.
