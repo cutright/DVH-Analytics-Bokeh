@@ -12,7 +12,6 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 
-# This class is used to describe all data required for 
 class ROI:
     def __init__(self, Name, Type, Volume, MinDose, MeanDose, MaxDose,
                  DoseBinSize, DoseUnits, VolumeString, VolumeUnits):
