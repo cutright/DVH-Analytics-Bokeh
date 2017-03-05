@@ -36,14 +36,17 @@ def Connect_to_SQL():
         return cnx
 
 
-def Send_to_SQL(cnx, SQL_File_Name):
+def Send_to_SQL(SQL_File_Name):
+    cnx = Connect_to_SQL()
     cursor = cnx.cursor()
     for line in open(SQL_File_Name):
         cursor.execute(line)
         cnx.commit()
+    cnx.close()
 
 
 def Check_Table_Exists(cnx, TableName):
+    cnx = Connect_to_SQL()
     cursor = cnx.cursor()
     cursor.execute("""
         SELECT COUNT(*)
@@ -52,8 +55,10 @@ def Check_Table_Exists(cnx, TableName):
         """.format(TableName.replace('\'', '\'\'')))
     if cursor.fetchone()[0] == 1:
         cursor.close()
+        cnx.close()
         return True
 
+    cnx.close()
     return False
 
 
