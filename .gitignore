@@ -1,2 +1,5 @@
+## Ignore Mac OS Stuff
 .DS_Store
+
+# Compiled Python
 *.pyc
