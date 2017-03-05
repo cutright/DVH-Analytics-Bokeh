@@ -76,9 +76,23 @@ Currently this code is the least developed as it depends heavily on the previous
 ### References
 Built on these Python libraries
 
-pydicom
+pydicom  
 https://github.com/darcymason/pydicom
 
-dicompyler
+dicompyler  
 https://github.com/bastula/dicompyler
-#######################################
+
+### To Do List
+* Write DICOM_to_Python functions to
+  * calculate total MU of a plan from DICOM RT Plan
+
+* Write SQL_Tools fuctions to
+  * determine Patient_UID for current DICOM import
+  * determine PlanID for current DICOM import
+  * determine ROI_UID for current DICOM import
+
+* Write DICOM pre-import validation function
+  * Ensure proper data is populated in DICOM files prior to import
+  * Input will be a folder, function will find file path for all needed DICOM files
+  
+  
