@@ -9,14 +9,14 @@ This is a work in progress.  This file will eventually contain instructions for 
 This code is being built assuming the database is MySQL.  There will be a master table called 'PatientPlans'
 in the database 'DVH'.  This table contains the following data:
 
-PatientUID  | bigint(12) unsigned zerofill 
-MRN         | bigint(12) unsigned zerofill 
-PlanID      | tinyint(4) unsigned zerofill 
-Birthdate   | date 
-Age         | tinyint(3) unsigned         
-Sex         | char(1)                      
-PlanDate    | date                         
-RadOnc      | varchar(3)                   
+PatientUID  | bigint(12) unsigned zerofill
+MRN         | bigint(12) unsigned zerofill
+PlanID      | tinyint(4) unsigned zerofill
+Birthdate   | date
+Age         | tinyint(3) unsigned
+Sex         | char(1)
+PlanDate    | date
+RadOnc      | varchar(3)
 TxSite      | varchar(100)                 
 RxDose      | float                        
 Fractions   | tinyint(3) unsigned          
