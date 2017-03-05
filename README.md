@@ -28,7 +28,7 @@ ROITableUID | varchar(19)
 
 PatientUID is generated based on existing data in the SQL database.  PlanID is is based on the plans currently associated with
 the PatientUID (e.g., no other plans with PatientUID then PlanID = 0001). ROITableUID is  'ROI' + PatientUID + PlanID (e.g., PatientUID =
-000111222333444, PlanID = 0005, then ROITableUID = ROI0001112223334440001.
+000111222333, PlanID = 0005, then ROITableUID = ROI0001112223330005.
 
 DICOM files do not explicitly contain prescriptions or treatment sites.  This code requires that the plan name follow a specific format.
 The plan name populated in the treatment planning system should be '[Tx Site] [fractions] x [Dose]Gy'.  For example, an a treatment of
