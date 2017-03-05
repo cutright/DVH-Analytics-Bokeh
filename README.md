@@ -10,9 +10,7 @@ This code is being built assuming the database is MySQL.  There will be a master
 in the database 'DVH'.  This table contains the following data:
 
 PatientUID  | bigint(12) unsigned zerofill 
-
 MRN         | bigint(12) unsigned zerofill
-
 PlanID      | tinyint(4) unsigned zerofill
 Birthdate   | date                        
 Age         | tinyint(3) unsigned         
