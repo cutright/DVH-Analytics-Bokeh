@@ -9,20 +9,24 @@ This is a work in progress.  This file will eventually contain instructions for 
 This code is being built assuming the database is MySQL.  There will be a master table called 'PatientPlans'
 in the database 'DVH'.  This table contains the following data:
 
-PatientUID  | bigint(12) unsigned zerofill
-MRN         | bigint(12) unsigned zerofill
-PlanID      | tinyint(4) unsigned zerofill
-Birthdate   | date
-Age         | tinyint(3) unsigned
-Sex         | char(1)
-PlanDate    | date
-RadOnc      | varchar(3)
-TxSite      | varchar(100)                 
-RxDose      | float                        
-Fractions   | tinyint(3) unsigned          
-Modality    | varchar(20)                  
-MUs         | int(6) unsigned              
-ROITableUID | varchar(19)                  
++-------------+--------------------------------+  
+| Field       | Type                           |  
++-------------+--------------------------------+  
+| PatientUID  | bigint(12) unsigned zerofill   |   
+| MRN         | bigint(12) unsigned zerofill   |  
+| PlanID      | tinyint(4) unsigned zerofill   |  
+| Birthdate   | date                           |  
+| Age         | tinyint(3) unsigned            |  
+| Sex         | char(1)                        |  
+| PlanDate    | date                           |  
+| RadOnc      | varchar(3)                     |  
+| TxSite      | varchar(100)                   |  
+| RxDose      | float                          |  
+| Fractions   | tinyint(3) unsigned            |  
+| Modality    | varchar(20)                    |  
+| MUs         | int(6) unsigned                |  
+| ROITableUID | varchar(19)                    |  
++-------------+--------------------------------+  
 
 PatientUID is generated based on existing data in the SQL database.  PlanID is is based on the plans currently associated with
 the PatientUID (e.g., no other plans with PatientUID then PlanID = 0001). ROITableUID is  'ROI' + PatientUID + PlanID (e.g., PatientUID =
@@ -38,19 +42,19 @@ are soft requirements... the code will work but your SQL datebase will not be pa
 All other data in the above table is populated from DICOM RT Plan file using pydicom's dicom.read_file function to parse the data.
 
 Each ROITableUID is the table name for associated DVH data.  ROI tables follow this format:
-+--------------+-------------+
-| Field        | Type        |
-+--------------+-------------+
-| Name         | varchar(20) |
-| Type         | varchar(20) |
-| Volume       | double      |
-| MinDose      | double      |
-| MeanDose     | double      |
-| MaxDose      | double      |
-| DoseBinSize  | float       |
-| VolumeString | mediumtext  |
-| VolumeUnits  | varchar(20) |
-+--------------+-------------+
++--------------+-------------+  
+| Field        | Type        |  
++--------------+-------------+  
+| Name         | varchar(20) |  
+| Type         | varchar(20) |  
+| Volume       | double      |  
+| MinDose      | double      |  
+| MeanDose     | double      |  
+| MaxDose      | double      |  
+| DoseBinSize  | float       |  
+| VolumeString | mediumtext  |  
+| VolumeUnits  | varchar(20) |  
++--------------+-------------+  
 
 All data is populated from a combination of DICOM RT strucutre and dose files using dicompyler code.  VolumeString is a comma separated
 value string, when parsed generates a vector for the DVH y-values.  The x-values are to be generated as a vector of equal length to the
