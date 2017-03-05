@@ -9,24 +9,22 @@ This is a work in progress.  This file will eventually contain instructions for 
 This code is being built assuming the database is MySQL.  There will be a master table called 'PatientPlans'
 in the database 'DVH'.  This table contains the following data:
 
-+-------------+--------------------------------+  
-| Field       | Type                           |  
-+-------------+--------------------------------+  
-| PatientUID  | bigint(12) unsigned zerofill   |   
-| MRN         | bigint(12) unsigned zerofill   |  
-| PlanID      | tinyint(4) unsigned zerofill   |  
-| Birthdate   | date                           |  
-| Age         | tinyint(3) unsigned            |  
-| Sex         | char(1)                        |  
-| PlanDate    | date                           |  
-| RadOnc      | varchar(3)                     |  
-| TxSite      | varchar(100)                   |  
-| RxDose      | float                          |  
-| Fractions   | tinyint(3) unsigned            |  
-| Modality    | varchar(20)                    |  
-| MUs         | int(6) unsigned                |  
-| ROITableUID | varchar(19)                    |  
-+-------------+--------------------------------+  
+Field | Type
+----- | ----
+PatientUID | bigint(12) unsigned zerofill
+MRN | bigint(12) unsigned zerofill
+PlanID | tinyint(4) unsigned zerofill
+Birthdate | date
+Age | tinyint(3) unsigned
+Sex | char(1)
+PlanDate | date
+RadOnc | varchar(3)
+TxSite | varchar(100)
+RxDose | float
+Fractions | tinyint(3) unsigned
+Modality | varchar(20)
+MUs | int(6) unsigned
+ROITableUID | varchar(19)
 
 PatientUID is generated based on existing data in the SQL database.  PlanID is is based on the plans currently associated with
 the PatientUID (e.g., no other plans with PatientUID then PlanID = 0001). ROITableUID is  'ROI' + PatientUID + PlanID (e.g., PatientUID =
