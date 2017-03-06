@@ -124,6 +124,13 @@ def Create_Plan_Py(PlanFile, StructureFile):
 
     TxSite = RT_Plan.RTPlanLabel
 
+    Fractions = 0
+    MUs = 0
+    for FxGroup in range(0, len(RT_Plan.FractionGroupSequence)):
+        Fractions += RT_Plan.FractionGroupSequence[FxGroup].NumberOfFractionsPlanned
+        for BeamNum in range(0, RT_Plan.FractionGroupSequence[FxGroup].NumberOfBeams):
+            MUs += RT_Plan.FractionGroupSequence[FxGroup].ReferencedBeamSequence[BeamNum].BeamMeterset
+
     # Because DICOM does not contain Rx's explicitly, the user must create
     # a point in the RT Structure file called 'rx [total dose]'
     RxFound = 0
@@ -144,14 +151,13 @@ def Create_Plan_Py(PlanFile, StructureFile):
         RxDose = RT_Plan_dicompyler.GetPlan()['rxdose']/100
     else:
         RxString = RxString.lower()
-        RxDose = RxString[3:RxString.rfind('gy')]
-
-    Fractions = 0
-    MUs = 0
-    for FxGroup in range(0, len(RT_Plan.FractionGroupSequence)):
-        Fractions += RT_Plan.FractionGroupSequence[FxGroup].NumberOfFractionsPlanned
-        for BeamNum in range(0, RT_Plan.FractionGroupSequence[FxGroup].NumberOfBeams):
-            MUs += RT_Plan.FractionGroupSequence[FxGroup].ReferencedBeamSequence[BeamNum].BeamMeterset
+        RxString = RxString[3:RxString.rfind('gy')]
+        while RxString[len(RxString)-1] == ' ':
+            RxString = RxString[0:len(RxString)-1]
+        if RxString.find('x') == -1:
+            RxDose = float(RxString[RxString.rfind(' '):len(RxString)])
+        else:
+            RxDose = float(RxString[RxString.rfind(' '):len(RxString)]) * Fractions
 
     # This assumes that Plans are either 100% Arc plans or 100% Static Angle
     FirstCP = RT_Plan.BeamSequence[0].ControlPointSequence[0]
