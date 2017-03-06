@@ -127,20 +127,27 @@ def Create_Plan_Py(PlanFile, StructureFile):
     # a point in the RT Structure file called 'rx [fx's] x [fx dose]'
     RxFound = 0
     ROI_Counter = 0
-    ROI_Count = len(RT_St.StructureSetROISequence)
+    ROI_Count = len(RT_St.StructureSetROISequence) - 1
     RxString = ''
     ROI_Seq = RT_St.StructureSetROISequence
-    while (not RxFound) and (ROI_Counter < ROI_Count + 1):
-        if ROI_Seq[ROI_Counter].ROIName[0:2].lower() == 'rx':
-            RxString = ROI_Seq[ROI_Counter].ROIName
-            RxFound = 1
+    while (not RxFound) and (ROI_Counter < ROI_Count):
+        if len(ROI_Seq[ROI_Counter].ROIName) > 2:
+            if ROI_Seq[ROI_Counter].ROIName[0:2].lower() == 'rx':
+                RxString = ROI_Seq[ROI_Counter].ROIName
+                RxFound = 1
+            else:
+                ROI_Counter += 1
         else:
             ROI_Counter += 1
 
-    FractionalDose = float(RxString[RxString.rfind('x')+1:len(RxString)-2])
-    FractionTemp = RxString[0:RxString.rfind('x')-1]
-    Fractions = int(FractionTemp[3:len(FractionTemp)])
-    RxDose = Fractions * FractionalDose
+    if not RxString:
+        Fractions = 0
+        RxDose = 0
+    else:
+        FractionalDose = float(RxString[RxString.rfind('x')+1:len(RxString)-2])
+        FractionTemp = RxString[0:RxString.rfind('x')-1]
+        Fractions = int(FractionTemp[3:len(FractionTemp)])
+        RxDose = Fractions * FractionalDose
 
     # This assumes that Plans are either 100% Arc plans or 100% Static Angle
     FirstCP = RT_Plan.BeamSequence[0].ControlPointSequence[0]
