@@ -144,10 +144,10 @@ def Create_Plan_Py(PlanFile, StructureFile):
 
     # This assumes that Plans are either 100% Arc plans or 100% Static Angle
     FirstCP = RT_Plan.BeamSequence[0].ControlPointSequence[0]
-    if FirstCP.GantryRotationDirection is not 'NONE':
-        Modality = '3D'
-    else:
+    if FirstCP.GantryRotationDirection in {'CW', 'CC'}:
         Modality = 'Arc'
+    else:
+        Modality = '3D'
 
     # Replace with code to extract MU Meterset from dicom
     MUs = 3000
