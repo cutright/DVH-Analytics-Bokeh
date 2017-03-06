@@ -144,6 +144,7 @@ def Insert_Values_DVHs(ROI_PyTable):
 
     Send_to_SQL(FilePath)
     os.remove(FilePath)
+    print('DVHs Imported.')
 
 
 def Insert_Values_Plans(Plan_Py):
@@ -175,6 +176,7 @@ def Insert_Values_Plans(Plan_Py):
 
     Send_to_SQL(FilePath)
     os.remove(FilePath)
+    print('Plan Imported.')
 
 
 # Functions yet to be defined
