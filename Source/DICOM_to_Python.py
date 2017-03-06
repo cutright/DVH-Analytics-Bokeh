@@ -87,7 +87,7 @@ def Create_ROI_PyTable(StructureFile, DoseFile):
 def Create_Plan_Py(PlanFile, StructureFile):
     # Import RT Dose files using dicompyler
     RT_Plan = dicom.read_file(PlanFile)
-    RT_Plan_dicompyler = RT_Plan2 = dicomparser.DicomParser('rtplan.dcm')
+    RT_Plan_dicompyler = dicomparser.DicomParser('rtplan.dcm')
     RT_St = dicom.read_file(StructureFile)
 
     MRN = RT_Plan.PatientID
@@ -154,6 +154,7 @@ def Create_Plan_Py(PlanFile, StructureFile):
         RxString = RxString[3:RxString.rfind('gy')]
         while RxString[len(RxString)-1] == ' ':
             RxString = RxString[0:len(RxString)-1]
+        RxDose = float(RxString[RxString.rfind(' '):len(RxString)])
         if RxString.find('x') == -1:
             RxDose = float(RxString[RxString.rfind(' '):len(RxString)])
         else:
