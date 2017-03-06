@@ -29,8 +29,9 @@ PlanID is based on the plans in the database currently associated with the MRN (
 PlanUID is  MRN + PlanID (e.g., MRN = 000111222333, PlanID = 0005, then PlanUID = 0001112223330005.
 
 DICOM files do not explicitly contain prescriptions or treatment sites.  This code requires that the plan name be equal to the Tx Site.
-The prescription is parsed from a point stored in the DICOM RT Structure file with a name called 'rx: ' + [fractions] + ' x ' + 
-[fractional dose].  This point will have to be added by the user in their planning system prior to DICOM export.
+The prescription is parsed from a point stored in the DICOM RT Structure file with a name called 'rx: ' + [total dose] + 'Gy'. 
+This point will have to be added by the user in their planning system prior to DICOM export.  If this point is not found, the code will
+assume the Rx Dose is equal to the max point dose.
 
 
 The 'DVHs' table has one row per ROI and follows this format:
@@ -69,9 +70,6 @@ This has the simple objective of writing to SQL Database wiht only the DICOM fil
 Currently this code is the least developed as it depends heavily on the previous two codes.
 
 ### To Do List
-* Write DICOM_to_Python functions to
-  * calculate total MU of a plan from DICOM RT Plan
-
 * Write SQL_Tools fuctions to
   * determine PlanUID for current DICOM import
   * remove a plan row from PatientPlans master table
