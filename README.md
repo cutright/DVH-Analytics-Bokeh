@@ -29,10 +29,11 @@ PlanID is based on the plans in the database currently associated with the MRN (
 PlanUID is  MRN + PlanID (e.g., MRN = 000111222333, PlanID = 0005, then PlanUID = 0001112223330005.
 
 DICOM files do not explicitly contain prescriptions or treatment sites.  This code requires that the plan name be equal to the Tx Site.
-The prescription is parsed from a point stored in the DICOM RT Structure file with a name called 'rx: ' + [fractions] ' x ' [fractional dose].
+The prescription is parsed from a point stored in the DICOM RT Structure file with a name called 'rx: ' + [fractions] + ' x ' + 
+[fractional dose].  This point will have to be added by the user in their planning system prior to DICOM export.
 
 
-The DVHs table has one row per ROI and follows this format:
+The 'DVHs' table has one row per ROI and follows this format:
 
 Field | Type
 ----- | ----
