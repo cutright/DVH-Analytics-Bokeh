@@ -6,8 +6,8 @@ This is a work in progress.  This file will eventually contain instructions for 
 
 
 ### SQL Database format for this project
-This code is being built assuming the database is MySQL.  There will be a master table called 'PatientPlans'
-in the database 'DVH'.  This table contains the following data:
+This code is being built assuming the database is MySQL.  There will be a master table called 'Plans' and 'DVHs'
+in the database 'DVH'.  The 'Plans' table contains the following data:
 
 Field | Type
 ----- | ----
@@ -23,25 +23,21 @@ RxDose | float
 Fractions | tinyint(3) unsigned
 Modality | varchar(20)
 MUs | int(6) unsigned
-ROITableUID | varchar(19)
+PlanUID | varchar(19)
 
 PlanID is based on the plans in the database currently associated with the MRN (e.g., no other plans with PatientUID then PlanID = 0001).  
-ROITableUID is  'ROI' + MRN + PlanID (e.g., MRN = 000111222333, PlanID = 0005, then ROITableUID = ROI0001112223330005.
+PlanUID is  MRN + PlanID (e.g., MRN = 000111222333, PlanID = 0005, then PlanUID = 0001112223330005.
 
-DICOM files do not explicitly contain prescriptions or treatment sites.  This code requires that the plan name follow a specific format.
-The plan name populated in the treatment planning system should be '[Tx Site] [fractions] x [Dose]Gy'.  For example, an a treatment of
-50Gy in 5 fractions to the right lung would have a plan name of 'Lung R 5 x 10Gy'.  The code will parse the fractional dose by detecting
-the number between the final space and prior to 'Gy'.  The number of fractions will be parsed by detecting the integer prior to ' x ' and
-after the prior space.  The remainder will be the treatment site.  Please see section about treatment site requirements (although, they
-are soft requirements... the code will work but your SQL datebase will not be particularly useful).
+DICOM files do not explicitly contain prescriptions or treatment sites.  This code requires that the plan name be equal to the Tx Site.
+The prescription is parsed from a point stored in the DICOM RT Structure file with a name called 'rx: ' + [fractions] ' x ' [fractional dose].
 
-All other data in the above table is populated from DICOM RT Plan file using pydicom's dicom.read_file function to parse the data.
 
-Each ROITableUID is the table name for associated DVH data.  ROI tables follow this format:
+The DVHs table has one row per ROI and follows this format:
 
 Field | Type
 ----- | ----
-Name | varchar(20) 
+PlanUID | varchar(19)
+ROIName | varchar(50) 
 Type | varchar(20) 
 Volume | double      
 MinDose | double      
@@ -76,9 +72,7 @@ Currently this code is the least developed as it depends heavily on the previous
   * calculate total MU of a plan from DICOM RT Plan
 
 * Write SQL_Tools fuctions to
-  * determine PlanID for current DICOM import
-  * determine ROI_UID for current DICOM import
-  * delete an ROI Table
+  * determine PlanUID for current DICOM import
   * remove a plan row from PatientPlans master table
 
 * Write DICOM pre-import validation function

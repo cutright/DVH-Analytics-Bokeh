@@ -13,9 +13,10 @@ from dateutil.relativedelta import relativedelta
 
 
 class ROI:
-    def __init__(self, Name, Type, Volume, MinDose, MeanDose, MaxDose,
-                 DoseBinSize, DoseUnits, VolumeString, VolumeUnits):
-        self.Name = Name
+    def __init__(self, Plan_UID, ROI_Name, Type, Volume, MinDose, MeanDose,
+                 MaxDose, DoseBinSize, DoseUnits, VolumeString, VolumeUnits):
+        self.Plan_UID = Plan_UID
+        self.ROI_Name = ROI_Name
         self.Type = Type
         self.Volume = Volume
         self.MinDose = MinDose
@@ -30,7 +31,7 @@ class ROI:
 class Plan:
     def __init__(self, MRN, PlanID, Birthdate, Age, Sex, PlanDate,
                  RadOnc, TxSite, RxDose, Fractions, Modality, MUs,
-                 ROITableUID):
+                 Plan_UID):
         self.MRN = MRN
         self.PlanID = PlanID
         self.Birthdate = Birthdate
@@ -43,7 +44,7 @@ class Plan:
         self.Fractions = Fractions
         self.Modality = Modality
         self.MUs = MUs
-        self.ROITableUID = ROITableUID
+        self.Plan_UID = Plan_UID
 
 
 def Create_ROI_PyTable(StructureFile, DoseFile):
@@ -52,6 +53,10 @@ def Create_ROI_PyTable(StructureFile, DoseFile):
     Structures = RT_St.GetStructures()
     ROI_Count = len(Structures)
     # ROI_Count = 10
+
+    DICOM_RT_St = dicom.read_file(StructureFile)
+    MRN = DICOM_RT_St.PatientID
+    Plan_UID = MRN
 
     ROI_List = {}
 
@@ -63,7 +68,8 @@ def Create_ROI_PyTable(StructureFile, DoseFile):
             Current_DVH = dvhcalc.get_dvh(StructureFile, DoseFile, ROI_Counter)
             if Current_DVH.volume > 0:
                 print('Importing ' + Current_DVH.name)
-                Current_ROI = ROI(Structures[ROI_Counter]['name'],
+                Current_ROI = ROI(Plan_UID,
+                                  Structures[ROI_Counter]['name'],
                                   Structures[ROI_Counter]['type'],
                                   Current_DVH.volume,
                                   Current_DVH.min,

@@ -6,16 +6,17 @@ Created on Thu Mar  2 22:15:52 2017
 @author: nightowl
 """
 
-from SQL_Tools import Check_Table_Exists, Insert_Values_ROI, Create_Table_ROI
-from Create_ROI_PyTable import Create_ROI_PyTable
+from SQL_Tools import Insert_Values_DVHs, Insert_Values_Plans
+from DICOM_to_Python import Create_ROI_PyTable, Create_Plan_Py
 
 
-def DICOM_to_SQL(ROI_UID, StructureFile, DoseFile):
+def DICOM_to_SQL(PlanFile, StructureFile, DoseFile):
 
     ROI_PyTable = Create_ROI_PyTable(StructureFile, DoseFile)
-    if Check_Table_Exists(ROI_UID) is 'False':
-        Create_Table_ROI(ROI_UID)
-    Insert_Values_ROI(ROI_UID, ROI_PyTable)
+    Plan_Py = Create_Plan_Py(PlanFile, StructureFile)
+    Insert_Values_Plans(Plan_Py)
+    Insert_Values_DVHs(ROI_PyTable)
+
 
 if __name__ == '__main__':
     DICOM_to_SQL()

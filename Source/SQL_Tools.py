@@ -25,9 +25,9 @@ def Connect_to_SQL():
         cnx = mysql.connector.connect(**config)
 
         if cnx.is_connected():
-            print('connection established.')
+            print('Connection established.')
         else:
-            print('connection failed.')
+            print('Connection failed.')
 
     except Error as error:
         print(error)
@@ -42,6 +42,7 @@ def Send_to_SQL(SQL_File_Name):
     for line in open(SQL_File_Name):
         cursor.execute(line)
         cnx.commit()
+    print('Connection closed.')
     cnx.close()
 
 
@@ -62,12 +63,12 @@ def Check_Table_Exists(cnx, TableName):
     return False
 
 
-def Create_Table_PatientPlans(TableName):
+def Create_Table_Plans():
 
     # Generate string to create table in SQL, write to output text file
     SQL_CreateTable = []
     SQL_CreateTable.append('CREATE TABLE')
-    SQL_CreateTable.append(TableName)
+    SQL_CreateTable.append('Plans')
     SQL_CreateTable.append('(MRN varchar(12),')
     SQL_CreateTable.append('PlanID tinyint(4) unsigned zerofill,')
     SQL_CreateTable.append('Birthdate date,')
@@ -80,9 +81,9 @@ def Create_Table_PatientPlans(TableName):
     SQL_CreateTable.append('Fractions tinyint(3) unsigned,')
     SQL_CreateTable.append('Modality varchar(20),')
     SQL_CreateTable.append('MUs int(6) unsigned,')
-    SQL_CreateTable.append('ROITableUID varchar(19));')
+    SQL_CreateTable.append('PlanUID varchar(19));')
     SQL_CreateTable = ' '.join(SQL_CreateTable)
-    FilePath = 'Create_Table_' + TableName + '.sql'
+    FilePath = 'Create_Table_Plans.sql'
     with open(FilePath, "w") as text_file:
             text_file.write(SQL_CreateTable)
 
@@ -90,13 +91,14 @@ def Create_Table_PatientPlans(TableName):
     os.remove(FilePath)
 
 
-def Create_Table_ROI(ROI_UID):
+def Create_Table_DVHs():
 
     # Generate string to create table in SQL, write to output text file
     SQL_CreateTable = []
     SQL_CreateTable.append('CREATE TABLE')
-    SQL_CreateTable.append(ROI_UID)
-    SQL_CreateTable.append('(Name VARCHAR(20),')
+    SQL_CreateTable.append('DVHs')
+    SQL_CreateTable.append('(PlanUID VARCHAR(19),')
+    SQL_CreateTable.append('ROIName VARCHAR(50),')
     SQL_CreateTable.append('Type VARCHAR(20),')
     SQL_CreateTable.append('Volume DOUBLE,')
     SQL_CreateTable.append('MinDose DOUBLE,')
@@ -106,7 +108,7 @@ def Create_Table_ROI(ROI_UID):
     SQL_CreateTable.append('VolumeString MEDIUMTEXT,')
     SQL_CreateTable.append('VolumeUnits VARCHAR(20));')
     SQL_CreateTable = ' '.join(SQL_CreateTable)
-    FilePath = 'Create_Table_' + ROI_UID + '.sql'
+    FilePath = 'Create_Table_DVHs.sql'
     with open(FilePath, "w") as text_file:
             text_file.write(SQL_CreateTable)
 
@@ -114,14 +116,15 @@ def Create_Table_ROI(ROI_UID):
     os.remove(FilePath)
 
 
-def Insert_Values_ROI(ROI_UID, ROI_PyTable):
+def Insert_Values_DVHs(ROI_PyTable):
 
-    FilePath = 'Insert_Values_' + ROI_UID + '.sql'
+    FilePath = 'Insert_Values_DVHs.sql'
 
     # Import each ROI from ROI_PyTable, append to output text file
     SQL_Values_Line = []
     for ROI_Counter in range(1, len(ROI_PyTable)+1):
-        SQL_Values_Line.append(ROI_PyTable[ROI_Counter].Name)
+        SQL_Values_Line.append(ROI_PyTable[ROI_Counter].Plan_UID)
+        SQL_Values_Line.append(ROI_PyTable[ROI_Counter].ROI_Name)
         SQL_Values_Line.append(ROI_PyTable[ROI_Counter].Type)
         SQL_Values_Line.append(str(ROI_PyTable[ROI_Counter].Volume))
         SQL_Values_Line.append(str(ROI_PyTable[ROI_Counter].MinDose))
@@ -132,7 +135,7 @@ def Insert_Values_ROI(ROI_UID, ROI_PyTable):
         SQL_Values_Line.append(ROI_PyTable[ROI_Counter].VolumeUnits)
         SQL_Values_Line = '\',\''.join(SQL_Values_Line)
         SQL_Values_Line += '\');'
-        Prepend = 'INSERT INTO ' + ROI_UID + ' VALUES (\''
+        Prepend = 'INSERT INTO DVHs VALUES (\''
         SQL_Values_Line = Prepend + str(SQL_Values_Line)
         SQL_Values_Line += '\n'
         with open(FilePath, "a") as text_file:
@@ -143,7 +146,7 @@ def Insert_Values_ROI(ROI_UID, ROI_PyTable):
     os.remove(FilePath)
 
 
-def Insert_Values_PatientPlan(Table_Name, Plan_Py):
+def Insert_Values_Plans(Plan_Py):
 
     FilePath = 'Insert_Plan_' + Plan_Py.MRN + '.sql'
 
@@ -161,10 +164,10 @@ def Insert_Values_PatientPlan(Table_Name, Plan_Py):
     SQL_Values_Line.append(str(Plan_Py.Fractions))
     SQL_Values_Line.append(Plan_Py.Modality)
     SQL_Values_Line.append(str(Plan_Py.MUs))
-    SQL_Values_Line.append(str(Plan_Py.ROITableUID))
+    SQL_Values_Line.append(str(Plan_Py.Plan_UID))
     SQL_Values_Line = '\',\''.join(SQL_Values_Line)
     SQL_Values_Line += '\');'
-    Prepend = 'INSERT INTO ' + Table_Name + ' VALUES (\''
+    Prepend = 'INSERT INTO Plans VALUES (\''
     SQL_Values_Line = Prepend + str(SQL_Values_Line)
     SQL_Values_Line += '\n'
     with open(FilePath, "a") as text_file:
