@@ -19,6 +19,13 @@ def Connect_to_SQL():
               'database': 'DVH',
               'raise_on_warnings': True
               }
+#    with open('SQL_Connection.cnf', 'r') as document:
+#        config = {}
+#        for line in document:
+#            line = line.split()
+#            if not line:  # empty line?
+#                continue
+#            config[line[0]] = line[1:]
 
     try:
         print('Connecting to MySQL database...')

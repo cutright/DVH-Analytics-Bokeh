@@ -87,6 +87,7 @@ def Create_ROI_PyTable(StructureFile, DoseFile):
 def Create_Plan_Py(PlanFile, StructureFile):
     # Import RT Dose files using dicompyler
     RT_Plan = dicom.read_file(PlanFile)
+    RT_Plan_dicompyler = RT_Plan2 = dicomparser.DicomParser('rtplan.dcm')
     RT_St = dicom.read_file(StructureFile)
 
     MRN = RT_Plan.PatientID
@@ -124,7 +125,7 @@ def Create_Plan_Py(PlanFile, StructureFile):
     TxSite = RT_Plan.RTPlanLabel
 
     # Because DICOM does not contain Rx's explicitly, the user must create
-    # a point in the RT Structure file called 'rx [fx's] x [fx dose]'
+    # a point in the RT Structure file called 'rx [total dose]'
     RxFound = 0
     ROI_Counter = 0
     ROI_Count = len(RT_St.StructureSetROISequence) - 1
@@ -139,15 +140,18 @@ def Create_Plan_Py(PlanFile, StructureFile):
                 ROI_Counter += 1
         else:
             ROI_Counter += 1
-
     if not RxString:
-        Fractions = 0
-        RxDose = 0
+        RxDose = RT_Plan_dicompyler.GetPlan()['rxdose']/100
     else:
-        FractionalDose = float(RxString[RxString.rfind('x')+1:len(RxString)-2])
-        FractionTemp = RxString[0:RxString.rfind('x')-1]
-        Fractions = int(FractionTemp[3:len(FractionTemp)])
-        RxDose = Fractions * FractionalDose
+        RxString = RxString.lower()
+        RxDose = RxString[3:RxString.rfind('gy')]
+
+    Fractions = 0
+    MUs = 0
+    for FxGroup in range(0, len(RT_Plan.FractionGroupSequence)):
+        Fractions += RT_Plan.FractionGroupSequence[FxGroup].NumberOfFractionsPlanned
+        for BeamNum in range(0, RT_Plan.FractionGroupSequence[FxGroup].NumberOfBeams):
+            MUs += RT_Plan.FractionGroupSequence[FxGroup].ReferencedBeamSequence[BeamNum].BeamMeterset
 
     # This assumes that Plans are either 100% Arc plans or 100% Static Angle
     FirstCP = RT_Plan.BeamSequence[0].ControlPointSequence[0]
@@ -155,9 +159,6 @@ def Create_Plan_Py(PlanFile, StructureFile):
         Modality = 'Arc'
     else:
         Modality = '3D'
-
-    # Replace with code to extract MU Meterset from dicom
-    MUs = 3000
 
     # Will require a yet to be named function to determine this by
     # querying the SQL database
