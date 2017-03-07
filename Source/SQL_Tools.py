@@ -70,6 +70,39 @@ def Check_Table_Exists(cnx, TableName):
     return False
 
 
+def Query_SQL(TableName, ReturnColStr, *ConditionStr):
+
+    query = 'Select ' + ReturnColStr + ' from ' + TableName
+    if ConditionStr:
+        query += ' where ' + ConditionStr[0]
+    query += ';'
+
+    cnx = Connect_to_SQL()
+    cursor = cnx.cursor()
+
+    cursor.execute(query)
+    results = cursor.fetchall()
+
+    cursor.close()
+    cnx.close()
+    print('Connection closed.')
+
+    return results
+
+
+def GetPlanIDs(MRN):
+
+    query = 'Select PlanID from Plans where MRN=\'' + MRN + '\';'
+    cnx = Connect_to_SQL()
+    cursor = cnx.cursor()
+    cursor.execute(query)
+    results = cursor.fetchall()
+    cursor.close()
+    cnx.close()
+    print('Connection closed.')
+    return results
+
+
 def Create_Table_Plans():
 
     # Generate string to create table in SQL, write to output text file
@@ -87,8 +120,7 @@ def Create_Table_Plans():
     SQL_CreateTable.append('RxDose float,')
     SQL_CreateTable.append('Fractions tinyint(3) unsigned,')
     SQL_CreateTable.append('Modality varchar(20),')
-    SQL_CreateTable.append('MUs int(6) unsigned,')
-    SQL_CreateTable.append('PlanUID varchar(19));')
+    SQL_CreateTable.append('MUs int(6) unsigned);')
     SQL_CreateTable = ' '.join(SQL_CreateTable)
     FilePath = 'Create_Table_Plans.sql'
     with open(FilePath, "w") as text_file:
@@ -104,7 +136,8 @@ def Create_Table_DVHs():
     SQL_CreateTable = []
     SQL_CreateTable.append('CREATE TABLE')
     SQL_CreateTable.append('DVHs')
-    SQL_CreateTable.append('(PlanUID VARCHAR(19),')
+    SQL_CreateTable.append('(MRN varchar(12),')
+    SQL_CreateTable.append('PlanID tinyint(4) unsigned zerofill,')
     SQL_CreateTable.append('ROIName VARCHAR(50),')
     SQL_CreateTable.append('Type VARCHAR(20),')
     SQL_CreateTable.append('Volume DOUBLE,')
@@ -129,7 +162,8 @@ def Insert_Values_DVHs(ROI_PyTable):
     # Import each ROI from ROI_PyTable, append to output text file
     SQL_Values_Line = []
     for ROI_Counter in range(1, len(ROI_PyTable)+1):
-        SQL_Values_Line.append(ROI_PyTable[ROI_Counter].Plan_UID)
+        SQL_Values_Line.append(str(ROI_PyTable[ROI_Counter].MRN))
+        SQL_Values_Line.append(str(ROI_PyTable[ROI_Counter].PlanID))
         SQL_Values_Line.append(ROI_PyTable[ROI_Counter].ROI_Name)
         SQL_Values_Line.append(ROI_PyTable[ROI_Counter].Type)
         SQL_Values_Line.append(str(round(ROI_PyTable[ROI_Counter].Volume, 3)))
@@ -170,7 +204,6 @@ def Insert_Values_Plans(Plan_Py):
     SQL_Values_Line.append(str(Plan_Py.Fractions))
     SQL_Values_Line.append(Plan_Py.Modality)
     SQL_Values_Line.append(str(Plan_Py.MUs))
-    SQL_Values_Line.append(str(Plan_Py.Plan_UID))
     SQL_Values_Line = '\',\''.join(SQL_Values_Line)
     SQL_Values_Line += '\');'
     Prepend = 'INSERT INTO Plans VALUES (\''

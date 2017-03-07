@@ -10,12 +10,14 @@ import dicom
 from dicompylercore import dicomparser, dvhcalc
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from SQL_Tools import GetPlanIDs
 
 
 class ROI:
-    def __init__(self, Plan_UID, ROI_Name, Type, Volume, MinDose, MeanDose,
+    def __init__(self, MRN, PlanID, ROI_Name, Type, Volume, MinDose, MeanDose,
                  MaxDose, DoseBinSize, VolumeString):
-        self.Plan_UID = Plan_UID
+        self.MRN = MRN
+        self.PlanID = PlanID
         self.ROI_Name = ROI_Name
         self.Type = Type
         self.Volume = Volume
@@ -54,19 +56,18 @@ def Create_ROI_PyTable(StructureFile, DoseFile):
 
     DICOM_RT_St = dicom.read_file(StructureFile)
     MRN = DICOM_RT_St.PatientID
-    Plan_UID = MRN
+    PlanID = len(GetPlanIDs(MRN)) + 1
 
     ROI_List = {}
-
     ROI_List_Counter = 1
-
     for ROI_Counter in range(1, ROI_Count):
         # Import DVH from RT Structure and RT Dose files
         if Structures[ROI_Counter]['type'] != 'MARKER':
             Current_DVH = dvhcalc.get_dvh(StructureFile, DoseFile, ROI_Counter)
             if Current_DVH.volume > 0:
                 print('Importing ' + Current_DVH.name)
-                Current_ROI = ROI(Plan_UID,
+                Current_ROI = ROI(MRN,
+                                  PlanID,
                                   Structures[ROI_Counter]['name'],
                                   Structures[ROI_Counter]['type'],
                                   Current_DVH.volume,
@@ -88,9 +89,7 @@ def Create_Plan_Py(PlanFile, StructureFile):
 
     MRN = RT_Plan.PatientID
 
-    # Will require a yet to be named function to determine this by
-    # querying the SQL database
-    PlanID = 1
+    PlanID = len(GetPlanIDs(MRN)) + 1
 
     BirthDate = RT_Plan.PatientBirthDate
     if not BirthDate:
