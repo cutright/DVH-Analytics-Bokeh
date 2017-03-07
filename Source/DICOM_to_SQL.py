@@ -12,9 +12,10 @@ from DICOM_to_Python import Create_ROI_PyTable, Create_Plan_Py
 
 def DICOM_to_SQL(PlanFile, StructureFile, DoseFile):
 
-    ROI_PyTable = Create_ROI_PyTable(StructureFile, DoseFile)
     Plan_Py = Create_Plan_Py(PlanFile, StructureFile)
     Insert_Values_Plans(Plan_Py)
+
+    ROI_PyTable = Create_ROI_PyTable(StructureFile, DoseFile)
     Insert_Values_DVHs(ROI_PyTable)
 
 
