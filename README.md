@@ -12,7 +12,7 @@ in the database 'DVH'.  The 'Plans' table contains the following data:
 Field | Type
 ----- | ----
 MRN | varchar(12)
-PlanID | tinyint(4) unsigned zerofill
+PlanID | tinyint(4) unsigned
 Birthdate | date
 Age | tinyint(3) unsigned
 Sex | char(1)
@@ -38,7 +38,7 @@ The 'DVHs' table has one row per ROI and follows this format:
 Field | Type
 ----- | ----
 MRN | varchar(12)
-PlanID | tinyint(4) unsigned zerofill
+PlanID | tinyint(4) unsigned
 ROIName | varchar(50) 
 Type | varchar(20) 
 Volume | double      
