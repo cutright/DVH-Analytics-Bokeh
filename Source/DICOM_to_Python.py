@@ -56,7 +56,8 @@ def Create_ROI_PyTable(StructureFile, DoseFile):
 
     DICOM_RT_St = dicom.read_file(StructureFile)
     MRN = DICOM_RT_St.PatientID
-    PlanID = max(GetPlanIDs(MRN)[0])
+    PlanIDs = GetPlanIDs(MRN)
+    PlanID = PlanIDs[PlanIDs.index(max(PlanIDs))][0]
 
     ROI_List = {}
     ROI_List_Counter = 1
@@ -89,10 +90,11 @@ def Create_Plan_Py(PlanFile, StructureFile):
 
     MRN = RT_Plan.PatientID
 
-    if not GetPlanIDs(MRN):
+    PlanIDs = GetPlanIDs(MRN)
+    if not PlanIDs:
         PlanID = 1
     else:
-        PlanID = max(GetPlanIDs(MRN)[0]) + 1
+        PlanID = PlanIDs[PlanIDs.index(max(PlanIDs))][0] + 1
 
     BirthDate = RT_Plan.PatientBirthDate
     if not BirthDate:
