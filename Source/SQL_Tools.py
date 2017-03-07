@@ -81,7 +81,7 @@ def Create_Table_Plans():
     SQL_CreateTable.append('Birthdate date,')
     SQL_CreateTable.append('Age tinyint(3) unsigned,')
     SQL_CreateTable.append('Sex char(1),')
-    SQL_CreateTable.append('PlanDate date,')
+    SQL_CreateTable.append('SimStudyDate date,')
     SQL_CreateTable.append('RadOnc varchar(3),')
     SQL_CreateTable.append('TxSite varchar(100),')
     SQL_CreateTable.append('RxDose float,')
@@ -112,8 +112,7 @@ def Create_Table_DVHs():
     SQL_CreateTable.append('MeanDose DOUBLE,')
     SQL_CreateTable.append('MaxDose DOUBLE,')
     SQL_CreateTable.append('DoseBinSize FLOAT,')
-    SQL_CreateTable.append('VolumeString MEDIUMTEXT,')
-    SQL_CreateTable.append('VolumeUnits VARCHAR(20));')
+    SQL_CreateTable.append('VolumeString MEDIUMTEXT);')
     SQL_CreateTable = ' '.join(SQL_CreateTable)
     FilePath = 'Create_Table_DVHs.sql'
     with open(FilePath, "w") as text_file:
@@ -139,7 +138,6 @@ def Insert_Values_DVHs(ROI_PyTable):
         SQL_Values_Line.append(str(round(ROI_PyTable[ROI_Counter].MaxDose, 2)))
         SQL_Values_Line.append(str(ROI_PyTable[ROI_Counter].DoseBinSize))
         SQL_Values_Line.append(ROI_PyTable[ROI_Counter].VolumeString)
-        SQL_Values_Line.append(ROI_PyTable[ROI_Counter].VolumeUnits)
         SQL_Values_Line = '\',\''.join(SQL_Values_Line)
         SQL_Values_Line += '\');'
         Prepend = 'INSERT INTO DVHs VALUES (\''
@@ -165,7 +163,7 @@ def Insert_Values_Plans(Plan_Py):
     SQL_Values_Line.append(str(Plan_Py.Birthdate))
     SQL_Values_Line.append(str(Plan_Py.Age))
     SQL_Values_Line.append(Plan_Py.Sex)
-    SQL_Values_Line.append(Plan_Py.PlanDate)
+    SQL_Values_Line.append(Plan_Py.SimStudyDate)
     SQL_Values_Line.append(Plan_Py.RadOnc)
     SQL_Values_Line.append(Plan_Py.TxSite)
     SQL_Values_Line.append(str(Plan_Py.RxDose))

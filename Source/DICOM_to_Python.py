@@ -14,7 +14,7 @@ from dateutil.relativedelta import relativedelta
 
 class ROI:
     def __init__(self, Plan_UID, ROI_Name, Type, Volume, MinDose, MeanDose,
-                 MaxDose, DoseBinSize, DoseUnits, VolumeString, VolumeUnits):
+                 MaxDose, DoseBinSize, VolumeString):
         self.Plan_UID = Plan_UID
         self.ROI_Name = ROI_Name
         self.Type = Type
@@ -23,13 +23,11 @@ class ROI:
         self.MeanDose = MeanDose
         self.MaxDose = MaxDose
         self.DoseBinSize = DoseBinSize
-        self.DoseUnits = DoseUnits
         self.VolumeString = VolumeString
-        self.VolumeUnits = VolumeUnits
 
 
 class Plan:
-    def __init__(self, MRN, PlanID, Birthdate, Age, Sex, PlanDate,
+    def __init__(self, MRN, PlanID, Birthdate, Age, Sex, SimStudyDate,
                  RadOnc, TxSite, RxDose, Fractions, Modality, MUs,
                  Plan_UID):
         self.MRN = MRN
@@ -37,7 +35,7 @@ class Plan:
         self.Birthdate = Birthdate
         self.Age = Age
         self.Sex = Sex
-        self.PlanDate = PlanDate
+        self.SimStudyDate = SimStudyDate
         self.RadOnc = RadOnc
         self.TxSite = TxSite
         self.RxDose = RxDose
@@ -76,9 +74,7 @@ def Create_ROI_PyTable(StructureFile, DoseFile):
                                   Current_DVH.mean,
                                   Current_DVH.max,
                                   Current_DVH.bins[1],
-                                  Current_DVH.dose_units,
-                                  ','.join(['%.2f' % num for num in Current_DVH.counts]),
-                                  Current_DVH.volume_units)
+                                  ','.join(['%.2f' % num for num in Current_DVH.counts]))
                 ROI_List[ROI_List_Counter] = Current_ROI
                 ROI_List_Counter += 1
     return ROI_List
@@ -112,13 +108,13 @@ def Create_Plan_Py(PlanFile, StructureFile):
     else:
         Sex = '-'
 
-    PlanDate = RT_Plan.StudyDate
-    PlanYear = int(PlanDate[0:4])
-    PlanMonth = int(PlanDate[4:6])
-    PlanDay = int(PlanDate[6:8])
-    PlanDateObj = datetime(PlanYear, PlanMonth, PlanDay)
+    SimStudyDate = RT_Plan.StudyDate
+    SimStudyYear = int(SimStudyDate[0:4])
+    SimStudyMonth = int(SimStudyDate[4:6])
+    SimStudyDay = int(SimStudyDate[6:8])
+    SimStudyDateObj = datetime(SimStudyYear, SimStudyMonth, SimStudyDay)
 
-    Age = relativedelta(PlanDateObj, BirthDateObj).years
+    Age = relativedelta(SimStudyDateObj, BirthDateObj).years
 
     RadOnc = RT_Plan.ReferringPhysicianName
 
@@ -171,7 +167,7 @@ def Create_Plan_Py(PlanFile, StructureFile):
     # querying the SQL database
     ROI_UID = 1
 
-    Plan_Py = Plan(MRN, PlanID, BirthDate, Age, Sex, PlanDate,
+    Plan_Py = Plan(MRN, PlanID, BirthDate, Age, Sex, SimStudyDate,
                    RadOnc, TxSite, RxDose, Fractions, Modality, MUs, ROI_UID)
 
     return Plan_Py
