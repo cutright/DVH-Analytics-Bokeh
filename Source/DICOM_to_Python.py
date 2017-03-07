@@ -87,7 +87,7 @@ def Create_ROI_PyTable(StructureFile, DoseFile):
 def Create_Plan_Py(PlanFile, StructureFile):
     # Import RT Dose files using dicompyler
     RT_Plan = dicom.read_file(PlanFile)
-    RT_Plan_dicompyler = dicomparser.DicomParser('rtplan.dcm')
+    RT_Plan_dicompyler = dicomparser.DicomParser(PlanFile)
     RT_St = dicom.read_file(StructureFile)
 
     MRN = RT_Plan.PatientID
