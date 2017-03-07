@@ -16,7 +16,7 @@ PlanID | tinyint(4) unsigned zerofill
 Birthdate | date
 Age | tinyint(3) unsigned
 Sex | char(1)
-CTSTudyDate | date
+CTStudyDate | date
 RadOnc | varchar(3)
 TxSite | varchar(100)
 RxDose | float
