@@ -46,14 +46,13 @@ MinDose | double
 MeanDose | double      
 MaxDose | double      
 DoseBinSize | float       
-VolumeString | mediumtext  
-VolumeUnits | varchar(20) 
+VolumeString | mediumtext
 
 
-All data is populated from a combination of DICOM RT strucutre and dose files using dicompyler code.  VolumeString is a comma separated
-value string, when parsed generates a vector for the DVH y-values.  The x-values are to be generated as a vector of equal length to the
-y-axis with equally spaced values based on the DoseBinSize (e.g., VolumeString = '100,100,90,50,20,0' and DoseBinSize = 1.0 then
-x-axis vector would equal [0.5 1.5 2.5 3.5 4.5 5.5]).
+All doses are in Gy. All volumes are in cm^3. All data is populated from a combination of DICOM RT strucutre and dose files using
+dicompyler code.  VolumeString is a comma separated value string, when parsed generates a vector for the DVH y-values.  The x-values 
+are to be generated as a vector of equal length to the y-axis with equally spaced values based on the DoseBinSize (e.g., 
+VolumeString = '100,100,90,50,20,0' and DoseBinSize = 1.0 then x-axis vector would equal [0.5 1.5 2.5 3.5 4.5 5.5]).
 
 ### Code organization
 *DICOM_to_Python*  
