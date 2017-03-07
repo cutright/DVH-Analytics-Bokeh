@@ -23,7 +23,6 @@ RxDose | float
 Fractions | tinyint(3) unsigned
 Modality | varchar(20)
 MUs | int(6) unsigned
-PlanUID | varchar(19)
 
 PlanID is based on the plans in the database currently associated with the MRN (e.g., no other plans with PatientUID then PlanID = 0001).  
 PlanUID is  MRN + PlanID (e.g., MRN = 000111222333, PlanID = 0005, then PlanUID = 0001112223330005.
@@ -38,7 +37,8 @@ The 'DVHs' table has one row per ROI and follows this format:
 
 Field | Type
 ----- | ----
-PlanUID | varchar(19)
+MRN | varchar(12)
+PlanID | tinyint(4) unsigned zerofill
 ROIName | varchar(50) 
 Type | varchar(20) 
 Volume | double      
@@ -70,7 +70,6 @@ Currently this code is the least developed as it depends heavily on the previous
 
 ### To Do List
 * Write SQL_Tools fuctions to
-  * determine PlanUID for current DICOM import
   * remove a plan row from PatientPlans master table
 
 * Write DICOM pre-import validation function
