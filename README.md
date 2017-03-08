@@ -17,19 +17,19 @@ Birthdate | date | RT_Plan.PatientBirthDate
 Age | tinyint(3) unsigned | RT_Plan.PatientBirthdate & RT_Plan.StudyDate
 Sex | char(1) | RT_Plan.PatientSex
 SimStudyDate | date | RT_Plan.StudyDate
-RadOnc | varchar(3) | RT_Plan.ReferringPhysicianName
-TxSite | varchar(100) | RT_Plan.RTPlanLabel (i.e., Plan name)
+RadOnc | varchar(50) | RT_Plan.ReferringPhysicianName
+TxSite | varchar(50) | RT_Plan.RTPlanLabel (i.e., Plan name)
 RxDose | float | User input point dose or max dose from dicompylercore
 Fractions | tinyint(3) unsigned | Sum of RT_Plan.FractionGroupSequence[].NumberOfFractionsPlanned
-StudyInstanceUID | varchar(30) | RT_Plan.StudyInstanceUID
-PatientOrientation | varchar(30) | RT_Plan.PatientSetupSequence[].PatientPosition (e.g., HFS, FFP, etc.)
+StudyInstanceUID | varchar(100) | RT_Plan.StudyInstanceUID
+PatientOrientation | varchar(3) | RT_Plan.PatientSetupSequence[0].PatientPosition (e.g., HFS, FFP, etc.)
 PlanTimeStamp | timestamp | RT_Plan.RTPlanDate and RT_Plan.RTPlanTime
-StTimeStamp | timestamp | RT_St.RTPlanDate and RT_St.RTPlanTime
-DoseTimeStamp | timestamp | RT_Dose.RTPlanDate and RT_Dose.RTPlanTime
+StTimeStamp | timestamp | RT_St.StructureSetDate and RT_St.StructureSetTime
+DoseTimeStamp | timestamp | RT_Dose.ContentDate and RT_Dose.ContentTime
 TPSManufacturer | varchar(50) | RT_Plan.Manufacturer
 TPSSoftwareName | varchar(50) | RT_Plan.ManufactuerModelName
-TPSSoftwareVerssion | varchar(30) | RT_Plan.SoftwareVersions
-TxModality | varchar(20) | dicompyler GetPlan(), RT_Plan.BeamSequence[0].ControlPointSequence[0], RT_Plan.ManufactuerModelName
+TPSSoftwareVersion | varchar(30) | RT_Plan.SoftwareVersions
+TxModality | varchar(30) | dicompyler GetPlan(), RT_Plan.BeamSequence[0].ControlPointSequence[0], RT_Plan.ManufactuerModelName
 MUs | int(6) unsigned | Sum of RT_Plan.FractionGroupSequence[FxGroup].ReferencedBeamSequence[BeamNum].BeamMeterset (linac only)
 TxTime | time | TBD (Brachy and Gamma Knife only)
 
