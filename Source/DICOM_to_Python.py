@@ -30,7 +30,7 @@ class ROI:
 
 class Plan:
     def __init__(self, MRN, PlanID, Birthdate, Age, Sex, SimStudyDate,
-                 RadOnc, TxSite, RxDose, Fractions, StudyInstanceUID,
+                 RadOnc, TxSite, RxDose, Fractions, Energy, StudyInstanceUID,
                  PatientOrientation, PlanTimeStamp, StTimeStamp, DoseTimeStamp,
                  TPSManufacturer, TPSSoftwareName, TPSSoftwareVersion,
                  TxModality, MUs, TxTime):
@@ -44,6 +44,7 @@ class Plan:
         self.TxSite = TxSite
         self.RxDose = RxDose
         self.Fractions = Fractions
+        self.Energy = Energy
         self.StudyInstanceUID = StudyInstanceUID
         self.PatientOrientation = PatientOrientation
         self.PlanTimeStamp = PlanTimeStamp
@@ -185,6 +186,7 @@ def Create_Plan_Py(PlanFile, StructureFile, DoseFile):
 
     # This assumes that Plans are either 100% Arc plans or 100% Static Angle
     TxModality = ''
+    Energy = ' '
     Temp = ''
     if RT_Plan_Obj['brachy']:
         TxModality = 'Brachy '
@@ -196,6 +198,16 @@ def Create_Plan_Py(PlanFile, StructureFile, DoseFile):
                 Temp += 'Arc '
             else:
                 Temp += '3D '
+            EnergyTemp = ' ' + str(FirstCP.NominalBeamEnergy)
+            if RT_Plan.BeamSequence[BeamNum].RadiationType.lower() == 'photon':
+                EnergyTemp += 'MV '
+            elif RT_Plan.BeamSequence[BeamNum].RadiationType.lower() == 'proton':
+                EnergyTemp += 'MeV '
+            elif RT_Plan.BeamSequence[BeamNum].RadiationType.lower() == 'electron':
+                EnergyTemp += 'MeV '
+            if Energy.find(EnergyTemp) < 0:
+                Energy += EnergyTemp
+        Energy = Energy[1:len(Energy)-1]
         if Temp.lower().find('photon') > -1:
             if Temp.lower().find('photon arc') > -1:
                 TxModality += 'Photon Arc '
@@ -214,7 +226,7 @@ def Create_Plan_Py(PlanFile, StructureFile, DoseFile):
     TxTime = 0
 
     Plan_Py = Plan(MRN, PlanID, BirthDate, Age, Sex, SimStudyDate,
-                   RadOnc, TxSite, RxDose, Fractions, StudyInstanceUID,
+                   RadOnc, TxSite, RxDose, Fractions, Energy, StudyInstanceUID,
                    PatientOrientation, PlanTimeStamp, StTimeStamp,
                    DoseTimeStamp, TPSManufacturer, TPSSoftwareName,
                    TPSSoftwareVersion, TxModality, MUs, TxTime)
