@@ -36,8 +36,8 @@ TxTime | time | TBD (Brachy and Gamma Knife only)
 
 PlanID is based on the plans in the database currently associated with the MRN.  
 
-DICOM files do not explicitly contain prescriptions or treatment sites.  This code requires that the plan name be equal to the Tx Site.
-The prescription is parsed from a point stored in the DICOM RT Structure file with a name called 'rx: ' + [total dose] + 'Gy'. 
+Pinnacle DICOM Dose files do not explicitly contain prescriptions or treatment sites.  This code requires that the plan name be equal to
+the Tx Site.The prescription is parsed from a point stored in the DICOM RT Structure file with a name called 'rx: ' + [total dose] + 'Gy'. 
 This point will have to be added by the user in their planning system prior to DICOM export.  If this point is not found, the code will
 assume the Rx Dose is equal to the max point dose.
 
@@ -66,7 +66,8 @@ VolumeString = '100,100,90,50,20,0' and DoseBinSize = 1.0 then x-axis vector wou
 ### Code organization
 *DICOM_to_Python*  
 This code contains functions that read dicom files and generate python objects containing the data required for input into the
-SQL database.  There is no explicit user input.  All data is pulled from DICOM files.
+SQL database.  There is no explicit user input.  All data is pulled from DICOM files (except for RxDose from Pinnacle, see note
+in SQL Database format).
 
 *SQL_Tools*  
 This code handles all communication with SQL with MySQL Connector.  No DICOM files are used in this code and require the python objects
