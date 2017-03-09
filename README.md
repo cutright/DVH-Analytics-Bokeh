@@ -23,9 +23,9 @@ RxDose | float | User input point dose or max dose from dicompylercore
 Fractions | tinyint(3) unsigned | Sum of RT_Plan.FractionGroupSequence[].NumberOfFractionsPlanned
 StudyInstanceUID | varchar(100) | RT_Plan.StudyInstanceUID
 PatientOrientation | varchar(3) | RT_Plan.PatientSetupSequence[0].PatientPosition (e.g., HFS, FFP, etc.)
-PlanTimeStamp | timestamp | RT_Plan.RTPlanDate and RT_Plan.RTPlanTime
-StTimeStamp | timestamp | RT_St.StructureSetDate and RT_St.StructureSetTime
-DoseTimeStamp | timestamp | RT_Dose.ContentDate and RT_Dose.ContentTime
+PlanTimeStamp | datetime | RT_Plan.RTPlanDate and RT_Plan.RTPlanTime
+StTimeStamp | datetime | RT_St.StructureSetDate and RT_St.StructureSetTime
+DoseTimeStamp | datetime | RT_Dose.ContentDate and RT_Dose.ContentTime
 TPSManufacturer | varchar(50) | RT_Plan.Manufacturer
 TPSSoftwareName | varchar(50) | RT_Plan.ManufactuerModelName
 TPSSoftwareVersion | varchar(30) | RT_Plan.SoftwareVersions
