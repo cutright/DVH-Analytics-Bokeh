@@ -45,6 +45,9 @@ class Plan:
         self.RxDose = RxDose
         self.Fractions = Fractions
         self.Energy = Energy
+        self.TxModality = TxModality
+        self.MUs = MUs
+        self.TxTime = TxTime
         self.StudyInstanceUID = StudyInstanceUID
         self.PatientOrientation = PatientOrientation
         self.PlanTimeStamp = PlanTimeStamp
@@ -53,9 +56,6 @@ class Plan:
         self.TPSManufacturer = TPSManufacturer
         self.TPSSoftwareName = TPSSoftwareName
         self.TPSSoftwareVersion = TPSSoftwareVersion
-        self.TxModality = TxModality
-        self.MUs = MUs
-        self.TxTime = TxTime
 
 
 def Create_ROI_PyTable(StructureFile, DoseFile):
