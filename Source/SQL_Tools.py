@@ -49,8 +49,8 @@ def Send_to_SQL(SQL_File_Name):
     for line in open(SQL_File_Name):
         cursor.execute(line)
         cnx.commit()
-    print('Connection closed.')
     cnx.close()
+    print('Connection closed.')
 
 
 def Check_Table_Exists(cnx, TableName):
@@ -64,9 +64,11 @@ def Check_Table_Exists(cnx, TableName):
     if cursor.fetchone()[0] == 1:
         cursor.close()
         cnx.close()
+        print('Connection closed.')
         return True
 
     cnx.close()
+    print('Connection closed.')
     return False
 
 
@@ -115,12 +117,21 @@ def Create_Table_Plans():
     SQL_CreateTable.append('Age tinyint(3) unsigned,')
     SQL_CreateTable.append('Sex char(1),')
     SQL_CreateTable.append('SimStudyDate date,')
-    SQL_CreateTable.append('RadOnc varchar(3),')
-    SQL_CreateTable.append('TxSite varchar(100),')
+    SQL_CreateTable.append('RadOnc varchar(50),')
+    SQL_CreateTable.append('TxSite varchar(50),')
     SQL_CreateTable.append('RxDose float,')
     SQL_CreateTable.append('Fractions tinyint(3) unsigned,')
-    SQL_CreateTable.append('Modality varchar(20),')
-    SQL_CreateTable.append('MUs int(6) unsigned);')
+    SQL_CreateTable.append('StudyInstanceUID varchar(100),')
+    SQL_CreateTable.append('PatientOrientation varchar(3),')
+    SQL_CreateTable.append('PlanTimeStamp datetime,')
+    SQL_CreateTable.append('StTimeStamp datetime,')
+    SQL_CreateTable.append('DoseTimeStamp datetime,')
+    SQL_CreateTable.append('TPSManufacturer varchar(50),')
+    SQL_CreateTable.append('TPSSoftwareName varchar(50),')
+    SQL_CreateTable.append('TPSSoftwareVersion varchar(30),')
+    SQL_CreateTable.append('TxModality varchar(30),')
+    SQL_CreateTable.append('MUs int(6) unsigned,')
+    SQL_CreateTable.append('TxTime time);')
     SQL_CreateTable = ' '.join(SQL_CreateTable)
     FilePath = 'Create_Table_Plans.sql'
     with open(FilePath, "w") as text_file:
@@ -202,8 +213,17 @@ def Insert_Values_Plans(Plan_Py):
     SQL_Values_Line.append(Plan_Py.TxSite)
     SQL_Values_Line.append(str(Plan_Py.RxDose))
     SQL_Values_Line.append(str(Plan_Py.Fractions))
-    SQL_Values_Line.append(Plan_Py.Modality)
+    SQL_Values_Line.append(Plan_Py.StudyInstanceUID)
+    SQL_Values_Line.append(Plan_Py.PatientOrientation)
+    SQL_Values_Line.append(str(Plan_Py.PlanTimeStamp))
+    SQL_Values_Line.append(str(Plan_Py.StTimeStamp))
+    SQL_Values_Line.append(str(Plan_Py.DoseTimeStamp))
+    SQL_Values_Line.append(Plan_Py.TPSManufacturer)
+    SQL_Values_Line.append(Plan_Py.TPSSoftwareName)
+    SQL_Values_Line.append(str(Plan_Py.TPSSoftwareVersion))
+    SQL_Values_Line.append(Plan_Py.TxModality)
     SQL_Values_Line.append(str(Plan_Py.MUs))
+    SQL_Values_Line.append(str(Plan_Py.TxTime))
     SQL_Values_Line = '\',\''.join(SQL_Values_Line)
     SQL_Values_Line += '\');'
     Prepend = 'INSERT INTO Plans VALUES (\''

@@ -30,8 +30,10 @@ class ROI:
 
 class Plan:
     def __init__(self, MRN, PlanID, Birthdate, Age, Sex, SimStudyDate,
-                 RadOnc, TxSite, RxDose, Fractions, Modality, MUs,
-                 Plan_UID):
+                 RadOnc, TxSite, RxDose, Fractions, StudyInstanceUID,
+                 PatientOrientation, PlanTimeStamp, StTimeStamp, DoseTimeStamp,
+                 TPSManufacturer, TPSSoftwareName, TPSSoftwareVersion,
+                 TxModality, MUs, TxTime):
         self.MRN = MRN
         self.PlanID = PlanID
         self.Birthdate = Birthdate
@@ -42,20 +44,28 @@ class Plan:
         self.TxSite = TxSite
         self.RxDose = RxDose
         self.Fractions = Fractions
-        self.Modality = Modality
+        self.StudyInstanceUID = StudyInstanceUID
+        self.PatientOrientation = PatientOrientation
+        self.PlanTimeStamp = PlanTimeStamp
+        self.StTimeStamp = StTimeStamp
+        self.DoseTimeStamp = DoseTimeStamp
+        self.TPSManufacturer = TPSManufacturer
+        self.TPSSoftwareName = TPSSoftwareName
+        self.TPSSoftwareVersion = TPSSoftwareVersion
+        self.TxModality = TxModality
         self.MUs = MUs
-        self.Plan_UID = Plan_UID
+        self.TxTime = TxTime
 
 
 def Create_ROI_PyTable(StructureFile, DoseFile):
     # Import RT Structure and RT Dose files using dicompyler
     RT_St = dicomparser.DicomParser(StructureFile)
+    RT_St_dicom = dicom.read_file(StructureFile)
     Structures = RT_St.GetStructures()
     ROI_Count = len(Structures)
     # ROI_Count = 10
 
-    DICOM_RT_St = dicom.read_file(StructureFile)
-    MRN = DICOM_RT_St.PatientID
+    MRN = RT_St_dicom.PatientID
     PlanIDs = GetPlanIDs(MRN)
     PlanID = PlanIDs[PlanIDs.index(max(PlanIDs))][0]
 
@@ -82,11 +92,13 @@ def Create_ROI_PyTable(StructureFile, DoseFile):
     return ROI_List
 
 
-def Create_Plan_Py(PlanFile, StructureFile):
+def Create_Plan_Py(PlanFile, StructureFile, DoseFile):
     # Import RT Dose files using dicompyler
     RT_Plan = dicom.read_file(PlanFile)
     RT_Plan_dicompyler = dicomparser.DicomParser(PlanFile)
+    RT_Plan_Obj = RT_Plan_dicompyler.GetPlan()
     RT_St = dicom.read_file(StructureFile)
+    RT_Dose = dicom.read_file(DoseFile)
 
     MRN = RT_Plan.PatientID
 
@@ -131,6 +143,17 @@ def Create_Plan_Py(PlanFile, StructureFile):
         for BeamNum in range(0, RT_Plan.FractionGroupSequence[FxGroup].NumberOfBeams):
             MUs += RT_Plan.FractionGroupSequence[FxGroup].ReferencedBeamSequence[BeamNum].BeamMeterset
 
+    StudyInstanceUID = RT_Plan.StudyInstanceUID
+    PatientOrientation = RT_Plan.PatientSetupSequence[0].PatientPosition
+
+    PlanTimeStamp = RT_Plan.RTPlanDate + RT_Plan.RTPlanTime
+    StTimeStamp = RT_St.StructureSetDate + RT_St.StructureSetTime
+    DoseTimeStamp = RT_Dose.ContentDate + RT_Dose.ContentTime
+
+    TPSManufacturer = RT_Plan.Manufacturer
+    TPSSoftwareName = RT_Plan.ManufacturerModelName
+    TPSSoftwareVersion = RT_Plan.SoftwareVersions[0]
+
     # Because DICOM does not contain Rx's explicitly, the user must create
     # a point in the RT Structure file called 'rx [total dose]'
     RxFound = 0
@@ -148,7 +171,7 @@ def Create_Plan_Py(PlanFile, StructureFile):
         else:
             ROI_Counter += 1
     if not RxString:
-        RxDose = RT_Plan_dicompyler.GetPlan()['rxdose']/100
+        RxDose = RT_Plan_Obj['rxdose']/100
     else:
         RxString = RxString.lower()
         RxString = RxString[3:RxString.rfind('gy')]
@@ -161,18 +184,40 @@ def Create_Plan_Py(PlanFile, StructureFile):
             RxDose = float(RxString[RxString.rfind(' '):len(RxString)]) * Fractions
 
     # This assumes that Plans are either 100% Arc plans or 100% Static Angle
-    FirstCP = RT_Plan.BeamSequence[0].ControlPointSequence[0]
-    if FirstCP.GantryRotationDirection in {'CW', 'CC'}:
-        Modality = 'Arc'
+    TxModality = ''
+    Temp = ''
+    if RT_Plan_Obj['brachy']:
+        TxModality = 'Brachy '
     else:
-        Modality = '3D'
+        for BeamNum in range(0, len(RT_Plan.BeamSequence) - 1):
+            Temp += RT_Plan.BeamSequence[BeamNum].RadiationType + ' '
+            FirstCP = RT_Plan.BeamSequence[BeamNum].ControlPointSequence[0]
+            if FirstCP.GantryRotationDirection in {'CW', 'CC'}:
+                Temp += 'Arc '
+            else:
+                Temp += '3D '
+        if Temp.lower().find('photon') > -1:
+            if Temp.lower().find('photon arc') > -1:
+                TxModality += 'Photon Arc '
+            else:
+                TxModality += 'Photon 3D '
+        if Temp.lower().find('electron') > -1:
+            if Temp.lower().find('electron arc') > -1:
+                TxModality += 'Electron Arc '
+            else:
+                TxModality += 'Electron 3D '
+        elif Temp.lower().find('proton') > -1:
+            TxModality += 'Proton '
+    TxModality = TxModality[0:len(TxModality)-1]
 
-    # Will require a yet to be named function to determine this by
-    # querying the SQL database
-    ROI_UID = 1
+    # Will require a yet to be named function to determine this
+    TxTime = 0
 
     Plan_Py = Plan(MRN, PlanID, BirthDate, Age, Sex, SimStudyDate,
-                   RadOnc, TxSite, RxDose, Fractions, Modality, MUs, ROI_UID)
+                   RadOnc, TxSite, RxDose, Fractions, StudyInstanceUID,
+                   PatientOrientation, PlanTimeStamp, StTimeStamp,
+                   DoseTimeStamp, TPSManufacturer, TPSSoftwareName,
+                   TPSSoftwareVersion, TxModality, MUs, TxTime)
 
     return Plan_Py
 
