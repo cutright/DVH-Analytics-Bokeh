@@ -21,6 +21,7 @@ RadOnc | varchar(50) | RT_Plan.ReferringPhysicianName
 TxSite | varchar(50) | RT_Plan.RTPlanLabel (i.e., Plan name)
 RxDose | float | User input point dose or max dose from dicompylercore
 Fractions | tinyint(3) unsigned | Sum of RT_Plan.FractionGroupSequence[].NumberOfFractionsPlanned
+Energy | varchar(30) | RT_Plan.BeamSequence[].ControlPointSequence[0].NominalBeamEnergy
 StudyInstanceUID | varchar(100) | RT_Plan.StudyInstanceUID
 PatientOrientation | varchar(3) | RT_Plan.PatientSetupSequence[0].PatientPosition (e.g., HFS, FFP, etc.)
 PlanTimeStamp | datetime | RT_Plan.RTPlanDate and RT_Plan.RTPlanTime
