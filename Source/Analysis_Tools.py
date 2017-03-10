@@ -14,28 +14,20 @@ def SQL_DVH_to_Py(Cursor):
 
     MaxDVH_Length = 0
     for row in Cursor:
-        temp = str(list(row)).split(',')
-        if len(temp) > MaxDVH_Length:
-            MaxDVH_Length = len(temp)
+        CurrentDVH_Str = np.array(str(row[0]).split(','), dtype='|S4')
+        CurrentSize = np.size(CurrentDVH_Str)
+        if CurrentSize > MaxDVH_Length:
+            MaxDVH_Length = CurrentSize
 
     DVHs = np.zeros([MaxDVH_Length, len(Cursor)])
 
     DVH_Counter = 0
     for row in Cursor:
-        temp = str(list(row)).split(',')
-        CurrentDVH = np.zeros(MaxDVH_Length)
-        size = len(temp) - 1
-        CurrentDVH[0] = float(temp[0][3:len(temp[0])-1])
-        for y in range(1, size - 1):
-            CurrentDVH[y] = float(temp[y])
-        try:
-            CurrentDVH[size] = float(temp[len(temp)-1][0:len(temp[len(temp)-1])-2])
-        except Exception:
-            CurrentDVH[size] = 0
-
+        CurrentDVH_Str = np.array(str(row[0]).split(','), dtype='|S4')
+        CurrentDVH = CurrentDVH_Str.astype(np.float)
         if max(CurrentDVH) > 0:
             CurrentDVH /= max(CurrentDVH)
-        DVHs[:, DVH_Counter] = CurrentDVH
+        DVHs[:, DVH_Counter] = np.concatenate((CurrentDVH,np.zeros(MaxDVH_Length - np.size(CurrentDVH))))
         DVH_Counter += 1
 
     return DVHs
