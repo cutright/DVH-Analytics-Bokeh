@@ -48,8 +48,20 @@ def GetDVHsFromSQL(*ConditionStr):
     else:
         DVHs = Query_SQL('DVHs', 'VolumeString')
     DVHs = SQL_DVH_to_Py(DVHs)
-    
+
     return DVHs
+
+
+def AvgDVH(DVHs):
+
+    NumDVHs = np.size(DVHs, 1)
+    AvgDVH = np.zeros([np.size(DVHs, 0)])
+    for x in range(0, NumDVHs - 1):
+        AvgDVH += DVHs[:, x]
+    AvgDVH /= NumDVHs
+    AvgDVH /= max(AvgDVH)
+
+    return AvgDVH
 
 
 if __name__ == '__main__':
