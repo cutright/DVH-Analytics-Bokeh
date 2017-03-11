@@ -17,7 +17,6 @@ class DVH:
         self.ROI_Name = ROI_Name
         self.Type = Type
         self.Volume = Volume
-        self.DoseBinSize = DoseBinSize
         self.DVH = DVH
 
 
@@ -42,7 +41,6 @@ def SQL_DVH_to_Py(*ConditionStr):
     ROI_Names = {}
     Types = {}
     Volumes = np.zeros(NumRows)
-    DoseBinSizes = np.zeros(NumRows)
     DVHs = np.zeros([MaxDVH_Length, len(Cursor)])
 
     DVH_Counter = 0
@@ -53,7 +51,6 @@ def SQL_DVH_to_Py(*ConditionStr):
         ROI_Names[DVH_Counter] = str(row[2])
         Types[DVH_Counter] = str(row[3])
         Volumes[DVH_Counter] = row[4]
-        DoseBinSizes[DVH_Counter] = row[5]
 
         # Process VolumeString to numpy array
         CurrentDVH_Str = np.array(str(row[6]).split(','))
@@ -64,7 +61,7 @@ def SQL_DVH_to_Py(*ConditionStr):
         DVHs[:, DVH_Counter] = np.concatenate((CurrentDVH, ZeroFill))
         DVH_Counter += 1
 
-    AllDVHs = DVH(MRNs, PlanIDs, ROI_Names, Types, Volumes, DoseBinSizes, DVHs)
+    AllDVHs = DVH(MRNs, PlanIDs, ROI_Names, Types, Volumes, DVHs)
 
     return AllDVHs
 
@@ -82,20 +79,22 @@ def AvgDVH(DVHs):
     return AvgDVH
 
 
-# DVH as 1D numpy array, Dose (Gy), ROI_Volume (cm^3), DoseBinSize(Gy)
-def VolumeOfDose(DVH, Dose, ROI_Volume, DoseBinSize):
+# DVH as 1D numpy array, Dose (Gy)
+def VolumeOfDose(AbsDVH, Dose):
 
+    DoseBinSize = 0.01
     x = Dose / DoseBinSize
     xRange = [np.floor(x), np.ceil(x)]
-    yRange = [DVH[int(np.floor(x))], DVH[int(np.ceil(x))]]
-    Vol = np.interp(x, xRange, yRange) * ROI_Volume
+    yRange = [AbsDVH[int(np.floor(x))], AbsDVH[int(np.ceil(x))]]
+    Vol = np.interp(x, xRange, yRange)
 
     return Vol
 
 
-# DVH as 1D numpy array, Volume (cm^3), ROI_Volume (cm^3), DoseBinSize(Gy)
-def DoseToVolume(DVH, Volume, ROI_Volume, DoseBinSize):
+# DVH as 1D numpy array, Volume (cm^3), ROI_Volume (cm^3)
+def DoseToVolume(DVH, Volume, ROI_Volume):
 
+    DoseBinSize = 0.01
     DoseHigh = np.argmax(DVH < Volume / ROI_Volume)
     xRange = [DoseHigh - 1, DoseHigh]
     yRange = [DVH[DoseHigh - 1], DVH[DoseHigh]]
