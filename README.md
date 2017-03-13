@@ -90,7 +90,7 @@ These functions are designed to process data retrieved from the SQL data and con
 
 - [ ] Force SQL_DVH_to_Py to conform to 1cGy dose bin size
 
-- [ ] Convert this to do list into a markdown task list
+- [X] Convert this to do list into a markdown task list
 
 
 # References
