@@ -13,19 +13,17 @@ import os
 
 def Connect_to_SQL():
 
-    config = {'user': 'nightowl',
-              'password': 'DVH123',
-              'host': 'localhost',
-              'database': 'DVH',
-              'raise_on_warnings': True
-              }
-#    with open('SQL_Connection.cnf', 'r') as document:
-#        config = {}
-#        for line in document:
-#            line = line.split()
-#            if not line:  # empty line?
-#                continue
-#            config[line[0]] = line[1:]
+    with open('SQL_Connection.cnf', 'r') as document:
+        config = {}
+        for line in document:
+            line = line.split()
+            if not line:  # empty line?
+                continue
+            config[line[0]] = line[1:][0]
+            if line[1:][0].lower() == 'true':
+                config[line[0]] = True
+            elif line[1:][0].lower() == 'false':
+                config[line[0]] = False
 
     try:
         print('Connecting to MySQL database...')
@@ -44,6 +42,7 @@ def Connect_to_SQL():
 
 
 def Send_to_SQL(SQL_File_Name):
+
     cnx = Connect_to_SQL()
     cursor = cnx.cursor()
     for line in open(SQL_File_Name):
@@ -54,6 +53,7 @@ def Send_to_SQL(SQL_File_Name):
 
 
 def Check_Table_Exists(cnx, TableName):
+
     cnx = Connect_to_SQL()
     cursor = cnx.cursor()
     cursor.execute("""
@@ -238,12 +238,6 @@ def Insert_Values_Plans(Plan_Py):
     Send_to_SQL(FilePath)
     os.remove(FilePath)
     print('Plan Imported.')
-
-
-# Functions yet to be defined
-#
-# def Get_PlanID(cnx, Table_Name, Patient_UID):
-# def Get_ROI_UID(cnx, Table_Name, Patient_UID, PlanID):
 
 
 if __name__ == '__main__':
