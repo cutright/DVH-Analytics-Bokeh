@@ -94,6 +94,8 @@ These functions are designed to process data retrieved from the SQL data and con
 
 - [ ] Remove PlanIDs and use StudyInstanceUID instead (Assume DB input are only final composite dose)
 
+- [ ] Add thorough comments throughout all code
+
 
 
 # References
