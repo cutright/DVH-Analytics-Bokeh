@@ -92,6 +92,9 @@ These functions are designed to process data retrieved from the SQL data and con
 
 - [X] Convert this to do list into a markdown task list
 
+- [ ] Remove PlanIDs and use StudyInstanceUID instead (Assume DB input are only final composite dose)
+
+
 
 # References
 Built on these Python libraries
