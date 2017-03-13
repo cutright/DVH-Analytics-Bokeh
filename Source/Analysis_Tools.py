@@ -134,7 +134,7 @@ def SortDVH(DVHs, SortedBy, *Order):
         if Order and Order[0] == 1:
             Sorted = Sorted[::-1]
         DVHs.MRN = [DVHs.MRN[x] for x in Sorted]
-        DVHs.PlanID = [DVHs.PlanID[x] for x in Sorted]
+        DVHs.PlanID = [int(DVHs.PlanID[x]) for x in Sorted]
         DVHs.ROI_Name = [DVHs.ROI_Name[x] for x in Sorted]
         DVHs.Type = [DVHs.Type[x] for x in Sorted]
         DVHs.Volume = [round(DVHs.Volume[x], 2) for x in Sorted]
