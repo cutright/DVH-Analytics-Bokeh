@@ -87,7 +87,8 @@ def Create_ROI_PyTable(StructureFile, DoseFile):
                                   Current_DVH.mean,
                                   Current_DVH.max,
                                   Current_DVH.bins[1],
-                                  ','.join(['%.2f' % num for num in Current_DVH.counts]))
+                                  ','.join(['%.2f' % num for num in
+                                            Current_DVH.counts]))
                 ROI_List[ROI_List_Counter] = Current_ROI
                 ROI_List_Counter += 1
     return ROI_List
@@ -109,20 +110,8 @@ def Create_Plan_Py(PlanFile, StructureFile, DoseFile):
     else:
         PlanID = PlanIDs[PlanIDs.index(max(PlanIDs))][0] + 1
 
-    BirthDate = RT_Plan.PatientBirthDate
-    if not BirthDate:
-        BirthDate = '18000101'
-    BirthYear = int(BirthDate[0:4])
-    BirthMonth = int(BirthDate[4:6])
-    BirthDay = int(BirthDate[6:8])
-    BirthDateObj = datetime(BirthYear, BirthMonth, BirthDay)
-
-    Sex = RT_Plan.PatientSex
-    if Sex == 'M':
-        pass
-    elif Sex == 'F':
-        pass
-    else:
+    Sex = RT_Plan.PatientSex.upper()
+    if not (Sex == 'M' or Sex == 'F'):
         Sex = '-'
 
     SimStudyDate = RT_Plan.StudyDate
@@ -131,7 +120,16 @@ def Create_Plan_Py(PlanFile, StructureFile, DoseFile):
     SimStudyDay = int(SimStudyDate[6:8])
     SimStudyDateObj = datetime(SimStudyYear, SimStudyMonth, SimStudyDay)
 
-    Age = relativedelta(SimStudyDateObj, BirthDateObj).years
+    BirthDate = RT_Plan.PatientBirthDate
+    if not BirthDate:
+        BirthDate = '(NULL)'
+        Age = '(NULL)'
+    else:
+        BirthYear = int(BirthDate[0:4])
+        BirthMonth = int(BirthDate[4:6])
+        BirthDay = int(BirthDate[6:8])
+        BirthDateObj = datetime(BirthYear, BirthMonth, BirthDay)
+        Age = relativedelta(SimStudyDateObj, BirthDateObj).years
 
     RadOnc = RT_Plan.ReferringPhysicianName
 
@@ -139,10 +137,11 @@ def Create_Plan_Py(PlanFile, StructureFile, DoseFile):
 
     Fractions = 0
     MUs = 0
-    for FxGroup in range(0, len(RT_Plan.FractionGroupSequence)):
-        Fractions += RT_Plan.FractionGroupSequence[FxGroup].NumberOfFractionsPlanned
-        for BeamNum in range(0, RT_Plan.FractionGroupSequence[FxGroup].NumberOfBeams):
-            MUs += RT_Plan.FractionGroupSequence[FxGroup].ReferencedBeamSequence[BeamNum].BeamMeterset
+    FxGrpSeq = RT_Plan.FractionGroupSequence
+    for FxGroup in range(0, len(FxGrpSeq)):
+        Fractions += FxGrpSeq[FxGroup].NumberOfFractionsPlanned
+        for Beam in range(0, FxGrpSeq[FxGroup].NumberOfBeams):
+            MUs += FxGrpSeq[FxGroup].ReferencedBeamSequence[Beam].BeamMeterset
 
     StudyInstanceUID = RT_Plan.StudyInstanceUID
     PatientOrientation = RT_Plan.PatientSetupSequence[0].PatientPosition
@@ -164,25 +163,24 @@ def Create_Plan_Py(PlanFile, StructureFile, DoseFile):
     ROI_Seq = RT_St.StructureSetROISequence
     while (not RxFound) and (ROI_Counter < ROI_Count):
         if len(ROI_Seq[ROI_Counter].ROIName) > 2:
-            if ROI_Seq[ROI_Counter].ROIName[0:2].lower() == 'rx':
+            if ROI_Seq[ROI_Counter].ROIName.lower().find('rx') == -1:
+                ROI_Counter += 1
+            else:
                 RxString = ROI_Seq[ROI_Counter].ROIName
                 RxFound = 1
-            else:
-                ROI_Counter += 1
         else:
             ROI_Counter += 1
     if not RxString:
         RxDose = RT_Plan_Obj['rxdose']/100
     else:
-        RxString = RxString.lower()
-        RxString = RxString[3:RxString.rfind('gy')]
-        while RxString[len(RxString)-1] == ' ':
-            RxString = RxString[0:len(RxString)-1]
-        RxDose = float(RxString[RxString.rfind(' '):len(RxString)])
-        if RxString.find('x') == -1:
-            RxDose = float(RxString[RxString.rfind(' '):len(RxString)])
+        RxString = RxString.lower().strip('rx').strip(':').strip('gy').strip()
+        x = RxString.find('x')
+        if x == -1:
+            RxDose = float(RxString)
         else:
-            RxDose = float(RxString[RxString.rfind(' '):len(RxString)]) * Fractions
+            Fxs = float(RxString[0:x - 1])
+            FxDose = float(RxString[x + 1:len(RxString)])
+            RxDose = FxDose * Fxs
 
     # This assumes that Plans are either 100% Arc plans or 100% Static Angle
     TxModality = ''
@@ -191,19 +189,20 @@ def Create_Plan_Py(PlanFile, StructureFile, DoseFile):
     if RT_Plan_Obj['brachy']:
         TxModality = 'Brachy '
     else:
-        for BeamNum in range(0, len(RT_Plan.BeamSequence) - 1):
-            Temp += RT_Plan.BeamSequence[BeamNum].RadiationType + ' '
-            FirstCP = RT_Plan.BeamSequence[BeamNum].ControlPointSequence[0]
+        BeamSeq = RT_Plan.BeamSequence
+        for BeamNum in range(0, len(BeamSeq) - 1):
+            Temp += BeamSeq[BeamNum].RadiationType + ' '
+            FirstCP = BeamSeq[BeamNum].ControlPointSequence[0]
             if FirstCP.GantryRotationDirection in {'CW', 'CC'}:
                 Temp += 'Arc '
             else:
                 Temp += '3D '
             EnergyTemp = ' ' + str(FirstCP.NominalBeamEnergy)
-            if RT_Plan.BeamSequence[BeamNum].RadiationType.lower() == 'photon':
+            if BeamSeq[BeamNum].RadiationType.lower() == 'photon':
                 EnergyTemp += 'MV '
-            elif RT_Plan.BeamSequence[BeamNum].RadiationType.lower() == 'proton':
+            elif BeamSeq[BeamNum].RadiationType.lower() == 'proton':
                 EnergyTemp += 'MeV '
-            elif RT_Plan.BeamSequence[BeamNum].RadiationType.lower() == 'electron':
+            elif BeamSeq[BeamNum].RadiationType.lower() == 'electron':
                 EnergyTemp += 'MeV '
             if Energy.find(EnergyTemp) < 0:
                 Energy += EnergyTemp

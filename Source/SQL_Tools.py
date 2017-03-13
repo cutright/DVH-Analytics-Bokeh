@@ -172,26 +172,26 @@ def Insert_Values_DVHs(ROI_PyTable):
     FilePath = 'Insert_Values_DVHs.sql'
 
     # Import each ROI from ROI_PyTable, append to output text file
-    SQL_Values_Line = []
-    for ROI_Counter in range(1, len(ROI_PyTable)+1):
-        SQL_Values_Line.append(str(ROI_PyTable[ROI_Counter].MRN))
-        SQL_Values_Line.append(str(ROI_PyTable[ROI_Counter].PlanID))
-        SQL_Values_Line.append(ROI_PyTable[ROI_Counter].ROI_Name)
-        SQL_Values_Line.append(ROI_PyTable[ROI_Counter].Type)
-        SQL_Values_Line.append(str(round(ROI_PyTable[ROI_Counter].Volume, 3)))
-        SQL_Values_Line.append(str(round(ROI_PyTable[ROI_Counter].MinDose, 2)))
-        SQL_Values_Line.append(str(round(ROI_PyTable[ROI_Counter].MeanDose, 2)))
-        SQL_Values_Line.append(str(round(ROI_PyTable[ROI_Counter].MaxDose, 2)))
-        SQL_Values_Line.append(str(ROI_PyTable[ROI_Counter].DoseBinSize))
-        SQL_Values_Line.append(ROI_PyTable[ROI_Counter].VolumeString)
-        SQL_Values_Line = '\',\''.join(SQL_Values_Line)
-        SQL_Values_Line += '\');'
+    SQL_Input = []
+    for x in range(1, len(ROI_PyTable)+1):
+        SQL_Input.append(str(ROI_PyTable[x].MRN))
+        SQL_Input.append(str(ROI_PyTable[x].PlanID))
+        SQL_Input.append(ROI_PyTable[x].ROI_Name)
+        SQL_Input.append(ROI_PyTable[x].Type)
+        SQL_Input.append(str(round(ROI_PyTable[x].Volume, 3)))
+        SQL_Input.append(str(round(ROI_PyTable[x].MinDose, 2)))
+        SQL_Input.append(str(round(ROI_PyTable[x].MeanDose, 2)))
+        SQL_Input.append(str(round(ROI_PyTable[x].MaxDose, 2)))
+        SQL_Input.append(str(ROI_PyTable[x].DoseBinSize))
+        SQL_Input.append(ROI_PyTable[x].VolumeString)
+        SQL_Input = '\',\''.join(SQL_Input)
+        SQL_Input += '\');'
         Prepend = 'INSERT INTO DVHs VALUES (\''
-        SQL_Values_Line = Prepend + str(SQL_Values_Line)
-        SQL_Values_Line += '\n'
+        SQL_Input = Prepend + str(SQL_Input)
+        SQL_Input += '\n'
         with open(FilePath, "a") as text_file:
-            text_file.write(SQL_Values_Line)
-        SQL_Values_Line = []
+            text_file.write(SQL_Input)
+        SQL_Input = []
 
     Send_to_SQL(FilePath)
     os.remove(FilePath)
@@ -203,36 +203,37 @@ def Insert_Values_Plans(Plan_Py):
     FilePath = 'Insert_Plan_' + Plan_Py.MRN + '.sql'
 
     # Import each ROI from ROI_PyTable, append to output text file
-    SQL_Values_Line = []
-    SQL_Values_Line.append(str(Plan_Py.MRN))
-    SQL_Values_Line.append(str(Plan_Py.PlanID))
-    SQL_Values_Line.append(str(Plan_Py.Birthdate))
-    SQL_Values_Line.append(str(Plan_Py.Age))
-    SQL_Values_Line.append(Plan_Py.Sex)
-    SQL_Values_Line.append(Plan_Py.SimStudyDate)
-    SQL_Values_Line.append(Plan_Py.RadOnc)
-    SQL_Values_Line.append(Plan_Py.TxSite)
-    SQL_Values_Line.append(str(Plan_Py.RxDose))
-    SQL_Values_Line.append(str(Plan_Py.Fractions))
-    SQL_Values_Line.append(Plan_Py.Energy)
-    SQL_Values_Line.append(Plan_Py.TxModality)
-    SQL_Values_Line.append(str(Plan_Py.MUs))
-    SQL_Values_Line.append(str(Plan_Py.TxTime))
-    SQL_Values_Line.append(Plan_Py.StudyInstanceUID)
-    SQL_Values_Line.append(Plan_Py.PatientOrientation)
-    SQL_Values_Line.append(str(Plan_Py.PlanTimeStamp))
-    SQL_Values_Line.append(str(Plan_Py.StTimeStamp))
-    SQL_Values_Line.append(str(Plan_Py.DoseTimeStamp))
-    SQL_Values_Line.append(Plan_Py.TPSManufacturer)
-    SQL_Values_Line.append(Plan_Py.TPSSoftwareName)
-    SQL_Values_Line.append(str(Plan_Py.TPSSoftwareVersion))
-    SQL_Values_Line = '\',\''.join(SQL_Values_Line)
-    SQL_Values_Line += '\');'
+    SQL_Input = []
+    SQL_Input.append(str(Plan_Py.MRN))
+    SQL_Input.append(str(Plan_Py.PlanID))
+    SQL_Input.append(str(Plan_Py.Birthdate))
+    SQL_Input.append(str(Plan_Py.Age))
+    SQL_Input.append(Plan_Py.Sex)
+    SQL_Input.append(Plan_Py.SimStudyDate)
+    SQL_Input.append(Plan_Py.RadOnc)
+    SQL_Input.append(Plan_Py.TxSite)
+    SQL_Input.append(str(Plan_Py.RxDose))
+    SQL_Input.append(str(Plan_Py.Fractions))
+    SQL_Input.append(Plan_Py.Energy)
+    SQL_Input.append(Plan_Py.TxModality)
+    SQL_Input.append(str(Plan_Py.MUs))
+    SQL_Input.append(str(Plan_Py.TxTime))
+    SQL_Input.append(Plan_Py.StudyInstanceUID)
+    SQL_Input.append(Plan_Py.PatientOrientation)
+    SQL_Input.append(str(Plan_Py.PlanTimeStamp))
+    SQL_Input.append(str(Plan_Py.StTimeStamp))
+    SQL_Input.append(str(Plan_Py.DoseTimeStamp))
+    SQL_Input.append(Plan_Py.TPSManufacturer)
+    SQL_Input.append(Plan_Py.TPSSoftwareName)
+    SQL_Input.append(str(Plan_Py.TPSSoftwareVersion))
+    SQL_Input = '\',\''.join(SQL_Input)
+    SQL_Input += '\');'
+    SQL_Input = SQL_Input.replace("'(NULL)'", "(NULL)")
     Prepend = 'INSERT INTO Plans VALUES (\''
-    SQL_Values_Line = Prepend + str(SQL_Values_Line)
-    SQL_Values_Line += '\n'
+    SQL_Input = Prepend + str(SQL_Input)
+    SQL_Input += '\n'
     with open(FilePath, "a") as text_file:
-        text_file.write(SQL_Values_Line)
+        text_file.write(SQL_Input)
 
     Send_to_SQL(FilePath)
     os.remove(FilePath)
