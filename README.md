@@ -80,17 +80,17 @@ This has the simple objective of writing to SQL Database with only the starting 
 These functions are designed to process data retrieved from the SQL data and convert into python objects.
 
 ### To Do List
-* Write SQL_Tools fuctions to
-  * remove a plan row from PatientPlans master table
+- [ ] Write SQL_Tools fuctions to remove a plan row from PatientPlans master table
 
-* Write DICOM pre-import validation function
-  * Ensure proper data is populated in DICOM files prior to import
+- [ ] Write DICOM pre-import validation function
 
-* Adjust Connect_to_SQL() from SQL_Tools to read a config file for SQL server login information
+- [ ] Ensure proper data is populated in DICOM files prior to import
 
-* Force SQL_DVH_to_Py to conform to 1cGy dose bin size
+- [ ] Adjust Connect_to_SQL() from SQL_Tools to read a config file for SQL server login information
 
-* Convert this to do list into a markdown task list
+- [ ] Force SQL_DVH_to_Py to conform to 1cGy dose bin size
+
+- [X] Convert this to do list into a markdown task list
 
 
 # References
