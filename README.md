@@ -92,7 +92,7 @@ These functions are designed to process data retrieved from the SQL data and con
 
 - [X] Convert this to do list into a markdown task list
 
-- [ ] Remove PlanIDs and use StudyInstanceUID instead (Assume DB input are only final composite dose)
+- [X] Remove PlanIDs and use StudyInstanceUID instead (Assume DB input are only final composite dose)
 
 - [ ] Add thorough comments throughout all code
 
