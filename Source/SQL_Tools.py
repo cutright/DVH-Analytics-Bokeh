@@ -112,7 +112,6 @@ def Create_Table_Plans():
     SQL_CreateTable.append('CREATE TABLE')
     SQL_CreateTable.append('Plans')
     SQL_CreateTable.append('(MRN varchar(12),')
-    SQL_CreateTable.append('PlanID tinyint(4) unsigned,')
     SQL_CreateTable.append('Birthdate date,')
     SQL_CreateTable.append('Age tinyint(3) unsigned,')
     SQL_CreateTable.append('Sex char(1),')
@@ -149,7 +148,7 @@ def Create_Table_DVHs():
     SQL_CreateTable.append('CREATE TABLE')
     SQL_CreateTable.append('DVHs')
     SQL_CreateTable.append('(MRN varchar(12),')
-    SQL_CreateTable.append('PlanID tinyint(4) unsigned,')
+    SQL_CreateTable.append('StudyInstanceUID varchar(100),')
     SQL_CreateTable.append('ROIName VARCHAR(50),')
     SQL_CreateTable.append('Type VARCHAR(20),')
     SQL_CreateTable.append('Volume DOUBLE,')
@@ -175,7 +174,7 @@ def Insert_Values_DVHs(ROI_PyTable):
     SQL_Input = []
     for x in range(1, len(ROI_PyTable)+1):
         SQL_Input.append(str(ROI_PyTable[x].MRN))
-        SQL_Input.append(str(ROI_PyTable[x].PlanID))
+        SQL_Input.append(str(ROI_PyTable[x].StudyInstanceUID))
         SQL_Input.append(ROI_PyTable[x].ROI_Name)
         SQL_Input.append(ROI_PyTable[x].Type)
         SQL_Input.append(str(round(ROI_PyTable[x].Volume, 3)))
@@ -205,7 +204,6 @@ def Insert_Values_Plans(Plan_Py):
     # Import each ROI from ROI_PyTable, append to output text file
     SQL_Input = []
     SQL_Input.append(str(Plan_Py.MRN))
-    SQL_Input.append(str(Plan_Py.PlanID))
     SQL_Input.append(str(Plan_Py.Birthdate))
     SQL_Input.append(str(Plan_Py.Age))
     SQL_Input.append(Plan_Py.Sex)

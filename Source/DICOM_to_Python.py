@@ -10,14 +10,13 @@ import dicom
 from dicompylercore import dicomparser, dvhcalc
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from SQL_Tools import GetPlanIDs
 
 
 class ROI:
-    def __init__(self, MRN, PlanID, ROI_Name, Type, Volume, MinDose, MeanDose,
-                 MaxDose, DoseBinSize, VolumeString):
+    def __init__(self, MRN, StudyInstanceUID, ROI_Name, Type, Volume, MinDose,
+                 MeanDose, MaxDose, DoseBinSize, VolumeString):
         self.MRN = MRN
-        self.PlanID = PlanID
+        self.StudyInstanceUID = StudyInstanceUID
         self.ROI_Name = ROI_Name
         self.Type = Type
         self.Volume = Volume
@@ -29,13 +28,12 @@ class ROI:
 
 
 class Plan:
-    def __init__(self, MRN, PlanID, Birthdate, Age, Sex, SimStudyDate,
+    def __init__(self, MRN, Birthdate, Age, Sex, SimStudyDate,
                  RadOnc, TxSite, RxDose, Fractions, Energy, StudyInstanceUID,
                  PatientOrientation, PlanTimeStamp, StTimeStamp, DoseTimeStamp,
                  TPSManufacturer, TPSSoftwareName, TPSSoftwareVersion,
                  TxModality, MUs, TxTime):
         self.MRN = MRN
-        self.PlanID = PlanID
         self.Birthdate = Birthdate
         self.Age = Age
         self.Sex = Sex
@@ -67,8 +65,7 @@ def Create_ROI_PyTable(StructureFile, DoseFile):
     # ROI_Count = 10
 
     MRN = RT_St_dicom.PatientID
-    PlanIDs = GetPlanIDs(MRN)
-    PlanID = PlanIDs[PlanIDs.index(max(PlanIDs))][0]
+    StudyInstanceUID = RT_St_dicom.StudyInstanceUID
 
     ROI_List = {}
     ROI_List_Counter = 1
@@ -79,7 +76,7 @@ def Create_ROI_PyTable(StructureFile, DoseFile):
             if Current_DVH.volume > 0:
                 print('Importing ' + Current_DVH.name)
                 Current_ROI = ROI(MRN,
-                                  PlanID,
+                                  StudyInstanceUID,
                                   Structures[ROI_Counter]['name'],
                                   Structures[ROI_Counter]['type'],
                                   Current_DVH.volume,
@@ -103,12 +100,6 @@ def Create_Plan_Py(PlanFile, StructureFile, DoseFile):
     RT_Dose = dicom.read_file(DoseFile)
 
     MRN = RT_Plan.PatientID
-
-    PlanIDs = GetPlanIDs(MRN)
-    if not PlanIDs:
-        PlanID = 1
-    else:
-        PlanID = PlanIDs[PlanIDs.index(max(PlanIDs))][0] + 1
 
     Sex = RT_Plan.PatientSex.upper()
     if not (Sex == 'M' or Sex == 'F'):
@@ -224,7 +215,7 @@ def Create_Plan_Py(PlanFile, StructureFile, DoseFile):
     # Will require a yet to be named function to determine this
     TxTime = 0
 
-    Plan_Py = Plan(MRN, PlanID, BirthDate, Age, Sex, SimStudyDate,
+    Plan_Py = Plan(MRN, BirthDate, Age, Sex, SimStudyDate,
                    RadOnc, TxSite, RxDose, Fractions, Energy, StudyInstanceUID,
                    PatientOrientation, PlanTimeStamp, StTimeStamp,
                    DoseTimeStamp, TPSManufacturer, TPSSoftwareName,
