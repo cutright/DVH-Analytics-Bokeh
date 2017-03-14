@@ -95,6 +95,8 @@ These functions are designed to process data retrieved from the SQL data and con
 
 - [ ] Add thorough comments throughout all code
 
+- [ ] Incorporate EUD and BED calculations
+
 
 
 # References
