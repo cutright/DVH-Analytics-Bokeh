@@ -11,10 +11,10 @@ from SQL_Tools import Query_SQL
 
 
 class DVH:
-    def __init__(self, MRN, PlanID, ROI_Name, Type, Volume, MinDose,
+    def __init__(self, MRN, StudyUID, ROI_Name, Type, Volume, MinDose,
                  MeanDose, MaxDose, DVH):
         self.MRN = MRN
-        self.PlanID = PlanID
+        self.StudyUID = StudyUID
         self.ROI_Name = ROI_Name
         self.Type = Type
         self.Volume = Volume
@@ -26,7 +26,7 @@ class DVH:
 
 def SQL_DVH_to_Py(*ConditionStr):
 
-    Columns = """MRN, PlanID, ROIName, Type, Volume, MinDose,
+    Columns = """MRN, StudyInstanceUID, ROIName, Type, Volume, MinDose,
     MeanDose, MaxDose, VolumeString"""
     if ConditionStr:
         Cursor = Query_SQL('DVHs', Columns, ConditionStr[0])
@@ -42,7 +42,7 @@ def SQL_DVH_to_Py(*ConditionStr):
 
     NumRows = len(Cursor)
     MRNs = {}
-    PlanIDs = np.zeros(NumRows)
+    StudyUIDs = {}
     ROI_Names = {}
     Types = {}
     Volumes = np.zeros(NumRows)
@@ -53,9 +53,8 @@ def SQL_DVH_to_Py(*ConditionStr):
 
     DVH_Counter = 0
     for row in Cursor:
-
         MRNs[DVH_Counter] = str(row[0])
-        PlanIDs[DVH_Counter] = row[1]
+        StudyUIDs[DVH_Counter] = str(row[1])
         ROI_Names[DVH_Counter] = str(row[2])
         Types[DVH_Counter] = str(row[3])
         Volumes[DVH_Counter] = row[4]
@@ -72,7 +71,7 @@ def SQL_DVH_to_Py(*ConditionStr):
         DVHs[:, DVH_Counter] = np.concatenate((CurrentDVH, ZeroFill))
         DVH_Counter += 1
 
-    AllDVHs = DVH(MRNs, PlanIDs, ROI_Names, Types, Volumes, MinDoses,
+    AllDVHs = DVH(MRNs, StudyUIDs, ROI_Names, Types, Volumes, MinDoses,
                   MeanDoses, MaxDoses, DVHs)
 
     return AllDVHs
@@ -134,7 +133,7 @@ def SortDVH(DVHs, SortedBy, *Order):
         if Order and Order[0] == 1:
             Sorted = Sorted[::-1]
         DVHs.MRN = [DVHs.MRN[x] for x in Sorted]
-        DVHs.PlanID = [int(DVHs.PlanID[x]) for x in Sorted]
+        DVHs.StudyUID = [int(DVHs.StudyUID[x]) for x in Sorted]
         DVHs.ROI_Name = [DVHs.ROI_Name[x] for x in Sorted]
         DVHs.Type = [DVHs.Type[x] for x in Sorted]
         DVHs.Volume = [round(DVHs.Volume[x], 2) for x in Sorted]

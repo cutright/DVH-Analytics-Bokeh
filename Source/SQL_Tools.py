@@ -92,9 +92,9 @@ def Query_SQL(TableName, ReturnColStr, *ConditionStr):
     return results
 
 
-def GetPlanIDs(MRN):
+def GetStudyUIDs(MRN):
 
-    query = 'Select PlanID from Plans where MRN=\'' + MRN + '\';'
+    query = 'Select StudyInstanceUID from Plans where MRN=\'' + MRN + '\';'
     cnx = Connect_to_SQL()
     cursor = cnx.cursor()
     cursor.execute(query)
