@@ -12,7 +12,6 @@ in the database 'DVH'.  The 'Plans' table contains the following data:
 Field | Type | Source
 ----- | ---- | ------
 MRN | varchar(12) | RT_Plan.PatientID
-PlanID | tinyint(4) unsigned | SQL Query
 Birthdate | date | RT_Plan.PatientBirthDate
 Age | tinyint(3) unsigned | RT_Plan.PatientBirthdate & RT_Plan.StudyDate
 Sex | char(1) | RT_Plan.PatientSex
@@ -47,7 +46,7 @@ The 'DVHs' table has one row per ROI and follows this format:
 Field | Type
 ----- | ----
 MRN | varchar(12)
-PlanID | tinyint(4) unsigned
+StudyInstanceUID | varchar(100)
 ROIName | varchar(50) 
 Type | varchar(20) 
 Volume | double      
