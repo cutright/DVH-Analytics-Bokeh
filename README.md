@@ -81,8 +81,6 @@ These functions are designed to process data retrieved from the SQL data and con
 
 - [ ] Write DICOM pre-import validation function
 
-- [ ] Ensure proper data is populated in DICOM files prior to import
-
 - [X] Adjust Connect_to_SQL() from SQL_Tools to read a config file for SQL server login information
 
 - [ ] Force SQL_DVH_to_Py to conform to 1cGy dose bin size
