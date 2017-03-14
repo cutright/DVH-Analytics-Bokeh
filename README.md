@@ -33,12 +33,10 @@ TxModality | varchar(30) | dicompyler GetPlan(), RT_Plan.BeamSequence[0].Control
 MUs | int(6) unsigned | Sum of RT_Plan.FractionGroupSequence[FxGroup].ReferencedBeamSequence[BeamNum].BeamMeterset (linac only)
 TxTime | time | TBD (Brachy and Gamma Knife only)
 
-PlanID is based on the plans in the database currently associated with the MRN.  
-
 Pinnacle DICOM Dose files do not explicitly contain prescriptions or treatment sites.  This code requires that the plan name be equal to
-the Tx Site.The prescription is parsed from a point stored in the DICOM RT Structure file with a name called 'rx: ' + [total dose] + 'Gy'. 
-This point will have to be added by the user in their planning system prior to DICOM export.  If this point is not found, the code will
-assume the Rx Dose is equal to the max point dose.
+the Tx Site.The prescription is parsed from a point stored in the DICOM RT Structure file with a name called 'rx: ' + [total dose] + 'Gy'
+or 'rx: ' + [Fractsions] + ' x ' [FractionalDose] + 'Gy'. This point will have to be added by the user in their planning system prior to
+DICOM export.  If this point is not found, the code will assume the Rx Dose is equal to the max point dose.
 
 
 The 'DVHs' table has one row per ROI and follows this format:
@@ -58,8 +56,8 @@ VolumeString | mediumtext
 
 
 All doses are in Gy. All volumes are in cm^3. All data is populated from a combination of DICOM RT strucutre and dose files using
-dicompyler code.  VolumeString is a comma separated value string, when parsed generates a vector for the DVH y-values.  The x-values 
-are to be generated as a vector of equal length to the y-axis with equally spaced values based on the DoseBinSize (e.g., 
+dicompyler and pydicom code.  VolumeString is a comma separated value string, when parsed generates a vector for the DVH y-values. 
+The x-values are to be generated as a vector of equal length to the y-axis with equally spaced values based on the DoseBinSize (e.g., 
 VolumeString = '100,100,90,50,20,0' and DoseBinSize = 1.0 then x-axis vector would equal [0.5 1.5 2.5 3.5 4.5 5.5]).
 
 ### Code organization
@@ -97,6 +95,8 @@ These functions are designed to process data retrieved from the SQL data and con
 
 - [ ] Incorporate EUD and BED calculations
 
+- [ ] Validate DoseToVolume and VolumeOfDose functions in Analysis_Tools
+
 
 
 # References
@@ -107,4 +107,3 @@ https://github.com/darcymason/pydicom
 
 dicompyler  
 https://github.com/bastula/dicompyler
-
