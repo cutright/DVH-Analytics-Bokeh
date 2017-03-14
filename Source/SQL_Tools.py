@@ -240,5 +240,23 @@ def Insert_Values_Plans(Plan_Py):
     print('Plan Imported.')
 
 
+def Delete_SQL_Rows(ConditionStr):
+
+    cnx = Connect_to_SQL()
+    cursor = cnx.cursor()
+
+    PlansCmd = 'DELETE FROM Plans WHERE ' + ConditionStr + ';'
+    cursor.execute(PlansCmd)
+    cnx.commit()
+
+    DVHsCmd = 'DELETE FROM DVHs WHERE ' + ConditionStr + ';'
+    cursor.execute(DVHsCmd)
+    cnx.commit()
+
+    cursor.close()
+    cnx.close()
+    print('Connection closed.')
+
+
 if __name__ == '__main__':
     pass
