@@ -162,7 +162,7 @@ def Create_Plan_Py(PlanFile, StructureFile, DoseFile):
         else:
             ROI_Counter += 1
     if not RxString:
-        RxDose = RT_Plan_Obj['rxdose']/100
+        RxDose = float(RT_Plan_Obj['rxdose'])/100
     else:
         RxString = RxString.lower().strip('rx').strip(':').strip('gy').strip()
         x = RxString.find('x')
