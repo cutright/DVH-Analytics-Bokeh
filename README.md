@@ -80,7 +80,7 @@ This has the simple objective of writing to SQL Database with only the starting 
 These functions are designed to process data retrieved from the SQL data and convert into python objects.
 
 ### To Do List
-- [ ] Write SQL_Tools fuctions to remove a plan row from PatientPlans master table
+- [X] Write SQL_Tools fuctions to remove a plan row from PatientPlans master table
 
 - [ ] Write DICOM pre-import validation function
 
