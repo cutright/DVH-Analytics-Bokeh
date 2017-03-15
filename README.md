@@ -6,8 +6,8 @@ This is a work in progress.  This file will eventually contain instructions for 
 
 
 ### SQL Database format for this project
-This code is being built assuming the database is MySQL.  There will be a master table called 'Plans' and 'DVHs'
-in the database 'DVH'.  The 'Plans' table contains the following data:
+This code is being built assuming the database is MySQL.  There will be tables called Plans, DVHs, and beams in the database 'DVH'.
+The 'Plans' table contains the following data:
 
 Field | Type | Source
 ----- | ---- | ------
@@ -38,6 +38,32 @@ the Tx Site.The prescription is parsed from a point stored in the DICOM RT Struc
 or 'rx: ' + [Fractsions] + ' x ' [FractionalDose] + 'Gy'. This point will have to be added by the user in their planning system prior to
 DICOM export.  If this point is not found, the code will assume the Rx Dose is equal to the max point dose.
 
+
+The 'Beams' table contains the following data:
+
+Field | Type
+----- | ----
+MRN | varchar(12)
+StudyInstanceUID | varchar(100)         
+SimStudyDate | date                 
+BeamNum | smallint(4) unsigned 
+BeamDescription | varchar(30)          
+FxGroup | smallint(4) unsigned 
+Fractions | tinyint(3) unsigned  
+NumFxGrpBeams | smallint(4) unsigned 
+BeamDose | double unsigned      
+BeamMUs | double unsigned      
+RadiationType | varchar(30)          
+BeamEnergy | float unsigned       
+BeamType | varchar(30)          
+ControlPoints | smallint(5) unsigned 
+GantryStart | float                
+GantryRotDir | varchar(3)           
+GantryEnd | float                
+ColAngle | double               
+CouchAngle | double               
+IsocenterCoord | varchar(30)          
+SSD | double unsigned
 
 The 'DVHs' table has one row per ROI and follows this format:
 
@@ -94,6 +120,8 @@ These functions are designed to process data retrieved from the SQL data and con
 - [ ] Incorporate EUD and BED calculations
 
 - [ ] Validate DoseToVolume and VolumeOfDose functions in Analysis_Tools
+
+- [X] Include more thorough beam data
 
 
 
