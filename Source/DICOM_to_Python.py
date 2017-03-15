@@ -29,10 +29,10 @@ class ROI:
 
 class Plan:
     def __init__(self, MRN, Birthdate, Age, Sex, SimStudyDate,
-                 RadOnc, TxSite, RxDose, Fractions, Energy, StudyInstanceUID,
+                 RadOnc, TxSite, RxDose, Fractions, Energies, StudyInstanceUID,
                  PatientOrientation, PlanTimeStamp, StTimeStamp, DoseTimeStamp,
                  TPSManufacturer, TPSSoftwareName, TPSSoftwareVersion,
-                 TxModality, MUs, TxTime):
+                 TxModality, TxTime, TotalMUs):
         self.MRN = MRN
         self.Birthdate = Birthdate
         self.Age = Age
@@ -42,10 +42,7 @@ class Plan:
         self.TxSite = TxSite
         self.RxDose = RxDose
         self.Fractions = Fractions
-        self.Energy = Energy
-        self.TxModality = TxModality
-        self.MUs = MUs
-        self.TxTime = TxTime
+        self.Energies = Energies
         self.StudyInstanceUID = StudyInstanceUID
         self.PatientOrientation = PatientOrientation
         self.PlanTimeStamp = PlanTimeStamp
@@ -54,6 +51,38 @@ class Plan:
         self.TPSManufacturer = TPSManufacturer
         self.TPSSoftwareName = TPSSoftwareName
         self.TPSSoftwareVersion = TPSSoftwareVersion
+        self.TxModality = TxModality
+        self.TxTime = TxTime
+        self.TotalMUs = TotalMUs
+
+
+class Beams:
+    def __init__(self, MRN, StudyInstanceUID, SimStudyDate, BeamNum,
+                 BeamDescription, FxGroup, Fractions, NumFxGrpBeams, BeamDose,
+                 BeamMeterset, BeamRadiationType, BeamEnergy, BeamType, NumCPs,
+                 GantryStart, GantryRotDir, GantryEnd, ColAngle, CouchAng,
+                 IsocenterCoord, SSD):
+        self.MRN = MRN
+        self.StudyInstanceUID = StudyInstanceUID
+        self.SimStudyDate = SimStudyDate
+        self.BeamNum = BeamNum
+        self.BeamDescription = BeamDescription
+        self.FxGroup = FxGroup
+        self.Fractions = Fractions
+        self.NumFxGrpBeams = NumFxGrpBeams
+        self.BeamDose = BeamDose
+        self.BeamMeterset = BeamMeterset
+        self.BeamRadiationType = BeamRadiationType
+        self.BeamEnergy = BeamEnergy
+        self.BeamType = BeamType
+        self.NumCPs = NumCPs
+        self.GantryStart = GantryStart
+        self.GantryRotDir = GantryRotDir
+        self.GantryEnd = GantryEnd
+        self.ColAngle = ColAngle
+        self.CouchAng = CouchAng
+        self.IsocenterCoord = IsocenterCoord
+        self.SSD = SSD
 
 
 def Create_ROI_PyTable(StructureFile, DoseFile):
@@ -62,23 +91,26 @@ def Create_ROI_PyTable(StructureFile, DoseFile):
     RT_St_dicom = dicom.read_file(StructureFile)
     Structures = RT_St.GetStructures()
     ROI_Count = len(Structures)
-    # ROI_Count = 10
 
     MRN = RT_St_dicom.PatientID
     StudyInstanceUID = RT_St_dicom.StudyInstanceUID
 
-    ROI_List = {}
-    ROI_List_Counter = 1
-    for ROI_Counter in range(1, ROI_Count):
+    ROI_PyTable = {}
+    ROI_PyTable_Counter = 1
+    for ROI_Counter in range(1, ROI_Count + 1):
         # Import DVH from RT Structure and RT Dose files
         if Structures[ROI_Counter]['type'] != 'MARKER':
             Current_DVH = dvhcalc.get_dvh(StructureFile, DoseFile, ROI_Counter)
             if Current_DVH.volume > 0:
                 print('Importing ' + Current_DVH.name)
+                if Structures[ROI_Counter]['name'].lower().find('itv') == 0:
+                    StType = 'ITV'
+                else:
+                    StType = Structures[ROI_Counter]['type']
                 Current_ROI = ROI(MRN,
                                   StudyInstanceUID,
                                   Structures[ROI_Counter]['name'],
-                                  Structures[ROI_Counter]['type'],
+                                  StType,
                                   Current_DVH.volume,
                                   Current_DVH.min,
                                   Current_DVH.mean,
@@ -86,9 +118,9 @@ def Create_ROI_PyTable(StructureFile, DoseFile):
                                   Current_DVH.bins[1],
                                   ','.join(['%.2f' % num for num in
                                             Current_DVH.counts]))
-                ROI_List[ROI_List_Counter] = Current_ROI
-                ROI_List_Counter += 1
-    return ROI_List
+                ROI_PyTable[ROI_PyTable_Counter] = Current_ROI
+                ROI_PyTable_Counter += 1
+    return ROI_PyTable
 
 
 def Create_Plan_Py(PlanFile, StructureFile, DoseFile):
@@ -127,12 +159,12 @@ def Create_Plan_Py(PlanFile, StructureFile, DoseFile):
     TxSite = RT_Plan.RTPlanLabel
 
     Fractions = 0
-    MUs = 0
+    TotalMUs = 0
     FxGrpSeq = RT_Plan.FractionGroupSequence
     for FxGroup in range(0, len(FxGrpSeq)):
         Fractions += FxGrpSeq[FxGroup].NumberOfFractionsPlanned
         for Beam in range(0, FxGrpSeq[FxGroup].NumberOfBeams):
-            MUs += FxGrpSeq[FxGroup].ReferencedBeamSequence[Beam].BeamMeterset
+            TotalMUs += FxGrpSeq[FxGroup].ReferencedBeamSequence[Beam].BeamMeterset
 
     StudyInstanceUID = RT_Plan.StudyInstanceUID
     PatientOrientation = RT_Plan.PatientSetupSequence[0].PatientPosition
@@ -175,7 +207,7 @@ def Create_Plan_Py(PlanFile, StructureFile, DoseFile):
 
     # This assumes that Plans are either 100% Arc plans or 100% Static Angle
     TxModality = ''
-    Energy = ' '
+    Energies = ' '
     Temp = ''
     if RT_Plan_Obj['brachy']:
         TxModality = 'Brachy '
@@ -195,9 +227,9 @@ def Create_Plan_Py(PlanFile, StructureFile, DoseFile):
                 EnergyTemp += 'MeV '
             elif BeamSeq[BeamNum].RadiationType.lower() == 'electron':
                 EnergyTemp += 'MeV '
-            if Energy.find(EnergyTemp) < 0:
-                Energy += EnergyTemp
-        Energy = Energy[1:len(Energy)-1]
+            if Energies.find(EnergyTemp) < 0:
+                Energies += EnergyTemp
+        Energies = Energies[1:len(Energies)-1]
         if Temp.lower().find('photon') > -1:
             if Temp.lower().find('photon arc') > -1:
                 TxModality += 'Photon Arc '
@@ -215,13 +247,77 @@ def Create_Plan_Py(PlanFile, StructureFile, DoseFile):
     # Will require a yet to be named function to determine this
     TxTime = 0
 
-    Plan_Py = Plan(MRN, BirthDate, Age, Sex, SimStudyDate,
-                   RadOnc, TxSite, RxDose, Fractions, Energy, StudyInstanceUID,
+    Plan_Py = Plan(MRN, BirthDate, Age, Sex, SimStudyDate, RadOnc, TxSite,
+                   RxDose, Fractions, Energies, StudyInstanceUID,
                    PatientOrientation, PlanTimeStamp, StTimeStamp,
                    DoseTimeStamp, TPSManufacturer, TPSSoftwareName,
-                   TPSSoftwareVersion, TxModality, MUs, TxTime)
+                   TPSSoftwareVersion, TxModality, TxTime, TotalMUs)
 
     return Plan_Py
+
+
+def Create_Beams_Py(PlanFile):
+    BeamTable = {}
+    BeamNum = 0
+    # Import RT Dose files using dicompyler
+    RT_Plan = dicom.read_file(PlanFile)
+
+    MRN = RT_Plan.PatientID
+    StudyInstanceUID = RT_Plan.StudyInstanceUID
+    SimStudyDate = RT_Plan.StudyDate
+
+    for FxGrp in range(0, len(RT_Plan.FractionGroupSequence)):
+        FxGrpSeq = RT_Plan.FractionGroupSequence[FxGrp]
+        Fractions = int(FxGrpSeq.NumberOfFractionsPlanned)
+        NumFxGrpBeams = int(FxGrpSeq.NumberOfBeams)
+
+        for Beam in range(0, NumFxGrpBeams):
+            BeamSeq = RT_Plan.BeamSequence[BeamNum]
+            BeamDescription = BeamSeq.BeamDescription
+            RefBeamSeq = FxGrpSeq.ReferencedBeamSequence[Beam]
+
+            BeamDose = float(RefBeamSeq.BeamDose)
+            BeamMeterset = float(RefBeamSeq.BeamMeterset)
+
+            IsocenterCoord = []
+            IsocenterCoord.append(str(RefBeamSeq.BeamDoseSpecificationPoint[0]))
+            IsocenterCoord.append(str(RefBeamSeq.BeamDoseSpecificationPoint[1]))
+            IsocenterCoord.append(str(RefBeamSeq.BeamDoseSpecificationPoint[2]))
+            IsocenterCoord = ','.join(IsocenterCoord)
+
+            BeamRadiationType = BeamSeq.RadiationType
+            BeamEnergy = BeamSeq.ControlPointSequence[0].NominalBeamEnergy
+            BeamType = BeamSeq.BeamType
+
+            NumCPs = BeamSeq.NumberOfControlPoints
+            FirstCP = BeamSeq.ControlPointSequence[0]
+            FinalCP = BeamSeq.ControlPointSequence[NumCPs - 1]
+            GantryStart = float(FirstCP.GantryAngle)
+            GantryRotDir = FirstCP.GantryRotationDirection
+            GantryEnd = float(FinalCP.GantryAngle)
+            ColAngle = float(FirstCP.BeamLimitingDeviceAngle)
+            CouchAng = float(FirstCP.PatientSupportAngle)
+            if GantryRotDir in {'CW', 'CC'}:
+                SSD = 0
+                for CP in range(0, NumCPs - 1):
+                    SSD += float(BeamSeq.ControlPointSequence[CP].SourceToSurfaceDistance)/10
+                SSD /= NumCPs
+            else:
+                GantryRotDir = '-'
+                SSD = float(FirstCP.SourceToSurfaceDistance)/10
+
+            CurrentBeam = Beams(MRN, StudyInstanceUID, SimStudyDate, BeamNum + 1,
+                                BeamDescription, FxGrp + 1, Fractions,
+                                NumFxGrpBeams, BeamDose, BeamMeterset,
+                                BeamRadiationType, BeamEnergy, BeamType,
+                                NumCPs, GantryStart, GantryRotDir, GantryEnd,
+                                ColAngle, CouchAng, IsocenterCoord, SSD)
+
+            BeamTable[BeamNum] = CurrentBeam
+            BeamNum += 1
+
+    return BeamTable
+
 
 if __name__ == '__main__':
     pass

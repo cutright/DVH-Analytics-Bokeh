@@ -6,8 +6,8 @@ Created on Thu Mar  2 22:15:52 2017
 @author: nightowl
 """
 
-from SQL_Tools import Insert_Values_DVHs, Insert_Values_Plans
-from DICOM_to_Python import Create_ROI_PyTable, Create_Plan_Py
+from SQL_Tools import Insert_Values_DVHs, Insert_Values_Plans, Insert_Values_Beams
+from DICOM_to_Python import Create_ROI_PyTable, Create_Plan_Py, Create_Beams_Py
 import os
 import dicom
 
@@ -70,6 +70,8 @@ def DICOM_to_SQL(StartPath):
     for n in range(0, len(FP)):
         Plan_Py = Create_Plan_Py(FP[n].RTPlan, FP[n].RTStructure, FP[n].RTDose)
         Insert_Values_Plans(Plan_Py)
+        Beam_PyTable = Create_Beams_Py(FP[n].RTPlan)
+        Insert_Values_Beams(Beam_PyTable)
         ROI_PyTable = Create_ROI_PyTable(FP[n].RTStructure, FP[n].RTDose)
         Insert_Values_DVHs(ROI_PyTable)
 
