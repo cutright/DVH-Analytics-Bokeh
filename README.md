@@ -41,6 +41,12 @@ These functions are designed to process data retrieved from the SQL data and con
 
 - [X] Include more thorough beam data
 
+- [X] Add DVH spread function
+
+- [ ] Track dose grid resolution
+
+- [ ] Generate key for tx sites
+
 
 
 # References
