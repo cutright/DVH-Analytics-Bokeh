@@ -22,7 +22,7 @@ class DICOM_FileSet:
 def GetFilePaths(StartPath):
 
     FilePaths = []
-    for root, dirs, files in os.walk(".", topdown=False):
+    for root, dirs, files in os.walk(StartPath, topdown=False):
         for name in files:
             FilePaths.append(os.path.join(root, name))
 

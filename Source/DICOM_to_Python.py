@@ -90,26 +90,25 @@ def Create_ROI_PyTable(StructureFile, DoseFile):
     RT_St = dicomparser.DicomParser(StructureFile)
     RT_St_dicom = dicom.read_file(StructureFile)
     Structures = RT_St.GetStructures()
-    ROI_Count = len(Structures)
 
     MRN = RT_St_dicom.PatientID
     StudyInstanceUID = RT_St_dicom.StudyInstanceUID
 
     ROI_PyTable = {}
     ROI_PyTable_Counter = 1
-    for ROI_Counter in range(1, ROI_Count + 1):
+    for key in Structures:
         # Import DVH from RT Structure and RT Dose files
-        if Structures[ROI_Counter]['type'] != 'MARKER':
-            Current_DVH = dvhcalc.get_dvh(StructureFile, DoseFile, ROI_Counter)
+        if Structures[key]['type'] != 'MARKER':
+            Current_DVH = dvhcalc.get_dvh(StructureFile, DoseFile, key)
             if Current_DVH.volume > 0:
                 print('Importing ' + Current_DVH.name)
-                if Structures[ROI_Counter]['name'].lower().find('itv') == 0:
+                if Structures[key]['name'].lower().find('itv') == 0:
                     StType = 'ITV'
                 else:
-                    StType = Structures[ROI_Counter]['type']
+                    StType = Structures[key]['type']
                 Current_ROI = ROI(MRN,
                                   StudyInstanceUID,
-                                  Structures[ROI_Counter]['name'],
+                                  Structures[key]['name'],
                                   StType,
                                   Current_DVH.volume,
                                   Current_DVH.min,
