@@ -300,7 +300,7 @@ def Create_Beams_Py(PlanFile):
             if GantryRotDir in {'CW', 'CC'}:
                 SSD = 0
                 for CP in range(0, NumCPs - 1):
-                    SSD += float(BeamSeq.ControlPointSequence[CP].SourceToSurfaceDistance)/10
+                    SSD += round(float(BeamSeq.ControlPointSequence[CP].SourceToSurfaceDistance)/10, 2)
                 SSD /= NumCPs
             else:
                 GantryRotDir = '-'

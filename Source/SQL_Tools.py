@@ -26,13 +26,13 @@ def Connect_to_SQL():
                 config[line[0]] = False
 
     try:
-        print('Connecting to MySQL database...')
+#        print('Connecting to MySQL database...')
         cnx = mysql.connector.connect(**config)
 
-        if cnx.is_connected():
-            print('Connection established.')
-        else:
-            print('Connection failed.')
+#        if cnx.is_connected():
+#            print('Connection established.')
+#        else:
+#            print('Connection failed.')
 
     except Error as error:
         print(error)
@@ -49,7 +49,7 @@ def Send_to_SQL(SQL_File_Name):
         cursor.execute(line)
         cnx.commit()
     cnx.close()
-    print('Connection closed.')
+#    print('Connection closed.')
 
 
 def Check_Table_Exists(cnx, TableName):
@@ -64,11 +64,11 @@ def Check_Table_Exists(cnx, TableName):
     if cursor.fetchone()[0] == 1:
         cursor.close()
         cnx.close()
-        print('Connection closed.')
+#        print('Connection closed.')
         return True
 
     cnx.close()
-    print('Connection closed.')
+#    print('Connection closed.')
     return False
 
 
@@ -87,7 +87,7 @@ def Query_SQL(TableName, ReturnColStr, *ConditionStr):
 
     cursor.close()
     cnx.close()
-    print('Connection closed.')
+#    print('Connection closed.')
 
     return results
 
@@ -101,7 +101,7 @@ def GetStudyUIDs(MRN):
     results = cursor.fetchall()
     cursor.close()
     cnx.close()
-    print('Connection closed.')
+#    print('Connection closed.')
     return results
 
 
@@ -289,7 +289,7 @@ def Insert_Values_Beams(Beams_Py):
         SQL_Input.append(str(Beams_Py[x].FxGroup))
         SQL_Input.append(str(Beams_Py[x].Fractions))
         SQL_Input.append(str(Beams_Py[x].NumFxGrpBeams))
-        SQL_Input.append(str(Beams_Py[x].BeamDose))
+        SQL_Input.append(str(round(Beams_Py[x].BeamDose, 3)))
         SQL_Input.append(str(Beams_Py[x].BeamMeterset))
         SQL_Input.append(Beams_Py[x].BeamRadiationType)
         SQL_Input.append(str(Beams_Py[x].BeamEnergy))
@@ -301,7 +301,7 @@ def Insert_Values_Beams(Beams_Py):
         SQL_Input.append(str(Beams_Py[x].ColAngle))
         SQL_Input.append(str(Beams_Py[x].CouchAng))
         SQL_Input.append(Beams_Py[x].IsocenterCoord)
-        SQL_Input.append(str(Beams_Py[x].SSD))
+        SQL_Input.append(str(round(Beams_Py[x].SSD, 2)))
         SQL_Input = '\',\''.join(SQL_Input)
         SQL_Input += '\');'
         Prepend = 'INSERT INTO Beams VALUES (\''
