@@ -17,7 +17,7 @@ def Connect_to_SQL():
         config = {}
         for line in document:
             line = line.split()
-            if not line:  # empty line?
+            if not line:
                 continue
             config[line[0]] = line[1:][0]
             if line[1:][0].lower() == 'true':
@@ -26,13 +26,13 @@ def Connect_to_SQL():
                 config[line[0]] = False
 
     try:
-#        print('Connecting to MySQL database...')
+        # print('Connecting to MySQL database...')
         cnx = mysql.connector.connect(**config)
 
-#        if cnx.is_connected():
-#            print('Connection established.')
-#        else:
-#            print('Connection failed.')
+        # if cnx.is_connected():
+        #     print('Connection established.')
+        # else:
+        #     print('Connection failed.')
 
     except Error as error:
         print(error)
@@ -49,7 +49,7 @@ def Send_to_SQL(SQL_File_Name):
         cursor.execute(line)
         cnx.commit()
     cnx.close()
-#    print('Connection closed.')
+    # print('Connection closed.')
 
 
 def Check_Table_Exists(cnx, TableName):
@@ -64,11 +64,11 @@ def Check_Table_Exists(cnx, TableName):
     if cursor.fetchone()[0] == 1:
         cursor.close()
         cnx.close()
-#        print('Connection closed.')
+        # print('Connection closed.')
         return True
 
     cnx.close()
-#    print('Connection closed.')
+    # print('Connection closed.')
     return False
 
 
@@ -87,7 +87,7 @@ def Query_SQL(TableName, ReturnColStr, *ConditionStr):
 
     cursor.close()
     cnx.close()
-#    print('Connection closed.')
+    # print('Connection closed.')
 
     return results
 
@@ -101,7 +101,7 @@ def GetStudyUIDs(MRN):
     results = cursor.fetchall()
     cursor.close()
     cnx.close()
-#    print('Connection closed.')
+    # print('Connection closed.')
     return results
 
 
@@ -187,8 +187,8 @@ def Create_Table_Beams():
     SQL_CreateTable.append('BeamType varchar(30),')
     SQL_CreateTable.append('ControlPoints smallint(5) unsigned,')
     SQL_CreateTable.append('GantryStart FLOAT,')
-    SQL_CreateTable.append('GantryRotDir varchar(3),')
     SQL_CreateTable.append('GantryEnd FLOAT,')
+    SQL_CreateTable.append('GantryRotDir varchar(3),')
     SQL_CreateTable.append('ColAngle DOUBLE,')
     SQL_CreateTable.append('CouchAngle DOUBLE,')
     SQL_CreateTable.append('IsocenterCoord varchar(30),')
@@ -200,6 +200,13 @@ def Create_Table_Beams():
 
     Send_to_SQL(FilePath)
     os.remove(FilePath)
+
+
+def CreateTables():
+
+    Create_Table_Beams()
+    Create_Table_DVHs()
+    Create_Table_Plans()
 
 
 def Insert_Values_DVHs(ROI_PyTable):
@@ -296,8 +303,8 @@ def Insert_Values_Beams(Beams_Py):
         SQL_Input.append(Beams_Py[x].BeamType)
         SQL_Input.append(str(Beams_Py[x].NumCPs))
         SQL_Input.append(str(Beams_Py[x].GantryStart))
-        SQL_Input.append(Beams_Py[x].GantryRotDir)
         SQL_Input.append(str(Beams_Py[x].GantryEnd))
+        SQL_Input.append(Beams_Py[x].GantryRotDir)
         SQL_Input.append(str(Beams_Py[x].ColAngle))
         SQL_Input.append(str(Beams_Py[x].CouchAng))
         SQL_Input.append(Beams_Py[x].IsocenterCoord)
@@ -329,9 +336,13 @@ def Delete_SQL_Rows(ConditionStr):
     cursor.execute(DVHsCmd)
     cnx.commit()
 
+    DVHsCmd = 'DELETE FROM Beams WHERE ' + ConditionStr + ';'
+    cursor.execute(DVHsCmd)
+    cnx.commit()
+
     cursor.close()
     cnx.close()
-    print('Connection closed.')
+    # print('Connection closed.')
 
 
 if __name__ == '__main__':
