@@ -6,75 +6,87 @@ Created on Thu Mar  2 22:15:52 2017
 @author: nightowl
 """
 
-from SQL_Tools import Insert_Values_DVHs, Insert_Values_Plans, Insert_Values_Beams
-from DICOM_to_Python import Create_ROI_PyTable, Create_Plan_Py, Create_Beams_Py
+from DVH_SQL import DVH_SQL
+from DICOM_to_Python import get_plan_table, get_roi_table, get_beam_table
 import os
 import dicom
 
 
 class DICOM_FileSet:
-    def __init__(self, RTPlan, RTStructure, RTDose):
-        self.RTPlan = RTPlan
-        self.RTStructure = RTStructure
-        self.RTDose = RTDose
+    def __init__(self, plan, structure, dose):
+        self.plan = plan
+        self.structure = structure
+        self.dose = dose
 
 
-def GetFilePaths(StartPath):
+def get_file_paths(start_path):
 
-    FilePaths = []
-    for root, dirs, files in os.walk(StartPath, topdown=False):
+    f = []
+    for root, dirs, files in os.walk(start_path, topdown=False):
         for name in files:
-            FilePaths.append(os.path.join(root, name))
+            f.append(os.path.join(root, name))
 
-    RTPlanFiles = []
-    RTPlanStudyUID = []
-    RTStructureFiles = []
-    RTStructureStudyUID = []
-    RTDoseFiles = []
-    RTDoseStudyUID = []
+    plan_files = []
+    study_uid_plan = []
+    structure_files = []
+    study_uid_structure = []
+    dose_files = []
+    study_uid_dose = []
 
-    for x in range(0, len(FilePaths) - 1):
+    for x in range(0, len(f) - 1):
         try:
-            DICOM_File = dicom.read_file(FilePaths[x])
+            DICOM_File = dicom.read_file(f[x])
             if DICOM_File.Modality.lower() == 'rtplan':
-                RTPlanFiles.append(FilePaths[x])
-                RTPlanStudyUID.append(DICOM_File.StudyInstanceUID)
+                plan_files.append(f[x])
+                study_uid_plan.append(DICOM_File.StudyInstanceUID)
             elif DICOM_File.Modality.lower() == 'rtstruct':
-                RTStructureFiles.append(FilePaths[x])
-                RTStructureStudyUID.append(DICOM_File.StudyInstanceUID)
+                structure_files.append(f[x])
+                study_uid_structure.append(DICOM_File.StudyInstanceUID)
             elif DICOM_File.Modality.lower() == 'rtdose':
-                RTDoseFiles.append(FilePaths[x])
-                RTDoseStudyUID.append(DICOM_File.StudyInstanceUID)
+                dose_files.append(f[x])
+                study_uid_dose.append(DICOM_File.StudyInstanceUID)
         except Exception:
             pass
 
-    DICOM_Files = {}
-    for a in range(0, len(RTPlanFiles)):
-        RTPlan = RTPlanFiles[a]
-        for b in range(0, len(RTStructureFiles)):
-            if RTPlanStudyUID[a] == RTStructureStudyUID[b]:
-                RTStructure = RTStructureFiles[b]
-        for c in range(0, len(RTDoseFiles)):
-            if RTPlanStudyUID[a] == RTDoseStudyUID[c]:
-                RTDose = RTDoseFiles[c]
-        CurrentFileSet = DICOM_FileSet(RTPlan, RTStructure, RTDose)
-        DICOM_Files[a] = CurrentFileSet
+    dicom_files = {}
+    for a in range(0, len(plan_files)):
+        rt_plan = plan_files[a]
+        for b in range(0, len(structure_files)):
+            if study_uid_plan[a] == study_uid_structure[b]:
+                rt_structure = structure_files[b]
+        for c in range(0, len(dose_files)):
+            if study_uid_plan[a] == study_uid_dose[c]:
+                rt_dose = dose_files[c]
+        dicom_files[a] = DICOM_FileSet(rt_plan, rt_structure, rt_dose)
 
-    return DICOM_Files
+    return dicom_files
 
 
-def DICOM_to_SQL(StartPath):
+def dicom_to_sql(start_path):
 
-    FP = GetFilePaths(StartPath)
+    sqlcnx = DVH_SQL()
+    f = get_file_paths(start_path)
 
-    for n in range(0, len(FP)):
-        Plan_Py = Create_Plan_Py(FP[n].RTPlan, FP[n].RTStructure, FP[n].RTDose)
-        Insert_Values_Plans(Plan_Py)
-        Beam_PyTable = Create_Beams_Py(FP[n].RTPlan)
-        Insert_Values_Beams(Beam_PyTable)
-        ROI_PyTable = Create_ROI_PyTable(FP[n].RTStructure, FP[n].RTDose)
-        Insert_Values_DVHs(ROI_PyTable)
+    for n in range(0, len(f)):
+        plan_table = get_plan_table(f[n].plan, f[n].structure, f[n].dose)
+        beam_table = get_beam_table(f[n].plan)
+        roi_table = get_roi_table(f[n].structure, f[n].dose)
+
+        sqlcnx.insert_plans(plan_table)
+        sqlcnx.insert_beams(beam_table)
+        sqlcnx.insert_dvhs(roi_table)
+
+    sqlcnx.cnx.close()
+
+
+def rebuild_database(start_path):
+
+    sqlcnx = DVH_SQL()
+
+    sqlcnx.reinitialize_database()
+    dicom_to_sql(start_path)
+    sqlcnx.cnx.close()
 
 
 if __name__ == '__main__':
-    DICOM_to_SQL()
+    dicom_to_sql()
