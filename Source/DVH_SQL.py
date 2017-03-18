@@ -197,7 +197,7 @@ class DVH_SQL:
         self.cursor.execute('DROP TABLE DVHs;')
         self.cursor.execute('DROP TABLE Beams;')
         self.cnx.commit()
-        self.send("./Source/create_tables.sql")
+        self.send("create_tables.sql")
 
 
 if __name__ == '__main__':
