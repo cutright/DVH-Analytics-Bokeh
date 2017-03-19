@@ -7,6 +7,7 @@ Created on Thu Mar  9 18:48:19 2017
 """
 
 import numpy as np
+import math
 from DVH_SQL import DVH_SQL
 
 
@@ -187,6 +188,15 @@ def get_sorted_indices(to_be_sorted, *order):
         sorted_indicies = sorted_indicies[::-1]
 
     return sorted_indicies
+
+
+def get_EUD(dvh, dose_bin_size, a):
+
+    d_dvh = -np.gradient(dvh)
+    vi = d_dvh * dose_bin_size
+    EUD = np.cumsum(vi * math.pow(dose_bin_size/2, a))
+
+    return EUD
 
 
 if __name__ == '__main__':
