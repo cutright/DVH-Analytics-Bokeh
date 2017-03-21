@@ -7,7 +7,7 @@ Created on Thu Mar  2 22:15:52 2017
 """
 
 from DVH_SQL import DVH_SQL
-from DICOM_to_Python import get_plan_table, get_roi_table, get_beam_table
+from DICOM_to_Python import *
 import os
 import dicom
 
@@ -68,13 +68,13 @@ def dicom_to_sql(start_path):
     f = get_file_paths(start_path)
 
     for n in range(0, len(f)):
-        plan_table = get_plan_table(f[n].plan, f[n].structure, f[n].dose)
-        beam_table = get_beam_table(f[n].plan)
-        roi_table = get_roi_table(f[n].structure, f[n].dose)
+        plan = PlanRow(f[n].plan, f[n].structure, f[n].dose)
+        beams = BeamTable(f[n].plan)
+        dvhs = DVHTable(f[n].structure, f[n].dose)
 
-        sqlcnx.insert_plans(plan_table)
-        sqlcnx.insert_beams(beam_table)
-        sqlcnx.insert_dvhs(roi_table)
+        sqlcnx.insert_plan(plan)
+        sqlcnx.insert_beams(beams)
+        sqlcnx.insert_dvhs(dvhs)
 
     sqlcnx.cnx.close()
 

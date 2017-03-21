@@ -73,23 +73,23 @@ class DVH_SQL:
 
         return results
 
-    def insert_dvhs(self, roi_table):
+    def insert_dvhs(self, dvh_table):
 
         file_path = 'insert_values_DVHs.sql'
 
         # Import each ROI from ROI_PyTable, append to output text file
         sql_input = []
-        for x in range(1, len(roi_table)):
-            sql_input.append(str(roi_table[x].MRN))
-            sql_input.append(str(roi_table[x].study_instance_uid))
-            sql_input.append(roi_table[x].roi_name)
-            sql_input.append(roi_table[x].roi_type)
-            sql_input.append(str(round(roi_table[x].volume, 3)))
-            sql_input.append(str(round(roi_table[x].min_dose, 2)))
-            sql_input.append(str(round(roi_table[x].mean_dose, 2)))
-            sql_input.append(str(round(roi_table[x].max_dose, 2)))
-            sql_input.append(str(roi_table[x].dose_bin_size))
-            sql_input.append(roi_table[x].dvh_str)
+        for x in range(0, dvh_table.count):
+            sql_input.append(str(dvh_table.MRN[x]))
+            sql_input.append(str(dvh_table.study_instance_uid[x]))
+            sql_input.append(dvh_table.roi_name[x])
+            sql_input.append(dvh_table.roi_type[x])
+            sql_input.append(str(round(dvh_table.volume[x], 3)))
+            sql_input.append(str(round(dvh_table.min_dose[x], 2)))
+            sql_input.append(str(round(dvh_table.mean_dose[x], 2)))
+            sql_input.append(str(round(dvh_table.max_dose[x], 2)))
+            sql_input.append(str(dvh_table.dose_bin_size[x]))
+            sql_input.append(dvh_table.dvh_str[x])
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'
             Prepend = 'INSERT INTO DVHs VALUES (\''
@@ -103,7 +103,7 @@ class DVH_SQL:
         os.remove(file_path)
         print('DVHs Imported.')
 
-    def insert_plans(self, plan):
+    def insert_plan(self, plan):
 
         file_path = 'insert_plan_' + plan.MRN + '.sql'
 
@@ -130,6 +130,7 @@ class DVH_SQL:
         sql_input.append(plan.tx_modality)
         sql_input.append(str(plan.tx_time))
         sql_input.append(str(plan.total_mu))
+        sql_input.append(plan.dose_grid_resolution)
         sql_input = '\',\''.join(sql_input)
         sql_input += '\');'
         sql_input = sql_input.replace("'(NULL)'", "(NULL)")
@@ -143,33 +144,33 @@ class DVH_SQL:
         os.remove(file_path)
         print('Plan Imported.')
 
-    def insert_beams(self, beam_table):
+    def insert_beams(self, beams):
 
         file_path = 'insert_values_beams.sql'
 
         # Import each ROI from ROI_PyTable, append to output text file
         sql_input = []
-        for x in range(0, len(beam_table)):
-            sql_input.append(str(beam_table[x].MRN))
-            sql_input.append(str(beam_table[x].study_instance_uid))
-            sql_input.append(str(beam_table[x].beam_num))
-            sql_input.append(beam_table[x].description)
-            sql_input.append(str(beam_table[x].fx_group))
-            sql_input.append(str(beam_table[x].fxs))
-            sql_input.append(str(beam_table[x].fx_group_beam_count))
-            sql_input.append(str(round(beam_table[x].beam_dose, 3)))
-            sql_input.append(str(beam_table[x].mu))
-            sql_input.append(beam_table[x].radiation_type)
-            sql_input.append(str(beam_table[x].energy))
-            sql_input.append(beam_table[x].delivery_type)
-            sql_input.append(str(beam_table[x].cp_count))
-            sql_input.append(str(beam_table[x].gantry_start))
-            sql_input.append(str(beam_table[x].gantry_end))
-            sql_input.append(beam_table[x].gantry_rot_dir)
-            sql_input.append(str(beam_table[x].col_angle))
-            sql_input.append(str(beam_table[x].couch_ang))
-            sql_input.append(beam_table[x].isocenter_coord)
-            sql_input.append(str(round(beam_table[x].ssd, 2)))
+        for x in range(0, beams.count):
+            sql_input.append(str(beams.MRN[x]))
+            sql_input.append(str(beams.study_instance_uid[x]))
+            sql_input.append(str(beams.beam_num[x]))
+            sql_input.append(beams.description[x])
+            sql_input.append(str(beams.fx_group[x]))
+            sql_input.append(str(beams.fxs[x]))
+            sql_input.append(str(beams.fx_group_beam_count[x]))
+            sql_input.append(str(round(beams.dose[x], 3)))
+            sql_input.append(str(beams.mu[x]))
+            sql_input.append(beams.radiation_type[x])
+            sql_input.append(str(beams.energy[x]))
+            sql_input.append(beams.delivery_type[x])
+            sql_input.append(str(beams.cp_count[x]))
+            sql_input.append(str(beams.gantry_start[x]))
+            sql_input.append(str(beams.gantry_end[x]))
+            sql_input.append(beams.gantry_rot_dir[x])
+            sql_input.append(str(beams.col_angle[x]))
+            sql_input.append(str(beams.couch_ang[x]))
+            sql_input.append(beams.isocenter_coord[x])
+            sql_input.append(str(round(beams.ssd[x], 2)))
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'
             Prepend = 'INSERT INTO Beams VALUES (\''

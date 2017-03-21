@@ -35,7 +35,9 @@ These functions are designed to process data retrieved from the SQL data and con
 
 - [ ] Add thorough comments throughout all code
 
-- [ ] Incorporate EUD and BED calculations
+- [X] Incorporate EUD calculations
+
+- [ ] Incorporate BED calculations
 
 - [ ] Validate DoseToVolume and VolumeOfDose functions in Analysis_Tools
 
@@ -43,7 +45,7 @@ These functions are designed to process data retrieved from the SQL data and con
 
 - [X] Add DVH spread function
 
-- [ ] Track dose grid resolution
+- [X] Track dose grid resolution
 
 - [ ] Generate key for tx sites
 
