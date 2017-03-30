@@ -1,7 +1,8 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 # DICOM_to_Python.py
-"""Import DICOM RT Dose, Structure, and Plan files into Python objects
+"""
+Import DICOM RT Dose, Structure, and Plan files into Python objects
 Created on Sun Feb 26 11:06:28 2017
 @author: Dan Cutright, PhD
 """
@@ -10,16 +11,19 @@ import dicom  # PyDICOM
 from dicompylercore import dicomparser, dvhcalc  # DICOMPyler.com
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from ROI_Name_Manager import *
 
 
 # Each ROI class object contains data to fill an entire row of the SQL table 'DVHs'
 # This code will generate a list of ROI class objects
 # There will be a ROI class per structure of a Plan
 class DVHRow:
-    def __init__(self, MRN, study_instance_uid, roi_name, roi_type, volume,
-                 min_dose, mean_dose, max_dose, dose_bin_size, dvh_str):
+    def __init__(self, MRN, study_instance_uid, institutional_roi_name, physician_roi_name,
+                 roi_name, roi_type, volume, min_dose, mean_dose, max_dose, dose_bin_size, dvh_str):
         self.MRN = MRN
         self.study_instance_uid = study_instance_uid
+        self.institutional_roi_name = institutional_roi_name
+        self.physician_roi_name = physician_roi_name
         self.roi_name = roi_name
         self.roi_type = roi_type
         self.volume = volume
@@ -147,6 +151,7 @@ class PlanRow:
                 rx_dose = fx_dose * fx_from_str
 
         # This assumes that Plans are either 100% Arc plans or 100% Static Angle
+        # Note that the beams class will have this information on a per beam basis
         tx_modality = ''
         energies = ' '
         temp = ''
@@ -220,13 +225,18 @@ class PlanRow:
 
 class DVHTable:
     def __init__(self, structure_file, dose_file):
-        # Import RT Structure and RT Dose files using dicompyler
-        rt_structure = dicomparser.DicomParser(structure_file)
-        rt_structure_dicom = dicom.read_file(structure_file)
-        rt_structures = rt_structure.GetStructures()
+        # Get ROI Category Map
+        database_rois = DatabaseROIs()
 
+        # Import RT Structure and RT Dose files using dicompyler
+        rt_structure_dicom = dicom.read_file(structure_file)
         MRN = rt_structure_dicom.PatientID
         study_uid = rt_structure_dicom.StudyInstanceUID
+
+        rt_structure = dicomparser.DicomParser(structure_file)
+        rt_structures = rt_structure.GetStructures()
+
+        physician = rt_structure_dicom.ReferringPhysicianName.upper()
 
         values = {}
         row_counter = 0
@@ -240,9 +250,16 @@ class DVHTable:
                         st_type = 'ITV'
                     else:
                         st_type = rt_structures[key]['type']
+                    current_roi_name = rt_structures[key]['name'].lower()
+                    inst_roi = database_rois.get_institutional_roi(current_roi_name,
+                                                                   physician)
+                    phys_roi = database_rois.get_physician_roi(current_roi_name,
+                                                               physician)
                     current_dvh_row = DVHRow(MRN,
                                              study_uid,
-                                             rt_structures[key]['name'],
+                                             inst_roi,
+                                             phys_roi,
+                                             current_roi_name,
                                              st_type,
                                              current_dvh_calc.volume,
                                              current_dvh_calc.min,
@@ -258,6 +275,8 @@ class DVHTable:
 
         self.MRN = [values[x].MRN for x in dvh_range]
         self.study_instance_uid = [values[x].study_instance_uid for x in dvh_range]
+        self.institutional_roi_name = [values[x].institutional_roi_name for x in dvh_range]
+        self.physician_roi_name = [values[x].physician_roi_name for x in dvh_range]
         self.roi_name = [values[x].roi_name for x in dvh_range]
         self.roi_type = [values[x].roi_type for x in dvh_range]
         self.volume = [values[x].volume for x in dvh_range]
@@ -310,6 +329,8 @@ class BeamTable:
                 gantry_end = float(final_cp.GantryAngle)
                 col_angle = float(first_cp.BeamLimitingDeviceAngle)
                 couch_ang = float(first_cp.PatientSupportAngle)
+
+                # If beam is an arc, return average SSD, otherwise
                 if gantry_rot_dir in {'CW', 'CC'}:
                     ssd = 0
                     for CP in range(0, cp_count - 1):
@@ -332,6 +353,7 @@ class BeamTable:
         self.count = beam_num
         beam_range = range(0, self.count)
 
+        # Rearrange values into separate variables
         self.MRN = [values[x].MRN for x in beam_range]
         self.study_instance_uid = [values[x].study_instance_uid for x in beam_range]
         self.beam_num = [values[x].beam_num for x in beam_range]

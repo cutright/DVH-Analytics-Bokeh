@@ -7,7 +7,7 @@ Created on Thu Mar  2 22:15:52 2017
 """
 
 from DVH_SQL import DVH_SQL
-from DICOM_to_Python import *
+from DICOM_to_Python import DVHTable, PlanRow, BeamTable
 import os
 import dicom
 

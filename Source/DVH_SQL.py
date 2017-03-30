@@ -1,11 +1,12 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
+Tools used to interact with SQL database
 Created on Sat Mar  4 11:33:10 2017
-
-@author: nightowl
+@author: Dan Cutright, PhD
 """
 
+# code currently only supports MySQL by Oracle
 import mysql.connector
 from mysql.connector import Error
 import os
@@ -13,6 +14,7 @@ import os
 
 class DVH_SQL:
     def __init__(self):
+        # Read SQL configuration file
         with open('SQL_Connection.cnf', 'r') as document:
             config = {}
             for line in document:
@@ -20,6 +22,7 @@ class DVH_SQL:
                 if not line:
                     continue
                 config[line[0]] = line[1:][0]
+                # Convert strings to boolean
                 if line[1:][0].lower() == 'true':
                     config[line[0]] = True
                 elif line[1:][0].lower() == 'false':
@@ -35,7 +38,8 @@ class DVH_SQL:
             self.cnx = cnx
             self.cursor = cnx.cursor()
 
-    def send(self, sql_file_name):
+    # Executes lines within text file named 'sql_file_name' to SQL
+    def execute_file(self, sql_file_name):
 
         for line in open(sql_file_name):
             self.cursor.execute(line)
@@ -82,6 +86,8 @@ class DVH_SQL:
         for x in range(0, dvh_table.count):
             sql_input.append(str(dvh_table.MRN[x]))
             sql_input.append(str(dvh_table.study_instance_uid[x]))
+            sql_input.append(dvh_table.institutional_roi_name[x])
+            sql_input.append(dvh_table.physician_roi_name[x])
             sql_input.append(dvh_table.roi_name[x])
             sql_input.append(dvh_table.roi_type[x])
             sql_input.append(str(round(dvh_table.volume[x], 3)))
@@ -99,7 +105,7 @@ class DVH_SQL:
                 text_file.write(sql_input)
             sql_input = []
 
-        self.send(file_path)
+        self.execute_file(file_path)
         os.remove(file_path)
         print('DVHs Imported.')
 
@@ -140,7 +146,7 @@ class DVH_SQL:
         with open(file_path, "a") as text_file:
             text_file.write(sql_input)
 
-        self.send(file_path)
+        self.execute_file(file_path)
         os.remove(file_path)
         print('Plan Imported.')
 
@@ -180,7 +186,7 @@ class DVH_SQL:
                 text_file.write(sql_input)
             sql_input = []
 
-        self.send(file_path)
+        self.execute_file(file_path)
         os.remove(file_path)
         print('Beams Imported.')
 
@@ -194,11 +200,14 @@ class DVH_SQL:
 
     def reinitialize_database(self):
 
-        self.cursor.execute('DROP TABLE Plans;')
-        self.cursor.execute('DROP TABLE DVHs;')
-        self.cursor.execute('DROP TABLE Beams;')
+        if self.check_table_exists('Plans'):
+            self.cursor.execute('DROP TABLE Plans;')
+        if self.check_table_exists('DVHs'):
+            self.cursor.execute('DROP TABLE DVHs;')
+        if self.check_table_exists('Beams'):
+            self.cursor.execute('DROP TABLE Beams;')
         self.cnx.commit()
-        self.send("create_tables.sql")
+        self.execute_file("create_tables.sql")
 
 
 if __name__ == '__main__':

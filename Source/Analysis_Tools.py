@@ -31,6 +31,7 @@ class DVH:
         num_rows = len(cursor_rtn)
         MRNs = {}
         study_uids = {}
+        roi_categories = {}
         roi_names = {}
         roi_types = {}
         rx_doses = np.zeros(num_rows)
@@ -45,8 +46,9 @@ class DVH:
         for row in cursor_rtn:
             MRNs[dvh_counter] = str(row[0])
             study_uids[dvh_counter] = str(row[1])
-            roi_names[dvh_counter] = str(row[2])
-            roi_types[dvh_counter] = str(row[3])
+            roi_categories[dvh_counter]= str(row[2])
+            roi_names[dvh_counter] = str(row[3])
+            roi_types[dvh_counter] = str(row[4])
 
             condition = "MRN = '" + str(row[0])
             condition += "' and StudyInstanceUID = '"
@@ -54,14 +56,14 @@ class DVH:
             rx_dose_cursor = sqlcnx.query('Plans', 'RxDose', condition)
             rx_doses[dvh_counter] = rx_dose_cursor[0][0]
 
-            roi_volumes[dvh_counter] = row[4]
-            min_doses[dvh_counter] = row[5]
-            mean_doses[dvh_counter] = row[6]
-            max_doses[dvh_counter] = row[7]
-            dose_bin_sizes[dvh_counter] = row[8]
+            roi_volumes[dvh_counter] = row[5]
+            min_doses[dvh_counter] = row[6]
+            mean_doses[dvh_counter] = row[7]
+            max_doses[dvh_counter] = row[8]
+            dose_bin_sizes[dvh_counter] = row[9]
 
             # Process volumeString to numpy array
-            current_dvh_str = np.array(str(row[9]).split(','))
+            current_dvh_str = np.array(str(row[10]).split(','))
             current_dvh = current_dvh_str.astype(np.float)
             if max(current_dvh) > 0:
                 current_dvh /= max(current_dvh)
@@ -119,37 +121,35 @@ class DVH:
 
     def get_volume_of_dose(self, Dose):
 
-        roi_volumes = np.zeros(self.count)
         x = (np.ones(self.count) * Dose) / self.dose_bin_size
         x_range = [np.floor(x), np.ceil(x)]
         y_range = [self.dvh[int(np.floor(x))], self.dvh[int(np.ceil(x))]]
-        roi_volumes = np.interp(x, x_range, y_range)
+        roi_volume = np.interp(x, x_range, y_range)
 
-        return roi_volumes
+        return roi_volume
 
-    def coverage(self):
+    def coverage(self, rx_dose_fraction):
 
         answer = np.zeros(self.count)
         for x in range(0, self.count):
-            answer[x] = self.get_volume_of_dose(self.dvh[:, x],
-                                                self.rx_dose[x])
+            answer[x] = self.get_volume_of_dose(float(self.rx_dose[x] * rx_dose_fraction))
 
         return answer
 
 
 class DVH_Spread:
     def __init__(self, dvhs):
-        dvh_Len = np.size(dvhs, 0)
+        dvh_len = np.size(dvhs, 0)
 
-        minimum = np.zeros(dvh_Len)
-        q1 = np.zeros(dvh_Len)
-        mean = np.zeros(dvh_Len)
-        median = np.zeros(dvh_Len)
-        q3 = np.zeros(dvh_Len)
-        maximum = np.zeros(dvh_Len)
-        std = np.zeros(dvh_Len)
+        minimum = np.zeros(dvh_len)
+        q1 = np.zeros(dvh_len)
+        mean = np.zeros(dvh_len)
+        median = np.zeros(dvh_len)
+        q3 = np.zeros(dvh_len)
+        maximum = np.zeros(dvh_len)
+        std = np.zeros(dvh_len)
 
-        for x in range(0, dvh_Len - 1):
+        for x in range(0, dvh_len):
             minimum[x] = np.min(dvhs[x, :])
             q1[x] = np.percentile(dvhs[x, :], 25)
             mean[x] = np.mean(dvhs[x, :])
@@ -158,8 +158,10 @@ class DVH_Spread:
             maximum[x] = np.max(dvhs[x, :])
             std[x] = np.std(dvhs[x, :])
 
+        # if std[x] < 0, std[x] = 0
         std = np.multiply(std, np.greater(std, np.zeros_like(std)))
 
+        self.x = range(0, dvh_len)
         self.min = minimum
         self.q1 = q1
         self.mean = mean
@@ -169,7 +171,14 @@ class DVH_Spread:
         self.std = std
 
 
-def dose_to_volume(dvh, volume, roi_volume, dose_bin_size):
+# Returns the isodose level outlining the given volume
+def dose_to_volume(dvh, volume, dose_bin_size, *roi_volume):
+
+    # if an roi_volume is not given, volume is assumed to be fractional
+    if roi_volume:
+        roi_volume = roi_volume[0]
+    else:
+        roi_volume = 1
 
     dose_high = np.argmax(dvh < volume / roi_volume)
     y = volume / roi_volume
@@ -180,6 +189,7 @@ def dose_to_volume(dvh, volume, roi_volume, dose_bin_size):
     return dose
 
 
+# Just np.argsort with an order argument
 def get_sorted_indices(to_be_sorted, *order):
 
     sorted_indicies = np.argsort(to_be_sorted)
@@ -189,14 +199,17 @@ def get_sorted_indices(to_be_sorted, *order):
     return sorted_indicies
 
 
+# EUD = sum[ v(i) * D(i)^a ] ^ [1/a]
 def get_EUD(dvh, dose_bin_size, a):
+
+    v = -np.gradient(dvh) * dose_bin_size
 
     D = np.linspace(1, np.size(dvh), np.size(dvh))
     D *= dose_bin_size
     D -= (dose_bin_size / 2)
     D = np.round(D, 3)
     D_raised_a = np.power(D, a)
-    v = -np.gradient(dvh) * dose_bin_size
+
     EUD = np.power(np.sum(np.multiply(v, D_raised_a)), 1 / float(a))
 
     return EUD
