@@ -20,6 +20,10 @@ This has the simple objective of writing to SQL Database with only the starting 
 *Analysis_Tools*  
 These functions are designed to process data retrieved from the SQL data and convert into python objects.
 
+*ROI_Name_Manager*  
+From independently created .roi files, this class generates a map of roi names and provides functions to query
+and edit this map.  Each roi points to an institutional roi, physician roi, and a physician.
+
 ### To Do List
 - [X] Write SQL_Tools fuctions to remove a plan row from PatientPlans master table
 
@@ -47,7 +51,7 @@ These functions are designed to process data retrieved from the SQL data and con
 
 - [X] Track dose grid resolution
 
-- [ ] Generate key for tx sites
+- [X] Generate key for tx sites
 
 
 
