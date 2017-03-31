@@ -140,8 +140,8 @@ class DVH_SQL:
         sql_input = '\',\''.join(sql_input)
         sql_input += '\');'
         sql_input = sql_input.replace("'(NULL)'", "(NULL)")
-        Prepend = 'INSERT INTO Plans VALUES (\''
-        sql_input = Prepend + str(sql_input)
+        prepend = 'INSERT INTO Plans VALUES (\''
+        sql_input = prepend + str(sql_input)
         sql_input += '\n'
         with open(file_path, "a") as text_file:
             text_file.write(sql_input)
@@ -179,8 +179,8 @@ class DVH_SQL:
             sql_input.append(str(round(beams.ssd[x], 2)))
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'
-            Prepend = 'INSERT INTO Beams VALUES (\''
-            sql_input = Prepend + str(sql_input)
+            prepend = 'INSERT INTO Beams VALUES (\''
+            sql_input = prepend + str(sql_input)
             sql_input += '\n'
             with open(file_path, "a") as text_file:
                 text_file.write(sql_input)
@@ -190,10 +190,38 @@ class DVH_SQL:
         os.remove(file_path)
         print('Beams Imported.')
 
+    def insert_rxs(self, rx_table):
+
+        file_path = 'insert_fx_grps_' + plan.MRN + '.sql'
+
+        sql_input = []
+        sql_input.append(str(rx_table.MRN))
+        sql_input.append(str(rx_table.study_instance_uid))
+        sql_input.append(str(rx_table.fx_grp_name))
+        sql_input.append(str(rx_table.fx_grp_num))
+        sql_input.append(str(rx_table.fx_grps))
+        sql_input.append(str(round(rx_table.fx_dose, 2)))
+        sql_input.append(str(rx_table.fxs))
+        sql_input.append(str(round(rx_table.rx_percent, 2)))
+        sql_input.append(str(rx_table.norm_method))
+        sql_input.append(str(rx_table.norm_object))
+        sql_input = '\',\''.join(sql_input)
+        sql_input += '\');'
+        prepend = 'INSERT INTO Rxs VALUES (\''
+        sql_input = prepend + str(sql_input)
+        sql_input += '\n'
+        with open(file_path, "a") as text_file:
+            text_file.write(sql_input)
+
+        self.execute_file(file_path)
+        os.remove(file_path)
+        print('Rxs Imported.')
+
     def delete_rows(self, condition_str):
 
         cmd = 'DELETE FROM Plans WHERE ' + condition_str + ';\n'
         cmd += 'DELETE FROM DVHs WHERE ' + condition_str + ';\n'
+        cmd += 'DELETE FROM Rxs WHERE ' + condition_str + ';\n'
         cmd += 'DELETE FROM Beams WHERE ' + condition_str + ';'
         self.cursor.execute(cmd, multi=True)
         self.cnx.commit()
@@ -206,6 +234,8 @@ class DVH_SQL:
             self.cursor.execute('DROP TABLE DVHs;')
         if self.check_table_exists('Beams'):
             self.cursor.execute('DROP TABLE Beams;')
+        if self.check_table_exists('Rxs'):
+            self.cursor.execute('DROP TABLE Rxs;')
         self.cnx.commit()
         self.execute_file("create_tables.sql")
 

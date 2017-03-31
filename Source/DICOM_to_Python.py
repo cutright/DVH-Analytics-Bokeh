@@ -12,6 +12,7 @@ from dicompylercore import dicomparser, dvhcalc  # DICOMPyler.com
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from ROI_Name_Manager import *
+import re
 
 
 # Each ROI class object contains data to fill an entire row of the SQL table 'DVHs'
@@ -65,22 +66,42 @@ class BeamRow:
         self.ssd = ssd
 
 
+class FxGrpRow:
+    def __init__(self, MRN, study_instance_uid, fx_grp_name, fx_grp_num, fx_grps,
+                 fx_dose, fxs, rx_dose, rx_percent, norm_method, norm_object):
+        self.MRN = MRN
+        self.study_instance_uid = study_instance_uid
+        self.fx_grp_name = fx_grp_name
+        self.fx_grp_num = fx_grp_num
+        self.fx_grps = fx_grps
+        self.fx_dose = fx_dose
+        self.fxs = fxs
+        self.rx_dose = rx_dose
+        self.rx_percent = rx_percent
+        self.norm_method = norm_method
+        self.norm_object = norm_object
+
+
 # Each Plan class object contains data to fill an entire row of the SQL table 'Plans'
 # There will be a Plan class per structure of a Plan
 class PlanRow:
     def __init__(self, plan_file, structure_file, dose_file):
+        # Read DICOM files
         rt_plan = dicom.read_file(plan_file)
         rt_plan_dicompyler = dicomparser.DicomParser(plan_file)
         rt_plan_obj = rt_plan_dicompyler.GetPlan()
         rt_structure = dicom.read_file(structure_file)
         rt_dose = dicom.read_file(dose_file)
 
+        # Record Medical Record Number
         MRN = rt_plan.PatientID
 
+        # Record gender
         sex = rt_plan.PatientSex.upper()
         if not (sex == 'M' or sex == 'F'):
             sex = '-'
 
+        # Parse and record sim date
         sim_study_date = rt_plan.StudyDate
         sim_study_year = int(sim_study_date[0:4])
         sim_study_month = int(sim_study_date[4:6])
@@ -88,6 +109,8 @@ class PlanRow:
         sim_study_date_obj = datetime(sim_study_year, sim_study_month,
                                       sim_study_day)
 
+        # Calculate patient age at time of sim
+        # Set to NULL birthday is not in DICOM file
         birth_date = rt_plan.PatientBirthDate
         if not birth_date:
             birth_date = '(NULL)'
@@ -99,56 +122,63 @@ class PlanRow:
             birth_date_obj = datetime(birth_year, birth_month, birth_day)
             age = relativedelta(sim_study_date_obj, birth_date_obj).years
 
+        # Record physician initials from ReferringPhysicianName tag
         rad_onc = rt_plan.ReferringPhysicianName
 
-        tx_site = rt_plan.RTPlanLabel
-
+        # Initialize fx and MU counters, iterate over all rx's
         fxs = 0
         mus = 0
-        fx_grp_seq = rt_plan.FractionGroupSequence
+        fx_grp_seq = rt_plan.FractionGroupSequence  # just to limit characters for later reference
+        # Count number of fxs and total MUs
+        # Note these are total fxs, not treatment days
         for fxgrp in range(0, len(fx_grp_seq)):
             fxs += fx_grp_seq[fxgrp].NumberOfFractionsPlanned
             for Beam in range(0, fx_grp_seq[fxgrp].NumberOfBeams):
                 mus += fx_grp_seq[fxgrp].ReferencedBeamSequence[Beam].BeamMeterset
 
+        # This UID must be in all DICOM files associated with this sim study
         study_instance_uid = rt_plan.StudyInstanceUID
+
+        # Record patient position (e.g., HFS, HFP, FFS, or FFP)
         patient_orientation = rt_plan.PatientSetupSequence[0].PatientPosition
 
+        # Contest self-evident, their utility is not (yet)
         plan_time_stamp = rt_plan.RTPlanDate + rt_plan.RTPlanTime
         roi_time_stamp = rt_structure.StructureSetDate + rt_structure.StructureSetTime
         dose_time_stamp = rt_dose.ContentDate + rt_dose.ContentTime
 
+        # Record treatment planning system vendor, name, and version
         tps_manufacturer = rt_plan.Manufacturer
         tps_software_name = rt_plan.ManufacturerModelName
         tps_software_version = rt_plan.SoftwareVersions[0]
 
         # Because DICOM does not contain Rx's explicitly, the user must create
-        # a point in the RT Structure file called 'rx [total dose]'
-        rx_found = 0
+        # a point in the RT Structure file called 'rx: '
+        # If multiple Rx found, sum will be reported
+        # Record tx site from 'tx:' point or RTPlanLabel if no point
+        tx_site = rt_plan.RTPlanLabel  # tx_site defatuls to plan name if tx in a tx point
+        tx_found = False
+        rx_dose = 0
         roi_counter = 0
-        roi_count = len(rt_structure.StructureSetROISequence) - 1
-        rx_str = ''
-        roi_seq = rt_structure.StructureSetROISequence
-        while (not rx_found) and (roi_counter < roi_count):
-            if len(roi_seq[roi_counter].ROIName) > 2:
-                if roi_seq[roi_counter].ROIName.lower().find('rx') == -1:
-                    roi_counter += 1
-                else:
-                    rx_str = roi_seq[roi_counter].ROIName
-                    rx_found = 1
-            else:
-                roi_counter += 1
-        if not rx_str:
+        roi_count = len(rt_structure.StructureSetROISequence)
+        roi_seq = rt_structure.StructureSetROISequence  # just limit num characters in code
+        while (not tx_found) and (roi_counter < roi_count):
+            roi_name = roi_seq[roi_counter].ROIName.lower()
+            if len(roi_name) > 2:
+                temp = roi_name.split(' ')
+                if temp[0][0:2] == 'rx':
+                    fx_dose = float(temp[temp.index('cgy')-1]) / 100
+                    fxs = int(temp[temp.index('x') + 1])
+                    rx_dose += fx_dose * fxs
+                elif temp[0] == 'tx:':
+                    temp.remove('tx:')
+                    tx_site = ' '.join(temp)
+                    tx_found = True
+            roi_counter += 1
+
+        # if rx_dose point not found, use dose in DICOM file
+        if rx_dose == 0:
             rx_dose = float(rt_plan_obj['rxdose']) / 100
-        else:
-            rx_str = rx_str.lower().strip('rx').strip(':').strip('gy').strip()
-            x = rx_str.find('x')
-            if x == -1:
-                rx_dose = float(rx_str)
-            else:
-                fx_from_str = float(rx_str[0:x - 1])
-                fx_dose = float(rx_str[x + 1:len(rx_str)])
-                rx_dose = fx_dose * fx_from_str
 
         # This assumes that Plans are either 100% Arc plans or 100% Static Angle
         # Note that the beams class will have this information on a per beam basis
@@ -191,14 +221,16 @@ class PlanRow:
         tx_modality = tx_modality[0:len(tx_modality) - 1]
 
         # Will require a yet to be named function to determine this
+        # Applicable for brachy and Gamma Knife, not yet supported
         tx_time = 0
 
-        dose_grid_resolution = []
-        dose_grid_resolution.append(str(round(float(rt_dose.PixelSpacing[0]), 1)))
-        dose_grid_resolution.append(str(round(float(rt_dose.PixelSpacing[1]), 1)))
-        dose_grid_resolution.append(str(round(float(rt_dose.SliceThickness), 1)))
+        # Record resolution of dose grid
+        dose_grid_resolution = [str(round(float(rt_dose.PixelSpacing[0]), 1)),
+                                str(round(float(rt_dose.PixelSpacing[1]), 1)),
+                                str(round(float(rt_dose.SliceThickness), 1))]
         dose_grid_resolution = ', '.join(dose_grid_resolution)
 
+        # Set object values
         self.MRN = MRN
         self.birthdate = birth_date
         self.age = age
@@ -299,22 +331,21 @@ class BeamTable:
         study_instance_uid = rt_plan.StudyInstanceUID
 
         for fx_grp in range(0, len(rt_plan.FractionGroupSequence)):
-            FxGrpSeq = rt_plan.FractionGroupSequence[fx_grp]
-            fxs = int(FxGrpSeq.NumberOfFractionsPlanned)
-            fx_grp_beam_count = int(FxGrpSeq.NumberOfBeams)
+            fx_grp_seq = rt_plan.FractionGroupSequence[fx_grp]
+            fxs = int(fx_grp_seq.NumberOfFractionsPlanned)
+            fx_grp_beam_count = int(fx_grp_seq.NumberOfBeams)
 
             for fx_grp_beam in range(0, fx_grp_beam_count):
                 beam_seq = rt_plan.BeamSequence[beam_num]
                 description = beam_seq.BeamDescription
-                ref_beam_seq = FxGrpSeq.ReferencedBeamSequence[fx_grp_beam]
+                ref_beam_seq = fx_grp_seq.ReferencedBeamSequence[fx_grp_beam]
 
                 dose = float(ref_beam_seq.BeamDose)
                 mu = float(ref_beam_seq.BeamMeterset)
 
-                iso_coord = []
-                iso_coord.append(str(ref_beam_seq.BeamDoseSpecificationPoint[0]))
-                iso_coord.append(str(ref_beam_seq.BeamDoseSpecificationPoint[1]))
-                iso_coord.append(str(ref_beam_seq.BeamDoseSpecificationPoint[2]))
+                iso_coord = [str(ref_beam_seq.BeamDoseSpecificationPoint[0]),
+                             str(ref_beam_seq.BeamDoseSpecificationPoint[1]),
+                             str(ref_beam_seq.BeamDoseSpecificationPoint[2])]
                 iso_coord = ','.join(iso_coord)
 
                 radiation_type = beam_seq.RadiationType
@@ -341,11 +372,11 @@ class BeamTable:
                     ssd = float(first_cp.SourceToSurfaceDistance) / 10
 
                 current_beam = BeamRow(MRN, study_instance_uid, beam_num + 1,
-                                      description, fx_grp + 1, fxs,
-                                      fx_grp_beam_count, dose, mu, radiation_type,
-                                      energy, delivery_type, cp_count,
-                                      gantry_start, gantry_end, gantry_rot_dir,
-                                      col_angle, couch_ang, iso_coord, ssd)
+                                       description, fx_grp + 1, fxs,
+                                       fx_grp_beam_count, dose, mu, radiation_type,
+                                       energy, delivery_type, cp_count,
+                                       gantry_start, gantry_end, gantry_rot_dir,
+                                       col_angle, couch_ang, iso_coord, ssd)
 
                 values[beam_num] = current_beam
                 beam_num += 1
@@ -374,6 +405,73 @@ class BeamTable:
         self.couch_ang = [values[x].couch_ang for x in beam_range]
         self.isocenter_coord = [values[x].isocenter_coord for x in beam_range]
         self.ssd = [values[x].ssd for x in beam_range]
+
+
+class FxGrpTable:
+    def __init__(self, plan_file, structure_file):
+        values = {}
+        rt_plan = dicom.read_file(plan_file)
+        rt_structure = dicom.read_file(structure_file)
+        fx_grp_seq = rt_plan.FractionGroupSequence
+
+        # Record Medical Record Number
+        MRN = rt_plan.PatientID
+
+        # This UID must be in all DICOM files associated with this sim study
+        study_instance_uid = rt_plan.StudyInstanceUID
+
+        fx_group_count = len(fx_grp_seq)
+
+        for i in range(0, fx_group_count):
+            rx_dose = 0
+
+            # Because DICOM does not contain Rx's explicitly, the user must create
+            # a point in the RT Structure file called 'rx[#]: ' per rx
+            roi_counter = 0
+            roi_count = len(rt_structure.StructureSetROISequence)
+            roi_seq = rt_structure.StructureSetROISequence  # just limit num characters in code
+            # set defaults in case rx and tx points are not found
+
+            while roi_counter < roi_count:
+                roi_name = roi_seq[roi_counter].ROIName.lower()
+                if len(roi_name) > 2:
+                    temp = roi_name.split(':')
+                    if temp[0][0:3] == 'rx ' and int(temp[0].strip('rx ')) == i:
+
+                        fx_grp_num = int(temp[0].strip('rx '))
+
+                        fx_grp_name = temp[1].strip()
+
+                        fx_dose = float(temp[2].split('cGy')[0]) / 100
+                        fxs = int(temp[2].split('x ')[1].split(' to')[0])
+                        rx_dose = fx_dose * float(fxs)
+
+                        rx_percent = float(temp[2].strip().split(' ')[5].strip('%'))
+                        norm_method = temp[3].strip()
+
+                        if norm_method != 'plan_max':
+                            norm_object = temp[4].strip()
+                        else:
+                            norm_object = 'plan_max'
+
+                roi_counter += 1
+
+            current_fx_grp_row = FxGrpRow(MRN, study_instance_uid, fx_grp_name, fx_grp_num, fx_group_count,
+                                          fx_dose, fxs, rx_dose, rx_percent, norm_method, norm_object)
+            values[i] = current_fx_grp_row
+
+        # Rearrange values into separate variables
+        self.MRN = [values[x].MRN for x in fx_group_count]
+        self.study_instance_uid = [values[x].study_instance_uid for x in fx_group_count]
+        self.fx_grp_name = [values[x].fx_grp_name for x in fx_group_count]
+        self.fx_grp_num = [values[x].fx_grp_num for x in fx_group_count]
+        self.fx_grps = [values[x].fx_grps for x in fx_group_count]
+        self.fx_dose = [values[x].fx_dose for x in fx_group_count]
+        self.fxs = [values[x].fxs for x in fx_group_count]
+        self.rx_dose = [values[x].rx_dose for x in fx_group_count]
+        self.rx_percent = [values[x].rx_percent for x in fx_group_count]
+        self.norm_method = [values[x].norm_method for x in fx_group_count]
+        self.norm_object = [values[x].norm_object for x in fx_group_count]
 
 
 if __name__ == '__main__':

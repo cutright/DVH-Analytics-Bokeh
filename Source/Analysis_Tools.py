@@ -31,7 +31,7 @@ class DVH:
         num_rows = len(cursor_rtn)
         MRNs = {}
         study_uids = {}
-        roi_categories = {}
+        roi_institutional = {}
         roi_names = {}
         roi_types = {}
         rx_doses = np.zeros(num_rows)
@@ -46,9 +46,10 @@ class DVH:
         for row in cursor_rtn:
             MRNs[dvh_counter] = str(row[0])
             study_uids[dvh_counter] = str(row[1])
-            roi_categories[dvh_counter]= str(row[2])
-            roi_names[dvh_counter] = str(row[3])
-            roi_types[dvh_counter] = str(row[4])
+            roi_institutional[dvh_counter]= str(row[2])
+            roi_physician[dvh_counter] = str(row[3])
+            roi_names[dvh_counter] = str(row[4])
+            roi_types[dvh_counter] = str(row[5])
 
             condition = "MRN = '" + str(row[0])
             condition += "' and StudyInstanceUID = '"
@@ -56,14 +57,14 @@ class DVH:
             rx_dose_cursor = sqlcnx.query('Plans', 'RxDose', condition)
             rx_doses[dvh_counter] = rx_dose_cursor[0][0]
 
-            roi_volumes[dvh_counter] = row[5]
-            min_doses[dvh_counter] = row[6]
-            mean_doses[dvh_counter] = row[7]
-            max_doses[dvh_counter] = row[8]
-            dose_bin_sizes[dvh_counter] = row[9]
+            roi_volumes[dvh_counter] = row[6]
+            min_doses[dvh_counter] = row[7]
+            mean_doses[dvh_counter] = row[8]
+            max_doses[dvh_counter] = row[9]
+            dose_bin_sizes[dvh_counter] = row[10]
 
             # Process volumeString to numpy array
-            current_dvh_str = np.array(str(row[10]).split(','))
+            current_dvh_str = np.array(str(row[11]).split(','))
             current_dvh = current_dvh_str.astype(np.float)
             if max(current_dvh) > 0:
                 current_dvh /= max(current_dvh)
