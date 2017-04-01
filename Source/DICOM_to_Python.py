@@ -67,10 +67,11 @@ class BeamRow:
 
 
 class FxGrpRow:
-    def __init__(self, MRN, study_instance_uid, fx_grp_name, fx_grp_num, fx_grps,
+    def __init__(self, MRN, study_instance_uid, plan_name, fx_grp_name, fx_grp_num, fx_grps,
                  fx_dose, fxs, rx_dose, rx_percent, norm_method, norm_object):
         self.MRN = MRN
         self.study_instance_uid = study_instance_uid
+        self.plan_name = plan_name
         self.fx_grp_name = fx_grp_name
         self.fx_grp_num = fx_grp_num
         self.fx_grps = fx_grps
@@ -156,7 +157,7 @@ class PlanRow:
         # a point in the RT Structure file called 'rx: '
         # If multiple Rx found, sum will be reported
         # Record tx site from 'tx:' point or RTPlanLabel if no point
-        tx_site = rt_plan.RTPlanLabel  # tx_site defatuls to plan name if tx in a tx point
+        tx_site = rt_plan.RTPlanLabel  # tx_site defaults to plan name if tx in a tx point
         tx_found = False
         rx_dose = 0
         roi_counter = 0
@@ -427,6 +428,7 @@ class FxGrpTable:
             fx_grp_num = i + 1
             fx_dose = 0
             fx_grp_name = 'default'
+            plan_name = rt_plan.RTPlanLabel
 
             for j in range(0, fx_grp_seq[i].NumberOfBeams):
                 fx_dose += fx_grp_seq[i].ReferencedBeamSequence[j].BeamDose
@@ -447,13 +449,13 @@ class FxGrpTable:
                 roi_name = roi_seq[roi_counter].ROIName.lower()
                 if len(roi_name) > 2:
                     temp = roi_name.split(':')
-                    if temp[0][0:3] == 'rx ' and int(temp[0].strip('rx ')) == i:
+                    if temp[0][0:3] == 'rx ' and int(temp[0].strip('rx ')) == i + 1:
 
                         fx_grp_num = int(temp[0].strip('rx '))
 
                         fx_grp_name = temp[1].strip()
 
-                        fx_dose = float(temp[2].split('cGy')[0]) / 100
+                        fx_dose = float(temp[2].split('cgy')[0]) / float(100)
                         fxs = int(temp[2].split('x ')[1].split(' to')[0])
                         rx_dose = fx_dose * float(fxs)
 
@@ -467,22 +469,25 @@ class FxGrpTable:
 
                 roi_counter += 1
 
-            current_fx_grp_row = FxGrpRow(MRN, study_instance_uid, fx_grp_name, fx_grp_num, fx_group_count,
+            current_fx_grp_row = FxGrpRow(MRN, study_instance_uid, plan_name, fx_grp_name, fx_grp_num, fx_group_count,
                                           fx_dose, fxs, rx_dose, rx_percent, norm_method, norm_object)
             values[i] = current_fx_grp_row
 
+        fx_group_range = range(0, fx_group_count)
         # Rearrange values into separate variables
-        self.MRN = [values[x].MRN for x in fx_group_count]
-        self.study_instance_uid = [values[x].study_instance_uid for x in fx_group_count]
-        self.fx_grp_name = [values[x].fx_grp_name for x in fx_group_count]
-        self.fx_grp_num = [values[x].fx_grp_num for x in fx_group_count]
-        self.fx_grps = [values[x].fx_grps for x in fx_group_count]
-        self.fx_dose = [values[x].fx_dose for x in fx_group_count]
-        self.fxs = [values[x].fxs for x in fx_group_count]
-        self.rx_dose = [values[x].rx_dose for x in fx_group_count]
-        self.rx_percent = [values[x].rx_percent for x in fx_group_count]
-        self.norm_method = [values[x].norm_method for x in fx_group_count]
-        self.norm_object = [values[x].norm_object for x in fx_group_count]
+        self.MRN = [values[x].MRN for x in fx_group_range]
+        self.study_instance_uid = [values[x].study_instance_uid for x in fx_group_range]
+        self.plan_name = [values[x].plan_name for x in fx_group_range]
+        self.fx_grp_name = [values[x].fx_grp_name for x in fx_group_range]
+        self.fx_grp_num = [values[x].fx_grp_num for x in fx_group_range]
+        self.fx_grps = [values[x].fx_grps for x in fx_group_range]
+        self.fx_dose = [values[x].fx_dose for x in fx_group_range]
+        self.fxs = [values[x].fxs for x in fx_group_range]
+        self.rx_dose = [values[x].rx_dose for x in fx_group_range]
+        self.rx_percent = [values[x].rx_percent for x in fx_group_range]
+        self.norm_method = [values[x].norm_method for x in fx_group_range]
+        self.norm_object = [values[x].norm_object for x in fx_group_range]
+        self.count = fx_group_count
 
 
 if __name__ == '__main__':

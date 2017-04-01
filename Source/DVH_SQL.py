@@ -192,27 +192,30 @@ class DVH_SQL:
 
     def insert_rxs(self, rx_table):
 
-        file_path = 'insert_fx_grps_' + plan.MRN + '.sql'
+        file_path = 'insert_values_rxs.sql'
 
         sql_input = []
-        sql_input.append(str(rx_table.MRN))
-        sql_input.append(str(rx_table.study_instance_uid))
-        sql_input.append(str(rx_table.fx_grp_name))
-        sql_input.append(str(rx_table.fx_grp_num))
-        sql_input.append(str(rx_table.fx_grps))
-        sql_input.append(str(round(rx_table.fx_dose, 2)))
-        sql_input.append(str(rx_table.fxs))
-        sql_input.append(str(round(rx_table.rx_dose, 2)))
-        sql_input.append(str(round(rx_table.rx_percent, 1)))
-        sql_input.append(str(rx_table.norm_method))
-        sql_input.append(str(rx_table.norm_object))
-        sql_input = '\',\''.join(sql_input)
-        sql_input += '\');'
-        prepend = 'INSERT INTO Rxs VALUES (\''
-        sql_input = prepend + str(sql_input)
-        sql_input += '\n'
-        with open(file_path, "a") as text_file:
-            text_file.write(sql_input)
+        for x in range(0, rx_table.count):
+            sql_input.append(str(rx_table.MRN[x]))
+            sql_input.append(str(rx_table.study_instance_uid[x]))
+            sql_input.append(str(rx_table.plan_name[x]))
+            sql_input.append(str(rx_table.fx_grp_name[x]))
+            sql_input.append(str(rx_table.fx_grp_num[x]))
+            sql_input.append(str(rx_table.fx_grps[x]))
+            sql_input.append(str(round(rx_table.fx_dose[x], 2)))
+            sql_input.append(str(rx_table.fxs[x]))
+            sql_input.append(str(round(rx_table.rx_dose[x], 2)))
+            sql_input.append(str(round(rx_table.rx_percent[x], 1)))
+            sql_input.append(str(rx_table.norm_method[x]))
+            sql_input.append(str(rx_table.norm_object[x]))
+            sql_input = '\',\''.join(sql_input)
+            sql_input += '\');'
+            prepend = 'INSERT INTO Rxs VALUES (\''
+            sql_input = prepend + str(sql_input)
+            sql_input += '\n'
+            with open(file_path, "a") as text_file:
+                text_file.write(sql_input)
+            sql_input = []
 
         self.execute_file(file_path)
         os.remove(file_path)
