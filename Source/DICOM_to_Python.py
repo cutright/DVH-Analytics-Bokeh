@@ -424,6 +424,17 @@ class FxGrpTable:
 
         for i in range(0, fx_group_count):
             rx_dose = 0
+            fx_grp_num = i + 1
+            fx_dose = 0
+            fx_grp_name = 'default'
+
+            for j in range(0, fx_grp_seq[i].NumberOfBeams):
+                fx_dose += fx_grp_seq[i].ReferencedBeamSequence[j].BeamDose
+
+            fxs = fx_grp_seq[i].NumberOfFractionsPlanned
+            rx_percent = float(100)
+            norm_method = 'point'
+            norm_object = 'calc point'
 
             # Because DICOM does not contain Rx's explicitly, the user must create
             # a point in the RT Structure file called 'rx[#]: ' per rx
