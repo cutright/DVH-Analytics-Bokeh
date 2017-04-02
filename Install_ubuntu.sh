@@ -9,11 +9,11 @@ sudo pip install --upgrade pip
 # MySQL Install
 sudo apt-get install mysql-server
 sudo mysql_secure_installation
-mysqld --initialize
+# mysqld --initialize
 
 # Install essential packages
 sudo pip install pydicom
 sudo pip install numpy
 sudo apt-get install python-matplotlib
 sudo pip install dicompyler-core
-sudo pip install --allow-external mysql-connector-python mysql-connector-python
+sudo pip install mysql-connector==2.1.4
