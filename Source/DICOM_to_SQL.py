@@ -76,7 +76,6 @@ def dicom_to_sql(start_path):
         sqlcnx.insert_plan(plan)
         sqlcnx.insert_beams(beams)
         sqlcnx.insert_dvhs(dvhs)
-        sqlcnx.insert_dvhs(dvhs)
         sqlcnx.insert_rxs(rxs)
 
     sqlcnx.cnx.close()

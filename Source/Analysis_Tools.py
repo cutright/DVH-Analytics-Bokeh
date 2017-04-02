@@ -14,8 +14,8 @@ class DVH:
     def __init__(self, *condition_str):
 
         sqlcnx = DVH_SQL()
-        columns = """MRN, StudyInstanceUID, ROIName, Type, Volume, MinDose,
-        MeanDose, MaxDose, DoseBinSize, VolumeString"""
+        columns = """MRN, StudyInstanceUID, InstitutionalROI, PhysicianROI,
+        ROIName, Type, Volume, MinDose, MeanDose, MaxDose, DoseBinSize, VolumeString"""
         if condition_str:
             cursor_rtn = sqlcnx.query('DVHs', columns, condition_str[0])
         else:
@@ -23,7 +23,7 @@ class DVH:
 
         max_dvh_length = 0
         for row in cursor_rtn:
-            current_dvh_str = np.array(str(row[9]).split(','))
+            current_dvh_str = np.array(str(row[11]).split(','))
             current_size = np.size(current_dvh_str)
             if current_size > max_dvh_length:
                 max_dvh_length = current_size
@@ -32,6 +32,7 @@ class DVH:
         MRNs = {}
         study_uids = {}
         roi_institutional = {}
+        roi_physician = {}
         roi_names = {}
         roi_types = {}
         rx_doses = np.zeros(num_rows)
@@ -74,6 +75,8 @@ class DVH:
 
         self.MRN = MRNs
         self.study_uid = study_uids
+        self.roi_institutional = roi_institutional
+        self.roi_physician = roi_physician
         self.roi_name = roi_names
         self.roi_type = roi_types
         self.rx_dose = rx_doses
