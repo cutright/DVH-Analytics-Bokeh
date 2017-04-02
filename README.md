@@ -4,7 +4,7 @@ DICOM to SQL DVH Database
 This code is intended for Radiation Oncology departments to build a SQL database of DVH's from DICOM files (Plan, Structure, Dose).
 This is a work in progress.  This file will eventually contain instructions for an end-user.
 
-### Code organization
+## Code organization
 *DICOM_to_Python*  
 This code contains functions that read dicom files and generate python objects containing the data required for input into the
 SQL database.  There is no explicit user input.  All data is pulled from DICOM files (except for RxDose from Pinnacle, see note
@@ -24,7 +24,7 @@ These functions are designed to process data retrieved from the SQL data and con
 From independently created .roi files, this class generates a map of roi names and provides functions to query
 and edit this map.  Each roi points to an institutional roi, physician roi, and a physician.
 
-### To Do List
+## To Do List
 
 - [ ] Write DICOM pre-import validation function
 
@@ -39,8 +39,8 @@ and edit this map.  Each roi points to an institutional roi, physician roi, and 
 - [ ] Develop for SQL other than MySQL
 
 
-### Dependencies
-##### Main Requirements:
+## Dependencies
+### Main Requirements:
 * [Python](https://www.python.org) 2.7 tested
 * [MySQL](https://dev.mysql.com/downloads/mysql/) and [MySQL Connector](https://dev.mysql.com/downloads/connector/python/)
 * [numpy](https://pypi.python.org/pypi/numpy) 1.12.1 tested
