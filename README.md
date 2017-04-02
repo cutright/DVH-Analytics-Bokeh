@@ -25,17 +25,8 @@ From independently created .roi files, this class generates a map of roi names a
 and edit this map.  Each roi points to an institutional roi, physician roi, and a physician.
 
 ### To Do List
-- [X] Write SQL_Tools fuctions to remove a plan row from PatientPlans master table
 
 - [ ] Write DICOM pre-import validation function
-
-- [X] Adjust Connect_to_SQL() from SQL_Tools to read a config file for SQL server login information
-
-- [ ] Force SQL_DVH_to_Py to conform to 1cGy dose bin size
-
-- [X] Convert this to do list into a markdown task list
-
-- [X] Remove PlanIDs and use StudyInstanceUID instead (Assume DB input are only final composite dose)
 
 - [ ] Add thorough comments throughout all code
 
@@ -45,21 +36,20 @@ and edit this map.  Each roi points to an institutional roi, physician roi, and 
 
 - [ ] Validate DoseToVolume and VolumeOfDose functions in Analysis_Tools
 
-- [X] Include more thorough beam data
-
-- [X] Add DVH spread function
-
-- [X] Track dose grid resolution
-
-- [X] Generate key for tx sites
+- [ ] Develop for SQL other than MySQL
 
 
-
-# References
-Built on these Python libraries
-
-pydicom  
-https://github.com/darcymason/pydicom
-
-dicompyler  
-https://github.com/bastula/dicompyler
+### Dependencies
+##### Main Requirements:
+* [Python](https://www.python.org) 2.7 tested
+* [MySQL](https://dev.mysql.com/downloads/mysql/) and [MySQL Connector](https://dev.mysql.com/downloads/connector/python/)
+* [numpy](https://pypi.python.org/pypi/numpy) 1.12.1 tested
+* [matplotlib](https://pypi.python.org/pypi/matplotlib) 2.0.0 tested
+* [pydicom](https://github.com/darcymason/pydicom) 0.9.9
+* [dicompyler-core](https://pypi.python.org/pypi/dicompyler-core) 0.5.2
+    * requirements per [developer](https://github.com/bastula/dicompyler/wiki/BuildRequirements)
+        * [numpy](http://www.numpy.org/) 1.2 or higher
+        * [pydicom](http://code.google.com/p/pydicom/) 0.9.9 or higher
+            * pydicom 1.0 is preferred and can be installed via pip using: pip install https://github.com/darcymason/pydicom/archive/master.zip
+        * [matplotlib](http://matplotlib.sourceforge.net/) 1.3.0 or higher (for DVH calculation)
+        * [six](https://pythonhosted.org/six/) 1.5 or higher
