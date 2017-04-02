@@ -424,6 +424,7 @@ class FxGrpTable:
         fx_group_count = len(fx_grp_seq)
 
         for i in range(0, fx_group_count):
+            print i
             rx_dose = 0
             fx_grp_num = i + 1
             fx_dose = 0
@@ -441,16 +442,20 @@ class FxGrpTable:
             # Because DICOM does not contain Rx's explicitly, the user must create
             # a point in the RT Structure file called 'rx[#]: ' per rx
             roi_counter = 0
-            roi_count = len(rt_structure.StructureSetROISequence)
             roi_seq = rt_structure.StructureSetROISequence  # just limit num characters in code
+            roi_count = len(roi_seq)
             # set defaults in case rx and tx points are not found
 
-            while roi_counter < roi_count:
+            rx_pt_found = False
+            while roi_counter < roi_count and not rx_pt_found:
                 roi_name = roi_seq[roi_counter].ROIName.lower()
                 if len(roi_name) > 2:
                     temp = roi_name.split(':')
-                    if temp[0][0:3] == 'rx ' and int(temp[0].strip('rx ')) == i + 1:
+                    print temp[0]
+                    print i + 1
 
+                    if temp[0][0:3] == 'rx ' and int(temp[0].strip('rx ')) == i + 1:
+                        print roi_name
                         fx_grp_num = int(temp[0].strip('rx '))
 
                         fx_grp_name = temp[1].strip()
@@ -458,6 +463,7 @@ class FxGrpTable:
                         fx_dose = float(temp[2].split('cgy')[0]) / float(100)
                         fxs = int(temp[2].split('x ')[1].split(' to')[0])
                         rx_dose = fx_dose * float(fxs)
+                        print rx_dose
 
                         rx_percent = float(temp[2].strip().split(' ')[5].strip('%'))
                         norm_method = temp[3].strip()
@@ -466,6 +472,7 @@ class FxGrpTable:
                             norm_object = temp[4].strip()
                         else:
                             norm_object = 'plan_max'
+                        rx_pt_found = True
 
                 roi_counter += 1
 

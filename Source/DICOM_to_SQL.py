@@ -33,7 +33,7 @@ def get_file_paths(start_path):
     dose_files = []
     study_uid_dose = []
 
-    for x in range(0, len(f) - 1):
+    for x in range(0, len(f)):
         try:
             DICOM_File = dicom.read_file(f[x])
             if DICOM_File.Modality.lower() == 'rtplan':
