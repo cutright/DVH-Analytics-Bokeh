@@ -47,7 +47,7 @@ and edit this map.  Each roi points to an institutional roi, physician roi, and 
 * [matplotlib](https://pypi.python.org/pypi/matplotlib) 2.0.0 tested
 * [pydicom](https://github.com/darcymason/pydicom) 0.9.9
 * [dicompyler-core](https://pypi.python.org/pypi/dicompyler-core) 0.5.2
-    * requirements per [developer](https://github.com/bastula/dicompyler/wiki/BuildRequirements)
+    * requirements per [developer](https://github.com/bastula)
         * [numpy](http://www.numpy.org/) 1.2 or higher
         * [pydicom](http://code.google.com/p/pydicom/) 0.9.9 or higher
             * pydicom 1.0 is preferred and can be installed via pip using: pip install https://github.com/darcymason/pydicom/archive/master.zip
