@@ -30,7 +30,7 @@ and edit this map.  Each roi points to an institutional roi, physician roi, and 
 
 - [ ] Add thorough comments throughout all code
 
-- [X] Incorporate EUD calculations
+- [ ] EUD calculations: Incorporate look-up tables of a-values
 
 - [ ] Incorporate BED calculations
 
