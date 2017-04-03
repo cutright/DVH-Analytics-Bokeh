@@ -68,6 +68,9 @@ def dicom_to_sql(start_path):
     f = get_file_paths(start_path)
 
     for n in range(0, len(f)):
+        print f[n].structure
+        print f[n].plan
+        print f[n].dose
         plan = PlanRow(f[n].plan, f[n].structure, f[n].dose)
         beams = BeamTable(f[n].plan)
         dvhs = DVHTable(f[n].structure, f[n].dose)

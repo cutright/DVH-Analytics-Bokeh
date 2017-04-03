@@ -133,23 +133,23 @@ class DatabaseROIs:
         return keys
 
     def is_institutional_roi(self, roi):
-        clean_roi = roi.lower()
+        clean_roi = roi.replace(' ', '_').lower()
         for key in self.institutional_roi_map:
-            if clean_roi == key:
+            if clean_roi == key.replace(' ','_').lower():
                 return True
         return False
 
     def is_physician_roi(self, roi):
-        clean_roi = roi.lower()
+        clean_roi = roi.replace(' ', '_').lower()
         for key in self.physician_roi_map:
-            if clean_roi == key:
+            if clean_roi == key.replace(' ','_').lower():
                 return True
         return False
 
     def is_roi(self, roi):
-        clean_roi = roi.lower()
+        clean_roi = roi.replace(' ', '_').lower().strip()
         for key in self.roi_map:
-            if clean_roi == key:
+            if clean_roi == key.replace(' ', '_').lower():
                 return True
         return False
 
@@ -160,6 +160,8 @@ class DatabaseROIs:
         return False
 
     def get_physician_roi(self, roi, physician):
+        physician = physician.upper()
+        roi = roi.strip().replace(' ', '_').lower()
         if not self.is_physician(physician):
             physician = 'default'
         if self.is_roi(roi):
@@ -172,6 +174,8 @@ class DatabaseROIs:
             return 'uncategorized'
 
     def get_institutional_roi(self, roi, physician):
+        physician = physician.upper()
+        roi = roi.strip().replace(' ', '_').lower()
         if not self.is_physician(physician):
             physician = 'default'
         if self.is_roi(roi):
@@ -184,10 +188,10 @@ class DatabaseROIs:
             return 'uncategorized'
 
     def update_maps(self, roi_map):
-        institutional_roi = roi_map.institutional_roi_name
-        physician_roi = roi_map.physician_roi_name
-        roi = roi_map.roi_name
-        physician = roi_map.physician
+        institutional_roi = roi_map.institutional_roi_name.replace(' ', '_').lower().strip()
+        physician_roi = roi_map.physician_roi_name.replace(' ', '_').lower().strip()
+        roi = roi_map.roi_name.replace(' ', '_').lower().strip()
+        physician = roi_map.physician.upper()
 
         # Add roi index to institutional_roi_map
         if self.is_institutional_roi(institutional_roi):

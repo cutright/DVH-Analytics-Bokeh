@@ -124,7 +124,9 @@ class PlanRow:
             age = relativedelta(sim_study_date_obj, birth_date_obj).years
 
         # Record physician initials from ReferringPhysicianName tag
-        rad_onc = rt_plan.ReferringPhysicianName
+        rad_onc = rt_plan.ReferringPhysicianName.upper()
+        if not rad_onc:
+            rad_onc = rt_plan.PhysiciansOfRecord.upper()
 
         # Initialize fx and MU counters, iterate over all rx's
         fxs = 0
@@ -270,6 +272,8 @@ class DVHTable:
         rt_structures = rt_structure.GetStructures()
 
         physician = rt_structure_dicom.ReferringPhysicianName.upper()
+        if not physician:
+            physician = rt_structure_dicom.PhysiciansOfRecord.upper()
 
         values = {}
         row_counter = 0
@@ -283,7 +287,7 @@ class DVHTable:
                         st_type = 'ITV'
                     else:
                         st_type = rt_structures[key]['type']
-                    current_roi_name = rt_structures[key]['name'].lower()
+                    current_roi_name = rt_structures[key]['name']
                     inst_roi = database_rois.get_institutional_roi(current_roi_name,
                                                                    physician)
                     phys_roi = database_rois.get_physician_roi(current_roi_name,
@@ -355,7 +359,10 @@ class BeamTable:
 
                 cp_count = beam_seq.NumberOfControlPoints
                 first_cp = beam_seq.ControlPointSequence[0]
-                final_cp = beam_seq.ControlPointSequence[cp_count - 1]
+                if beam_seq.BeamType == 'STATIC':
+                    final_cp = first_cp
+                else:
+                    final_cp = beam_seq.ControlPointSequence[cp_count - 1]
                 gantry_start = float(first_cp.GantryAngle)
                 gantry_rot_dir = first_cp.GantryRotationDirection
                 gantry_end = float(final_cp.GantryAngle)
@@ -365,7 +372,7 @@ class BeamTable:
                 # If beam is an arc, return average SSD, otherwise
                 if gantry_rot_dir in {'CW', 'CC'}:
                     ssd = 0
-                    for CP in range(0, cp_count - 1):
+                    for CP in range(0, cp_count):
                         ssd += round(float(beam_seq.ControlPointSequence[CP].SourceToSurfaceDistance) / 10, 2)
                     ssd /= cp_count
                 else:
