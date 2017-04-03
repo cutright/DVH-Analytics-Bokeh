@@ -183,6 +183,8 @@ class DatabaseROIs:
             for i in indices:
                 if physician == self.roi[int(i)].physician:
                     return self.roi[int(i)].institutional_roi_name
+            if self.is_institutional_roi(roi):
+                return roi
             return 'uncategorized'
         else:
             return 'uncategorized'
