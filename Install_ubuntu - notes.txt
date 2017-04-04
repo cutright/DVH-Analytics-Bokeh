@@ -1,4 +1,3 @@
-#!/bin/bash
 # Ubuntu install script
 
 # Install apt-get and pip
@@ -17,3 +16,12 @@ sudo pip install numpy
 sudo apt-get install python-matplotlib
 sudo pip install dicompyler-core
 sudo pip install mysql-connector==2.1.4
+
+# if using PyCharm, note it requires java jre and sdk
+# sudo apt-get install default-jre
+# sudo apt-get install default-jdk
+
+# Edit SQL_Connect.cnf with login and database name
+
+# install git
+# sudo apt-get install git

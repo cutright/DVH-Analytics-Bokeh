@@ -8,11 +8,10 @@ Created on Sun Feb 26 11:06:28 2017
 """
 
 import dicom  # PyDICOM
-from dicompylercore import dicomparser, dvhcalc  # DICOMPyler.com
-from datetime import datetime
+from dicompylercore import dicomparser, dvhcalc
+import datetime
 from dateutil.relativedelta import relativedelta
 from ROI_Name_Manager import *
-import re
 
 
 # Each ROI class object contains data to fill an entire row of the SQL table 'DVHs'
@@ -107,8 +106,8 @@ class PlanRow:
         sim_study_year = int(sim_study_date[0:4])
         sim_study_month = int(sim_study_date[4:6])
         sim_study_day = int(sim_study_date[6:8])
-        sim_study_date_obj = datetime(sim_study_year, sim_study_month,
-                                      sim_study_day)
+        sim_study_date_obj = datetime.datetime(sim_study_year, sim_study_month,
+                                               sim_study_day)
 
         # Calculate patient age at time of sim
         # Set to NULL birthday is not in DICOM file
@@ -120,12 +119,12 @@ class PlanRow:
             birth_year = int(birth_date[0:4])
             birth_month = int(birth_date[4:6])
             birth_day = int(birth_date[6:8])
-            birth_date_obj = datetime(birth_year, birth_month, birth_day)
+            birth_date_obj = datetime.datetime(birth_year, birth_month, birth_day)
             age = relativedelta(sim_study_date_obj, birth_date_obj).years
 
         # Record physician initials from ReferringPhysicianName tag
         rad_onc = rt_plan.ReferringPhysicianName.upper()
-        if not rad_onc:
+        if hasattr(rt_plan, 'PhysiciansOfRecord') and not rad_onc:
             rad_onc = rt_plan.PhysiciansOfRecord.upper()
 
         # Initialize fx and MU counters, iterate over all rx's
@@ -272,7 +271,7 @@ class DVHTable:
         rt_structures = rt_structure.GetStructures()
 
         physician = rt_structure_dicom.ReferringPhysicianName.upper()
-        if not physician:
+        if hasattr(rt_structure_dicom, 'PhysiciansOfRecord') and not physician:
             physician = rt_structure_dicom.PhysiciansOfRecord.upper()
 
         values = {}

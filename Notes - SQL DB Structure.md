@@ -1,6 +1,7 @@
 ### SQL Database format for this project
 This code is being built assuming the database is MySQL.  There will be tables called Plans, DVHs, and beams in the database 'DVH'.
-The 'Plans' table contains the following data:
+The 'Plans' table contains the following data:  
+*NOTE:* Need to add Rxs Table and update currently described ones.
 
 Field | Type | Source
 ----- | ---- | ------
@@ -26,10 +27,8 @@ TxModality | varchar(30) | dicompyler GetPlan(), RT_Plan.BeamSequence[0].Control
 MUs | int(6) unsigned | Sum of RT_Plan.FractionGroupSequence[FxGroup].ReferencedBeamSequence[BeamNum].BeamMeterset (linac only)
 TxTime | time | TBD (Brachy and Gamma Knife only)
 
-Pinnacle DICOM Dose files do not explicitly contain prescriptions or treatment sites.  This code requires that the plan name be equal to
-the Tx Site.The prescription is parsed from a point stored in the DICOM RT Structure file with a name called 'rx: ' + [total dose] + 'Gy'
-or 'rx: ' + [Fractsions] + ' x ' [FractionalDose] + 'Gy'. This point will have to be added by the user in their planning system prior to
-DICOM export.  If this point is not found, the code will assume the Rx Dose is equal to the max point dose.
+Pinnacle DICOM Dose files do not explicitly contain prescriptions or treatment sites.  
+A custom Pinnacle script creates POIs containing this info, will document more thoroughly later.
 
 
 The 'Beams' table contains the following data:
