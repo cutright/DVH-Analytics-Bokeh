@@ -118,17 +118,22 @@ class DVH:
 
         doses = np.zeros(self.count)
         for x in range(0, self.count):
-            doses[x] = dose_to_volume(self.dvh[:, x], volume,
-                                      self.volume[x], self.dose_bin_size[x])
+            dvh = np.zeros(len(self.dvh))
+            for y in range(0, len(self.dvh)):
+                dvh[y] = self.dvh[y][x]
+                doses[x] = dose_to_volume(dvh, volume, self.dose_bin_size[x],
+                                          self.volume[x])
 
         return doses
 
     def get_volume_of_dose(self, Dose):
 
         x = (np.ones(self.count) * Dose) / self.dose_bin_size
-        x_range = [np.floor(x), np.ceil(x)]
-        y_range = [self.dvh[int(np.floor(x))], self.dvh[int(np.ceil(x))]]
-        roi_volume = np.interp(x, x_range, y_range)
+        roi_volume = {}
+        for i in range(0, self.count):
+            x_range = [np.floor(x[i]), np.ceil(x[i])]
+            y_range = [self.dvh[int(np.floor(x[i]))][i], self.dvh[int(np.ceil(x[i]))][i]]
+            roi_volume[i] = np.round(np.interp(x[i], x_range, y_range), 3)
 
         return roi_volume
 
@@ -184,7 +189,7 @@ def dose_to_volume(dvh, volume, dose_bin_size, *roi_volume):
     else:
         roi_volume = 1
 
-    dose_high = np.argmax(dvh < volume / roi_volume)
+    dose_high = np.argmax(dvh < (volume / roi_volume))
     y = volume / roi_volume
     x_range = [dose_high - 1, dose_high]
     y_range = [dvh[dose_high - 1], dvh[dose_high]]
