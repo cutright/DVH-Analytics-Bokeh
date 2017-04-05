@@ -1,10 +1,10 @@
 ### SQL Database format for this project
-This code is being built assuming the database is MySQL.  There will be tables called Plans, DVHs, and beams in the database 'DVH'.
+This code is being built assuming the database is MySQL.  There will be tables called Plans, DVHs, and beams in the database 'DVH'.  
+  
 The 'Plans' table contains the following data:  
-*NOTE:* Need to add Rxs Table and update currently described ones.
 
-Field | Type | Source
------ | ---- | ------
+Field | Type
+----- | ----
 MRN | varchar(12) | RT_Plan.PatientID
 Birthdate | date | RT_Plan.PatientBirthDate
 Age | tinyint(3) unsigned | RT_Plan.PatientBirthdate & RT_Plan.StudyDate
@@ -24,8 +24,9 @@ TPSManufacturer | varchar(50) | RT_Plan.Manufacturer
 TPSSoftwareName | varchar(50) | RT_Plan.ManufactuerModelName
 TPSSoftwareVersion | varchar(30) | RT_Plan.SoftwareVersions
 TxModality | varchar(30) | dicompyler GetPlan(), RT_Plan.BeamSequence[0].ControlPointSequence[0], RT_Plan.ManufactuerModelName
-MUs | int(6) unsigned | Sum of RT_Plan.FractionGroupSequence[FxGroup].ReferencedBeamSequence[BeamNum].BeamMeterset (linac only)
 TxTime | time | TBD (Brachy and Gamma Knife only)
+MUs | int(6) unsigned | Sum of RT_Plan.FractionGroupSequence[FxGroup].ReferencedBeamSequence[BeamNum].BeamMeterset (linac only)
+DoseGridRes | varchar(16) | rt_dose.PixelSpacing[0], rt_dose.PixelSpacing[1], rt_dose.SliceThickness
 
 Pinnacle DICOM Dose files do not explicitly contain prescriptions or treatment sites.  
 A custom Pinnacle script creates POIs containing this info, will document more thoroughly later.
