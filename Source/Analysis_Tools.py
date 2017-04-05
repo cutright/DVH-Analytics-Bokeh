@@ -24,8 +24,10 @@ class DVH:
         ROIName, Type, Volume, MinDose, MeanDose, MaxDose, DoseBinSize, VolumeString"""
         if condition_str:
             cursor_rtn = sqlcnx.query('DVHs', columns, condition_str[0])
+            self.query = condition_str[0]
         else:
             cursor_rtn = sqlcnx.query('DVHs', columns)
+            self.query = ''
 
         max_dvh_length = 0
         for row in cursor_rtn:
@@ -55,7 +57,7 @@ class DVH:
         for row in cursor_rtn:
             MRNs[dvh_counter] = str(row[0])
             study_uids[dvh_counter] = str(row[1])
-            roi_institutional[dvh_counter]= str(row[2])
+            roi_institutional[dvh_counter] = str(row[2])
             roi_physician[dvh_counter] = str(row[3])
             roi_names[dvh_counter] = str(row[4])
             roi_types[dvh_counter] = str(row[5])
@@ -80,7 +82,7 @@ class DVH:
             zero_fill = np.zeros(max_dvh_length - np.size(current_dvh))
             dvhs[:, dvh_counter] = np.concatenate((current_dvh, zero_fill))
 
-            if eud_a_values.has_key(roi_physician[dvh_counter]):
+            if eud_a_values in [roi_physician[dvh_counter]]:
                 current_a = eud_a_values[roi_physician[dvh_counter]]
             elif roi_types[dvh_counter].lower() in {'gtv', 'ctv', 'ptv'}:
                 current_a = float(-10)
@@ -91,7 +93,7 @@ class DVH:
 
             dvh_counter += 1
 
-        self.MRN = MRNs
+        self.mrn = MRNs
         self.study_uid = study_uids
         self.roi_institutional = roi_institutional
         self.roi_physician = roi_physician
@@ -106,11 +108,139 @@ class DVH:
         self.dvh = dvhs
         self.count = dvh_counter
         self.eud = euds
-        self.a_value = a_values
+        self.eud_a_value = a_values
+        self.bin_count = max_dvh_length
+
+        # Initialize properties
+        # Calculating all of these can be computationally expensive
+        # so using @property method below only calculates these if called
+        self._min_dvh = np.ones(max_dvh_length)
+        self._q1_dvh = np.ones(max_dvh_length)
+        self._mean_dvh = np.ones(max_dvh_length)
+        self._median_dvh = np.ones(max_dvh_length)
+        self._q3_dvh = np.ones(max_dvh_length)
+        self._max_dvh = np.ones(max_dvh_length)
+        self._std_dvh = np.ones(max_dvh_length)
+
         sqlcnx.cnx.close()
 
-    def sort(self, sorted_indices):
-        self.MRN = [self.MRN[x] for x in sorted_indices]
+    def __repr__(self):
+        if self.count > 1:
+            plural = 's'
+        else:
+            plural = ''
+        rtn_str = 'This object contains %d Plan%s' % (self.count, plural)
+        if self.query:
+            rtn_str += ' such that %s.' % (self.query)
+
+        # Create empty class to speed up dir()
+        empty_class = DVH("StudyInstanceUID = '*'")
+
+        properties = []
+        functions = []
+        for attr in dir(empty_class):
+            if not attr.startswith('_'):
+                if callable(getattr(empty_class, attr)):
+                    functions.append(attr)
+                else:
+                    properties.append(attr)
+
+        num_properties = len(properties)
+        num_rows_to_print = num_properties / 3 + 1
+        final_row_len = num_properties % 3
+
+        rtn_str += '\n\nAvailable properties:\n'
+        for i in range(0, num_rows_to_print - 1):
+            x = i * 3
+            temp = properties[x] + ' ' * (30 - len(properties[x]))
+            temp += properties[x + 1] + ' ' * (30 - len(properties[x + 1]))
+            temp += properties[x + 2] + ' ' * (30 - len(properties[x + 2]))
+            rtn_str += temp + '\n'
+        temp = ''
+        for j in range(0, final_row_len):
+            x = (i * 3) + 1
+            temp += properties[x + j] + ' ' * (30 - len(properties[x + j]))
+        rtn_str += temp
+
+        num_functions = len(functions)
+        num_rows_to_print = num_functions / 3 + 1
+        final_row_len = num_functions % 3
+
+        rtn_str += '\n\nAvailable functions:\n'
+        for i in range(0, num_rows_to_print - 1):
+            x = i * 3
+            temp = functions[x] + ' ' * (30 - len(functions[x]))
+            temp += functions[x + 1] + ' ' * (30 - len(functions[x + 1]))
+            temp += functions[x + 2] + ' ' * (30 - len(functions[x + 2]))
+            rtn_str += temp + '\n'
+        temp = ''
+        for j in range(0, final_row_len):
+            x = (i * 3) + 1
+            temp += functions[x + j] + ' ' * (30 - len(functions[x + j]))
+        rtn_str += temp
+
+        return rtn_str
+
+    @property
+    def min_dvh(self):
+        dvh = np.zeros(self.bin_count)
+        for x in range(0, self.bin_count):
+            dvh[x] = np.min(self.dvh[x, :])
+        return dvh
+
+    @property
+    def q1_dvh(self):
+        dvh = np.zeros(self.bin_count)
+        for x in range(0, self.bin_count):
+            dvh[x] = np.percentile(self.dvh[x, :], 25)
+        return dvh
+
+    @property
+    def mean_dvh(self):
+        dvh = np.zeros(self.bin_count)
+        for x in range(0, self.bin_count):
+            dvh[x] = np.mean(self.dvh[x, :])
+        return dvh
+
+    @property
+    def median_dvh(self):
+        dvh = np.zeros(self.bin_count)
+        for x in range(0, self.bin_count):
+            dvh[x] = np.median(self.dvh[x, :])
+        return dvh
+
+    @property
+    def q3_dvh(self):
+        dvh = np.zeros(self.bin_count)
+        for x in range(0, self.bin_count):
+            dvh[x] = np.percentile(self.dvh[x, :], 75)
+        return dvh
+
+    @property
+    def max_dvh(self):
+        dvh = np.zeros(self.bin_count)
+        for x in range(0, self.bin_count):
+            dvh[x] = np.max(self.dvh[x, :])
+        return dvh
+
+    @property
+    def std_dvh(self):
+        dvh = np.zeros(self.bin_count)
+        for x in range(0, self.bin_count):
+            dvh[x] = np.std(self.dvh[x, :])
+        return dvh
+
+    def get_percentile_dvh(self, percentile):
+        dvh = np.zeros(self.bin_count)
+        for x in range(0, self.bin_count):
+            dvh[x] = np.percentile(self.dvh[x, :], percentile)
+        return dvh
+
+    def sort(self, to_be_sorted, *order):
+        sorted_indices = np.argsort(to_be_sorted)
+        if order and order[0].lower() == 'descending':
+            sorted_indices = sorted_indices[::-1]
+        self.mrn = [self.mrn[x] for x in sorted_indices]
         self.study_uid = [self.study_uid[x] for x in sorted_indices]
         self.roi_name = [self.roi_name[x] for x in sorted_indices]
         self.roi_type = [self.roi_type[x] for x in sorted_indices]
@@ -123,16 +253,6 @@ class DVH:
         for x in range(0, np.size(self.dvh, 1)):
             np.copyto(dvh_temp[:, x], self.dvh[:, sorted_indices[x]])
         np.copyto(self.dvh, dvh_temp)
-
-    def get_avg_dvh(self):
-
-        avg_dvh = np.zeros([np.size(self.dvh, 0)])
-        for x in range(0, self.count):
-            avg_dvh += self.dvh[:, x] / np.max(self.dvh[:, x])
-        avg_dvh /= self.count
-        avg_dvh /= max(avg_dvh)
-
-        return avg_dvh
 
     def get_dose_to_volume(self, volume):
 
@@ -166,43 +286,8 @@ class DVH:
         return answer
 
 
-class DVH_Spread:
-    def __init__(self, dvhs):
-        dvh_len = np.size(dvhs, 0)
-
-        minimum = np.zeros(dvh_len)
-        q1 = np.zeros(dvh_len)
-        mean = np.zeros(dvh_len)
-        median = np.zeros(dvh_len)
-        q3 = np.zeros(dvh_len)
-        maximum = np.zeros(dvh_len)
-        std = np.zeros(dvh_len)
-
-        for x in range(0, dvh_len):
-            minimum[x] = np.min(dvhs[x, :])
-            q1[x] = np.percentile(dvhs[x, :], 25)
-            mean[x] = np.mean(dvhs[x, :])
-            median[x] = np.median(dvhs[x, :])
-            q3[x] = np.percentile(dvhs[x, :], 75)
-            maximum[x] = np.max(dvhs[x, :])
-            std[x] = np.std(dvhs[x, :])
-
-        # if std[x] < 0, std[x] = 0
-        std = np.multiply(std, np.greater(std, np.zeros_like(std)))
-
-        self.x = range(0, dvh_len)
-        self.min = minimum
-        self.q1 = q1
-        self.mean = mean
-        self.median = median
-        self.q3 = q3
-        self.max = maximum
-        self.std = std
-
-
 # Returns the isodose level outlining the given volume
 def dose_to_volume(dvh, volume, dose_bin_size, *roi_volume):
-
     # if an roi_volume is not given, volume is assumed to be fractional
     if roi_volume:
         roi_volume = roi_volume[0]
@@ -218,19 +303,8 @@ def dose_to_volume(dvh, volume, dose_bin_size, *roi_volume):
     return dose
 
 
-# Just np.argsort with an order argument
-def get_sorted_indices(to_be_sorted, *order):
-
-    sorted_indicies = np.argsort(to_be_sorted)
-    if order and order[0].lower() == 'descend':
-        sorted_indicies = sorted_indicies[::-1]
-
-    return sorted_indicies
-
-
 # EUD = sum[ v(i) * D(i)^a ] ^ [1/a]
 def get_EUD(dvh, dose_bin_size, a):
-
     v = -np.gradient(dvh) * dose_bin_size
 
     D = np.linspace(1, np.size(dvh), np.size(dvh))
