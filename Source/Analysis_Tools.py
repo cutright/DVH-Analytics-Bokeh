@@ -13,6 +13,12 @@ from DVH_SQL import *
 class DVH:
     def __init__(self, *condition_str):
 
+        eud_a_values = {}
+        with open('EUD_a-values.txt', 'r') as document:
+            for line in document:
+                line = line.strip().split(',')
+                eud_a_values[line[0]] = float(line[1])
+
         sqlcnx = DVH_SQL()
         columns = """MRN, StudyInstanceUID, InstitutionalROI, PhysicianROI,
         ROIName, Type, Volume, MinDose, MeanDose, MaxDose, DoseBinSize, VolumeString"""
@@ -42,6 +48,8 @@ class DVH:
         max_doses = np.zeros(num_rows)
         dose_bin_sizes = np.zeros(num_rows)
         dvhs = np.zeros([max_dvh_length, len(cursor_rtn)])
+        euds = np.zeros(num_rows)
+        a_values = np.zeros(num_rows)
 
         dvh_counter = 0
         for row in cursor_rtn:
@@ -71,6 +79,16 @@ class DVH:
                 current_dvh /= max(current_dvh)
             zero_fill = np.zeros(max_dvh_length - np.size(current_dvh))
             dvhs[:, dvh_counter] = np.concatenate((current_dvh, zero_fill))
+
+            if eud_a_values.has_key(roi_physician[dvh_counter]):
+                current_a = eud_a_values[roi_physician[dvh_counter]]
+            elif roi_types[dvh_counter].lower() in {'gtv', 'ctv', 'ptv'}:
+                current_a = float(-10)
+            else:
+                current_a = float(1)
+            euds[dvh_counter] = get_EUD(current_dvh, 0.01, current_a)
+            a_values[dvh_counter] = current_a
+
             dvh_counter += 1
 
         self.MRN = MRNs
@@ -87,6 +105,8 @@ class DVH:
         self.dose_bin_size = dose_bin_sizes
         self.dvh = dvhs
         self.count = dvh_counter
+        self.eud = euds
+        self.a_value = a_values
         sqlcnx.cnx.close()
 
     def sort(self, sorted_indices):
@@ -220,6 +240,7 @@ def get_EUD(dvh, dose_bin_size, a):
     D_raised_a = np.power(D, a)
 
     EUD = np.power(np.sum(np.multiply(v, D_raised_a)), 1 / float(a))
+    EUD = np.round(EUD, 2)
 
     return EUD
 

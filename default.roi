@@ -15,6 +15,7 @@ cochlea
 cochlea_left
 cochlea_right
 colon
+ear_inner
 esophagus
 external
 femoral_head
@@ -32,6 +33,7 @@ liver
 lung_whole
 lung_left
 lung_right
+mandible
 optic_chiasm
 optic_nerve
 optic_nerve_left
@@ -39,6 +41,9 @@ optic_nerve_right
 orbit
 orbit_left
 orbit_right
+parotid
+parotid_left
+parotid_right
 rectum
 rib
 sacral_plexus

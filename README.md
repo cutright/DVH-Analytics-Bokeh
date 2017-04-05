@@ -33,7 +33,8 @@ See create_tables.sql for database structure.
 
 - [ ] Add thorough comments throughout all code
 
-- [ ] EUD calculations: Incorporate look-up tables of a-values
+- [x] EUD calculations: Incorporate look-up tables of a-values
+    - [ ] Validate calculations
 
 - [ ] Incorporate BED calculations
 

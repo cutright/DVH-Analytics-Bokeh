@@ -6,7 +6,7 @@ brainstem: BRAINSTEM: BRAINSTEM, Brain Stem, STUDY BRAIN STEM
 cochlea_left: COCHLEA_L: COCHLEA_L, L Cochlea, Left Cochlea, lt cochlea, STUDY COCHLEA L
 cochlea_right: COCHLEA_R: COCHLEA_R, R Cochlea, Right Cochlea, rt cochlea, STUDY COCHLEA R
 external: EXTERNAL: External
-larynx: LARYNX: LARYNX, STUDY LARYNX, Larynx Combo
+larynx: LARYNX: LARYNX, STUDY LARYNX, Larynx Combo, larynx_cb
 lens_left: LENS_L: LENS_L, Lens_L, L lens, Lens Lt
 lens_right: LENS_R: LENRS_R, Lens_R, R lens, Lens Rt
 optic_chiasm: CHIASM: CHIASM, OpticChiasm, STUDY CHIASM, optic chiasm
@@ -25,12 +25,12 @@ uncategorized: CONSTR_MID: CONSTR_MID, Mid Pharyngeal Const, middle constrictor,
 uncategorized: CONSTR_SUP: CONSTR_SUP, Pharyngeal constrictor (sup), STUDY CONSTRICTORS SUP, Sup Pharyngeal Const, superior constrictor, superior pharyngeal constrictor, Superior constrictors, Superior constrictor
 uncategorized: CONSTRICTORS_CB: CONSTRICTORS_CB, Combinded constrictors, Combined Const, combined constrictors, Combined constrictors, STUDY CONSTRICTORS CB, CONSTRICTOR_CB
 uncategorized: Ear_Inner_R: Ear_Inner_R
+uncategorized: Ear_Inner_L: Ear_Inner_L
 uncategorized: Ear_Middle_L: Ear_Middle_L
 uncategorized: Ear_Middle_R: Ear_Middle_R
 uncategorized: Esophagus_Up: Esophagus_Up
 uncategorized: HYOID_BONE: HYOID_BONE, Hyoid, STUDY HYOID BONE
 uncategorized: CAROTID_L: CAROTID_L, L Carotid, left carotid vessel, Left Carotid vessels, lt carotid, STUDY CAROTID L
-uncategorized: LARYNX_CB: LARYNX_CB
 uncategorized: LARYNX_GLOTTIC: LARYNX_GLOTTIC, Glottic larynx, STUDY LARYNX GLOTTIC, LARYNX_GLOT
 uncategorized: LARYNX_SUBGL: LARYNX_SUBGL, STUDY LARYNX SUBGLOTTIC, Subglottic larynx, LARYNX_SUB, Larynx_infraglottic
 uncategorized: LARYNX_SUPRAGL: LARYNX_SUPRAGL, STUDY LARYNX SUPRAGLOTTIC, Supraglottic larynx, LARYNX_SUPR, Larynx_Supraglottic
