@@ -129,7 +129,7 @@ class DVH:
             plural = 's'
         else:
             plural = ''
-        rtn_str = 'This object contains %d Plan%s' % (self.count, plural)
+        rtn_str = 'This object contains %d DVH%s' % (self.count, plural)
         if self.query:
             rtn_str += ' such that %s.' % (self.query)
 
