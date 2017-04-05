@@ -44,7 +44,6 @@ See "Notes - SQL DB Structure.txt" for database structure.
 
 
 ## Dependencies
-### Main Requirements:
 * [Python](https://www.python.org) 2.7 tested
 * [MySQL](https://dev.mysql.com/downloads/mysql/) and [MySQL Connector](https://dev.mysql.com/downloads/connector/python/)
 * [numpy](https://pypi.python.org/pypi/numpy) 1.12.1 tested
