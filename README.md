@@ -24,7 +24,7 @@ From independently created .roi files, this class generates a map of roi names a
 and edit this map.  Each roi points to an institutional roi, physician roi, and a physician.  
 
 *SQL*  
-See create_tables.sql for database structure.
+See "Notes - SQL DB Structure.txt" for database structure.
 
 ## To Do List
 - [ ] Validate dicompyler-core DVH calculations
