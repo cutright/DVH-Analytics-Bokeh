@@ -2,7 +2,7 @@
 This code is being built assuming the database is MySQL.  There will be tables called Plans, DVHs, and beams in the database 'DVH'.  
 
 ## Plans
-The 'Plans' table contains the following data:  
+The 'Plans' table has one row per plan and contains the following data:  
 
 Field | Type
 ----- | ----
@@ -30,7 +30,7 @@ MUs | int(6) unsigned | Sum of RT_Plan.FractionGroupSequence[FxGroup].Referenced
 DoseGridRes | varchar(16) | rt_dose.PixelSpacing[0], rt_dose.PixelSpacing[1], rt_dose.SliceThickness
 
 ## Beams
-The 'Beams' table contains the following data:
+The 'Beams' table has one row per beam and contains the following data:
 
 Field | Type
 ----- | ----
