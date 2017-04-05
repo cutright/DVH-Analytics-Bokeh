@@ -1,5 +1,5 @@
 # SQL Database format for this project
-This code is being built assuming the database is MySQL.  There will be tables called Plans, DVHs, and beams in the database 'DVH'.  
+This code is being built assuming the database is MySQL.  There will be tables called Plans, DVHs, Beams, and Rxs in the database defined in the SQL_Connection.cnf file.  
 
 ## Plans
 The 'Plans' table has one row per plan and contains the following data:  
