@@ -137,6 +137,7 @@ class DVH:
         empty_class = DVH("StudyInstanceUID = '*'")
 
         properties = []
+        max_len = 0
         functions = []
         for attr in dir(empty_class):
             if not attr.startswith('_'):
@@ -144,22 +145,26 @@ class DVH:
                     functions.append(attr)
                 else:
                     properties.append(attr)
+                length = len(attr)
+                if length > max_len:
+                    max_len = length
 
         num_properties = len(properties)
         num_rows_to_print = num_properties / 3 + 1
         final_row_len = num_properties % 3
+        col_width = max_len + 5
 
         rtn_str += '\n\nAvailable properties:\n'
         for i in range(0, num_rows_to_print - 1):
             x = i * 3
-            temp = properties[x] + ' ' * (30 - len(properties[x]))
-            temp += properties[x + 1] + ' ' * (30 - len(properties[x + 1]))
-            temp += properties[x + 2] + ' ' * (30 - len(properties[x + 2]))
+            temp = properties[x] + ' ' * (col_width - len(properties[x]))
+            temp += properties[x + 1] + ' ' * (col_width - len(properties[x + 1]))
+            temp += properties[x + 2] + ' ' * (col_width - len(properties[x + 2]))
             rtn_str += temp + '\n'
         temp = ''
         for j in range(0, final_row_len):
             x = (i * 3) + 1
-            temp += properties[x + j] + ' ' * (30 - len(properties[x + j]))
+            temp += properties[x + j] + ' ' * (col_width - len(properties[x + j]))
         rtn_str += temp
 
         num_functions = len(functions)
@@ -169,14 +174,14 @@ class DVH:
         rtn_str += '\n\nAvailable functions:\n'
         for i in range(0, num_rows_to_print - 1):
             x = i * 3
-            temp = functions[x] + ' ' * (30 - len(functions[x]))
-            temp += functions[x + 1] + ' ' * (30 - len(functions[x + 1]))
-            temp += functions[x + 2] + ' ' * (30 - len(functions[x + 2]))
+            temp = functions[x] + ' ' * (col_width - len(functions[x]))
+            temp += functions[x + 1] + ' ' * (col_width - len(functions[x + 1]))
+            temp += functions[x + 2] + ' ' * (col_width - len(functions[x + 2]))
             rtn_str += temp + '\n'
         temp = ''
         for j in range(0, final_row_len):
             x = (i * 3) + 1
-            temp += functions[x + j] + ' ' * (30 - len(functions[x + j]))
+            temp += functions[x + j] + ' ' * (col_width - len(functions[x + j]))
         rtn_str += temp
 
         return rtn_str
