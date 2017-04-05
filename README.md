@@ -20,8 +20,8 @@ This has the simple objective of writing to SQL Database with only a starting pa
 These functions are designed to process data retrieved from the SQL database and convert into python objects.
 
 *ROI_Name_Manager*  
-From independently created .roi files, this class generates a map of roi names and provides functions to query
-and edit this map.  Each roi points to an institutional roi, physician roi, and a physician.  
+From independently created .roi files, this class generates a map of ROI names and provides functions to query
+and edit this map.  Each ROI points to an institutional ROI, physician ROI, and a physician.  
 
 *SQL*  
 See "Notes - SQL DB Structure.txt" for database structure.
