@@ -1,6 +1,7 @@
-### SQL Database format for this project
+# SQL Database format for this project
 This code is being built assuming the database is MySQL.  There will be tables called Plans, DVHs, and beams in the database 'DVH'.  
-  
+
+## Plans
 The 'Plans' table contains the following data:  
 
 Field | Type
@@ -28,10 +29,7 @@ TxTime | time | TBD (Brachy and Gamma Knife only)
 MUs | int(6) unsigned | Sum of RT_Plan.FractionGroupSequence[FxGroup].ReferencedBeamSequence[BeamNum].BeamMeterset (linac only)
 DoseGridRes | varchar(16) | rt_dose.PixelSpacing[0], rt_dose.PixelSpacing[1], rt_dose.SliceThickness
 
-Pinnacle DICOM Dose files do not explicitly contain prescriptions or treatment sites.  
-A custom Pinnacle script creates POIs containing this info, will document more thoroughly later.
-
-
+## Beams
 The 'Beams' table contains the following data:
 
 Field | Type
@@ -58,6 +56,7 @@ CouchAngle | double
 IsocenterCoord | varchar(30)          
 SSD | double unsigned
 
+## DVHs
 The 'DVHs' table has one row per ROI and follows this format:
 
 Field | Type
@@ -75,7 +74,7 @@ MaxDose | double
 DoseBinSize | float       
 VolumeString | mediumtext
 
-
+## Rxs
 The 'Rxs' table has one row per ROI and follows this format:
 
 Field | Type
