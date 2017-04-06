@@ -19,7 +19,7 @@ from ROI_Name_Manager import *
 # There will be a ROI class per structure of a Plan
 class DVHRow:
     def __init__(self, MRN, study_instance_uid, institutional_roi_name, physician_roi_name,
-                 roi_name, roi_type, volume, min_dose, mean_dose, max_dose, dose_bin_size, dvh_str):
+                 roi_name, roi_type, volume, min_dose, mean_dose, max_dose, dvh_str):
         self.MRN = MRN
         self.study_instance_uid = study_instance_uid
         self.institutional_roi_name = institutional_roi_name
@@ -30,7 +30,6 @@ class DVHRow:
         self.min_dose = min_dose
         self.mean_dose = mean_dose
         self.max_dose = max_dose
-        self.dose_bin_size = dose_bin_size
         self.dvh_str = dvh_str
 
 
@@ -301,7 +300,6 @@ class DVHTable:
                                              current_dvh_calc.min,
                                              current_dvh_calc.mean,
                                              current_dvh_calc.max,
-                                             current_dvh_calc.bins[1],
                                              ','.join(['%.2f' % num for num in current_dvh_calc.counts]))
                     values[row_counter] = current_dvh_row
                     row_counter += 1
@@ -319,7 +317,6 @@ class DVHTable:
         self.min_dose = [values[x].min_dose for x in dvh_range]
         self.mean_dose = [values[x].mean_dose for x in dvh_range]
         self.max_dose = [values[x].max_dose for x in dvh_range]
-        self.dose_bin_size = [values[x].dose_bin_size for x in dvh_range]
         self.dvh_str = [values[x].dvh_str for x in dvh_range]
 
 

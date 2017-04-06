@@ -8,6 +8,7 @@ Created on Thu Mar  9 18:48:19 2017
 
 import numpy as np
 from DVH_SQL import *
+from prettytable import PrettyTable
 
 
 class DVH:
@@ -21,7 +22,7 @@ class DVH:
 
         sqlcnx = DVH_SQL()
         columns = """MRN, StudyInstanceUID, InstitutionalROI, PhysicianROI,
-        ROIName, Type, Volume, MinDose, MeanDose, MaxDose, DoseBinSize, VolumeString"""
+        ROIName, Type, Volume, MinDose, MeanDose, MaxDose, VolumeString"""
         if condition_str:
             cursor_rtn = sqlcnx.query('DVHs', columns, condition_str[0])
             self.query = condition_str[0]
@@ -31,7 +32,7 @@ class DVH:
 
         max_dvh_length = 0
         for row in cursor_rtn:
-            current_dvh_str = np.array(str(row[11]).split(','))
+            current_dvh_str = np.array(str(row[10]).split(','))
             current_size = np.size(current_dvh_str)
             if current_size > max_dvh_length:
                 max_dvh_length = current_size
@@ -48,7 +49,6 @@ class DVH:
         min_doses = np.zeros(num_rows)
         mean_doses = np.zeros(num_rows)
         max_doses = np.zeros(num_rows)
-        dose_bin_sizes = np.zeros(num_rows)
         dvhs = np.zeros([max_dvh_length, len(cursor_rtn)])
         euds = np.zeros(num_rows)
         a_values = np.zeros(num_rows)
@@ -72,23 +72,22 @@ class DVH:
             min_doses[dvh_counter] = row[7]
             mean_doses[dvh_counter] = row[8]
             max_doses[dvh_counter] = row[9]
-            dose_bin_sizes[dvh_counter] = row[10]
 
             # Process volumeString to numpy array
-            current_dvh_str = np.array(str(row[11]).split(','))
+            current_dvh_str = np.array(str(row[10]).split(','))
             current_dvh = current_dvh_str.astype(np.float)
             if max(current_dvh) > 0:
                 current_dvh /= max(current_dvh)
             zero_fill = np.zeros(max_dvh_length - np.size(current_dvh))
             dvhs[:, dvh_counter] = np.concatenate((current_dvh, zero_fill))
 
-            if eud_a_values in [roi_physician[dvh_counter]]:
+            if roi_physician[dvh_counter] in eud_a_values:
                 current_a = eud_a_values[roi_physician[dvh_counter]]
             elif roi_types[dvh_counter].lower() in {'gtv', 'ctv', 'ptv'}:
                 current_a = float(-10)
             else:
                 current_a = float(1)
-            euds[dvh_counter] = get_EUD(current_dvh, 0.01, current_a)
+            euds[dvh_counter] = calc_eud(current_dvh, current_a)
             a_values[dvh_counter] = current_a
 
             dvh_counter += 1
@@ -104,7 +103,6 @@ class DVH:
         self.min_dose = min_doses
         self.mean_dose = mean_doses
         self.max_dose = max_doses
-        self.dose_bin_size = dose_bin_sizes
         self.dvh = dvhs
         self.count = dvh_counter
         self.eud = euds
@@ -131,7 +129,58 @@ class DVH:
             plural = ''
         rtn_str = 'This object contains %d DVH%s' % (self.count, plural)
         if self.query:
-            rtn_str += ' such that %s.' % (self.query)
+            rtn_str += ' such that %s.' % self.query
+        print rtn_str + '\n'
+
+        table = PrettyTable()
+        table.field_names = ['Query Metric', 'Min', 'Mean', 'Max', 'Units']
+        min_values = ['Min ROI Dose',
+                      np.min(self.min_dose).round(decimals=2),
+                      np.mean(self.min_dose).round(decimals=2),
+                      np.max(self.min_dose).round(decimals=2),
+                      'Gy']
+        mean_values = ['Mean ROI Dose',
+                       np.min(self.mean_dose).round(decimals=2),
+                       np.mean(self.mean_dose).round(decimals=2),
+                       np.max(self.mean_dose).round(decimals=2),
+                       'Gy']
+        max_values = ['Max ROI Dose',
+                      np.min(self.max_dose).round(decimals=2),
+                      np.mean(self.max_dose).round(decimals=2),
+                      np.max(self.max_dose).round(decimals=2),
+                      'Gy']
+        volume_values = ['ROI Volume',
+                         np.min(self.volume).round(decimals=2),
+                         np.mean(self.volume).round(decimals=2),
+                         np.max(self.volume).round(decimals=2),
+                         'cc']
+        rx_dose_values = ['Rx Dose',
+                          np.min(self.rx_dose).round(decimals=2),
+                          np.mean(self.rx_dose).round(decimals=2),
+                          np.max(self.rx_dose).round(decimals=2),
+                          'Gy']
+        eud_values = ['ROI EUD',
+                      np.min(self.eud).round(decimals=2),
+                      np.mean(self.eud).round(decimals=2),
+                      np.max(self.eud).round(decimals=2),
+                      'Gy']
+        table.add_row(min_values)
+        table.add_row(mean_values)
+        table.add_row(max_values)
+        table.add_row(volume_values)
+        table.add_row(rx_dose_values)
+        table.add_row(eud_values)
+
+        return table.get_string()
+
+    def describe(self):
+        if self.count > 1:
+            plural = 's'
+        else:
+            plural = ''
+        rtn_str = 'This object contains %d DVH%s' % (self.count, plural)
+        if self.query:
+            rtn_str += ' such that %s.' % self.query
 
         # Create empty class to speed up dir()
         empty_class = DVH("StudyInstanceUID = '*'")
@@ -184,7 +233,7 @@ class DVH:
             temp += functions[x + j] + ' ' * (col_width - len(functions[x + j]))
         rtn_str += temp
 
-        return rtn_str
+        print rtn_str
 
     @property
     def min_dvh(self):
@@ -235,6 +284,24 @@ class DVH:
             dvh[x] = np.std(self.dvh[x, :])
         return dvh
 
+    def roi_statistics(self):
+        roi_table = PrettyTable()
+        roi_table.field_names = ['MRN', 'InstitutionalROI', 'ROIName', 'Volume',
+                                 'Min Dose', 'Mean Dose', 'Max Dose', 'EUD', 'a']
+        for i in range(0, self.count):
+            roi_values = [self.mrn[i],
+                          self.roi_institutional[i],
+                          self.roi_name[i],
+                          np.round(self.volume[i], 2),
+                          self.min_dose[i],
+                          self.mean_dose[i],
+                          self.max_dose[i],
+                          np.round(self.eud[i], 2),
+                          self.eud_a_value[i]]
+            roi_table.add_row(roi_values)
+
+        print roi_table
+
     def get_percentile_dvh(self, percentile):
         dvh = np.zeros(self.bin_count)
         for x in range(0, self.bin_count):
@@ -266,14 +333,13 @@ class DVH:
             dvh = np.zeros(len(self.dvh))
             for y in range(0, len(self.dvh)):
                 dvh[y] = self.dvh[y][x]
-                doses[x] = dose_to_volume(dvh, volume, self.dose_bin_size[x],
-                                          self.volume[x])
+                doses[x] = dose_to_volume(dvh, volume, self.volume[x])
 
         return doses
 
-    def get_volume_of_dose(self, Dose):
+    def get_volume_of_dose(self, dose):
 
-        x = (np.ones(self.count) * Dose) / self.dose_bin_size
+        x = (np.ones(self.count) * dose)
         roi_volume = {}
         for i in range(0, self.count):
             x_range = [np.floor(x[i]), np.ceil(x[i])]
@@ -292,7 +358,7 @@ class DVH:
 
 
 # Returns the isodose level outlining the given volume
-def dose_to_volume(dvh, volume, dose_bin_size, *roi_volume):
+def dose_to_volume(dvh, volume, *roi_volume):
     # if an roi_volume is not given, volume is assumed to be fractional
     if roi_volume:
         roi_volume = roi_volume[0]
@@ -303,25 +369,22 @@ def dose_to_volume(dvh, volume, dose_bin_size, *roi_volume):
     y = volume / roi_volume
     x_range = [dose_high - 1, dose_high]
     y_range = [dvh[dose_high - 1], dvh[dose_high]]
-    dose = np.interp(y, y_range, x_range) * dose_bin_size
+    dose = np.interp(y, y_range, x_range) * 0.01
 
     return dose
 
 
 # EUD = sum[ v(i) * D(i)^a ] ^ [1/a]
-def get_EUD(dvh, dose_bin_size, a):
-    v = -np.gradient(dvh) * dose_bin_size
+def calc_eud(dvh, a):
+    v = -np.gradient(dvh)
 
-    D = np.linspace(1, np.size(dvh), np.size(dvh))
-    D *= dose_bin_size
-    D -= (dose_bin_size / 2)
-    D = np.round(D, 3)
-    D_raised_a = np.power(D, a)
+    dose_bins = np.linspace(1, np.size(dvh), np.size(dvh))
+    dose_bins = np.round(dose_bins, 3)
+    bin_centers = dose_bins - 0.5
+    eud = np.power(np.sum(np.multiply(v, np.power(bin_centers, a))), 1 / float(a))
+    eud = np.round(eud, 2) * 0.01
 
-    EUD = np.power(np.sum(np.multiply(v, D_raised_a)), 1 / float(a))
-    EUD = np.round(EUD, 2)
-
-    return EUD
+    return eud
 
 
 if __name__ == '__main__':

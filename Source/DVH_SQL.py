@@ -94,7 +94,6 @@ class DVH_SQL:
             sql_input.append(str(round(dvh_table.min_dose[x], 2)))
             sql_input.append(str(round(dvh_table.mean_dose[x], 2)))
             sql_input.append(str(round(dvh_table.max_dose[x], 2)))
-            sql_input.append(str(dvh_table.dose_bin_size[x]))
             sql_input.append(dvh_table.dvh_str[x])
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'
