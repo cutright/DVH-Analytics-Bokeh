@@ -63,8 +63,8 @@ class QuerySQL:
         elif table_name == 'Rxs':
             query_dict = {'fx_dose': 'FxDose',
                           'fx_grp_name': 'FxGrpName',
-                          'fx_grp_num': 'FxGrpNum'
-                                        'fx_grp_count:' 'FxGrps',
+                          'fx_grp_num': 'FxGrpNum',
+                          'fx_grp_count': 'FxGrps',
                           'fx_count': 'Fxs',
                           'mrn': 'MRN',
                           'normalization_method': 'NormMethod',
@@ -84,7 +84,9 @@ class QuerySQL:
                 self.cursor = self.cnx.query(self.table_name,
                                              value,
                                              self.condition_str)
-                setattr(self, key, self.cursor_to_list())
+                rtn_list = self.cursor_to_list()
+                rtn_list[0] = query_dict[key]
+                setattr(self, key, rtn_list)
         else:
             print 'Table name in valid. Please select from Beams, DVHs, Plans, or Rxs.'
 
@@ -97,7 +99,7 @@ class QuerySQL:
 
         inverted = dict()
         rtn_list_unique = dict()
-        i = 0
+        i = 1
         for (a, b) in rtn_list.iteritems():
             if b not in inverted:
                 inverted[b] = a

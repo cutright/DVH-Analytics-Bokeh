@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Mar  9 18:48:19 2017
-
 @author: nightowl
 """
 
@@ -13,29 +12,30 @@ import matplotlib.pyplot as plt
 
 
 class DVH:
-    def __init__(self, study_uid_list, *condition_str):
+    def __init__(self, db_constraints, *condition_str):
 
-        sqlcnx = DVH_SQL()
+        cnx = DVH_SQL()
         columns = """MRN, StudyInstanceUID, InstitutionalROI, PhysicianROI,
         ROIName, Type, Volume, MinDose, MeanDose, MaxDose, VolumeString"""
 
-        if study_uid_list == 'all':
-            mrn_condition_str = ''
+        if db_constraints == 'all':
+            db_constraints_str = ''
         else:
-            mrn_conditions = []
-            for key in study_uid_list:
-                mrn_conditions.append(study_uid_list[key])
-            mrn_condition_str = " and MRN in ('"
-            mrn_condition_str += "', '".join(mrn_conditions)
-            mrn_condition_str += "')"
+            key = db_constraints[0]
+            db_constraints_list = []
+            for i in range(1, len(db_constraints)):
+                db_constraints_list.append(db_constraints[i])
+            db_constraints_str = " and " + key + " in ('"
+            db_constraints_str += "', '".join(db_constraints_list)
+            db_constraints_str += "')"
 
-        condition_str_final = condition_str[0] + mrn_condition_str
+        condition_str_final = condition_str[0] + db_constraints_str
 
         if condition_str:
-            cursor_rtn = sqlcnx.query('DVHs', columns, condition_str_final)
+            cursor_rtn = cnx.query('DVHs', columns, condition_str_final)
             self.query = condition_str[0]
         else:
-            cursor_rtn = sqlcnx.query('DVHs', columns)
+            cursor_rtn = cnx.query('DVHs', columns)
             self.query = ''
 
         max_dvh_length = 0
@@ -79,7 +79,7 @@ class DVH:
             condition = "MRN = '" + str(row[0])
             condition += "' and StudyInstanceUID = '"
             condition += str(study_uids[dvh_counter]) + "'"
-            rx_dose_cursor = sqlcnx.query('Plans', 'RxDose', condition)
+            rx_dose_cursor = cnx.query('Plans', 'RxDose', condition)
             rx_doses[dvh_counter] = rx_dose_cursor[0][0]
 
             roi_volumes[dvh_counter] = row[6]
@@ -134,7 +134,7 @@ class DVH:
         self._max_dvh = np.ones(max_dvh_length)
         self._std_dvh = np.ones(max_dvh_length)
 
-        sqlcnx.cnx.close()
+        cnx.cnx.close()
 
     def __repr__(self):
         return self.roi_statistics()
@@ -188,9 +188,14 @@ class DVH:
             dvh[x] = np.std(self.dvh[x, :])
         return dvh
 
-    def roi_statistics(self, *write_file_path):
+    def write_roi_statistics(self, file_path):
+        document = open(file_path[0], 'w')
+        document.write(self.roi_statistics())
+        document.close().t
+
+    def roi_statistics(self):
         roi_table = PrettyTable()
-        roi_table.field_names = ['MRN', 'InstitutionalROI', 'PhysicianROI','ROIName', 'Volume',
+        roi_table.field_names = ['MRN', 'InstitutionalROI', 'PhysicianROI', 'ROIName', 'Volume',
                                  'Min Dose', 'Mean Dose', 'Max Dose', 'EUD', 'a']
         for i in range(0, self.count):
             roi_table.add_row([self.mrn[i],
@@ -203,11 +208,6 @@ class DVH:
                                self.max_dose[i],
                                np.round(self.eud[i], 2),
                                self.eud_a_value[i]])
-
-        if write_file_path:
-            document = open(write_file_path[0], 'w')
-            document.write(roi_table.get_string())
-            document.close()
 
         return roi_table.get_string()
 
