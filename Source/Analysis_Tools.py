@@ -9,6 +9,7 @@ Created on Thu Mar  9 18:48:19 2017
 import numpy as np
 from DVH_SQL import *
 from prettytable import PrettyTable
+import matplotlib.pyplot as plt
 
 
 class DVH:
@@ -284,21 +285,26 @@ class DVH:
             dvh[x] = np.std(self.dvh[x, :])
         return dvh
 
-    def roi_statistics(self):
+    def get_roi_statistics(self, *file_path):
         roi_table = PrettyTable()
-        roi_table.field_names = ['MRN', 'InstitutionalROI', 'ROIName', 'Volume',
+        roi_table.field_names = ['MRN', 'InstitutionalROI', 'PhysicianROI','ROIName', 'Volume',
                                  'Min Dose', 'Mean Dose', 'Max Dose', 'EUD', 'a']
         for i in range(0, self.count):
-            roi_values = [self.mrn[i],
-                          self.roi_institutional[i],
-                          self.roi_name[i],
-                          np.round(self.volume[i], 2),
-                          self.min_dose[i],
-                          self.mean_dose[i],
-                          self.max_dose[i],
-                          np.round(self.eud[i], 2),
-                          self.eud_a_value[i]]
-            roi_table.add_row(roi_values)
+            roi_table.add_row([self.mrn[i],
+                               self.roi_institutional[i],
+                               self.roi_physician[i],
+                               self.roi_name[i],
+                               np.round(self.volume[i], 2),
+                               self.min_dose[i],
+                               self.mean_dose[i],
+                               self.max_dose[i],
+                               np.round(self.eud[i], 2),
+                               self.eud_a_value[i]])
+
+        if file_path:
+            document = open(file_path[0], 'w')
+            document.write(roi_table.get_string())
+            document.close()
 
         print roi_table
 
@@ -355,6 +361,29 @@ class DVH:
             answer[x] = self.get_volume_of_dose(float(self.rx_dose[x] * rx_dose_fraction))
 
         return answer
+
+    def plot_dvh(self):
+        x_axis = range(0, self.bin_count)
+        for i in range(0, self.count):
+            plt.plot(x_axis, self.dvh[:, i], label=self.mrn[i])
+        plt.legend(loc='best')
+        plt.xlabel('Dose (cGy)')
+        plt.ylabel('Relative Volume')
+        plt.title(self.query)
+
+    def plot_dvh_spread(self):
+        x_axis = range(0, self.bin_count)
+        plt.plot(x_axis, self.min_dvh, label='Min', linestyle=":", color='black')
+        plt.plot(x_axis, self.q1_dvh, label='Q1', linestyle="--", color='navy', linewidth=1.5)
+        plt.plot(x_axis, self.median_dvh, label='Median', color='crimson', linewidth=2)
+        plt.plot(x_axis, self.mean_dvh, label='Mean', color='deepskyblue', linewidth=2)
+        plt.plot(x_axis, self.q3_dvh, label='Q3', linestyle="--", color='navy', linewidth=1.5)
+        plt.plot(x_axis, self.max_dvh, label='Max', linestyle=":", color='black')
+        plt.legend(loc='best')
+        plt.xlabel('Dose (cGy)')
+        plt.ylabel('Relative Volume')
+        title = 'DVH Spread of ' + self.query
+        plt.title(title)
 
 
 # Returns the isodose level outlining the given volume
