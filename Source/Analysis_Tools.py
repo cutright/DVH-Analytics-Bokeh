@@ -13,19 +13,26 @@ import matplotlib.pyplot as plt
 
 
 class DVH:
-    def __init__(self, *condition_str):
-
-        eud_a_values = {}
-        with open('EUD_a-values.txt', 'r') as document:
-            for line in document:
-                line = line.strip().split(',')
-                eud_a_values[line[0]] = float(line[1])
+    def __init__(self, study_uid_list, *condition_str):
 
         sqlcnx = DVH_SQL()
         columns = """MRN, StudyInstanceUID, InstitutionalROI, PhysicianROI,
         ROIName, Type, Volume, MinDose, MeanDose, MaxDose, VolumeString"""
+
+        if study_uid_list == 'all':
+            mrn_condition_str = ''
+        else:
+            mrn_conditions = []
+            for key in study_uid_list:
+                mrn_conditions.append(study_uid_list[key])
+            mrn_condition_str = " and MRN in ('"
+            mrn_condition_str += "', '".join(mrn_conditions)
+            mrn_condition_str += "')"
+
+        condition_str_final = condition_str[0] + mrn_condition_str
+
         if condition_str:
-            cursor_rtn = sqlcnx.query('DVHs', columns, condition_str[0])
+            cursor_rtn = sqlcnx.query('DVHs', columns, condition_str_final)
             self.query = condition_str[0]
         else:
             cursor_rtn = sqlcnx.query('DVHs', columns)
@@ -53,6 +60,12 @@ class DVH:
         dvhs = np.zeros([max_dvh_length, len(cursor_rtn)])
         euds = np.zeros(num_rows)
         a_values = np.zeros(num_rows)
+
+        eud_a_values = {}
+        with open('EUD_a-values.txt', 'r') as document:
+            for line in document:
+                line = line.strip().split(',')
+                eud_a_values[line[0]] = float(line[1])
 
         dvh_counter = 0
         for row in cursor_rtn:
@@ -124,117 +137,7 @@ class DVH:
         sqlcnx.cnx.close()
 
     def __repr__(self):
-        if self.count > 1:
-            plural = 's'
-        else:
-            plural = ''
-        rtn_str = 'This object contains %d DVH%s' % (self.count, plural)
-        if self.query:
-            rtn_str += ' such that %s.' % self.query
-        print rtn_str + '\n'
-
-        table = PrettyTable()
-        table.field_names = ['Query Metric', 'Min', 'Mean', 'Max', 'Units']
-        min_values = ['Min ROI Dose',
-                      np.min(self.min_dose).round(decimals=2),
-                      np.mean(self.min_dose).round(decimals=2),
-                      np.max(self.min_dose).round(decimals=2),
-                      'Gy']
-        mean_values = ['Mean ROI Dose',
-                       np.min(self.mean_dose).round(decimals=2),
-                       np.mean(self.mean_dose).round(decimals=2),
-                       np.max(self.mean_dose).round(decimals=2),
-                       'Gy']
-        max_values = ['Max ROI Dose',
-                      np.min(self.max_dose).round(decimals=2),
-                      np.mean(self.max_dose).round(decimals=2),
-                      np.max(self.max_dose).round(decimals=2),
-                      'Gy']
-        volume_values = ['ROI Volume',
-                         np.min(self.volume).round(decimals=2),
-                         np.mean(self.volume).round(decimals=2),
-                         np.max(self.volume).round(decimals=2),
-                         'cc']
-        rx_dose_values = ['Rx Dose',
-                          np.min(self.rx_dose).round(decimals=2),
-                          np.mean(self.rx_dose).round(decimals=2),
-                          np.max(self.rx_dose).round(decimals=2),
-                          'Gy']
-        eud_values = ['ROI EUD',
-                      np.min(self.eud).round(decimals=2),
-                      np.mean(self.eud).round(decimals=2),
-                      np.max(self.eud).round(decimals=2),
-                      'Gy']
-        table.add_row(min_values)
-        table.add_row(mean_values)
-        table.add_row(max_values)
-        table.add_row(volume_values)
-        table.add_row(rx_dose_values)
-        table.add_row(eud_values)
-
-        return table.get_string()
-
-    def describe(self):
-        if self.count > 1:
-            plural = 's'
-        else:
-            plural = ''
-        rtn_str = 'This object contains %d DVH%s' % (self.count, plural)
-        if self.query:
-            rtn_str += ' such that %s.' % self.query
-
-        # Create empty class to speed up dir()
-        empty_class = DVH("StudyInstanceUID = '*'")
-
-        properties = []
-        max_len = 0
-        functions = []
-        for attr in dir(empty_class):
-            if not attr.startswith('_'):
-                if callable(getattr(empty_class, attr)):
-                    functions.append(attr)
-                else:
-                    properties.append(attr)
-                length = len(attr)
-                if length > max_len:
-                    max_len = length
-
-        num_properties = len(properties)
-        num_rows_to_print = num_properties / 3 + 1
-        final_row_len = num_properties % 3
-        col_width = max_len + 5
-
-        rtn_str += '\n\nAvailable properties:\n'
-        for i in range(0, num_rows_to_print - 1):
-            x = i * 3
-            temp = properties[x] + ' ' * (col_width - len(properties[x]))
-            temp += properties[x + 1] + ' ' * (col_width - len(properties[x + 1]))
-            temp += properties[x + 2] + ' ' * (col_width - len(properties[x + 2]))
-            rtn_str += temp + '\n'
-        temp = ''
-        for j in range(0, final_row_len):
-            x = (i * 3) + 1
-            temp += properties[x + j] + ' ' * (col_width - len(properties[x + j]))
-        rtn_str += temp
-
-        num_functions = len(functions)
-        num_rows_to_print = num_functions / 3 + 1
-        final_row_len = num_functions % 3
-
-        rtn_str += '\n\nAvailable functions:\n'
-        for i in range(0, num_rows_to_print - 1):
-            x = i * 3
-            temp = functions[x] + ' ' * (col_width - len(functions[x]))
-            temp += functions[x + 1] + ' ' * (col_width - len(functions[x + 1]))
-            temp += functions[x + 2] + ' ' * (col_width - len(functions[x + 2]))
-            rtn_str += temp + '\n'
-        temp = ''
-        for j in range(0, final_row_len):
-            x = (i * 3) + 1
-            temp += functions[x + j] + ' ' * (col_width - len(functions[x + j]))
-        rtn_str += temp
-
-        print rtn_str
+        return self.roi_statistics()
 
     @property
     def min_dvh(self):
@@ -285,7 +188,7 @@ class DVH:
             dvh[x] = np.std(self.dvh[x, :])
         return dvh
 
-    def get_roi_statistics(self, *file_path):
+    def roi_statistics(self, *write_file_path):
         roi_table = PrettyTable()
         roi_table.field_names = ['MRN', 'InstitutionalROI', 'PhysicianROI','ROIName', 'Volume',
                                  'Min Dose', 'Mean Dose', 'Max Dose', 'EUD', 'a']
@@ -301,12 +204,12 @@ class DVH:
                                np.round(self.eud[i], 2),
                                self.eud_a_value[i]])
 
-        if file_path:
-            document = open(file_path[0], 'w')
+        if write_file_path:
+            document = open(write_file_path[0], 'w')
             document.write(roi_table.get_string())
             document.close()
 
-        print roi_table
+        return roi_table.get_string()
 
     def get_percentile_dvh(self, percentile):
         dvh = np.zeros(self.bin_count)

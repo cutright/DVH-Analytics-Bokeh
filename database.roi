@@ -15,6 +15,7 @@ cochlea,cochlea,cochlea,default
 cochlea_left,cochlea_left,cochlea_left,default
 cochlea_right,cochlea_right,cochlea_right,default
 colon,colon,colon,default
+ear_inner,ear_inner,ear_inner,default
 esophagus,esophagus,esophagus,default
 external,external,external,default
 femoral_head,femoral_head,femoral_head,default
@@ -32,6 +33,7 @@ liver,liver,liver,default
 lung_whole,lung_whole,lung_whole,default
 lung_left,lung_left,lung_left,default
 lung_right,lung_right,lung_right,default
+mandible,mandible,mandible,default
 optic_chiasm,optic_chiasm,optic_chiasm,default
 optic_nerve,optic_nerve,optic_nerve,default
 optic_nerve_left,optic_nerve_left,optic_nerve_left,default
@@ -39,6 +41,9 @@ optic_nerve_right,optic_nerve_right,optic_nerve_right,default
 orbit,orbit,orbit,default
 orbit_left,orbit_left,orbit_left,default
 orbit_right,orbit_right,orbit_right,default
+parotid,parotid,parotid,default
+parotid_left,parotid_left,parotid_left,default
+parotid_right,parotid_right,parotid_right,default
 rectum,rectum,rectum,default
 rib,rib,rib,default
 sacral_plexus,sacral_plexus,sacral_plexus,default
@@ -89,6 +94,7 @@ external,external,external,BBM
 larynx,larynx,larynx,BBM
 larynx,larynx,study_larynx,BBM
 larynx,larynx,larynx_combo,BBM
+larynx,larynx,larynx_cb,BBM
 lens_left,lens_l,lens_l,BBM
 lens_left,lens_l,lens_l,BBM
 lens_left,lens_l,l_lens,BBM
@@ -183,6 +189,7 @@ uncategorized,constrictors_cb,combined_constrictors,BBM
 uncategorized,constrictors_cb,study_constrictors_cb,BBM
 uncategorized,constrictors_cb,constrictor_cb,BBM
 uncategorized,ear_inner_r,ear_inner_r,BBM
+uncategorized,ear_inner_l,ear_inner_l,BBM
 uncategorized,ear_middle_l,ear_middle_l,BBM
 uncategorized,ear_middle_r,ear_middle_r,BBM
 uncategorized,esophagus_up,esophagus_up,BBM
@@ -195,7 +202,6 @@ uncategorized,carotid_l,left_carotid_vessel,BBM
 uncategorized,carotid_l,left_carotid_vessels,BBM
 uncategorized,carotid_l,lt_carotid,BBM
 uncategorized,carotid_l,study_carotid_l,BBM
-uncategorized,larynx_cb,larynx_cb,BBM
 uncategorized,larynx_glottic,larynx_glottic,BBM
 uncategorized,larynx_glottic,glottic_larynx,BBM
 uncategorized,larynx_glottic,study_larynx_glottic,BBM
