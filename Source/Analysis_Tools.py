@@ -25,17 +25,16 @@ class DVH:
             db_constraints_list = []
             for i in range(1, len(db_constraints)):
                 db_constraints_list.append(db_constraints[i])
-            db_constraints_str = " and " + key + " in ('"
+            db_constraints_str = key + " in ('"
             db_constraints_str += "', '".join(db_constraints_list)
             db_constraints_str += "')"
 
-        condition_str_final = condition_str[0] + db_constraints_str
-
         if condition_str:
+            condition_str_final = condition_str[0] + " and " + db_constraints_str
             cursor_rtn = cnx.query('DVHs', columns, condition_str_final)
             self.query = condition_str[0]
         else:
-            cursor_rtn = cnx.query('DVHs', columns)
+            cursor_rtn = cnx.query('DVHs', columns, db_constraints_str)
             self.query = ''
 
         max_dvh_length = 0
