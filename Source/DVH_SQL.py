@@ -57,6 +57,14 @@ class DVH_SQL:
         else:
             return False
 
+    def get_column_names(self, table_name):
+        query = "select column_name from information_schema.columns where table_schema = 'DVH' and table_name = '"
+        query += table_name
+        query += "';"
+        self.cursor.execute(query)
+        results = self.cursor.fetchall()
+        return results
+
     def query(self, table_name, return_col_str, *condition_str):
 
         query = 'Select ' + return_col_str + ' from ' + table_name
@@ -69,32 +77,23 @@ class DVH_SQL:
 
         return results
 
-    def get_study_uid(self, MRN):
-
-        query = 'Select StudyInstanceUID from Plans where MRN=\'' + MRN + '\';'
-        self.cursor.execute(query)
-        results = self.cursor.fetchall()
-
-        return results
-
     def insert_dvhs(self, dvh_table):
 
         file_path = 'insert_values_DVHs.sql'
 
         # Import each ROI from ROI_PyTable, append to output text file
-        sql_input = []
         for x in range(0, dvh_table.count):
-            sql_input.append(str(dvh_table.MRN[x]))
-            sql_input.append(str(dvh_table.study_instance_uid[x]))
-            sql_input.append(dvh_table.institutional_roi_name[x])
-            sql_input.append(dvh_table.physician_roi_name[x])
-            sql_input.append(dvh_table.roi_name[x])
-            sql_input.append(dvh_table.roi_type[x])
-            sql_input.append(str(round(dvh_table.volume[x], 3)))
-            sql_input.append(str(round(dvh_table.min_dose[x], 2)))
-            sql_input.append(str(round(dvh_table.mean_dose[x], 2)))
-            sql_input.append(str(round(dvh_table.max_dose[x], 2)))
-            sql_input.append(dvh_table.dvh_str[x])
+            sql_input = [str(dvh_table.mrn[x]),
+                         str(dvh_table.study_instance_uid[x]),
+                         dvh_table.institutional_roi_name[x],
+                         dvh_table.physician_roi_name[x],
+                         dvh_table.roi_name[x],
+                         dvh_table.roi_type[x],
+                         str(round(dvh_table.volume[x], 3)),
+                         str(round(dvh_table.min_dose[x], 2)),
+                         str(round(dvh_table.mean_dose[x], 2)),
+                         str(round(dvh_table.max_dose[x], 2)),
+                         dvh_table.dvh_str[x]]
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'
             Prepend = 'INSERT INTO DVHs VALUES (\''
@@ -102,7 +101,6 @@ class DVH_SQL:
             sql_input += '\n'
             with open(file_path, "a") as text_file:
                 text_file.write(sql_input)
-            sql_input = []
 
         self.execute_file(file_path)
         os.remove(file_path)
@@ -110,32 +108,30 @@ class DVH_SQL:
 
     def insert_plan(self, plan):
 
-        file_path = 'insert_plan_' + plan.MRN + '.sql'
+        file_path = 'insert_plan_' + plan.mrn + '.sql'
 
         # Import each ROI from ROI_PyTable, append to output text file
-        sql_input = []
-        sql_input.append(str(plan.MRN))
-        sql_input.append(str(plan.birthdate))
-        sql_input.append(str(plan.age))
-        sql_input.append(plan.sex)
-        sql_input.append(plan.sim_study_date)
-        sql_input.append(plan.rad_onc)
-        sql_input.append(plan.tx_site)
-        sql_input.append(str(plan.rx_dose))
-        sql_input.append(str(plan.fxs))
-        sql_input.append(plan.energies)
-        sql_input.append(plan.study_instance_uid)
-        sql_input.append(plan.patient_orientation)
-        sql_input.append(str(plan.plan_time_stamp))
-        sql_input.append(str(plan.roi_time_stamp))
-        sql_input.append(str(plan.dose_time_stamp))
-        sql_input.append(plan.tps_manufacturer)
-        sql_input.append(plan.tps_software_name)
-        sql_input.append(str(plan.tps_software_version))
-        sql_input.append(plan.tx_modality)
-        sql_input.append(str(plan.tx_time))
-        sql_input.append(str(plan.total_mu))
-        sql_input.append(plan.dose_grid_resolution)
+        sql_input = [str(plan.mrn),
+                     str(plan.birth_date),
+                     str(plan.age),
+                     plan.patient_sex,
+                     plan.sim_study_date,
+                     plan.physician, plan.tx_site,
+                     str(plan.rx_dose),
+                     str(plan.fxs),
+                     plan.tx_energies,
+                     plan.study_instance_uid,
+                     plan.patient_orientation,
+                     str(plan.plan_time_stamp),
+                     str(plan.struct_time_stamp),
+                     str(plan.dose_time_stamp),
+                     plan.tps_manufacturer,
+                     plan.tps_software_name,
+                     str(plan.tps_software_version),
+                     plan.tx_modality,
+                     str(plan.tx_time),
+                     str(plan.total_mu),
+                     plan.dose_grid_resolution]
         sql_input = '\',\''.join(sql_input)
         sql_input += '\');'
         sql_input = sql_input.replace("'(NULL)'", "(NULL)")
@@ -154,28 +150,27 @@ class DVH_SQL:
         file_path = 'insert_values_beams.sql'
 
         # Import each ROI from ROI_PyTable, append to output text file
-        sql_input = []
         for x in range(0, beams.count):
-            sql_input.append(str(beams.MRN[x]))
-            sql_input.append(str(beams.study_instance_uid[x]))
-            sql_input.append(str(beams.beam_num[x]))
-            sql_input.append(beams.description[x])
-            sql_input.append(str(beams.fx_group[x]))
-            sql_input.append(str(beams.fxs[x]))
-            sql_input.append(str(beams.fx_group_beam_count[x]))
-            sql_input.append(str(round(beams.dose[x], 3)))
-            sql_input.append(str(beams.mu[x]))
-            sql_input.append(beams.radiation_type[x])
-            sql_input.append(str(beams.energy[x]))
-            sql_input.append(beams.delivery_type[x])
-            sql_input.append(str(beams.cp_count[x]))
-            sql_input.append(str(beams.gantry_start[x]))
-            sql_input.append(str(beams.gantry_end[x]))
-            sql_input.append(beams.gantry_rot_dir[x])
-            sql_input.append(str(beams.col_angle[x]))
-            sql_input.append(str(beams.couch_ang[x]))
-            sql_input.append(beams.isocenter_coord[x])
-            sql_input.append(str(round(beams.ssd[x], 2)))
+            sql_input = [str(beams.mrn[x]),
+                         str(beams.study_instance_uid[x]),
+                         str(beams.beam_number[x]),
+                         beams.beam_name[x],
+                         str(beams.fx_group[x]),
+                         str(beams.fxs[x]),
+                         str(beams.fx_grp_beam_count[x]),
+                         str(round(beams.beam_dose[x], 3)),
+                         str(beams.beam_mu[x]),
+                         beams.radiation_type[x],
+                         str(beams.beam_energy[x]),
+                         beams.beam_type[x],
+                         str(beams.control_point_count[x]),
+                         str(beams.gantry_start[x]),
+                         str(beams.gantry_end[x]),
+                         beams.gantry_rot_dir[x],
+                         str(beams.collimator_angle[x]),
+                         str(beams.couch_angle[x]),
+                         beams.isocenter[x],
+                         str(round(beams.ssd[x], 2))]
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'
             prepend = 'INSERT INTO Beams VALUES (\''
@@ -183,7 +178,6 @@ class DVH_SQL:
             sql_input += '\n'
             with open(file_path, "a") as text_file:
                 text_file.write(sql_input)
-            sql_input = []
 
         self.execute_file(file_path)
         os.remove(file_path)
@@ -193,20 +187,19 @@ class DVH_SQL:
 
         file_path = 'insert_values_rxs.sql'
 
-        sql_input = []
         for x in range(0, rx_table.count):
-            sql_input.append(str(rx_table.MRN[x]))
-            sql_input.append(str(rx_table.study_instance_uid[x]))
-            sql_input.append(str(rx_table.plan_name[x]))
-            sql_input.append(str(rx_table.fx_grp_name[x]))
-            sql_input.append(str(rx_table.fx_grp_num[x]))
-            sql_input.append(str(rx_table.fx_grps[x]))
-            sql_input.append(str(round(rx_table.fx_dose[x], 2)))
-            sql_input.append(str(rx_table.fxs[x]))
-            sql_input.append(str(round(rx_table.rx_dose[x], 2)))
-            sql_input.append(str(round(rx_table.rx_percent[x], 1)))
-            sql_input.append(str(rx_table.norm_method[x]))
-            sql_input.append(str(rx_table.norm_object[x]))
+            sql_input = [str(rx_table.mrn[x]),
+                         str(rx_table.study_instance_uid[x]),
+                         str(rx_table.plan_name[x]),
+                         str(rx_table.fx_grp_name[x]),
+                         str(rx_table.fx_grp_number[x]),
+                         str(rx_table.fx_grp_count[x]),
+                         str(round(rx_table.fx_dose[x], 2)),
+                         str(rx_table.fxs[x]),
+                         str(round(rx_table.rx_dose[x], 2)),
+                         str(round(rx_table.rx_percent[x], 1)),
+                         str(rx_table.normalization_method[x]),
+                         str(rx_table.normalization_object[x])]
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'
             prepend = 'INSERT INTO Rxs VALUES (\''
@@ -214,7 +207,6 @@ class DVH_SQL:
             sql_input += '\n'
             with open(file_path, "a") as text_file:
                 text_file.write(sql_input)
-            sql_input = []
 
         self.execute_file(file_path)
         os.remove(file_path)

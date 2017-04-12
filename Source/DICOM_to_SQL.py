@@ -7,7 +7,7 @@ Created on Thu Mar  2 22:15:52 2017
 """
 
 from DVH_SQL import *
-from DICOM_to_Python import DVHTable, PlanRow, BeamTable, FxGrpTable
+from DICOM_to_Python import DVHTable, PlanRow, BeamTable, RxTable
 import os
 import dicom
 
@@ -74,7 +74,7 @@ def dicom_to_sql(start_path):
         plan = PlanRow(f[n].plan, f[n].structure, f[n].dose)
         beams = BeamTable(f[n].plan)
         dvhs = DVHTable(f[n].structure, f[n].dose)
-        rxs = FxGrpTable(f[n].plan, f[n].structure)
+        rxs = RxTable(f[n].plan, f[n].structure)
 
         sqlcnx.insert_plan(plan)
         sqlcnx.insert_beams(beams)

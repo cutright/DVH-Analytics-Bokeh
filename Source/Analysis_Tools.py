@@ -45,10 +45,10 @@ class DVH:
                 max_dvh_length = current_size
 
         num_rows = len(cursor_rtn)
-        MRNs = {}
-        study_uids = {}
+        mrns = {}
+        study_instance_uids = {}
         roi_institutional = {}
-        roi_physician = {}
+        roi_physicians = {}
         roi_names = {}
         roi_types = {}
         rx_doses = np.zeros(num_rows)
@@ -68,16 +68,16 @@ class DVH:
 
         dvh_counter = 0
         for row in cursor_rtn:
-            MRNs[dvh_counter] = str(row[0])
-            study_uids[dvh_counter] = str(row[1])
+            mrns[dvh_counter] = str(row[0])
+            study_instance_uids[dvh_counter] = str(row[1])
             roi_institutional[dvh_counter] = str(row[2])
-            roi_physician[dvh_counter] = str(row[3])
+            roi_physicians[dvh_counter] = str(row[3])
             roi_names[dvh_counter] = str(row[4])
             roi_types[dvh_counter] = str(row[5])
 
             condition = "MRN = '" + str(row[0])
             condition += "' and StudyInstanceUID = '"
-            condition += str(study_uids[dvh_counter]) + "'"
+            condition += str(study_instance_uids[dvh_counter]) + "'"
             rx_dose_cursor = cnx.query('Plans', 'RxDose', condition)
             rx_doses[dvh_counter] = rx_dose_cursor[0][0]
 
@@ -94,8 +94,8 @@ class DVH:
             zero_fill = np.zeros(max_dvh_length - np.size(current_dvh))
             dvhs[:, dvh_counter] = np.concatenate((current_dvh, zero_fill))
 
-            if roi_physician[dvh_counter] in eud_a_values:
-                current_a = eud_a_values[roi_physician[dvh_counter]]
+            if roi_physicians[dvh_counter] in eud_a_values:
+                current_a = eud_a_values[roi_physicians[dvh_counter]]
             elif roi_types[dvh_counter].lower() in {'gtv', 'ctv', 'ptv'}:
                 current_a = float(-10)
             else:
@@ -105,10 +105,10 @@ class DVH:
 
             dvh_counter += 1
 
-        self.mrn = MRNs
-        self.study_uid = study_uids
+        self.mrn = mrns
+        self.study_instance_uid = study_instance_uids
         self.roi_institutional = roi_institutional
-        self.roi_physician = roi_physician
+        self.roi_physician = roi_physicians
         self.roi_name = roi_names
         self.roi_type = roi_types
         self.rx_dose = rx_doses
@@ -221,7 +221,7 @@ class DVH:
         if order and order[0].lower() == 'descending':
             sorted_indices = sorted_indices[::-1]
         self.mrn = [self.mrn[x] for x in sorted_indices]
-        self.study_uid = [self.study_uid[x] for x in sorted_indices]
+        self.study_instance_uid = [self.study_instance_uid[x] for x in sorted_indices]
         self.roi_name = [self.roi_name[x] for x in sorted_indices]
         self.roi_type = [self.roi_type[x] for x in sorted_indices]
         self.volume = [round(self.volume[x], 2) for x in sorted_indices]

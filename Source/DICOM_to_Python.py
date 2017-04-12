@@ -18,9 +18,9 @@ from ROI_Name_Manager import *
 # This code will generate a list of ROI class objects
 # There will be a ROI class per structure of a Plan
 class DVHRow:
-    def __init__(self, MRN, study_instance_uid, institutional_roi_name, physician_roi_name,
+    def __init__(self, mrn, study_instance_uid, institutional_roi_name, physician_roi_name,
                  roi_name, roi_type, volume, min_dose, mean_dose, max_dose, dvh_str):
-        self.MRN = MRN
+        self.mrn = mrn
         self.study_instance_uid = study_instance_uid
         self.institutional_roi_name = institutional_roi_name
         self.physician_roi_name = physician_roi_name
@@ -37,48 +37,48 @@ class DVHRow:
 # This code will generate a list of BeamInfo class objects
 # There will be a Beam class per beam of a Plan
 class BeamRow:
-    def __init__(self, MRN, study_instance_uid, beam_num, description,
-                 fx_group, fxs, fx_group_beam_count, dose,
-                 mu, radiation_type, energy, delivery_type, cp_count,
-                 gantry_start, gantry_end, gantry_rot_dir, col_angle,
-                 couch_ang, isocenter_coord, ssd):
-        self.MRN = MRN
+    def __init__(self, mrn, study_instance_uid, beam_number, beam_name,
+                 fx_group, fxs, fx_grp_beam_count, beam_dose,
+                 beam_mu, radiation_type, beam_energy, beam_type, control_point_count,
+                 gantry_start, gantry_end, gantry_rot_dir, collimator_angle,
+                 couch_angle, isocenter, ssd):
+        self.mrn = mrn
         self.study_instance_uid = study_instance_uid
-        self.beam_num = beam_num
-        self.description = description
+        self.beam_number = beam_number
+        self.beam_name = beam_name
         self.fx_group = fx_group
         self.fxs = fxs
-        self.fx_group_beam_count = fx_group_beam_count
-        self.dose = dose
-        self.mu = mu
+        self.fx_grp_beam_count = fx_grp_beam_count
+        self.beam_dose = beam_dose
+        self.beam_mu = beam_mu
         self.radiation_type = radiation_type
-        self.energy = energy
-        self.delivery_type = delivery_type
-        self.cp_count = cp_count
+        self.beam_energy = beam_energy
+        self.beam_type = beam_type
+        self.control_point_count = control_point_count
         self.gantry_start = gantry_start
         self.gantry_end = gantry_end
         self.gantry_rot_dir = gantry_rot_dir
-        self.col_angle = col_angle
-        self.couch_ang = couch_ang
-        self.isocenter_coord = isocenter_coord
+        self.collimator_angle = collimator_angle
+        self.couch_angle = couch_angle
+        self.isocenter = isocenter
         self.ssd = ssd
 
 
-class FxGrpRow:
-    def __init__(self, MRN, study_instance_uid, plan_name, fx_grp_name, fx_grp_num, fx_grps,
-                 fx_dose, fxs, rx_dose, rx_percent, norm_method, norm_object):
-        self.MRN = MRN
+class RxRow:
+    def __init__(self, mrn, study_instance_uid, plan_name, fx_grp_name, fx_grp_number, fx_grp_count,
+                 fx_dose, fxs, rx_dose, rx_percent, normalization_method, normalization_object):
+        self.mrn = mrn
         self.study_instance_uid = study_instance_uid
         self.plan_name = plan_name
         self.fx_grp_name = fx_grp_name
-        self.fx_grp_num = fx_grp_num
-        self.fx_grps = fx_grps
+        self.fx_grp_number = fx_grp_number
+        self.fx_grp_count = fx_grp_count
         self.fx_dose = fx_dose
         self.fxs = fxs
         self.rx_dose = rx_dose
         self.rx_percent = rx_percent
-        self.norm_method = norm_method
-        self.norm_object = norm_object
+        self.normalization_method = normalization_method
+        self.normalization_object = normalization_object
 
 
 # Each Plan class object contains data to fill an entire row of the SQL table 'Plans'
@@ -96,9 +96,9 @@ class PlanRow:
         MRN = rt_plan.PatientID
 
         # Record gender
-        sex = rt_plan.PatientSex.upper()
-        if not (sex == 'M' or sex == 'F'):
-            sex = '-'
+        patient_sex = rt_plan.PatientSex.upper()
+        if not (patient_sex == 'M' or patient_sex == 'F'):
+            patient_sex = '-'
 
         # Parse and record sim date
         sim_study_date = rt_plan.StudyDate
@@ -122,20 +122,20 @@ class PlanRow:
             age = relativedelta(sim_study_date_obj, birth_date_obj).years
 
         # Record physician initials from ReferringPhysicianName tag
-        rad_onc = rt_plan.ReferringPhysicianName.upper()
-        if hasattr(rt_plan, 'PhysiciansOfRecord') and not rad_onc:
-            rad_onc = rt_plan.PhysiciansOfRecord.upper()
+        physician = rt_plan.ReferringPhysicianName.upper()
+        if hasattr(rt_plan, 'PhysiciansOfRecord') and not physician:
+            physician = rt_plan.PhysiciansOfRecord.upper()
 
         # Initialize fx and MU counters, iterate over all rx's
         fxs = 0
-        mus = 0
+        total_mu = 0
         fx_grp_seq = rt_plan.FractionGroupSequence  # just to limit characters for later reference
         # Count number of fxs and total MUs
         # Note these are total fxs, not treatment days
         for fxgrp in range(0, len(fx_grp_seq)):
             fxs += fx_grp_seq[fxgrp].NumberOfFractionsPlanned
             for Beam in range(0, fx_grp_seq[fxgrp].NumberOfBeams):
-                mus += fx_grp_seq[fxgrp].ReferencedBeamSequence[Beam].BeamMeterset
+                total_mu += fx_grp_seq[fxgrp].ReferencedBeamSequence[Beam].BeamMeterset
 
         # This UID must be in all DICOM files associated with this sim study
         study_instance_uid = rt_plan.StudyInstanceUID
@@ -145,7 +145,7 @@ class PlanRow:
 
         # Contest self-evident, their utility is not (yet)
         plan_time_stamp = rt_plan.RTPlanDate + rt_plan.RTPlanTime
-        roi_time_stamp = rt_structure.StructureSetDate + rt_structure.StructureSetTime
+        struct_time_stamp = rt_structure.StructureSetDate + rt_structure.StructureSetTime
         dose_time_stamp = rt_dose.ContentDate + rt_dose.ContentTime
 
         # Record treatment planning system vendor, name, and version
@@ -184,7 +184,7 @@ class PlanRow:
         # This assumes that Plans are either 100% Arc plans or 100% Static Angle
         # Note that the beams class will have this information on a per beam basis
         tx_modality = ''
-        energies = ' '
+        tx_energies = ' '
         temp = ''
         if rt_plan_obj['brachy']:
             tx_modality = 'Brachy '
@@ -204,9 +204,9 @@ class PlanRow:
                     energy_temp += 'MeV '
                 elif beam_seq[beam_num].RadiationType.lower() == 'electron':
                     energy_temp += 'MeV '
-                if energies.find(energy_temp) < 0:
-                    energies += energy_temp
-            energies = energies[1:len(energies) - 1]
+                if tx_energies.find(energy_temp) < 0:
+                    tx_energies += energy_temp
+            tx_energies = tx_energies[1:len(tx_energies) - 1]
             if temp.lower().find('photon') > -1:
                 if temp.lower().find('photon arc') > -1:
                     tx_modality += 'Photon Arc '
@@ -232,27 +232,27 @@ class PlanRow:
         dose_grid_resolution = ', '.join(dose_grid_resolution)
 
         # Set object values
-        self.MRN = MRN
-        self.birthdate = birth_date
+        self.mrn = MRN
+        self.birth_date = birth_date
         self.age = age
-        self.sex = sex
+        self.patient_sex = patient_sex
         self.sim_study_date = sim_study_date
-        self.rad_onc = rad_onc
+        self.physician = physician
         self.tx_site = tx_site
         self.rx_dose = rx_dose
         self.fxs = fxs
-        self.energies = energies
+        self.tx_energies = tx_energies
         self.study_instance_uid = study_instance_uid
         self.patient_orientation = patient_orientation
         self.plan_time_stamp = plan_time_stamp
-        self.roi_time_stamp = roi_time_stamp
+        self.struct_time_stamp = struct_time_stamp
         self.dose_time_stamp = dose_time_stamp
         self.tps_manufacturer = tps_manufacturer
         self.tps_software_name = tps_software_name
         self.tps_software_version = tps_software_version
         self.tx_modality = tx_modality
         self.tx_time = tx_time
-        self.total_mu = mus
+        self.total_mu = total_mu
         self.dose_grid_resolution = dose_grid_resolution
 
 
@@ -263,8 +263,8 @@ class DVHTable:
 
         # Import RT Structure and RT Dose files using dicompyler
         rt_structure_dicom = dicom.read_file(structure_file)
-        MRN = rt_structure_dicom.PatientID
-        study_uid = rt_structure_dicom.StudyInstanceUID
+        mrn = rt_structure_dicom.PatientID
+        study_instance_uid = rt_structure_dicom.StudyInstanceUID
 
         rt_structure = dicomparser.DicomParser(structure_file)
         rt_structures = rt_structure.GetStructures()
@@ -286,14 +286,14 @@ class DVHTable:
                     else:
                         st_type = rt_structures[key]['type']
                     current_roi_name = rt_structures[key]['name']
-                    inst_roi = database_rois.get_institutional_roi(current_roi_name,
+                    institutional_roi_name = database_rois.get_institutional_roi(current_roi_name,
                                                                    physician)
-                    phys_roi = database_rois.get_physician_roi(current_roi_name,
+                    physician_roi_name = database_rois.get_physician_roi(current_roi_name,
                                                                physician)
-                    current_dvh_row = DVHRow(MRN,
-                                             study_uid,
-                                             inst_roi,
-                                             phys_roi,
+                    current_dvh_row = DVHRow(mrn,
+                                             study_instance_uid,
+                                             institutional_roi_name,
+                                             physician_roi_name,
                                              current_roi_name,
                                              st_type,
                                              current_dvh_calc.volume,
@@ -307,7 +307,7 @@ class DVHTable:
         self.count = row_counter
         dvh_range = range(0, self.count)
 
-        self.MRN = [values[x].MRN for x in dvh_range]
+        self.mrn = [values[x].mrn for x in dvh_range]
         self.study_instance_uid = [values[x].study_instance_uid for x in dvh_range]
         self.institutional_roi_name = [values[x].institutional_roi_name for x in dvh_range]
         self.physician_roi_name = [values[x].physician_roi_name for x in dvh_range]
@@ -328,7 +328,7 @@ class BeamTable:
         # Import RT Dose files using dicompyler
         rt_plan = dicom.read_file(plan_file)
 
-        MRN = rt_plan.PatientID
+        mrn = rt_plan.PatientID
         study_instance_uid = rt_plan.StudyInstanceUID
 
         for fx_grp in range(0, len(rt_plan.FractionGroupSequence)):
@@ -338,49 +338,49 @@ class BeamTable:
 
             for fx_grp_beam in range(0, fx_grp_beam_count):
                 beam_seq = rt_plan.BeamSequence[beam_num]
-                description = beam_seq.BeamDescription
+                beam_name = beam_seq.BeamDescription
                 ref_beam_seq = fx_grp_seq.ReferencedBeamSequence[fx_grp_beam]
 
-                dose = float(ref_beam_seq.BeamDose)
-                mu = float(ref_beam_seq.BeamMeterset)
+                beam_dose = float(ref_beam_seq.BeamDose)
+                beam_mu = float(ref_beam_seq.BeamMeterset)
 
-                iso_coord = [str(ref_beam_seq.BeamDoseSpecificationPoint[0]),
+                isocenter = [str(ref_beam_seq.BeamDoseSpecificationPoint[0]),
                              str(ref_beam_seq.BeamDoseSpecificationPoint[1]),
                              str(ref_beam_seq.BeamDoseSpecificationPoint[2])]
-                iso_coord = ','.join(iso_coord)
+                isocenter = ','.join(isocenter)
 
                 radiation_type = beam_seq.RadiationType
-                energy = beam_seq.ControlPointSequence[0].NominalBeamEnergy
-                delivery_type = beam_seq.BeamType
+                beam_energy = beam_seq.ControlPointSequence[0].NominalBeamEnergy
+                beam_type = beam_seq.BeamType
 
-                cp_count = beam_seq.NumberOfControlPoints
+                control_point_count = beam_seq.NumberOfControlPoints
                 first_cp = beam_seq.ControlPointSequence[0]
                 if beam_seq.BeamType == 'STATIC':
                     final_cp = first_cp
                 else:
-                    final_cp = beam_seq.ControlPointSequence[cp_count - 1]
+                    final_cp = beam_seq.ControlPointSequence[control_point_count - 1]
                 gantry_start = float(first_cp.GantryAngle)
                 gantry_rot_dir = first_cp.GantryRotationDirection
                 gantry_end = float(final_cp.GantryAngle)
-                col_angle = float(first_cp.BeamLimitingDeviceAngle)
-                couch_ang = float(first_cp.PatientSupportAngle)
+                collimator_angle = float(first_cp.BeamLimitingDeviceAngle)
+                couch_angle = float(first_cp.PatientSupportAngle)
 
                 # If beam is an arc, return average SSD, otherwise
                 if gantry_rot_dir in {'CW', 'CC'}:
                     ssd = 0
-                    for CP in range(0, cp_count):
+                    for CP in range(0, control_point_count):
                         ssd += round(float(beam_seq.ControlPointSequence[CP].SourceToSurfaceDistance) / 10, 2)
-                    ssd /= cp_count
+                    ssd /= control_point_count
                 else:
                     gantry_rot_dir = '-'
                     ssd = float(first_cp.SourceToSurfaceDistance) / 10
 
-                current_beam = BeamRow(MRN, study_instance_uid, beam_num + 1,
-                                       description, fx_grp + 1, fxs,
-                                       fx_grp_beam_count, dose, mu, radiation_type,
-                                       energy, delivery_type, cp_count,
+                current_beam = BeamRow(mrn, study_instance_uid, beam_num + 1,
+                                       beam_name, fx_grp + 1, fxs,
+                                       fx_grp_beam_count, beam_dose, beam_mu, radiation_type,
+                                       beam_energy, beam_type, control_point_count,
                                        gantry_start, gantry_end, gantry_rot_dir,
-                                       col_angle, couch_ang, iso_coord, ssd)
+                                       collimator_angle, couch_angle, isocenter, ssd)
 
                 values[beam_num] = current_beam
                 beam_num += 1
@@ -389,29 +389,29 @@ class BeamTable:
         beam_range = range(0, self.count)
 
         # Rearrange values into separate variables
-        self.MRN = [values[x].MRN for x in beam_range]
+        self.mrn = [values[x].mrn for x in beam_range]
         self.study_instance_uid = [values[x].study_instance_uid for x in beam_range]
-        self.beam_num = [values[x].beam_num for x in beam_range]
-        self.description = [values[x].description for x in beam_range]
+        self.beam_number = [values[x].beam_number for x in beam_range]
+        self.beam_name = [values[x].beam_name for x in beam_range]
         self.fx_group = [values[x].fx_group for x in beam_range]
         self.fxs = [values[x].fxs for x in beam_range]
-        self.fx_group_beam_count = [values[x].fx_group_beam_count for x in beam_range]
-        self.dose = [values[x].dose for x in beam_range]
-        self.mu = [values[x].mu for x in beam_range]
+        self.fx_grp_beam_count = [values[x].fx_grp_beam_count for x in beam_range]
+        self.beam_dose = [values[x].beam_dose for x in beam_range]
+        self.beam_mu = [values[x].beam_mu for x in beam_range]
         self.radiation_type = [values[x].radiation_type for x in beam_range]
-        self.energy = [values[x].energy for x in beam_range]
-        self.delivery_type = [values[x].delivery_type for x in beam_range]
-        self.cp_count = [values[x].cp_count for x in beam_range]
+        self.beam_energy = [values[x].beam_energy for x in beam_range]
+        self.beam_type = [values[x].beam_type for x in beam_range]
+        self.control_point_count = [values[x].control_point_count for x in beam_range]
         self.gantry_start = [values[x].gantry_start for x in beam_range]
         self.gantry_end = [values[x].gantry_end for x in beam_range]
         self.gantry_rot_dir = [values[x].gantry_rot_dir for x in beam_range]
-        self.col_angle = [values[x].col_angle for x in beam_range]
-        self.couch_ang = [values[x].couch_ang for x in beam_range]
-        self.isocenter_coord = [values[x].isocenter_coord for x in beam_range]
+        self.collimator_angle = [values[x].collimator_angle for x in beam_range]
+        self.couch_angle = [values[x].couch_angle for x in beam_range]
+        self.isocenter = [values[x].isocenter for x in beam_range]
         self.ssd = [values[x].ssd for x in beam_range]
 
 
-class FxGrpTable:
+class RxTable:
     def __init__(self, plan_file, structure_file):
         values = {}
         rt_plan = dicom.read_file(plan_file)
@@ -419,7 +419,7 @@ class FxGrpTable:
         fx_grp_seq = rt_plan.FractionGroupSequence
 
         # Record Medical Record Number
-        MRN = rt_plan.PatientID
+        mrn = rt_plan.PatientID
 
         # This UID must be in all DICOM files associated with this sim study
         study_instance_uid = rt_plan.StudyInstanceUID
@@ -428,7 +428,7 @@ class FxGrpTable:
 
         for i in range(0, fx_group_count):
             rx_dose = 0
-            fx_grp_num = i + 1
+            fx_grp_number = i + 1
             fx_dose = 0
             fx_grp_name = 'default'
             plan_name = rt_plan.RTPlanLabel
@@ -438,8 +438,8 @@ class FxGrpTable:
 
             fxs = fx_grp_seq[i].NumberOfFractionsPlanned
             rx_percent = float(100)
-            norm_method = 'point'
-            norm_object = 'calc point'
+            normalization_method = 'point'
+            normalization_object = 'calc point'
 
             # Because DICOM does not contain Rx's explicitly, the user must create
             # a point in the RT Structure file called 'rx[#]: ' per rx
@@ -455,7 +455,7 @@ class FxGrpTable:
                     temp = roi_name.split(':')
 
                     if temp[0][0:3] == 'rx ' and int(temp[0].strip('rx ')) == i + 1:
-                        fx_grp_num = int(temp[0].strip('rx '))
+                        fx_grp_number = int(temp[0].strip('rx '))
 
                         fx_grp_name = temp[1].strip()
 
@@ -464,34 +464,35 @@ class FxGrpTable:
                         rx_dose = fx_dose * float(fxs)
 
                         rx_percent = float(temp[2].strip().split(' ')[5].strip('%'))
-                        norm_method = temp[3].strip()
+                        normalization_method = temp[3].strip()
 
-                        if norm_method != 'plan_max':
-                            norm_object = temp[4].strip()
+                        if normalization_method != 'plan_max':
+                            normalization_object = temp[4].strip()
                         else:
-                            norm_object = 'plan_max'
+                            normalization_object = 'plan_max'
                         rx_pt_found = True
 
                 roi_counter += 1
 
-            current_fx_grp_row = FxGrpRow(MRN, study_instance_uid, plan_name, fx_grp_name, fx_grp_num, fx_group_count,
-                                          fx_dose, fxs, rx_dose, rx_percent, norm_method, norm_object)
+            current_fx_grp_row = RxRow(mrn, study_instance_uid, plan_name, fx_grp_name, fx_grp_number,
+                                       fx_group_count, fx_dose, fxs, rx_dose, rx_percent, normalization_method,
+                                       normalization_object)
             values[i] = current_fx_grp_row
 
         fx_group_range = range(0, fx_group_count)
         # Rearrange values into separate variables
-        self.MRN = [values[x].MRN for x in fx_group_range]
+        self.mrn = [values[x].mrn for x in fx_group_range]
         self.study_instance_uid = [values[x].study_instance_uid for x in fx_group_range]
         self.plan_name = [values[x].plan_name for x in fx_group_range]
         self.fx_grp_name = [values[x].fx_grp_name for x in fx_group_range]
-        self.fx_grp_num = [values[x].fx_grp_num for x in fx_group_range]
-        self.fx_grps = [values[x].fx_grps for x in fx_group_range]
+        self.fx_grp_number = [values[x].fx_grp_number for x in fx_group_range]
+        self.fx_grp_count = [values[x].fx_grp_count for x in fx_group_range]
         self.fx_dose = [values[x].fx_dose for x in fx_group_range]
         self.fxs = [values[x].fxs for x in fx_group_range]
         self.rx_dose = [values[x].rx_dose for x in fx_group_range]
         self.rx_percent = [values[x].rx_percent for x in fx_group_range]
-        self.norm_method = [values[x].norm_method for x in fx_group_range]
-        self.norm_object = [values[x].norm_object for x in fx_group_range]
+        self.normalization_method = [values[x].normalization_method for x in fx_group_range]
+        self.normalization_object = [values[x].normalization_object for x in fx_group_range]
         self.count = fx_group_count
 
 
