@@ -29,9 +29,6 @@ The input is a condition string of MySQL syntax. Each class has one property for
 a list of unique results. Actual DB query only happens at property call (i.e., creating the class instance 
 does not perform any queries).
 
-#### *SQL*  
-See "Notes - SQL DB Structure.txt" for database structure.
-
 ## To Do List
 - [ ] Validate dicompyler-core DVH calculations
 
