@@ -6,35 +6,35 @@ Created on Thu Mar  9 18:48:19 2017
 """
 
 import numpy as np
-from DVH_SQL import *
 from prettytable import PrettyTable
 import matplotlib.pyplot as plt
+from SQL_to_Python import *
 
 
 class DVH:
-    def __init__(self, db_constraints, *condition_str):
+    def __init__(self, **kwargs):
 
         cnx = DVH_SQL()
-        columns = """MRN, StudyInstanceUID, InstitutionalROI, PhysicianROI,
-        ROIName, Type, Volume, MinDose, MeanDose, MaxDose, VolumeString"""
+        columns = """mrn, study_instance_uid, institutional_roi, physician_roi,
+        roi_name, roi_type, volume, min_dose, mean_dose, max_dose, dvh_string"""
 
-        if db_constraints == 'all':
-            db_constraints_str = ''
-        else:
-            key = db_constraints[0]
+        if kwargs['study_instance_uids']:
+            study_instance_uids = kwargs['study_instance_uids']
             db_constraints_list = []
-            for i in range(1, len(db_constraints)):
-                db_constraints_list.append(db_constraints[i])
-            db_constraints_str = key + " in ('"
-            db_constraints_str += "', '".join(db_constraints_list)
-            db_constraints_str += "')"
-
-        if condition_str:
-            condition_str_final = condition_str[0] + " and " + db_constraints_str
-            cursor_rtn = cnx.query('DVHs', columns, condition_str_final)
-            self.query = condition_str[0]
+            for i in range(0, len(study_instance_uids)):
+                db_constraints_list.append(study_instance_uids[i])
+            uid_constraints_str = "study_instance_uid in ('"
+            uid_constraints_str += "', '".join(db_constraints_list)
+            uid_constraints_str += "')"
         else:
-            cursor_rtn = cnx.query('DVHs', columns, db_constraints_str)
+            uid_constraints_str = ''
+
+        if kwargs['condition']:
+            condition_str_final = kwargs['condition'] + " and " + uid_constraints_str
+            cursor_rtn = cnx.query('DVHs', columns, condition_str_final)
+            self.query = kwargs['condition']
+        else:
+            cursor_rtn = cnx.query('DVHs', columns, uid_constraints_str)
             self.query = ''
 
         max_dvh_length = 0
@@ -75,10 +75,10 @@ class DVH:
             roi_names[dvh_counter] = str(row[4])
             roi_types[dvh_counter] = str(row[5])
 
-            condition = "MRN = '" + str(row[0])
-            condition += "' and StudyInstanceUID = '"
+            condition = "mrn = '" + str(row[0])
+            condition += "' and study_instance_uid = '"
             condition += str(study_instance_uids[dvh_counter]) + "'"
-            rx_dose_cursor = cnx.query('Plans', 'RxDose', condition)
+            rx_dose_cursor = cnx.query('Plans', 'rx_dose', condition)
             rx_doses[dvh_counter] = rx_dose_cursor[0][0]
 
             roi_volumes[dvh_counter] = row[6]
@@ -316,6 +316,48 @@ def calc_eud(dvh, a):
     eud = np.round(eud, 2) * 0.01
 
     return eud
+
+
+def get_study_instance_uids(**kwargs):
+    study_instance_uids = {}
+    complete_list = {}
+    counter = 0
+    for key, value in kwargs.iteritems():
+        if key not in {'Plans', 'DVHs', 'Beams', 'Rxs'}:
+            print key + ' is not a valid table name\nSelect from Plans, DVHs, Beams, or Rxs.'
+            return
+        study_instance_uids[key] = QuerySQL(key, value).study_instance_uid
+        for sub_value in study_instance_uids[key].itervalues():
+            complete_list[counter] = sub_value
+            counter += 1
+    study_instance_uids['unique'] = get_unique_list(complete_list)
+    union_list = {}
+    counter = 0
+    for value in study_instance_uids['unique'].itervalues():
+        if is_uid_in_all_keys(value, study_instance_uids):
+            union_list[counter] = value
+            counter += 1
+    study_instance_uids['union'] = union_list
+
+    return study_instance_uids
+
+
+def is_uid_in_all_keys(uid, uid_kwlist):
+    key_answer = {}
+    # Initialize a False value for each key
+    for key in uid_kwlist.iterkeys():
+        key_answer[key] = False
+    # search for uid in each keyword fof uid_kwlist
+    for key, value in uid_kwlist.iteritems():
+        if uid in value.itervalues():
+            key_answer[key] = True
+
+    final_answer = True
+    # Product of all answer[key] values (except 'unique')
+    for key, value in key_answer.iteritems():
+        if key not in 'unique':
+            final_answer *= value
+    return final_answer
 
 
 if __name__ == '__main__':

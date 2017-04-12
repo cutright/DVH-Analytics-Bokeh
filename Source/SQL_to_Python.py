@@ -22,7 +22,7 @@ class QuerySQL:
                 self.cursor = self.cnx.query(self.table_name,
                                              column,
                                              self.condition_str)
-                rtn_list = self.cursor_to_list()
+                rtn_list = get_unique_list(self.cursor_to_list())
                 setattr(self, column, rtn_list)
         else:
             print 'Table name in valid. Please select from Beams, DVHs, Plans, or Rxs.'
@@ -33,15 +33,18 @@ class QuerySQL:
         for row in self.cursor:
             rtn_list[i] = str(row[0])
             i += 1
+        return rtn_list
 
-        inverted = dict()
-        rtn_list_unique = dict()
-        i = 1
-        for (a, b) in rtn_list.iteritems():
-            if b not in inverted:
-                inverted[b] = a
-        for c in inverted.iterkeys():
-            rtn_list_unique[i] = c
-            i += 1
 
-        return rtn_list_unique
+def get_unique_list(input_list):
+    inverted = dict()
+    rtn_list_unique = dict()
+    i = 0
+    for (a, b) in input_list.iteritems():
+        if b not in inverted:
+            inverted[b] = a
+    for c in inverted.iterkeys():
+        rtn_list_unique[i] = c
+        i += 1
+
+    return rtn_list_unique

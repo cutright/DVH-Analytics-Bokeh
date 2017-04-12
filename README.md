@@ -48,7 +48,7 @@ See "Notes - SQL DB Structure.txt" for database structure.
 
 - [ ] Develop for SQL other than MySQL
 
-- [ ] Use the new *SQL_to_Python* code in *Analysis_Tools*
+- [X] Use the new *SQL_to_Python* code in *Analysis_Tools*
 
 
 ## Dependencies
