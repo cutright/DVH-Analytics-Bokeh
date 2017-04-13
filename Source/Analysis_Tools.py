@@ -18,15 +18,7 @@ class DVH:
         columns = """mrn, study_instance_uid, institutional_roi, physician_roi,
         roi_name, roi_type, volume, min_dose, mean_dose, max_dose, dvh_string"""
 
-        study_instance_uids_is_key = False
-        condition_is_key = False
-        for key in kwargs.iterkeys():
-            if key in 'study_instance_uids':
-                study_instance_uids_is_key = True
-            if key in 'condition':
-                condition_is_key = True
-
-        if study_instance_uids_is_key:
+        if 'study_instance_uids' in kwargs:
             study_instance_uids = kwargs['study_instance_uids']
             db_constraints_list = []
             for i in range(0, len(study_instance_uids)):
@@ -34,22 +26,17 @@ class DVH:
             uid_constraints_str = "study_instance_uid in ('"
             uid_constraints_str += "', '".join(db_constraints_list)
             uid_constraints_str += "')"
+            if 'dvh_condition' in kwargs:
+                uid_constraints_str = " and " + uid_constraints_str
         else:
             uid_constraints_str = ''
 
-        if condition_is_key:
-            if uid_constraints_str:
-                condition_str_final = kwargs['condition'] + " and " + uid_constraints_str
-                cursor_rtn = cnx.query('DVHs', columns, condition_str_final)
-            else:
-                cursor_rtn = cnx.query('DVHs', columns, kwargs['condition'])
-            self.query = kwargs['condition']
-        else:
-            if uid_constraints_str:
-                cursor_rtn = cnx.query('DVHs', columns, uid_constraints_str)
-            else:
-                cursor_rtn = cnx.query('DVHs', columns)
-            self.query = ''
+        if 'dvh_condition' in kwargs:
+            uid_constraints_str = kwargs['dvh_condition'] + uid_constraints_str
+
+        cursor_rtn = cnx.query('DVHs', columns, uid_constraints_str)
+
+        self.query = uid_constraints_str
 
         max_dvh_length = 0
         for row in cursor_rtn:

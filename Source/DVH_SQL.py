@@ -68,7 +68,7 @@ class DVH_SQL:
     def query(self, table_name, return_col_str, *condition_str):
 
         query = 'Select ' + return_col_str + ' from ' + table_name
-        if condition_str:
+        if condition_str and condition_str[0]:
             query += ' where ' + condition_str[0]
         query += ';'
 
@@ -214,11 +214,13 @@ class DVH_SQL:
 
     def delete_rows(self, condition_str):
 
-        cmd = 'DELETE FROM Plans WHERE ' + condition_str + ';\n'
-        cmd += 'DELETE FROM DVHs WHERE ' + condition_str + ';\n'
-        cmd += 'DELETE FROM Rxs WHERE ' + condition_str + ';\n'
-        cmd += 'DELETE FROM Beams WHERE ' + condition_str + ';'
-        self.cursor.execute(cmd, multi=True)
+        self.cursor.execute('DELETE FROM Plans WHERE ' + condition_str + ';')
+        self.cnx.commit()
+        self.cursor.execute('DELETE FROM DVHs WHERE ' + condition_str + ';')
+        self.cnx.commit()
+        self.cursor.execute('DELETE FROM Rxs WHERE ' + condition_str + ';')
+        self.cnx.commit()
+        self.cursor.execute('DELETE FROM Beams WHERE ' + condition_str + ';')
         self.cnx.commit()
 
     def reinitialize_database(self):
