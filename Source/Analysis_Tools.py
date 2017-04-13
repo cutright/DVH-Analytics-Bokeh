@@ -204,7 +204,7 @@ class DVH:
     def write_roi_statistics(self, file_path):
         document = open(file_path[0], 'w')
         document.write(self.roi_statistics())
-        document.close().t
+        document.close()
 
     def roi_statistics(self):
         roi_table = PrettyTable()
