@@ -8,7 +8,7 @@ Created on Thu Mar  9 18:48:19 2017
 import numpy as np
 from prettytable import PrettyTable
 import matplotlib
-matplotlib.use('TKAgg')
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from SQL_to_Python import *
 
@@ -20,8 +20,8 @@ class DVH:
         columns = """mrn, study_instance_uid, institutional_roi, physician_roi,
         roi_name, roi_type, volume, min_dose, mean_dose, max_dose, dvh_string"""
 
-        if 'study_instance_uids' in kwargs:
-            study_instance_uids = kwargs['study_instance_uids']
+        if 'uids' in kwargs:
+            study_instance_uids = kwargs['uids']
             db_constraints_list = []
             for i in range(0, len(study_instance_uids)):
                 db_constraints_list.append(study_instance_uids[i])
@@ -35,10 +35,11 @@ class DVH:
 
         if 'dvh_condition' in kwargs:
             uid_constraints_str = kwargs['dvh_condition'] + uid_constraints_str
+            self.query = kwargs['dvh_condition']
+        else:
+            self.query = ''
 
         cursor_rtn = cnx.query('DVHs', columns, uid_constraints_str)
-
-        self.query = uid_constraints_str
 
         max_dvh_length = 0
         for row in cursor_rtn:

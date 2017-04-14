@@ -35,16 +35,20 @@ def get_file_paths(start_path):
 
     for x in range(0, len(f)):
         try:
-            DICOM_File = dicom.read_file(f[x])
-            if DICOM_File.Modality.lower() == 'rtplan':
-                plan_files.append(f[x])
-                study_uid_plan.append(DICOM_File.StudyInstanceUID)
-            elif DICOM_File.Modality.lower() == 'rtstruct':
-                structure_files.append(f[x])
-                study_uid_structure.append(DICOM_File.StudyInstanceUID)
-            elif DICOM_File.Modality.lower() == 'rtdose':
-                dose_files.append(f[x])
-                study_uid_dose.append(DICOM_File.StudyInstanceUID)
+            if not is_file_imported(f[x]):
+                dicom_file = dicom.read_file(f[x])
+                if dicom_file.Modality.lower() == 'rtplan':
+                    plan_files.append(f[x])
+                    study_uid_plan.append(dicom_file.StudyInstanceUID)
+                elif dicom_file.Modality.lower() == 'rtstruct':
+                    structure_files.append(f[x])
+                    study_uid_structure.append(dicom_file.StudyInstanceUID)
+                elif dicom_file.Modality.lower() == 'rtdose':
+                    dose_files.append(f[x])
+                    study_uid_dose.append(dicom_file.StudyInstanceUID)
+            else:
+                print f[x]
+                print "Already imported. Must delete from database before reimporting."
         except Exception:
             pass
 
@@ -71,6 +75,7 @@ def dicom_to_sql(start_path):
         print f[n].structure
         print f[n].plan
         print f[n].dose
+
         plan = PlanRow(f[n].plan, f[n].structure, f[n].dose)
         beams = BeamTable(f[n].plan)
         dvhs = DVHTable(f[n].structure, f[n].dose)
@@ -109,7 +114,7 @@ def is_file_imported(file_path):
         table_name = 'DVHs'
     else:
         return False
-        
+
     if DVH_SQL().is_study_instance_uid_in_table(table_name, uid):
         return True
     else:
