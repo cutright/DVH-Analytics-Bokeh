@@ -77,6 +77,16 @@ class DVH_SQL:
 
         return results
 
+    def is_study_instance_uid_in_table(self, table_name, study_instance_uid):
+        query = 'Select study_instance_uid from ' + table_name
+        query += " where study_instance_uid = '" + study_instance_uid + "';"
+        self.cursor.execute(query)
+        results = self.cursor.fetchall()
+        if results:
+            return True
+        else:
+            return False
+
     def insert_dvhs(self, dvh_table):
 
         file_path = 'insert_values_DVHs.sql'

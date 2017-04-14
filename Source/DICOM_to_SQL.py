@@ -93,5 +93,23 @@ def rebuild_database(start_path):
     sqlcnx.cnx.close()
 
 
+def is_file_imported(file_path):
+    dicom_data = dicom.read_file(file_path)
+    uid = dicom_data.StudyInstanceUID
+    if dicom_data.Modality.lower() == 'rtplan':
+        table_name = 'Plans'
+    elif dicom_data.Modality.lower() == 'rtstruct':
+        table_name = 'DVHs'
+    elif dicom_data.Modality.lower() == 'rtdose':
+        table_name = 'DVHs'
+    else:
+        return False
+        
+    if DVH_SQL().is_study_instance_uid_in_table(table_name, uid):
+        return True
+    else:
+        return False
+
+
 if __name__ == '__main__':
     dicom_to_sql()
