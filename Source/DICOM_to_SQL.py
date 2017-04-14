@@ -94,8 +94,13 @@ def rebuild_database(start_path):
 
 
 def is_file_imported(file_path):
-    dicom_data = dicom.read_file(file_path)
-    uid = dicom_data.StudyInstanceUID
+
+    try:
+        dicom_data = dicom.read_file(file_path)
+        uid = dicom_data.StudyInstanceUID
+    except Exception:
+        return False
+
     if dicom_data.Modality.lower() == 'rtplan':
         table_name = 'Plans'
     elif dicom_data.Modality.lower() == 'rtstruct':

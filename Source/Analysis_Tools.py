@@ -7,6 +7,8 @@ Created on Thu Mar  9 18:48:19 2017
 
 import numpy as np
 from prettytable import PrettyTable
+import matplotlib
+matplotlib.use('TKAgg')
 import matplotlib.pyplot as plt
 from SQL_to_Python import *
 
@@ -273,6 +275,7 @@ class DVH:
         plt.xlabel('Dose (cGy)')
         plt.ylabel('Relative Volume')
         plt.title(self.query)
+        plt.show()
 
     def plot_dvh_spread(self):
         x_axis = range(0, self.bin_count)
@@ -287,6 +290,7 @@ class DVH:
         plt.ylabel('Relative Volume')
         title = 'DVH Spread of ' + self.query
         plt.title(title)
+        plt.show()
 
 
 # Returns the isodose level outlining the given volume
