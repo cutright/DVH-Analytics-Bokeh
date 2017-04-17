@@ -20,11 +20,11 @@ class DVH:
         columns = """mrn, study_instance_uid, institutional_roi, physician_roi,
         roi_name, roi_type, volume, min_dose, mean_dose, max_dose, dvh_string"""
 
-        if 'uids' in kwargs:
-            study_instance_uids = kwargs['uids']
+        if 'uid' in kwargs:
+            study_instance_uid = kwargs['uid']
             db_constraints_list = []
-            for i in range(0, len(study_instance_uids)):
-                db_constraints_list.append(study_instance_uids[i])
+            for i in range(0, len(study_instance_uid)):
+                db_constraints_list.append(study_instance_uid[i])
             uid_constraints_str = "study_instance_uid in ('"
             uid_constraints_str += "', '".join(db_constraints_list)
             uid_constraints_str += "')"
@@ -39,6 +39,14 @@ class DVH:
         else:
             self.query = ''
 
+        if 'uncategorized' in kwargs:
+            if kwargs['uncategorized']:
+                self.uncategorized = True
+            else:
+                self.uncategorized = False
+        else:
+            self.uncategorized = False
+
         cursor_rtn = cnx.query('DVHs', columns, uid_constraints_str)
 
         max_dvh_length = 0
@@ -50,7 +58,7 @@ class DVH:
 
         num_rows = len(cursor_rtn)
         mrns = {}
-        study_instance_uids = {}
+        study_instance_uid = {}
         roi_institutional = {}
         roi_physicians = {}
         roi_names = {}
@@ -73,7 +81,7 @@ class DVH:
         dvh_counter = 0
         for row in cursor_rtn:
             mrns[dvh_counter] = str(row[0])
-            study_instance_uids[dvh_counter] = str(row[1])
+            study_instance_uid[dvh_counter] = str(row[1])
             roi_institutional[dvh_counter] = str(row[2])
             roi_physicians[dvh_counter] = str(row[3])
             roi_names[dvh_counter] = str(row[4])
@@ -81,7 +89,7 @@ class DVH:
 
             condition = "mrn = '" + str(row[0])
             condition += "' and study_instance_uid = '"
-            condition += str(study_instance_uids[dvh_counter]) + "'"
+            condition += str(study_instance_uid[dvh_counter]) + "'"
             rx_dose_cursor = cnx.query('Plans', 'rx_dose', condition)
             rx_doses[dvh_counter] = rx_dose_cursor[0][0]
 
@@ -110,7 +118,7 @@ class DVH:
             dvh_counter += 1
 
         self.mrn = mrns
-        self.study_instance_uid = study_instance_uids
+        self.study_instance_uid = study_instance_uid
         self.roi_institutional = roi_institutional
         self.roi_physician = roi_physicians
         self.roi_name = roi_names
@@ -270,8 +278,15 @@ class DVH:
 
     def plot_dvh(self):
         x_axis = range(0, self.bin_count)
+        if 'mrn' in self.query:
+            plot_label = self.roi_name
+        else:
+            plot_label = self.mrn
         for i in range(0, self.count):
-            plt.plot(x_axis, self.dvh[:, i], label=self.mrn[i])
+            if 'uncategorized' == self.roi_physician[i] and not self.uncategorized:
+                pass
+            else:
+                plt.plot(x_axis, self.dvh[:, i], label=plot_label[i])
         plt.legend(loc='best')
         plt.xlabel('Dose (cGy)')
         plt.ylabel('Relative Volume')
