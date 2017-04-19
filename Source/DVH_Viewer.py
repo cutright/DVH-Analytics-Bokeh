@@ -25,22 +25,23 @@ def bokeh_plot(dvh):
             ("(x,y)", "($x, $y)")
         ]
     )
-    TOOLS = ['box_zoom,crosshair,reset,wheel_zoom,resize', hover, BoxSelectTool()]
+    TOOLS = ['box_zoom,crosshair,reset,wheel_zoom,resize', hover]
     colors = itertools.cycle(palette)
 
     dvh_plots = figure(plot_width=800, plot_height=800, tools=TOOLS, title=dvh.query)
     x_patch = np.append(x_axis, x_axis[::-1])
     y_patch = np.append(dvh.q3_dvh, dvh.q1_dvh[::-1])
-    dvh_plots.patch(x_patch, y_patch, alpha=0.1)
+    dvh_plots.patch(x_patch/float(100), y_patch, alpha=0.1)
 
+    dvh_plots.line(x_axis / float(100), dvh.q1_dvh, line_width=1, color='black', legend='Q1', alpha=0.2)
+    dvh_plots.line(x_axis / float(100), dvh.median_dvh, line_width=1, color='firebrick', legend='Median')
+    dvh_plots.line(x_axis / float(100), dvh.q3_dvh, line_width=1, color='black', legend='Q3', alpha=0.2)
     for i, color in itertools.izip(xrange(dvh.count), colors):
-        dvh_plots.line(x_data[i], y_data[i], line_width=2, color=color, legend=legend[i])
-
-    dvh_plots.line(x_axis, dvh.median_dvh, line_width=2, color='firebrick', legend='Median')
+        dvh_plots.line(np.around(x_data[i]/float(100), decimals=2), y_data[i], line_width=2, color=color, legend='ANON0' + str(i+1))
 
     dvh_plots.legend.click_policy = "hide"
 
-    dvh_plots.xaxis.axis_label = "Dose (cGy)"
+    dvh_plots.xaxis.axis_label = "Dose (Gy)"
     dvh_plots.yaxis.axis_label = "Normalized Volume"
 
     dvh_plots.xaxis.bounds = (0, dvh.bin_count)
