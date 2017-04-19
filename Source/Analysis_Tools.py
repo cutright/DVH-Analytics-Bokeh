@@ -9,10 +9,6 @@ import numpy as np
 from prettytable import PrettyTable
 import matplotlib.pyplot as plt
 from SQL_to_Python import *
-from bokeh.plotting import figure, output_file, show
-from bokeh.models import HoverTool, BoxSelectTool
-from bokeh.palettes import Dark2_5 as palette
-import itertools
 
 
 class DVH:
@@ -309,33 +305,6 @@ class DVH:
         title = 'DVH Spread of ' + self.query
         plt.title(title)
         plt.show()
-
-    def bokeh_plot(self):
-        x_axis = np.linspace(0, self.bin_count, self.bin_count)
-        x_data = []
-        y_data = []
-        for i in range(0, self.count):
-            x_data.append(x_axis)
-            y_data.append(self.dvh[:, i])
-
-        output_file("test.html")
-        TOOLS = ['box_zoom,crosshair,reset,wheel_zoom', HoverTool(), BoxSelectTool()]
-        colors = itertools.cycle(palette)
-
-        p = figure(plot_width=800, plot_height=800, tools=TOOLS, title=self.query)
-
-        for i, color in itertools.izip(xrange(self.count), colors):
-            p.line(x_data[i], y_data[i], color=color, legend=self.mrn[i])
-
-        p.legend.click_policy = "hide"
-
-        p.xaxis.axis_label = "Dose (cGy)"
-        p.yaxis.axis_label = "Normalized Volume"
-
-        p.xaxis.bounds = (0, self.bin_count)
-        p.yaxis.bounds = (0, 1)
-
-        show(p)
 
 
 # Returns the isodose level outlining the given volume
