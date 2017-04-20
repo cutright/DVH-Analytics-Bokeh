@@ -27,7 +27,11 @@ and edit this map.  Each ROI points to an institutional ROI, physician ROI, and 
 This code uses SQL_Tools to query the SQL DB and contains a separate class per SQL table.
 The input is a condition string of MySQL syntax. Each class has one property for each SQL column and returns 
 a list of unique results. Actual DB query only happens at property call (i.e., creating the class instance 
-does not perform any queries).
+does not perform any queries).  
+
+#### *DVH_Viewer*
+This code receives a DVH object created with *Analyis_Tools* and generates a plot using the Bokeh code.
+ Output is an html file.
 
 ## To Do List
 - [ ] Validate dicompyler-core DVH calculations
@@ -47,6 +51,9 @@ does not perform any queries).
 
 - [X] Use the new *SQL_to_Python* code in *Analysis_Tools*
 
+- [X] Use Bokeh for plotting
+    - [ ] Add user input within the plots
+
 
 ## Dependencies
 * [Python](https://www.python.org) 2.7 tested
@@ -61,4 +68,13 @@ does not perform any queries).
             * pydicom 1.0 is preferred and can be installed via pip using: pip install https://github.com/darcymason/pydicom/archive/master.zip
         * [matplotlib](http://matplotlib.sourceforge.net/) 1.3.0 or higher (for DVH calculation)
         * [six](https://pythonhosted.org/six/) 1.5 or higher
-* [Pretty Table](https://pypi.python.org/pypi/PrettyTable/) 0.7.2 (optional)
+* [Pretty Table](https://pypi.python.org/pypi/PrettyTable/) 0.7.2
+* [Bokeh](http://bokeh.pydata.org/en/latest/index.html) 0.12.5
+    * requirements per [developer](http://bokeh.pydata.org/en/latest/docs/installation.html)
+        * [NumPy](http://www.numpy.org/)
+        * [Jinja2](http://jinja.pocoo.org/)
+        * [Six](https://pythonhosted.org/six/)
+        * [Requests](http://docs.python-requests.org/en/master/user/install/)
+        * [Tornado](http://www.tornadoweb.org/en/stable/) >= 4.0
+        * [PyYaml](https://pypi.python.org/pypi/pyaml)
+        * [DateUtil](https://pypi.python.org/pypi/python-dateutil)
