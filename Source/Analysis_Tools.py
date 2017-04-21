@@ -12,9 +12,9 @@ from SQL_to_Python import *
 
 
 class DVH:
-    def __init__(self, **kwargs):
+    def __init__(self, cnx, **kwargs):
 
-        cnx = DVH_SQL()
+        #cnx = DVH_SQL()
         columns = """mrn, study_instance_uid, institutional_roi, physician_roi,
         roi_name, roi_type, volume, min_dose, mean_dose, max_dose, dvh_string"""
 
@@ -143,7 +143,7 @@ class DVH:
         self._max_dvh = np.ones(max_dvh_length)
         self._std_dvh = np.ones(max_dvh_length)
 
-        cnx.cnx.close()
+        #cnx.cnx.close()
 
     def __repr__(self):
         return self.roi_statistics()
