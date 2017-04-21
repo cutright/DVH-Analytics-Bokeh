@@ -1,0 +1,15 @@
+brainstem, 16
+chiasm, 16
+ear_inner_l, 16
+ear_inner_r, 16
+ear_middle_l, 16
+ear_middle_r, 16
+eye_l, 16
+eye_r, 16
+mandible, 10
+opticnerve_l, 16
+opticnerve_r, 16
+parotid_cb, 1
+parotid_l, 1
+parotid_r, 1
+spinal_cord, 20
