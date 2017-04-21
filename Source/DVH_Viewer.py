@@ -7,7 +7,7 @@ Created on Th Apr 19 2017
 from Analysis_Tools import *
 import numpy as np
 import itertools
-from bokeh.models import HoverTool, Legend, Range1d
+from bokeh.models import HoverTool, Legend, Range1d, Line
 from bokeh.palettes import Category20_9 as palette
 from bokeh.io import output_file, show
 from bokeh.plotting import figure, gridplot
@@ -28,7 +28,7 @@ def bokeh_plot(dvh):
         legend = dvh.mrn
 
     hover = HoverTool(tooltips=[])
-    tools = 'pan,box_zoom,crosshair,reset,wheel_zoom,resize'
+    tools = 'pan,box_zoom,box_select,crosshair,reset,wheel_zoom,resize'
     colors = itertools.cycle(palette)
 
     dvh_plots = figure(plot_width=700, plot_height=400, tools=[tools, hover], title='Individual results for ' + str(dvh.query))
@@ -43,7 +43,7 @@ def bokeh_plot(dvh):
     dvh_stats.patch(x_patch, y_patch, alpha=0.1)
     dvh_plots.patch(x_patch, y_patch, alpha=0.2)
 
-    stats_min = dvh_stats.line(x_axis, dvh.min_dvh, line_width=2, color='black', alpha=0.2, line_dash='dotted')
+    stats_min = dvh_stats.line(x_axis, dvh.min_dvh, line_width=2, color='black', line_dash='dotted', alpha=0.2)
     dvh_stats.add_tools(HoverTool(renderers=[stats_min], tooltips=[('Plot', 'Min'), ("Dose", "@x"), ("Volume", "@y")]))
     stats_q1 = dvh_stats.line(x_axis, dvh.q1_dvh, line_width=1, color='black', alpha=0.2)
     dvh_stats.add_tools(HoverTool(renderers=[stats_q1], tooltips=[('Plot', 'Q1'), ("Dose", "@x"), ("Volume", "@y")]))
@@ -53,16 +53,17 @@ def bokeh_plot(dvh):
     dvh_stats.add_tools(HoverTool(renderers=[stats_mean], tooltips=[('Plot', 'Mean'), ("Dose", "@x"), ("Volume", "@y")]))
     stats_q3 = dvh_stats.line(x_axis, dvh.q3_dvh, line_width=1, color='black', alpha=0.2)
     dvh_stats.add_tools(HoverTool(renderers=[stats_q3], tooltips=[('Plot', 'Q3'), ("Dose", "@x"), ("Volume", "@y")]))
-    stats_max = dvh_stats.line(x_axis, dvh.max_dvh, line_width=2, color='black', alpha=0.2, line_dash='dotted')
+    stats_max = dvh_stats.line(x_axis, dvh.max_dvh, line_width=2, color='black', line_dash='dotted', alpha=0.2)
     dvh_stats.add_tools(HoverTool(renderers=[stats_max], tooltips=[('Plot', 'Max'), ("Dose", "@x"), ("Volume", "@y")]))
 
     legend_dvhs = []
     l = {}
+
     for i, color in itertools.izip(xrange(dvh.count), colors):
         l[i] = dvh_plots.line(x_data[i], y_data[i],
-                           line_width=2,
-                           color=color,
-                           muted_alpha=0.1)
+                              line_width=2,
+                              color=color,
+                              muted_alpha=0.1)
         legend_dvhs.append((str(legend[i]), [l[i]]))
         dvh_plots.add_tools(HoverTool(renderers=[l[i]],
                                       tooltips=[('Plot', legend[i]),
