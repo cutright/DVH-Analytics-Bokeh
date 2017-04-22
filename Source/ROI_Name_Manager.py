@@ -6,7 +6,7 @@ Created on Fri Mar 24 13:43:28 2017
 @author: nightowl
 """
 
-import os.path
+import os
 
 
 class ROISet:
@@ -25,8 +25,11 @@ class DatabaseROIs:
         self.physician_roi_map = {}
         self.roi_map = {}
         self.physician_map = {}
-        if os.path.isfile('database.roi'):
-            with open('database.roi', 'r') as document:
+        script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
+        rel_path = "preferences/database.roi"
+        abs_file_path = os.path.join(script_dir, rel_path)
+        if os.path.isfile(rel_path):
+            with open(abs_file_path, 'r') as document:
                 for line in document:
                     if not line:
                         continue
@@ -43,7 +46,9 @@ class DatabaseROIs:
                     self.roi[self.count] = current_roi_map
                     self.count += 1
         else:
-            with open('default.roi', 'r') as document:
+            rel_path = "preferences/default.roi"
+            abs_file_path = os.path.join(script_dir, rel_path)
+            with open(abs_file_path, 'r') as document:
                 for line in document:
                     if not line:
                         continue
@@ -53,7 +58,9 @@ class DatabaseROIs:
                     self.update_maps(current_roi_map)
                     self.count += 1
 
-            with open('physicians.roi', 'r') as document:
+            rel_path = "preferences/physicians.roi"
+            abs_file_path = os.path.join(script_dir, rel_path)
+            with open(abs_file_path, 'r') as document:
                 physicians = []
                 physician_files = []
                 physician_count = 0
@@ -215,14 +222,16 @@ class DatabaseROIs:
             self.physician_map[physician] = str(self.count)
 
     def write_to_file(self):
-        document = open('database.roi', 'w')
+        script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
+        rel_path = "preferences/database.roi"
+        abs_file_path = os.path.join(script_dir, rel_path)
+        document = open(abs_file_path, 'w')
 
         for i in range(0, self.count):
-            line = []
-            line.append(self.roi[i].institutional_roi_name)
-            line.append(self.roi[i].physician_roi_name)
-            line.append(self.roi[i].roi_name)
-            line.append(self.roi[i].physician)
+            line = [self.roi[i].institutional_roi_name,
+                    self.roi[i].physician_roi_name,
+                    self.roi[i].roi_name,
+                    self.roi[i].physician]
             line = ','.join(line)
             line += '\n'
             document.write(line)

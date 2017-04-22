@@ -15,7 +15,10 @@ import os
 class DVH_SQL:
     def __init__(self):
         # Read SQL configuration file
-        with open('SQL_Connection.cnf', 'r') as document:
+        script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
+        rel_path = "preferences/SQL_Connection.cnf"
+        abs_file_path = os.path.join(script_dir, rel_path)
+        with open(abs_file_path, 'r') as document:
             config = {}
             for line in document:
                 line = line.split()

@@ -9,12 +9,13 @@ import numpy as np
 from prettytable import PrettyTable
 import matplotlib.pyplot as plt
 from SQL_to_Python import *
+import os
 
 
 class DVH:
-    def __init__(self, cnx, **kwargs):
+    def __init__(self, **kwargs):
 
-        #cnx = DVH_SQL()
+        cnx = DVH_SQL()
         columns = """mrn, study_instance_uid, institutional_roi, physician_roi,
         roi_name, roi_type, volume, min_dose, mean_dose, max_dose, dvh_string"""
 
@@ -71,7 +72,10 @@ class DVH:
         a_values = np.zeros(num_rows)
 
         eud_a_values = {}
-        with open('EUD_a-values.txt', 'r') as document:
+        script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
+        rel_path = "preferences/EUD_a-values.txt"
+        abs_file_path = os.path.join(script_dir, rel_path)
+        with open(abs_file_path, 'r') as document:
             for line in document:
                 line = line.strip().split(',')
                 eud_a_values[line[0]] = float(line[1])
