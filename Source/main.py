@@ -112,7 +112,9 @@ button.on_click(update)
 # set up plot
 dvh_plots = figure(plot_width=700, plot_height=400)
 dvh_plots.multi_line('x', 'y', source=source, color='color', line_width=2)
-#dvh_plots.patch('x_patch', 'y_patch', source=source_stat, alpha=0.1)
+dvh_plots.patch('x_patch', 'y_patch', source=source_stat, alpha=0.1)
+dvh_plots.xaxis.axis_label = "Dose (Gy)"
+dvh_plots.yaxis.axis_label = "Normalized Volume"
 
 # Set up DataTable
 columns = [TableColumn(field="mrn", title="MRN", width=175),
