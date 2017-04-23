@@ -61,20 +61,20 @@ class DatabaseROIs:
             rel_path = "preferences/physicians.roi"
             abs_file_path = os.path.join(script_dir, rel_path)
             with open(abs_file_path, 'r') as document:
-                physicians = []
+                self.physicians = []
                 physician_files = []
                 physician_count = 0
                 for line in document:
                     if not line:
                         continue
                     line = str(line.strip()).upper()
-                    physicians.append(line)
+                    self.physicians.append(line)
                     file_name = 'physician_map_' + line + '.roi'
                     physician_files.append(file_name)
                     physician_count += 1
 
             for i in range(0, physician_count):
-                self.append(physician_files[i], physicians[i])
+                self.append(physician_files[i], self.physicians[i])
 
             self.write_to_file()
 
@@ -106,7 +106,9 @@ class DatabaseROIs:
         return '\n'.join(keys)
 
     def append(self, roi_file, physician):
-        with open(roi_file, 'r') as document:
+        script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
+        abs_file_path = os.path.join(script_dir, 'preferences/', roi_file)
+        with open(abs_file_path, 'r') as document:
             for line in document:
                 if not line:
                     continue
@@ -174,6 +176,18 @@ class DatabaseROIs:
                     physician_rois.append(self.roi[key].roi_name)
         physician_rois.sort()
         return physician_rois
+
+    def get_institution_roi_list(self):
+        institution_rois = []
+        for key in self.roi:
+            if self.roi[key].roi_name == self.is_institutional_roi(self.roi[key].roi_name):
+                if self.roi[key].roi_name not in institution_rois:
+                    institution_rois.append(self.roi[key].roi_name)
+        institution_rois.sort()
+        return institution_rois
+
+    def get_physician_list(self):
+        return self.physicians[0]
 
     def get_institutional_roi(self, roi, physician):
         physician = physician.upper()
