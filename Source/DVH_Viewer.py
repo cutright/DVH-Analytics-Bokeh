@@ -94,7 +94,7 @@ def bokeh_plot(dvh):
 
     p = gridplot([[dvh_plots], [dvh_stats]])
 
-    return dvh_plots
+    show(p)
 
 
 if __name__ == '__main__':

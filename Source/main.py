@@ -38,6 +38,7 @@ def update():
     condition = categories_dict[select_category.value] + ' ' + select_operator.value + " '" + query_text.value + "'"
     dvh = DVH(dvh_condition=condition)
     initialize_source_data(dvh)
+    bokeh_plot(dvh)
 
 
 def initialize_source_data(current_dvh):

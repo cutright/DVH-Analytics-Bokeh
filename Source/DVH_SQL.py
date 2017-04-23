@@ -60,14 +60,6 @@ class DVH_SQL:
         else:
             return False
 
-    def get_column_names(self, table_name):
-        query = "select column_name from information_schema.columns where table_schema = 'DVH' and table_name = '"
-        query += table_name
-        query += "';"
-        self.cursor.execute(query)
-        results = self.cursor.fetchall()
-        return results
-
     def query(self, table_name, return_col_str, *condition_str):
 
         query = 'Select ' + return_col_str + ' from ' + table_name
@@ -248,6 +240,28 @@ class DVH_SQL:
             self.cursor.execute('DROP TABLE Rxs;')
         self.cnx.commit()
         self.execute_file("create_tables.sql")
+
+    def get_unique_values(self, table, column):
+        query = "select distinct " + column + " from " + table + ";"
+        self.cursor.execute(query)
+        cursor_return = self.cursor.fetchall()
+        unique_values = []
+        for i in range(0, len(cursor_return)):
+            unique_values.append(str(cursor_return[i][0]))
+        unique_values.sort()
+        return unique_values
+
+    def get_column_names(self, table_name):
+        query = "select column_name from information_schema.columns where table_schema = 'DVH' and table_name = '"
+        query += table_name
+        query += "';"
+        self.cursor.execute(query)
+        cursor_return = self.cursor.fetchall()
+        columns = []
+        for i in range(0, len(cursor_return)):
+            columns.append(str(cursor_return[i][0]))
+        columns.sort()
+        return columns
 
 
 if __name__ == '__main__':
