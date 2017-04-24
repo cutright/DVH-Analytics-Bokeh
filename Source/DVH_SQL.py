@@ -263,6 +263,18 @@ class DVH_SQL:
         columns.sort()
         return columns
 
+    def get_min_value(self, table, column):
+        query = 'SELECT ' + column + ' FROM ' + table + ' ORDER BY ' + column + ' ASC LIMIT 1;'
+        self.cursor.execute(query)
+        cursor_return = self.cursor.fetchone()
+        return cursor_return[0]
+
+    def get_max_value(self, table, column):
+        query = 'SELECT ' + column + ' FROM ' + table + ' ORDER BY ' + column + ' DESC LIMIT 1;'
+        self.cursor.execute(query)
+        cursor_return = self.cursor.fetchone()
+        return cursor_return[0]
+
 
 if __name__ == '__main__':
     pass
