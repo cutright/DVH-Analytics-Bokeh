@@ -18,7 +18,7 @@ class QuerySQL:
             column_cursor = self.cnx.get_column_names(table_name)
 
             for row in column_cursor:
-                column = str(row[0]).strip()
+                column = str(row).strip()
                 self.cursor = self.cnx.query(self.table_name,
                                              column,
                                              self.condition_str)

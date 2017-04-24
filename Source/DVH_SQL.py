@@ -61,7 +61,6 @@ class DVH_SQL:
             return False
 
     def query(self, table_name, return_col_str, *condition_str):
-
         query = 'Select ' + return_col_str + ' from ' + table_name
         if condition_str and condition_str[0]:
             query += ' where ' + condition_str[0]
