@@ -1,6 +1,6 @@
-from bokeh.layouts import row, column, layout, widgetbox
+from bokeh.layouts import layout
 from bokeh.models import ColumnDataSource
-from bokeh.models.widgets import Select, Paragraph, Button, RadioGroup, Tabs, Panel, RangeSlider, PreText
+from bokeh.models.widgets import Select, Paragraph, Button, Tabs, Panel, RangeSlider, PreText
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from ROI_Name_Manager import *
