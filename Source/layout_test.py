@@ -1,6 +1,6 @@
-# see https://github.com/bokeh/bokeh/issues/3937 for adding widgets/plots
 from bokeh.layouts import layout, column, row
 from bokeh.models import ColumnDataSource
+from bokeh.models.layouts import HBox
 from bokeh.models.widgets import Select, Paragraph, Button, Tabs, Panel, RangeSlider, PreText, TableColumn, DataTable, NumberFormatter
 from bokeh.plotting import figure
 from bokeh.io import curdoc
@@ -151,11 +151,11 @@ class AddSelectorRow:
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
         self.delete_last_row.on_click(button_del_row)
 
-        self.row = layout([[self.select_category,
-                            self.select_value,
-                            self.add_selector_button,
-                            self.add_slider_button,
-                            self.delete_last_row]])
+        self.row = HBox(self.select_category,
+                        self.select_value,
+                        self.add_selector_button,
+                        self.add_slider_button,
+                        self.delete_last_row)
 
     def update_selector_values(self, attrname, old, new):
         table_new = selector_categories[self.select_category.value]['table']
@@ -195,11 +195,11 @@ class AddSliderRow:
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
         self.delete_last_row.on_click(button_del_row)
 
-        self.row = layout([[self.select_category,
-                            self.slider,
-                            self.add_selector_button,
-                            self.add_slider_button,
-                            self.delete_last_row]])
+        self.row = HBox(self.select_category,
+                        self.slider,
+                        self.add_selector_button,
+                        self.add_slider_button,
+                        self.delete_last_row)
 
     def update_slider_values(self, attrname, old, new):
         table_new = slider_categories[new]['table']
@@ -210,6 +210,7 @@ class AddSliderRow:
         max_value_new = DVH_SQL().get_max_value(table_new, var_name_new)
         if not max_value_new:
             max_value_new = 100
+        print min_value_new, max_value_new
         self.slider.start = min_value_new
         self.slider.end = max_value_new
         self.slider.range = (min_value_new, max_value_new)
@@ -272,6 +273,13 @@ def initialize_source_data(current_dvh):
     source_stat.data = {'x_patch': np.append(x_axis, x_axis[::-1]).tolist(),
                         'y_patch': np.append(current_dvh.q3_dvh, current_dvh.q1_dvh[::-1]).tolist()}
 
+    dvh_plots_new = []
+    dvh_plots_new = figure(plot_width=1000, plot_height=400)
+    dvh_plots_new.multi_line('x', 'y', source=source, color='color', line_width=2)
+    dvh_plots_new.patch('x_patch', 'y_patch', source=source_stat, alpha=0.15)
+    dvh_plots_new.xaxis.axis_label = "Dose (Gy)"
+    dvh_plots_new.yaxis.axis_label = "Normalized Volume"
+    layout_data.children[1] = dvh_plots_new
 
 
 # set up layout
