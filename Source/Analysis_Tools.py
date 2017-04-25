@@ -27,7 +27,7 @@ class DVH:
             uid_constraints_str = "study_instance_uid in ('"
             uid_constraints_str += "', '".join(db_constraints_list)
             uid_constraints_str += "')"
-            if 'dvh_condition' in kwargs:
+            if 'dvh_condition' in kwargs and kwargs['dvh_condition']:
                 uid_constraints_str = " and " + uid_constraints_str
         else:
             uid_constraints_str = ''

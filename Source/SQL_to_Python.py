@@ -2,7 +2,7 @@ from DVH_SQL import *
 
 
 class QuerySQL:
-    def __init__(self, table_name, condition_str):
+    def __init__(self, table_name, condition_str, *unique):
 
         if table_name in {'Beams', 'DVHs', 'Plans', 'Rxs'}:
             create_properties = True
@@ -22,7 +22,10 @@ class QuerySQL:
                 self.cursor = self.cnx.query(self.table_name,
                                              column,
                                              self.condition_str)
-                rtn_list = get_unique_list(self.cursor_to_list())
+                if unique:
+                    rtn_list = get_unique_list(self.cursor_to_list())
+                else:
+                    rtn_list = self.cursor_to_list()
                 setattr(self, column, rtn_list)
         else:
             print 'Table name in valid. Please select from Beams, DVHs, Plans, or Rxs.'
