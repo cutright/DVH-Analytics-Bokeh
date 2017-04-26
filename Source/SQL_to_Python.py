@@ -31,23 +31,17 @@ class QuerySQL:
             print 'Table name in valid. Please select from Beams, DVHs, Plans, or Rxs.'
 
     def cursor_to_list(self):
-        rtn_list = {}
-        i = 0
+        rtn_list = []
         for row in self.cursor:
-            rtn_list[i] = str(row[0])
-            i += 1
+            rtn_list.append(str(row[0]))
         return rtn_list
 
 
 def get_unique_list(input_list):
-    inverted = dict()
-    rtn_list_unique = dict()
-    i = 0
-    for (a, b) in input_list.iteritems():
-        if b not in inverted:
-            inverted[b] = a
-    for c in inverted.iterkeys():
-        rtn_list_unique[i] = c
-        i += 1
+    rtn_list_unique = []
+
+    for value in input_list:
+        if value not in rtn_list_unique:
+            rtn_list_unique.append(value)
 
     return rtn_list_unique

@@ -7,17 +7,12 @@ Created on Thu Mar  9 18:48:19 2017
 
 import numpy as np
 from prettytable import PrettyTable
-import matplotlib.pyplot as plt
 from SQL_to_Python import *
 import os
 
 
 class DVH:
     def __init__(self, **kwargs):
-
-        cnx = DVH_SQL()
-        columns = """mrn, study_instance_uid, institutional_roi, physician_roi,
-        roi_name, roi_type, volume, min_dose, mean_dose, max_dose, dvh_string"""
 
         if 'uid' in kwargs:
             study_instance_uid = kwargs['uid']
@@ -46,31 +41,28 @@ class DVH:
         else:
             self.uncategorized = False
 
-        cursor_rtn = cnx.query('DVHs', columns, uid_constraints_str)
+        cnx = DVH_SQL()
 
-        max_dvh_length = 0
-        for row in cursor_rtn:
-            current_dvh_str = np.array(str(row[10]).split(','))
+        # Get DVH data from SQL
+        dvh_data = QuerySQL('DVHs', uid_constraints_str)
+        for key, value in dvh_data:
+            setattr(self, key, value)
+
+        # Add this properties to dvh_data since they aren't in teh DVHs SQL table
+        self.count = len(self.mrn)
+        setattr(self, 'rx_doses', [])
+        setattr(self, 'eud', [])
+        setattr(self, 'eud_a_value', [])
+
+        self.bin_count = 0
+        for value in self.dvh_string:
+            current_dvh_str = np.array(str(value).split(','))
             current_size = np.size(current_dvh_str)
-            if current_size > max_dvh_length:
-                max_dvh_length = current_size
+            if current_size > self.bin_count:
+                self.bin_count = current_size
+        self.dvh = np.zeros([self.bin_count, self.count])  # numpy for easy processing
 
-        num_rows = len(cursor_rtn)
-        mrns = {}
-        study_instance_uid = {}
-        roi_institutional = {}
-        roi_physicians = {}
-        roi_names = {}
-        roi_types = {}
-        rx_doses = np.zeros(num_rows)
-        roi_volumes = np.zeros(num_rows)
-        min_doses = np.zeros(num_rows)
-        mean_doses = np.zeros(num_rows)
-        max_doses = np.zeros(num_rows)
-        dvhs = np.zeros([max_dvh_length, len(cursor_rtn)])
-        euds = np.zeros(num_rows)
-        a_values = np.zeros(num_rows)
-
+        # get EUD a values from a preference file
         eud_a_values = {}
         script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
         rel_path = "preferences/EUD_a-values.txt"
@@ -80,74 +72,45 @@ class DVH:
                 line = line.strip().split(',')
                 eud_a_values[line[0]] = float(line[1])
 
-        dvh_counter = 0
-        for row in cursor_rtn:
-            mrns[dvh_counter] = str(row[0])
-            study_instance_uid[dvh_counter] = str(row[1])
-            roi_institutional[dvh_counter] = str(row[2])
-            roi_physicians[dvh_counter] = str(row[3])
-            roi_names[dvh_counter] = str(row[4])
-            roi_types[dvh_counter] = str(row[5])
+        # Get needed values not in DVHs table
+        for i in range(0, self.count):
 
-            condition = "mrn = '" + str(row[0])
+            # Get Rx Doses
+            condition = "mrn = '" + self.mrn[i]
             condition += "' and study_instance_uid = '"
-            condition += str(study_instance_uid[dvh_counter]) + "'"
+            condition += str(self.study_instance_uid[i]) + "'"
             rx_dose_cursor = cnx.query('Plans', 'rx_dose', condition)
-            rx_doses[dvh_counter] = rx_dose_cursor[0][0]
+            self.rx_doses.append(rx_dose_cursor[0][0])
 
-            roi_volumes[dvh_counter] = row[6]
-            min_doses[dvh_counter] = row[7]
-            mean_doses[dvh_counter] = row[8]
-            max_doses[dvh_counter] = row[9]
-
-            # Process volumeString to numpy array
-            current_dvh_str = np.array(str(row[10]).split(','))
+            # Process dvh_string to numpy array, and pad with zeros at the end
+            # so that all dvhs are the same length
+            current_dvh_str = np.array(str(self.dvh_string[i].split(',')))
             current_dvh = current_dvh_str.astype(np.float)
             if max(current_dvh) > 0:
                 current_dvh /= max(current_dvh)
-            zero_fill = np.zeros(max_dvh_length - np.size(current_dvh))
-            dvhs[:, dvh_counter] = np.concatenate((current_dvh, zero_fill))
+            zero_fill = np.zeros(self.bin_count - np.size(current_dvh))
+            self.dvh[:, i] = np.concatenate((current_dvh, zero_fill))
 
-            if roi_physicians[dvh_counter] in eud_a_values:
-                current_a = eud_a_values[roi_physicians[dvh_counter]]
-            elif roi_types[dvh_counter].lower() in {'gtv', 'ctv', 'ptv'}:
+            # Lookup the EUD a value for current roi
+            if self.physician_roi[i] in eud_a_values:
+                current_a = eud_a_values[self.physician_roi[i]]
+            elif self.roi_type[i].lower() in {'gtv', 'ctv', 'ptv'}:
                 current_a = float(-10)
             else:
                 current_a = float(1)
-            euds[dvh_counter] = calc_eud(current_dvh, current_a)
-            a_values[dvh_counter] = current_a
-
-            dvh_counter += 1
-
-        self.mrn = mrns
-        self.study_instance_uid = study_instance_uid
-        self.roi_institutional = roi_institutional
-        self.roi_physician = roi_physicians
-        self.roi_name = roi_names
-        self.roi_type = roi_types
-        self.rx_dose = rx_doses
-        self.volume = roi_volumes
-        self.min_dose = min_doses
-        self.mean_dose = mean_doses
-        self.max_dose = max_doses
-        self.dvh = dvhs
-        self.count = dvh_counter
-        self.eud = euds
-        self.eud_a_value = a_values
-        self.bin_count = max_dvh_length
+                self.eud.append(calc_eud(current_dvh, current_a))
+                self.eud_a_value.append(current_a)
 
         # Initialize properties
         # Calculating all of these can be computationally expensive
         # so using @property method below only calculates these if called
-        self._min_dvh = np.ones(max_dvh_length)
-        self._q1_dvh = np.ones(max_dvh_length)
-        self._mean_dvh = np.ones(max_dvh_length)
-        self._median_dvh = np.ones(max_dvh_length)
-        self._q3_dvh = np.ones(max_dvh_length)
-        self._max_dvh = np.ones(max_dvh_length)
-        self._std_dvh = np.ones(max_dvh_length)
-
-        #cnx.cnx.close()
+        self._min_dvh = np.ones(self.bin_count)
+        self._q1_dvh = np.ones(self.bin_count)
+        self._mean_dvh = np.ones(self.bin_count)
+        self._median_dvh = np.ones(self.bin_count)
+        self._q3_dvh = np.ones(self.bin_count)
+        self._max_dvh = np.ones(self.bin_count)
+        self._std_dvh = np.ones(self.bin_count)
 
     def __repr__(self):
         return self.roi_statistics()
@@ -207,6 +170,8 @@ class DVH:
         document.close()
 
     def roi_statistics(self):
+        # Only use if running code in a python console
+        # Print 'Pretty Table' of data
         roi_table = PrettyTable()
         roi_table.field_names = ['MRN', 'InstitutionalROI', 'PhysicianROI', 'ROIName', 'Volume',
                                  'Min Dose', 'Mean Dose', 'Max Dose', 'EUD', 'a']
@@ -277,38 +242,6 @@ class DVH:
             answer[x] = self.get_volume_of_dose(float(self.rx_dose[x] * rx_dose_fraction))
 
         return answer
-
-    def plot_dvh(self):
-        x_axis = range(0, self.bin_count)
-        if 'mrn' in self.query:
-            plot_label = self.roi_name
-        else:
-            plot_label = self.mrn
-        for i in range(0, self.count):
-            if 'uncategorized' == self.roi_physician[i] and not self.uncategorized:
-                pass
-            else:
-                plt.plot(x_axis, self.dvh[:, i], label=plot_label[i])
-        plt.legend(loc='best')
-        plt.xlabel('Dose (cGy)')
-        plt.ylabel('Relative Volume')
-        plt.title(self.query)
-        plt.show()
-
-    def plot_dvh_spread(self):
-        x_axis = range(0, self.bin_count)
-        plt.plot(x_axis, self.min_dvh, label='Min', linestyle=":", color='black')
-        plt.plot(x_axis, self.q1_dvh, label='Q1', linestyle="--", color='navy', linewidth=1.5)
-        plt.plot(x_axis, self.median_dvh, label='Median', color='crimson', linewidth=2)
-        plt.plot(x_axis, self.mean_dvh, label='Mean', color='deepskyblue', linewidth=2)
-        plt.plot(x_axis, self.q3_dvh, label='Q3', linestyle="--", color='navy', linewidth=1.5)
-        plt.plot(x_axis, self.max_dvh, label='Max', linestyle=":", color='black')
-        plt.legend(loc='best')
-        plt.xlabel('Dose (cGy)')
-        plt.ylabel('Relative Volume')
-        title = 'DVH Spread of ' + self.query
-        plt.title(title)
-        plt.show()
 
 
 # Returns the isodose level outlining the given volume

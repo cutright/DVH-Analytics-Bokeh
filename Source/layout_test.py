@@ -233,61 +233,25 @@ class AddSliderRow:
         update_query_row_ids()
 
 
-def initialize_source_data(current_dvh):
-    mrn = []
-    uid = []
-    roi_institutional = []
-    roi_physician = []
-    roi_name = []
-    roi_type = []
-    rx_dose = []
-    volume = []
-    min_dose = []
-    mean_dose = []
-    max_dose = []
-    eud = []
-    eud_a_value = []
-    x_axis = np.linspace(0, current_dvh.bin_count, current_dvh.bin_count) / float(100)
-    x_data = []
-    y_data = []
+def initialize_source_data(current_dvhs):
 
     line_colors = []
     for i, color in itertools.izip(range(0, current_dvh.count), colors):
         line_colors.append(color)
 
+    x_axis = np.linspace(0, current_dvh.bin_count, current_dvh.bin_count) / float(100)
+    x_data = []
+    y_data = []
     for i in range(0, current_dvh.count):
-        mrn.append(current_dvh.mrn[i])
-        uid.append(current_dvh.study_instance_uid[i])
-        roi_institutional.append(current_dvh.roi_institutional[i])
-        roi_physician.append(current_dvh.roi_physician[i])
-        roi_name.append(current_dvh.roi_name[i])
-        roi_type.append(current_dvh.roi_type[i])
-        rx_dose.append(current_dvh.rx_dose[i])
-        volume.append(np.round(current_dvh.volume[i], decimals=1))
-        min_dose.append(current_dvh.min_dose[i])
-        mean_dose.append(current_dvh.mean_dose[i])
-        max_dose.append(current_dvh.max_dose[i])
-        eud.append(np.round(current_dvh.eud[i], decimals=2))
-        eud_a_value.append(current_dvh.eud_a_value[i])
         x_data.append(x_axis.tolist())
         y_data.append(current_dvh.dvh[:, i].tolist())
 
-    source.data = {'mrn': mrn,
-                   'roi_institutional': roi_institutional,
-                   'roi_physician': roi_physician,
-                   'roi_name': roi_name,
-                   'roi_type': roi_type,
-                   'rx_dose': rx_dose,
-                   'volume': volume,
-                   'min_dose': min_dose,
-                   'mean_dose': mean_dose,
-                   'max_dose': max_dose,
-                   'eud': eud,
-                   'eud_a_value': eud_a_value,
-                   'x': x_data,
+    # Copy current_dvh into source.data
+    for key, value in current_dvhs:
+        setattr(source.data, key, value)
+    source.data = {'x': x_data,
                    'y': y_data,
-                   'color': line_colors,
-                   'legend': roi_name}
+                   'color': line_colors}
     source_stat.data = {'x_patch': np.append(x_axis, x_axis[::-1]).tolist(),
                         'y_patch': np.append(current_dvh.q3_dvh, current_dvh.q1_dvh[::-1]).tolist()}
 
@@ -302,7 +266,7 @@ def initialize_source_data(current_dvh):
     print str(datetime.now()), 'plot added'
 
     print 'initializing beam data'
-    initialize_beam_data(uid)
+    initialize_beam_data(current_dvh.study_instance_uid)
     print 'beam data initialized'
 
 
