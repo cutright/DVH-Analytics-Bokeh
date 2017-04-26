@@ -129,7 +129,7 @@ def update_data():
     uids = get_study_instance_uids(Plans=plan_query_str, Rxs=rx_query_str, Beams=beam_query_str)['union']
     print str(datetime.now()), 'getting dvh data'
     dvh_data = DVH(uid=uids, dvh_condition=dvh_query_str)
-    print str(datetime.now()), 'initializing source data'
+    print str(datetime.now()), 'initializing source data', dvh_data.query
     initialize_source_data(dvh_data)
 
 
@@ -233,27 +233,63 @@ class AddSliderRow:
         update_query_row_ids()
 
 
-def initialize_source_data(current_dvhs):
+def initialize_source_data(dvh):
 
     line_colors = []
-    for i, color in itertools.izip(range(0, current_dvh.count), colors):
+    for i, color in itertools.izip(range(0, dvh.count), colors):
         line_colors.append(color)
 
-    x_axis = np.linspace(0, current_dvh.bin_count, current_dvh.bin_count) / float(100)
+    x_axis = np.linspace(0, dvh.bin_count, dvh.bin_count) / float(100)
+    mrn = []
+    uid = []
+    roi_institutional = []
+    roi_physician = []
+    roi_name = []
+    roi_type = []
+    rx_dose = []
+    volume = []
+    min_dose = []
+    mean_dose = []
+    max_dose = []
+    eud = []
+    eud_a_value = []
     x_data = []
     y_data = []
-    for i in range(0, current_dvh.count):
+    for i in range(0, dvh.count):
+        mrn.append(dvh.mrn[i])
+        uid.append(dvh.study_instance_uid[i])
+        roi_institutional.append(dvh.institutional_roi[i])
+        roi_physician.append(dvh.physician_roi[i])
+        roi_name.append(dvh.roi_name[i])
+        roi_type.append(dvh.roi_type[i])
+        rx_dose.append(dvh.rx_dose[i])
+        volume.append(dvh.volume[i])
+        min_dose.append(dvh.min_dose[i])
+        mean_dose.append(dvh.mean_dose[i])
+        max_dose.append(dvh.max_dose[i])
+        eud.append(dvh.eud[i].tolist())
+        eud_a_value.append(dvh.eud_a_value[i])
         x_data.append(x_axis.tolist())
-        y_data.append(current_dvh.dvh[:, i].tolist())
+        y_data.append(dvh.dvh[:, i].tolist())
 
-    # Copy current_dvh into source.data
-    for key, value in current_dvhs:
-        setattr(source.data, key, value)
-    source.data = {'x': x_data,
+    source.data = {'mrn': mrn,
+                   'roi_institutional': roi_institutional,
+                   'roi_physician': roi_physician,
+                   'roi_name': roi_name,
+                   'roi_type': roi_type,
+                   'rx_dose': rx_dose,
+                   'volume': volume,
+                   'min_dose': min_dose,
+                   'mean_dose': mean_dose,
+                   'max_dose': max_dose,
+                   'eud': eud,
+                   'eud_a_value': eud_a_value,
+                   'x': x_data,
                    'y': y_data,
                    'color': line_colors}
+
     source_stat.data = {'x_patch': np.append(x_axis, x_axis[::-1]).tolist(),
-                        'y_patch': np.append(current_dvh.q3_dvh, current_dvh.q1_dvh[::-1]).tolist()}
+                        'y_patch': np.append(dvh.q3_dvh, dvh.q1_dvh[::-1]).tolist()}
 
     print str(datetime.now()), 'generating new plot'
     dvh_plots_new = figure(plot_width=1000, plot_height=400)
@@ -266,36 +302,33 @@ def initialize_source_data(current_dvhs):
     print str(datetime.now()), 'plot added'
 
     print 'initializing beam data'
-    initialize_beam_data(current_dvh.study_instance_uid)
+    initialize_beam_data(dvh.study_instance_uid)
     print 'beam data initialized'
 
 
 def initialize_beam_data(uids):
 
-    source_beams.data = {'mrn': [],
-                         'beam_dose': [],
-                         'beam_energy': [],
-                         'beam_mu': [],
-                         'beam_name': [],
-                         'beam_number': [],
-                         'beam_type': [],
-                         'collimator_angle': [],
-                         'control_point_count': [],
-                         'couch_angle': [],
-                         'fx_count': [],
-                         'fx_grp_beam_count': [],
-                         'fx_grp_number': [],
-                         'gantry_end': [],
-                         'gantry_rot_dir': [],
-                         'gantry_start': [],
-                         'radiation_type': [],
-                         'ssd': []}
-
     cond_str = "study_instance_uid in ('" + "', '".join(uids) + "')"
     beam_data = QuerySQL('Beams', cond_str)
-    for key in source_beams.data.iterkeys():
-        for value in getattr(beam_data, key).itervalues():
-            source_beams.data[key].append(value)
+
+    source_beams.data = {'mrn': beam_data.mrn,
+                         'beam_dose': beam_data.beam_dose,
+                         'beam_energy': beam_data.beam_energy,
+                         'beam_mu': beam_data.beam_mu,
+                         'beam_name': beam_data.beam_name,
+                         'beam_number': beam_data.beam_number,
+                         'beam_type': beam_data.beam_type,
+                         'collimator_angle': beam_data.collimator_angle,
+                         'control_point_count': beam_data.control_point_count,
+                         'couch_angle': beam_data.couch_angle,
+                         'fx_count': beam_data.fx_count,
+                         'fx_grp_beam_count': beam_data.fx_grp_beam_count,
+                         'fx_grp_number': beam_data.fx_grp_number,
+                         'gantry_end': beam_data.gantry_end,
+                         'gantry_rot_dir': beam_data.gantry_rot_dir,
+                         'gantry_start': beam_data.gantry_start,
+                         'radiation_type': beam_data.radiation_type,
+                         'ssd': beam_data.ssd}
 
 
 # set up layout
@@ -313,18 +346,20 @@ t = 'DVHs: ' + initial_condition
 dvh_query = Paragraph(text=t, width=1000)
 
 # Set up DataTable
+data_table_title = PreText(text="DVHs", width=1000)
 columns = [TableColumn(field="mrn", title="MRN", width=175),
            TableColumn(field="roi_name", title="ROI Name"),
            TableColumn(field="roi_type", title="ROI Type", width=80),
-           TableColumn(field="rx_dose", title="Rx Dose", width=100, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="volume", title="Volume", width=80, formatter=NumberFormatter(format="0.0")),
-           TableColumn(field="min_dose", title="Min Dose", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="mean_dose", title="Mean Dose", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="max_dose", title="Max Dose", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="eud", title="EUD", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="eud_a_value", title="a", width=80, formatter=NumberFormatter(format="0.00"))]
+           TableColumn(field="rx_dose", title="Rx Dose", width=100),
+           TableColumn(field="volume", title="Volume", width=80),
+           TableColumn(field="min_dose", title="Min Dose", width=80),
+           TableColumn(field="mean_dose", title="Mean Dose", width=80),
+           TableColumn(field="max_dose", title="Max Dose", width=80),
+           TableColumn(field="eud", title="EUD", width=80),
+           TableColumn(field="eud_a_value", title="a", width=80)]
 data_table = DataTable(source=source, columns=columns, width=1000, selectable=True)
 
+beam_table_title = PreText(text="Beams", width=1000)
 columns = [TableColumn(field="mrn", title="MRN", width=175),
            TableColumn(field="beam_number", title="Beam Number", width=80),
            TableColumn(field="fx_count", title="Fxs", width=80),
@@ -344,7 +379,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=175),
 data_table_beams = DataTable(source=source_beams, columns=columns, width=1000)
 
 widgets = column(plan_query, rx_query, beam_query, dvh_query, update_query_button)
-layout_data = layout([[widgets], [dvh_plots], [data_table], [data_table_beams]])
+layout_data = layout([[widgets], [dvh_plots], [data_table_title], [data_table], [beam_table_title],[data_table_beams]])
 
 main_pre_text = PreText(text="Add selectors and sliders to design your query", width=500)
 main_add_selector_button = Button(label="Add Selector", button_type="default", width=200)

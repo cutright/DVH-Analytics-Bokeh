@@ -45,12 +45,13 @@ class DVH:
 
         # Get DVH data from SQL
         dvh_data = QuerySQL('DVHs', uid_constraints_str)
-        for key, value in dvh_data:
-            setattr(self, key, value)
+        for key, value in dvh_data.__dict__.items():
+            if not key.startswith("__"):
+                setattr(self, key, value)
 
         # Add this properties to dvh_data since they aren't in teh DVHs SQL table
         self.count = len(self.mrn)
-        setattr(self, 'rx_doses', [])
+        setattr(self, 'rx_dose', [])
         setattr(self, 'eud', [])
         setattr(self, 'eud_a_value', [])
 
@@ -60,7 +61,7 @@ class DVH:
             current_size = np.size(current_dvh_str)
             if current_size > self.bin_count:
                 self.bin_count = current_size
-        self.dvh = np.zeros([self.bin_count, self.count])  # numpy for easy processing
+        setattr(self, 'dvh', np.zeros([self.bin_count, self.count]))
 
         # get EUD a values from a preference file
         eud_a_values = {}
@@ -74,21 +75,19 @@ class DVH:
 
         # Get needed values not in DVHs table
         for i in range(0, self.count):
-
             # Get Rx Doses
             condition = "mrn = '" + self.mrn[i]
             condition += "' and study_instance_uid = '"
             condition += str(self.study_instance_uid[i]) + "'"
             rx_dose_cursor = cnx.query('Plans', 'rx_dose', condition)
-            self.rx_doses.append(rx_dose_cursor[0][0])
+            self.rx_dose.append(rx_dose_cursor[0][0])
 
             # Process dvh_string to numpy array, and pad with zeros at the end
             # so that all dvhs are the same length
-            current_dvh_str = np.array(str(self.dvh_string[i].split(',')))
-            current_dvh = current_dvh_str.astype(np.float)
-            if max(current_dvh) > 0:
-                current_dvh /= max(current_dvh)
-            zero_fill = np.zeros(self.bin_count - np.size(current_dvh))
+            current_dvh = np.array(self.dvh_string[i].split(','), dtype='|S4').astype(np.float)
+            if np.max(current_dvh) > 0:
+                current_dvh = np.divide(current_dvh, np.max(current_dvh))
+            zero_fill = np.zeros(self.bin_count - len(current_dvh))
             self.dvh[:, i] = np.concatenate((current_dvh, zero_fill))
 
             # Lookup the EUD a value for current roi
@@ -98,8 +97,8 @@ class DVH:
                 current_a = float(-10)
             else:
                 current_a = float(1)
-                self.eud.append(calc_eud(current_dvh, current_a))
-                self.eud_a_value.append(current_a)
+            self.eud.append(calc_eud(current_dvh, current_a))
+            self.eud_a_value.append(current_a)
 
         # Initialize properties
         # Calculating all of these can be computationally expensive
@@ -276,23 +275,19 @@ def calc_eud(dvh, a):
 
 def get_study_instance_uids(**kwargs):
     study_instance_uids = {}
-    complete_list = {}
-    counter = 0
+    complete_list = []
     for key, value in kwargs.iteritems():
         if key not in {'Plans', 'DVHs', 'Beams', 'Rxs'}:
             print key + ' is not a valid table name\nSelect from Plans, DVHs, Beams, or Rxs.'
             return
         study_instance_uids[key] = QuerySQL(key, value).study_instance_uid
-        for sub_value in study_instance_uids[key].itervalues():
-            complete_list[counter] = sub_value
-            counter += 1
+        for sub_value in study_instance_uids[key]:
+            complete_list.append(sub_value)
     study_instance_uids['unique'] = get_unique_list(complete_list)
-    union_list = {}
-    counter = 0
-    for value in study_instance_uids['unique'].itervalues():
+    union_list = []
+    for value in study_instance_uids['unique']:
         if is_uid_in_all_keys(value, study_instance_uids):
-            union_list[counter] = value
-            counter += 1
+            union_list.append(value)
     study_instance_uids['union'] = union_list
 
     return study_instance_uids
@@ -305,7 +300,7 @@ def is_uid_in_all_keys(uid, uid_kwlist):
         key_answer[key] = False
     # search for uid in each keyword fof uid_kwlist
     for key, value in uid_kwlist.iteritems():
-        if uid in value.itervalues():
+        if uid in value:
             key_answer[key] = True
 
     final_answer = True
