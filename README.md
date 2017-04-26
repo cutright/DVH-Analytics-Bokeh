@@ -59,7 +59,6 @@ This code receives a DVH object created with *Analyis_Tools* and generates a plo
 * [Python](https://www.python.org) 2.7 tested
 * [MySQL](https://dev.mysql.com/downloads/mysql/) and [MySQL Connector](https://dev.mysql.com/downloads/connector/python/)
 * [numpy](https://pypi.python.org/pypi/numpy) 1.12.1 tested
-* [matplotlib](https://pypi.python.org/pypi/matplotlib) 2.0.0 tested
 * [pydicom](https://github.com/darcymason/pydicom) 0.9.9
 * [dicompyler-core](https://pypi.python.org/pypi/dicompyler-core) 0.5.2
     * requirements per [developer](https://github.com/bastula)
