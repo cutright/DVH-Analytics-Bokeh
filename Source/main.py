@@ -1,6 +1,6 @@
 from bokeh.layouts import layout, column, row
-from bokeh.models import ColumnDataSource, Legend
-from bokeh.models.widgets import Select, Button, RangeSlider, PreText, TableColumn, DataTable, NumberFormatter, RadioButtonGroup, TextInput
+from bokeh.models import ColumnDataSource, Legend, CustomJS
+from bokeh.models.widgets import Select, Button, PreText, TableColumn, DataTable, NumberFormatter, RadioButtonGroup, TextInput
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from ROI_Name_Manager import *
@@ -10,6 +10,7 @@ import numpy as np
 import itertools
 from bokeh.palettes import Category20_9 as palette
 from datetime import datetime
+from os.path import dirname, join
 
 db_rois = DatabaseROIs()
 colors = itertools.cycle(palette)
@@ -41,26 +42,26 @@ selector_categories = {'Institutional ROI': {'var_name': 'institutional_roi', 't
                        'Tx Modality': {'var_name': 'tx_modality', 'table': 'Plans'},
                        'Tx Site': {'var_name': 'tx_site', 'table': 'Plans'},
                        'Normalization': {'var_name': 'normalization_method', 'table': 'Rxs'}}
-slider_categories = {'Age': {'var_name': 'age', 'table': 'Plans'},
-                     'Birth Date': {'var_name': 'birth_date', 'table': 'Plans'},
-                     'Planned Fractions': {'var_name': 'fxs', 'table': 'Plans'},
-                     'Rx Dose': {'var_name': 'rx_dose', 'table': 'Plans'},
-                     'Rx Isodose': {'var_name': 'rx_percent', 'table': 'Rxs'},
-                     'Simulation Date': {'var_name': 'sim_study_date', 'table': 'Plans'},
-                     'Total Plan MU': {'var_name': 'total_mu', 'table': 'Plans'},
-                     'Fraction Dose': {'var_name': 'fx_dose', 'table': 'Rxs'},
-                     'Beam Dose': {'var_name': 'beam_dose', 'table': 'Beams'},
-                     'Beam MU': {'var_name': 'beam_mu', 'table': 'Beams'},
-                     'Control Point Count': {'var_name': 'control_point_count', 'table': 'Beams'},
-                     'Collimator Angle': {'var_name': 'collimator_angle', 'table': 'Beams'},
-                     'Couch Angle': {'var_name': 'couch_angle', 'table': 'Beams'},
-                     'Gantry Start Angle': {'var_name': 'gantry_start', 'table': 'Beams'},
-                     'Gantry End Angle': {'var_name': 'gantry_end', 'table': 'Beams'},
-                     'SSD': {'var_name': 'ssd', 'table': 'Beams'},
-                     'ROI Min Dose': {'var_name': 'min_dose', 'table': 'DVHs'},
-                     'ROI Mean Dose': {'var_name': 'mean_dose', 'table': 'DVHs'},
-                     'ROI Max Dose': {'var_name': 'max_dose', 'table': 'DVHs'},
-                     'ROI Volume': {'var_name': 'volume', 'table': 'DVHs'}}
+range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 'source': source_plans},
+                    'Birth Date': {'var_name': 'birth_date', 'table': 'Plans', 'units': '', 'source': source_plans},
+                    'Planned Fractions': {'var_name': 'fxs', 'table': 'Plans', 'units': '', 'source': source_plans},
+                    'Rx Dose': {'var_name': 'rx_dose', 'table': 'Plans', 'units': 'Gy', 'source': source_plans},
+                    'Rx Isodose': {'var_name': 'rx_percent', 'table': 'Rxs', 'units': '%', 'source': source_rxs},
+                    'Simulation Date': {'var_name': 'sim_study_date', 'table': 'Plans', 'units': '', 'source': source_plans},
+                    'Total Plan MU': {'var_name': 'total_mu', 'table': 'Plans', 'units': '', 'source': source_plans},
+                    'Fraction Dose': {'var_name': 'fx_dose', 'table': 'Rxs', 'units': 'Gy', 'source': source_rxs},
+                    'Beam Dose': {'var_name': 'beam_dose', 'table': 'Beams', 'units': 'Gy', 'source': source_beams},
+                    'Beam MU': {'var_name': 'beam_mu', 'table': 'Beams', 'units': '', 'source': source_beams},
+                    'Control Point Count': {'var_name': 'control_point_count', 'table': 'Beams', 'units': '', 'source': source_beams},
+                    'Collimator Angle': {'var_name': 'collimator_angle', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
+                    'Couch Angle': {'var_name': 'couch_angle', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
+                    'Gantry Start Angle': {'var_name': 'gantry_start', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
+                    'Gantry End Angle': {'var_name': 'gantry_end', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
+                    'SSD': {'var_name': 'ssd', 'table': 'Beams', 'units': 'cm', 'source': source_beams},
+                    'ROI Min Dose': {'var_name': 'min_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
+                    'ROI Mean Dose': {'var_name': 'mean_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
+                    'ROI Max Dose': {'var_name': 'max_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
+                    'ROI Volume': {'var_name': 'volume', 'table': 'DVHs', 'units': 'cc', 'source': source}}
 
 
 def button_add_selector_row():
@@ -70,11 +71,11 @@ def button_add_selector_row():
     query_row_type.append('selector')
 
 
-def button_add_slider_row():
+def button_add_range_row():
     global query_row_type
-    query_row.append(AddSliderRow())
+    query_row.append(AddRangeRow())
     layout.children.insert(1 + len(query_row_type), query_row[-1].row)
-    query_row_type.append('slider')
+    query_row_type.append('range')
 
 
 def button_add_endpoint_row():
@@ -90,6 +91,12 @@ def update_query_row_ids():
         query_row[i].id = i
 
 
+def download_data():
+    print 'executing button click'
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    CustomJS(args=dict(source=source), code=open(os.path.join(dir_path, "download.js")).read())
+
+
 def update_data():
     global query_row_type, query_row
     print str(datetime.now()), 'updating data'
@@ -103,12 +110,18 @@ def update_data():
             table = selector_categories[query_row[i].select_category.value]['table']
             value = query_row[i].select_value.value
             query_str = var_name + " = '" + value + "'"
-        elif query_row_type[i] == 'slider':
+        elif query_row_type[i] == 'range':
             query_row[i].select_category.value
-            var_name = slider_categories[query_row[i].select_category.value]['var_name']
-            table = slider_categories[query_row[i].select_category.value]['table']
-            value_low = query_row[i].slider.range[0]
-            value_high = query_row[i].slider.range[1]
+            var_name = range_categories[query_row[i].select_category.value]['var_name']
+            table = range_categories[query_row[i].select_category.value]['table']
+            if query_row[i].text_min.value != '':
+                value_low = query_row[i].text_min.value
+            else:
+                value_low = query_row[i].min_value
+            if query_row[i].text_max.value != '':
+                value_high = query_row[i].text_max.value
+            else:
+                value_high = query_row[i].max_value
             query_str = var_name + " between " + str(value_low) + " and " + str(value_high)
 
         if table == 'Plans':
@@ -140,14 +153,14 @@ class AddSelectorRow:
         self.id = len(query_row)
         self.category_options = selector_categories.keys()
         self.category_options.sort()
-        self.select_category = Select(value="Institutional ROI", options=self.category_options)
+        self.select_category = Select(value="Institutional ROI", options=self.category_options, width=450)
         self.select_category.on_change('value', self.update_selector_values)
 
         # Value Dropdown
         self.sql_table = selector_categories[self.select_category.value]['table']
         self.var_name = selector_categories[self.select_category.value]['var_name']
         self.values = DVH_SQL().get_unique_values(self.sql_table, self.var_name)
-        self.select_value = Select(value=self.values[0], options=self.values)
+        self.select_value = Select(value=self.values[0], options=self.values, width=450)
 
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
         self.delete_last_row.on_click(self.delete_row)
@@ -170,49 +183,49 @@ class AddSelectorRow:
         update_query_row_ids()
 
 
-class AddSliderRow:
+class AddRangeRow:
     def __init__(self):
         self.id = len(query_row)
         # Plans Tab Widgets
         # Category Dropdown
-        self.category_options = slider_categories.keys()
+        self.category_options = range_categories.keys()
         self.category_options.sort()
-        self.select_category = Select(value=self.category_options[0], options=self.category_options)
-        self.select_category.on_change('value', self.update_slider_values)
+        self.select_category = Select(value=self.category_options[0], options=self.category_options, width=450)
+        self.select_category.on_change('value', self.update_range_values)
 
         # Range slider
-        self.sql_table = slider_categories[self.select_category.value]['table']
-        self.var_name = slider_categories[self.select_category.value]['var_name']
+        self.sql_table = range_categories[self.select_category.value]['table']
+        self.var_name = range_categories[self.select_category.value]['var_name']
         self.min_value = DVH_SQL().get_min_value(self.sql_table, self.var_name)
         if not self.min_value:
             self.min_value = 0
         self.max_value = DVH_SQL().get_max_value(self.sql_table, self.var_name)
         if not self.max_value:
             self.max_value = 100
-        self.slider = RangeSlider(start=round(self.min_value, 1),
-                                  end=round(self.max_value, 1),
-                                  range=(self.min_value, self.max_value),
-                                  step=0.1)
+        min_title = 'Min: ' + str(self.min_value) + ' ' + range_categories[self.select_category.value]['units']
+        max_title = 'Max: ' + str(self.max_value) + ' ' + range_categories[self.select_category.value]['units']
+        self.text_min = TextInput(value='', title=min_title, width=225)
+        self.text_max = TextInput(value='', title=max_title, width=225)
 
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
         self.delete_last_row.on_click(self.delete_row)
 
         self.row = row([self.select_category,
-                        self.slider,
+                        self.text_min,
+                        self.text_max,
                         self.delete_last_row])
 
-    def update_slider_values(self, attrname, old, new):
-        table_new = slider_categories[new]['table']
-        var_name_new = slider_categories[new]['var_name']
-        min_value_new = DVH_SQL().get_min_value(table_new, var_name_new)
-        if not min_value_new:
-            min_value_new = 0
-        max_value_new = DVH_SQL().get_max_value(table_new, var_name_new)
-        if not max_value_new:
-            max_value_new = 100
-        self.slider.start = min_value_new
-        self.slider.end = max_value_new
-        self.slider.range = (min_value_new, max_value_new)
+    def update_range_values(self, attrname, old, new):
+        table_new = range_categories[new]['table']
+        var_name_new = range_categories[new]['var_name']
+        if source.data['mrn']:
+            self.min_value = min(range_categories[new]['source'].data[var_name_new])
+            self.max_value = max(range_categories[new]['source'].data[var_name_new])
+        else:
+            self.min_value = DVH_SQL().get_min_value(table_new, var_name_new)
+            self.max_value = DVH_SQL().get_max_value(table_new, var_name_new)
+        self.text_min.title = 'Min: ' + str(self.min_value) + ' ' + range_categories[new]['units']
+        self.text_max.title = 'Max: ' + str(self.max_value) + ' ' + range_categories[new]['units']
 
     def delete_row(self):
         del (layout.children[1 + self.id])
@@ -227,22 +240,30 @@ class AddEndPointRow:
         # Category RadioButtonGroup
         self.id = len(query_row)
         self.options = ["Dose to Vol", "Vol of Dose"]
-        self.text_input_titles = ["Volume (cc)", "Dose (Gy)"]
-        self.select_category = RadioButtonGroup(labels=self.options, active=0)
+        self.text_input_titles = ["Volume:", "Dose:"]
+        self.select_category = RadioButtonGroup(labels=self.options, active=0, width=225)
         self.select_category.on_change('active', self.update_endpoint_title)
 
+        self.operator = RadioButtonGroup(labels=["Less than", "Greater than"], active=0, width=225)
+
         # Value Dropdown
-        self.text_input = TextInput(value='', title=self.text_input_titles[0])
+        self.text_input = TextInput(value='', title=self.text_input_titles[0], width=225)
+
+        self.unit_labels = [["%", "cc"], ["%", "Gy"]]
+        self.units = RadioButtonGroup(labels=self.unit_labels[0], active=0, width=225)
 
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
         self.delete_last_row.on_click(self.delete_row)
 
         self.row = row(self.select_category,
+                       self.operator,
                        self.text_input,
+                       self.units,
                        self.delete_last_row)
 
     def update_endpoint_title(self, attrname, old, new):
         self.text_input.title = self.text_input_titles[new]
+        self.units.labels = self.unit_labels[new]
 
     def delete_row(self):
         del (layout.children[1 + self.id])
@@ -291,6 +312,7 @@ def update_dvh_data(dvh):
         y_data.append(dvh.dvh[:, i].tolist())
 
     source.data = {'mrn': mrn,
+                   'uid': uid,
                    'roi_institutional': roi_institutional,
                    'roi_physician': roi_physician,
                    'roi_name': roi_name,
@@ -326,6 +348,7 @@ def update_beam_data(uids):
     beam_data = QuerySQL('Beams', cond_str)
 
     source_beams.data = {'mrn': beam_data.mrn,
+                         'uid': beam_data.study_instance_uid,
                          'beam_dose': beam_data.beam_dose,
                          'beam_energy': beam_data.beam_energy,
                          'beam_mu': beam_data.beam_mu,
@@ -351,6 +374,7 @@ def update_plan_data(uids):
     plan_data = QuerySQL('Plans', cond_str)
 
     source_plans.data = {'mrn': plan_data.mrn,
+                         'uid': plan_data.study_instance_uid,
                          'age': plan_data.age,
                          'birth_date': plan_data.birth_date,
                          'dose_grid_resolution': plan_data.dose_grid_res,
@@ -372,6 +396,7 @@ def update_rx_data(uids):
     rx_data = QuerySQL('Rxs', cond_str)
 
     source_rxs.data = {'mrn': rx_data.mrn,
+                       'uid': rx_data.study_instance_uid,
                        'plan_name': rx_data.plan_name,
                        'fx_dose': rx_data.fx_dose,
                        'rx_percent': rx_data.rx_percent,
@@ -390,7 +415,7 @@ dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools)
 stats_min = dvh_plots.line('x', 'min', source=source_stats, line_width=2, color='black', line_dash='dotted', alpha=0.2)
 stats_q1 = dvh_plots.line('x', 'q1', source=source_stats, line_width=1, color='black', alpha=0.2)
 stats_median = dvh_plots.line('x', 'median', source=source_stats, line_width=2, color='lightpink', alpha=0.7)
-stats_mean = dvh_plots.line('x', 'mean', source=source_stats, line_width=2, color='lightseagreen', alpha=0.7)
+stats_mean = dvh_plots.line('x', 'mean', source=source_stats, line_width=2, color='lightseagreen', alpha=0.5)
 stats_q3 = dvh_plots.line('x', 'q3', source=source_stats, line_width=1, color='black', alpha=0.2)
 stats_max = dvh_plots.line('x', 'max', source=source_stats, line_width=2, color='black', line_dash='dotted', alpha=0.2)
 dvh_plots.multi_line('x', 'y', source=source, selection_color='color', line_width=2, alpha=0, nonselection_alpha=0, selection_alpha=1)
@@ -408,18 +433,18 @@ legend_stats = Legend(items=[
     ], location=(0, 45))
 
 dvh_plots.add_layout(legend_stats, 'right')
-dvh_plots.legend.click_policy = "mute"
+dvh_plots.legend.click_policy = "hide"
 
 # Set up DataTable
 data_table_title = PreText(text="DVHs", width=1000)
 columns = [TableColumn(field="mrn", title="MRN", width=175),
            TableColumn(field="roi_name", title="ROI Name"),
            TableColumn(field="roi_type", title="ROI Type", width=80),
-           TableColumn(field="rx_dose", title="Rx Dose", width=100),
-           TableColumn(field="volume", title="Volume", width=80),
-           TableColumn(field="min_dose", title="Min Dose", width=80),
-           TableColumn(field="mean_dose", title="Mean Dose", width=80),
-           TableColumn(field="max_dose", title="Max Dose", width=80),
+           TableColumn(field="rx_dose", title="Rx Dose", width=100, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="volume", title="Volume", width=80, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="min_dose", title="Min Dose", width=80, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="mean_dose", title="Mean Dose", width=80, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="max_dose", title="Max Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="eud", title="EUD", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="eud_a_value", title="a", width=80)]
 data_table = DataTable(source=source, columns=columns, width=1000, selectable=True)
@@ -431,7 +456,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=175),
            TableColumn(field="fx_grp_beam_count", title="Fx Grp Beam Count", width=80),
            TableColumn(field="fx_grp_number", title="Fx Grp Number", width=80),
            TableColumn(field="beam_name", title="Beam Name", width=200),
-           TableColumn(field="beam_dose", title="Beam Dose"),
+           TableColumn(field="beam_dose", title="Beam Dose", formatter=NumberFormatter(format="0.00")),
            TableColumn(field="beam_energy", title="Beam Energy", width=80),
            TableColumn(field="beam_mu", title="Beam MU", width=100),
            TableColumn(field="beam_type", title="Beam Type", width=80),
@@ -465,9 +490,9 @@ data_table_plans = DataTable(source=source_plans, columns=columns, width=1000)
 rxs_table_title = PreText(text="Rxs", width=1000)
 columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="plan_name", title="Plan Name"),
-           TableColumn(field="fx_dose", title="Fx Dose"),
-           TableColumn(field="rx_percent", title="Rx Isodose Line"),
-           TableColumn(field="rx_dose", title="Rx Dose"),
+           TableColumn(field="fx_dose", title="Fx Dose", formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="rx_percent", title="Rx Isodose Line", formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="rx_dose", title="Rx Dose", formatter=NumberFormatter(format="0.00")),
            TableColumn(field="fx_grp_count", title="Num of Fx Groups"),
            TableColumn(field="fx_grp_name", title="Fx Grp Name"),
            TableColumn(field="fx_grp_number", title="Fx Grp Num"),
@@ -477,17 +502,23 @@ data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1000)
 
 update_button = Button(label="Update", button_type="success", width=200)
 update_button.on_click(update_data)
-main_add_selector_button = Button(label="Add Selector", button_type="primary", width=250)
+download_button = Button(label="Download", button_type="default", width=200)
+download_button.callback = CustomJS(args=dict(source=source,
+                                              source_rxs=source_rxs,
+                                              source_plans=source_plans,
+                                              source_beams=source_beams),
+                                    code=open(join(dirname(__file__), "download.js")).read())
+main_add_selector_button = Button(label="Add Selector", button_type="primary", width=200)
 main_add_selector_button.on_click(button_add_selector_row)
-main_add_slider_button = Button(label="Add Slider", button_type="primary", width=200)
-main_add_slider_button.on_click(button_add_slider_row)
+main_add_range_button = Button(label="Add Range", button_type="primary", width=200)
+main_add_range_button.on_click(button_add_range_row)
 main_add_endpoint_button = Button(label="Add Endpoint", button_type="primary", width=200)
 main_add_endpoint_button.on_click(button_add_endpoint_row)
-query_row.append(row(update_button, main_add_selector_button, main_add_slider_button))
+query_row.append(row(update_button, main_add_selector_button, main_add_range_button))
 query_row_type.append('main')
 
 layout = column(dvh_plots,
-                row(update_button, main_add_selector_button, main_add_slider_button, main_add_endpoint_button),
+                row(main_add_selector_button, main_add_range_button, main_add_endpoint_button, update_button, download_button),
                 data_table_title,
                 data_table,
                 rxs_table_title,

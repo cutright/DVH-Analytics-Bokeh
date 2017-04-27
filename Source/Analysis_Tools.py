@@ -194,24 +194,6 @@ class DVH:
             dvh[x] = np.percentile(self.dvh[x, :], percentile)
         return dvh
 
-    def sort(self, to_be_sorted, *order):
-        sorted_indices = np.argsort(to_be_sorted)
-        if order and order[0].lower() == 'descending':
-            sorted_indices = sorted_indices[::-1]
-        self.mrn = [self.mrn[x] for x in sorted_indices]
-        self.study_instance_uid = [self.study_instance_uid[x] for x in sorted_indices]
-        self.roi_name = [self.roi_name[x] for x in sorted_indices]
-        self.roi_type = [self.roi_type[x] for x in sorted_indices]
-        self.volume = [round(self.volume[x], 2) for x in sorted_indices]
-        self.min_dose = [round(self.min_dose[x], 2) for x in sorted_indices]
-        self.mean_dose = [round(self.mean_dose[x], 2) for x in sorted_indices]
-        self.max_dose = [round(self.max_dose[x], 2) for x in sorted_indices]
-
-        dvh_temp = np.empty_like(self.dvh)
-        for x in range(0, np.size(self.dvh, 1)):
-            np.copyto(dvh_temp[:, x], self.dvh[:, sorted_indices[x]])
-        np.copyto(self.dvh, dvh_temp)
-
     def get_dose_to_volume(self, volume):
 
         doses = np.zeros(self.count)
