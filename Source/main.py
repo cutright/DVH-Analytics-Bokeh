@@ -158,11 +158,11 @@ class AddSelectorRow:
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
         self.delete_last_row.on_click(self.delete_row)
 
-        self.row = row([self.select_category,
-                        self.select_value,
-                        self.add_selector_button,
-                        self.add_slider_button,
-                        self.delete_last_row])
+        self.row = row(self.select_category,
+                       self.select_value,
+                       self.add_selector_button,
+                       self.add_slider_button,
+                       self.delete_last_row)
 
     def update_selector_values(self, attrname, old, new):
         table_new = selector_categories[self.select_category.value]['table']
@@ -300,7 +300,7 @@ def initialize_source_data(dvh):
     dvh_plots_new.xaxis.axis_label = "Dose (Gy)"
     dvh_plots_new.yaxis.axis_label = "Normalized Volume"
     print str(datetime.now()), 'adding plot to layout'
-    layout_data.children[1] = dvh_plots_new
+    layout_data.children[5] = dvh_plots_new
     print str(datetime.now()), 'plot added'
 
     print 'initializing beam data'
@@ -310,7 +310,6 @@ def initialize_source_data(dvh):
 
 
 def initialize_beam_data(uids):
-    print uids
     cond_str = "study_instance_uid in ('" + "', '".join(uids) + "')"
     beam_data = QuerySQL('Beams', cond_str)
 
@@ -356,7 +355,8 @@ def initialize_plan_data(uids):
 
 
 # set up layout
-dvh_plots = figure(plot_width=1000, plot_height=400)
+tools = "pan,wheel_zoom,box_zoom,reset,crosshair"
+dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools)
 dvh_plots.multi_line('x', 'y', source=source, color='color', line_width=2)
 dvh_plots.patch('x_patch', 'y_patch', source=source_stat, alpha=0.15)
 dvh_plots.xaxis.axis_label = "Dose (Gy)"
@@ -420,19 +420,23 @@ columns = [TableColumn(field="mrn", title="MRN"),
 
 data_table_plans = DataTable(source=source_plans, columns=columns, width=1000)
 
-widgets = column(plan_query, rx_query, beam_query, dvh_query, update_query_button)
-layout_data = layout([[widgets],
-                      [dvh_plots],
-                      [data_table_title], [data_table],
-                      [beam_table_title],[data_table_beams],
-                      [plans_table_title], [data_table_plans]])
+# widgets = column(plan_query, rx_query, beam_query, dvh_query, update_query_button)
+layout_data = column(plan_query,
+                     rx_query,
+                     beam_query,
+                     dvh_query,
+                     update_query_button,
+                     dvh_plots,
+                     data_table_title, data_table,
+                     beam_table_title, data_table_beams,
+                     plans_table_title, data_table_plans)
 
 main_pre_text = PreText(text="Add selectors and sliders to design your query", width=500)
 main_add_selector_button = Button(label="Add Selector", button_type="default", width=200)
 main_add_selector_button.on_click(button_add_selector_row)
 main_add_slider_button = Button(label="Add Slider", button_type="primary", width=200)
 main_add_slider_button.on_click(button_add_slider_row)
-query_row.append(row([main_pre_text, main_add_selector_button, main_add_slider_button]))
+query_row.append(row(main_pre_text, main_add_selector_button, main_add_slider_button))
 query_row_type.append('main')
 layout_query = layout([[main_pre_text, main_add_selector_button, main_add_slider_button]])
 
