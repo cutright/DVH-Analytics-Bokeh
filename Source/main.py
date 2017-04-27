@@ -290,6 +290,7 @@ def update_dvh_data(dvh):
 
     update_beam_data(dvh.study_instance_uid)
     update_plan_data(dvh.study_instance_uid)
+    update_rx_data(dvh.study_instance_uid)
 
 
 def update_beam_data(uids):
@@ -335,6 +336,24 @@ def update_plan_data(uids):
                          'tx_energies': plan_data.tx_energies,
                          'tx_modality': plan_data.tx_modality,
                          'tx_site': plan_data.tx_site}
+
+
+def update_rx_data(uids):
+
+    cond_str = "study_instance_uid in ('" + "', '".join(uids) + "')"
+    rx_data = QuerySQL('Rxs', cond_str)
+
+    source_rxs.data = {'mrn': rx_data.mrn,
+                       'plan_name': rx_data.plan_name,
+                       'fx_dose': rx_data.fx_dose,
+                       'rx_percent': rx_data.rx_percent,
+                       'fxs': rx_data.fxs,
+                       'rx_dose': rx_data.rx_dose,
+                       'fx_grp_count': rx_data.fx_grp_count,
+                       'fx_grp_name': rx_data.fx_grp_name,
+                       'fx_grp_number': rx_data.fx_grp_number,
+                       'normalization_method': rx_data.normalization_method,
+                       'normalization_object': rx_data.normalization_object}
 
 
 # set up layout
@@ -395,8 +414,20 @@ columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="tx_energies", title="Tx Energies"),
            TableColumn(field="tx_modality", title="Tx Modality"),
            TableColumn(field="tx_site", title="Tx Site")]
-
 data_table_plans = DataTable(source=source_plans, columns=columns, width=1000)
+
+rxs_table_title = PreText(text="Rxs", width=1000)
+columns = [TableColumn(field="mrn", title="MRN"),
+           TableColumn(field="plan_name", title="Plan Name"),
+           TableColumn(field="fx_dose", title="Fx Dose"),
+           TableColumn(field="rx_percent", title="Rx Isodose Line"),
+           TableColumn(field="rx_dose", title="Rx Dose"),
+           TableColumn(field="fx_grp_count", title="Num of Fx Groups"),
+           TableColumn(field="fx_grp_name", title="Fx Grp Name"),
+           TableColumn(field="fx_grp_number", title="Fx Grp Num"),
+           TableColumn(field="normalization_method", title="Norm Method"),
+           TableColumn(field="normalization_object", title="Norm Object")]
+data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1000)
 
 update_button = Button(label="Update", button_type="success", width=400)
 update_button.on_click(update_data)
@@ -411,6 +442,8 @@ layout = column(dvh_plots,
                 row(update_button, main_add_selector_button, main_add_slider_button),
                 data_table_title,
                 data_table,
+                rxs_table_title,
+                data_table_rxs,
                 beam_table_title,
                 data_table_beams,
                 plans_table_title,
