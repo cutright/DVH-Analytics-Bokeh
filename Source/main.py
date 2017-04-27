@@ -1,6 +1,6 @@
 from bokeh.layouts import layout, column, row
-from bokeh.models import ColumnDataSource, HoverTool
-from bokeh.models.widgets import Select, Button, RangeSlider, PreText, TableColumn, DataTable, NumberFormatter
+from bokeh.models import ColumnDataSource, Legend
+from bokeh.models.widgets import Select, Button, RangeSlider, PreText, TableColumn, DataTable, NumberFormatter, RadioButtonGroup, TextInput
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from ROI_Name_Manager import *
@@ -16,7 +16,8 @@ colors = itertools.cycle(palette)
 
 # Initialize variables
 source = ColumnDataSource(data=dict(color=[], x=[], y=[]))
-source_stat = ColumnDataSource(data=dict(x_patch=[], y_patch=[]))
+source_patch = ColumnDataSource(data=dict(x_patch=[], y_patch=[]))
+source_stats = ColumnDataSource(data=dict(x=[], min=[], q1=[], mean=[], median=[], q3=[], max=[]))
 source_beams = ColumnDataSource(data=dict())
 source_plans = ColumnDataSource(data=dict())
 source_rxs = ColumnDataSource(data=dict())
@@ -76,14 +77,17 @@ def button_add_slider_row():
     query_row_type.append('slider')
 
 
+def button_add_endpoint_row():
+    global query_row_type
+    query_row.append(AddEndPointRow())
+    layout.children.insert(1 + len(query_row_type), query_row[-1].row)
+    query_row_type.append('endpoint')
+
+
 def update_query_row_ids():
     global query_row
     for i in range(1, len(query_row)):
         query_row[i].id = i
-
-
-def ticker_update_data(attr, old, new):
-    update_data()
 
 
 def update_data():
@@ -144,19 +148,12 @@ class AddSelectorRow:
         self.var_name = selector_categories[self.select_category.value]['var_name']
         self.values = DVH_SQL().get_unique_values(self.sql_table, self.var_name)
         self.select_value = Select(value=self.values[0], options=self.values)
-        self.select_value.on_change('value', ticker_update_data)
 
-        self.add_selector_button = Button(label="Add Selector", button_type="default", width=100)
-        self.add_selector_button.on_click(button_add_selector_row)
-        self.add_slider_button = Button(label="Add Slider", button_type="primary", width=100)
-        self.add_slider_button.on_click(button_add_slider_row)
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
         self.delete_last_row.on_click(self.delete_row)
 
         self.row = row(self.select_category,
                        self.select_value,
-                       self.add_selector_button,
-                       self.add_slider_button,
                        self.delete_last_row)
 
     def update_selector_values(self, attrname, old, new):
@@ -197,17 +194,11 @@ class AddSliderRow:
                                   range=(self.min_value, self.max_value),
                                   step=0.1)
 
-        self.add_selector_button = Button(label="Add Selector", button_type="default", width=100)
-        self.add_selector_button.on_click(button_add_selector_row)
-        self.add_slider_button = Button(label="Add Slider", button_type="primary", width=100)
-        self.add_slider_button.on_click(button_add_slider_row)
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
         self.delete_last_row.on_click(self.delete_row)
 
         self.row = row([self.select_category,
                         self.slider,
-                        self.add_selector_button,
-                        self.add_slider_button,
                         self.delete_last_row])
 
     def update_slider_values(self, attrname, old, new):
@@ -222,6 +213,36 @@ class AddSliderRow:
         self.slider.start = min_value_new
         self.slider.end = max_value_new
         self.slider.range = (min_value_new, max_value_new)
+
+    def delete_row(self):
+        del (layout.children[1 + self.id])
+        query_row_type.pop(self.id)
+        query_row.pop(self.id)
+        update_query_row_ids()
+
+
+class AddEndPointRow:
+    def __init__(self):
+        # Plans Tab Widgets
+        # Category RadioButtonGroup
+        self.id = len(query_row)
+        self.options = ["Dose to Vol", "Vol of Dose"]
+        self.text_input_titles = ["Volume (cc)", "Dose (Gy)"]
+        self.select_category = RadioButtonGroup(labels=self.options, active=0)
+        self.select_category.on_change('active', self.update_endpoint_title)
+
+        # Value Dropdown
+        self.text_input = TextInput(value='', title=self.text_input_titles[0])
+
+        self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
+        self.delete_last_row.on_click(self.delete_row)
+
+        self.row = row(self.select_category,
+                       self.text_input,
+                       self.delete_last_row)
+
+    def update_endpoint_title(self, attrname, old, new):
+        self.text_input.title = self.text_input_titles[new]
 
     def delete_row(self):
         del (layout.children[1 + self.id])
@@ -285,8 +306,15 @@ def update_dvh_data(dvh):
                    'y': y_data,
                    'color': line_colors}
 
-    source_stat.data = {'x_patch': np.append(x_axis, x_axis[::-1]).tolist(),
-                        'y_patch': np.append(dvh.q3_dvh, dvh.q1_dvh[::-1]).tolist()}
+    source_patch.data = {'x_patch': np.append(x_axis, x_axis[::-1]).tolist(),
+                         'y_patch': np.append(dvh.q3_dvh, dvh.q1_dvh[::-1]).tolist()}
+    source_stats.data = {'x': x_axis.tolist(),
+                         'min': dvh.min_dvh.tolist(),
+                         'q1': dvh.q1_dvh.tolist(),
+                         'mean': dvh.mean_dvh.tolist(),
+                         'median': dvh.median_dvh.tolist(),
+                         'q3': dvh.q3_dvh.tolist(),
+                         'max': dvh.max_dvh.tolist()}
 
     update_beam_data(dvh.study_instance_uid)
     update_plan_data(dvh.study_instance_uid)
@@ -359,14 +387,28 @@ def update_rx_data(uids):
 # set up layout
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair"
 dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools)
-dvh_plots.multi_line('x', 'y', source=source, color='color', line_width=2)
-dvh_plots.patch('x_patch', 'y_patch', source=source_stat, alpha=0.15)
+stats_min = dvh_plots.line('x', 'min', source=source_stats, line_width=2, color='black', line_dash='dotted', alpha=0.2)
+stats_q1 = dvh_plots.line('x', 'q1', source=source_stats, line_width=1, color='black', alpha=0.2)
+stats_median = dvh_plots.line('x', 'median', source=source_stats, line_width=2, color='lightpink', alpha=0.7)
+stats_mean = dvh_plots.line('x', 'mean', source=source_stats, line_width=2, color='lightseagreen', alpha=0.7)
+stats_q3 = dvh_plots.line('x', 'q3', source=source_stats, line_width=1, color='black', alpha=0.2)
+stats_max = dvh_plots.line('x', 'max', source=source_stats, line_width=2, color='black', line_dash='dotted', alpha=0.2)
+dvh_plots.multi_line('x', 'y', source=source, selection_color='color', line_width=2, alpha=0, nonselection_alpha=0, selection_alpha=1)
+dvh_plots.patch('x_patch', 'y_patch', source=source_patch, alpha=0.15)
 dvh_plots.xaxis.axis_label = "Dose (Gy)"
 dvh_plots.yaxis.axis_label = "Normalized Volume"
-dvh_plots.add_tools(HoverTool(show_arrow=False,
-                              line_policy='next',
-                              tooltips=[('MRN', '@mrn'),
-                                        ('Volume', '@y')]))
+
+legend_stats = Legend(items=[
+        ("Max", [stats_max]),
+        ("Q3", [stats_q3]),
+        ("Median", [stats_median]),
+        ("Mean", [stats_mean]),
+        ("Q1", [stats_q1]),
+        ("Min", [stats_min])
+    ], location=(0, 45))
+
+dvh_plots.add_layout(legend_stats, 'right')
+dvh_plots.legend.click_policy = "mute"
 
 # Set up DataTable
 data_table_title = PreText(text="DVHs", width=1000)
@@ -433,17 +475,19 @@ columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="normalization_object", title="Norm Object")]
 data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1000)
 
-update_button = Button(label="Update", button_type="success", width=400)
+update_button = Button(label="Update", button_type="success", width=200)
 update_button.on_click(update_data)
-main_add_selector_button = Button(label="Add Selector", button_type="default", width=250)
+main_add_selector_button = Button(label="Add Selector", button_type="primary", width=250)
 main_add_selector_button.on_click(button_add_selector_row)
-main_add_slider_button = Button(label="Add Slider", button_type="primary", width=250)
+main_add_slider_button = Button(label="Add Slider", button_type="primary", width=200)
 main_add_slider_button.on_click(button_add_slider_row)
+main_add_endpoint_button = Button(label="Add Endpoint", button_type="primary", width=200)
+main_add_endpoint_button.on_click(button_add_endpoint_row)
 query_row.append(row(update_button, main_add_selector_button, main_add_slider_button))
 query_row_type.append('main')
 
 layout = column(dvh_plots,
-                row(update_button, main_add_selector_button, main_add_slider_button),
+                row(update_button, main_add_selector_button, main_add_slider_button, main_add_endpoint_button),
                 data_table_title,
                 data_table,
                 rxs_table_title,
