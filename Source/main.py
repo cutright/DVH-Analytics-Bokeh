@@ -1,6 +1,6 @@
 from bokeh.layouts import layout, column, row
-from bokeh.models import ColumnDataSource
-from bokeh.models.widgets import Select, Paragraph, Button, Tabs, Panel, RangeSlider, PreText, TableColumn, DataTable, NumberFormatter
+from bokeh.models import ColumnDataSource, HoverTool
+from bokeh.models.widgets import Select, Button, RangeSlider, PreText, TableColumn, DataTable, NumberFormatter
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from ROI_Name_Manager import *
@@ -363,6 +363,10 @@ dvh_plots.multi_line('x', 'y', source=source, color='color', line_width=2)
 dvh_plots.patch('x_patch', 'y_patch', source=source_stat, alpha=0.15)
 dvh_plots.xaxis.axis_label = "Dose (Gy)"
 dvh_plots.yaxis.axis_label = "Normalized Volume"
+dvh_plots.add_tools(HoverTool(show_arrow=False,
+                              line_policy='next',
+                              tooltips=[('MRN', '@mrn'),
+                                        ('Volume', '@y')]))
 
 # Set up DataTable
 data_table_title = PreText(text="DVHs", width=1000)
@@ -374,7 +378,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=175),
            TableColumn(field="min_dose", title="Min Dose", width=80),
            TableColumn(field="mean_dose", title="Mean Dose", width=80),
            TableColumn(field="max_dose", title="Max Dose", width=80),
-           TableColumn(field="eud", title="EUD", width=80),
+           TableColumn(field="eud", title="EUD", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="eud_a_value", title="a", width=80)]
 data_table = DataTable(source=source, columns=columns, width=1000, selectable=True)
 
