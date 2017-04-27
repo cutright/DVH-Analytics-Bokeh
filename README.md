@@ -52,7 +52,8 @@ This code receives a DVH object created with *Analyis_Tools* and generates a plo
 - [X] Use the new *SQL_to_Python* code in *Analysis_Tools*
 
 - [X] Use Bokeh for plotting
-    - [ ] Add user input within the plots
+    - [X] Add user input within the plots
+    - [ ] Finish DVH endpoint widgets
 
 
 ## Dependencies
