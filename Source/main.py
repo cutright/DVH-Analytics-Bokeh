@@ -20,8 +20,6 @@ source_stat = ColumnDataSource(data=dict(x_patch=[], y_patch=[]))
 source_beams = ColumnDataSource(data=dict())
 source_plans = ColumnDataSource(data=dict())
 source_rxs = ColumnDataSource(data=dict())
-initial_condition = "institutional_roi = 'spinal_cord'"
-current_dvh = DVH(dvh_condition=initial_condition)
 query_row = []
 query_row_type = []
 
@@ -64,21 +62,17 @@ slider_categories = {'Age': {'var_name': 'age', 'table': 'Plans'},
                      'ROI Volume': {'var_name': 'volume', 'table': 'DVHs'}}
 
 
-def update():
-    initialize_source_data(current_dvh)
-
-
 def button_add_selector_row():
     global query_row_type
     query_row.append(AddSelectorRow())
-    layout_query.children.append(query_row[-1].row)
+    layout.children.insert(1 + len(query_row_type), query_row[-1].row)
     query_row_type.append('selector')
 
 
 def button_add_slider_row():
     global query_row_type
     query_row.append(AddSliderRow())
-    layout_query.children.append(query_row[-1].row)
+    layout.children.insert(1 + len(query_row_type), query_row[-1].row)
     query_row_type.append('slider')
 
 
@@ -86,6 +80,10 @@ def update_query_row_ids():
     global query_row
     for i in range(1, len(query_row)):
         query_row[i].id = i
+
+
+def ticker_update_data(attr, old, new):
+    update_data()
 
 
 def update_data():
@@ -119,20 +117,16 @@ def update_data():
             dvh_query_str.append(query_str)
 
     plan_query_str = ' and '.join(plan_query_str)
-    plan_query.text = 'Plans: ' + plan_query_str
     rx_query_str = ' and '.join(rx_query_str)
-    rx_query.text = 'Rxs: ' + rx_query_str
     beam_query_str = ' and '.join(beam_query_str)
-    beam_query.text = 'Beams: ' + beam_query_str
     dvh_query_str = ' and '.join(dvh_query_str)
-    dvh_query.text = 'DVHs: ' + dvh_query_str
 
     print str(datetime.now()), 'getting uids'
     uids = get_study_instance_uids(Plans=plan_query_str, Rxs=rx_query_str, Beams=beam_query_str)['union']
     print str(datetime.now()), 'getting dvh data'
     dvh_data = DVH(uid=uids, dvh_condition=dvh_query_str)
     print str(datetime.now()), 'initializing source data', dvh_data.query
-    initialize_source_data(dvh_data)
+    update_dvh_data(dvh_data)
 
 
 class AddSelectorRow:
@@ -142,7 +136,7 @@ class AddSelectorRow:
         self.id = len(query_row)
         self.category_options = selector_categories.keys()
         self.category_options.sort()
-        self.select_category = Select(value=self.category_options[0], options=self.category_options)
+        self.select_category = Select(value="Institutional ROI", options=self.category_options)
         self.select_category.on_change('value', self.update_selector_values)
 
         # Value Dropdown
@@ -150,6 +144,7 @@ class AddSelectorRow:
         self.var_name = selector_categories[self.select_category.value]['var_name']
         self.values = DVH_SQL().get_unique_values(self.sql_table, self.var_name)
         self.select_value = Select(value=self.values[0], options=self.values)
+        self.select_value.on_change('value', ticker_update_data)
 
         self.add_selector_button = Button(label="Add Selector", button_type="default", width=100)
         self.add_selector_button.on_click(button_add_selector_row)
@@ -172,7 +167,7 @@ class AddSelectorRow:
         self.select_value.value = new_options[0]
 
     def delete_row(self):
-        del (layout_query.children[self.id])
+        del (layout.children[1 + self.id])
         query_row_type.pop(self.id)
         query_row.pop(self.id)
         update_query_row_ids()
@@ -229,13 +224,13 @@ class AddSliderRow:
         self.slider.range = (min_value_new, max_value_new)
 
     def delete_row(self):
-        del (layout_query.children[self.id])
+        del (layout.children[1 + self.id])
         query_row_type.pop(self.id)
         query_row.pop(self.id)
         update_query_row_ids()
 
 
-def initialize_source_data(dvh):
+def update_dvh_data(dvh):
 
     line_colors = []
     for i, color in itertools.izip(range(0, dvh.count), colors):
@@ -293,23 +288,11 @@ def initialize_source_data(dvh):
     source_stat.data = {'x_patch': np.append(x_axis, x_axis[::-1]).tolist(),
                         'y_patch': np.append(dvh.q3_dvh, dvh.q1_dvh[::-1]).tolist()}
 
-    print str(datetime.now()), 'generating new plot'
-    dvh_plots_new = figure(plot_width=1000, plot_height=400)
-    dvh_plots_new.multi_line('x', 'y', source=source, color='color', line_width=2)
-    dvh_plots_new.patch('x_patch', 'y_patch', source=source_stat, alpha=0.15)
-    dvh_plots_new.xaxis.axis_label = "Dose (Gy)"
-    dvh_plots_new.yaxis.axis_label = "Normalized Volume"
-    print str(datetime.now()), 'adding plot to layout'
-    layout_data.children[5] = dvh_plots_new
-    print str(datetime.now()), 'plot added'
-
-    print 'initializing beam data'
-    initialize_beam_data(dvh.study_instance_uid)
-    print 'beam data initialized'
-    initialize_plan_data(dvh.study_instance_uid)
+    update_beam_data(dvh.study_instance_uid)
+    update_plan_data(dvh.study_instance_uid)
 
 
-def initialize_beam_data(uids):
+def update_beam_data(uids):
     cond_str = "study_instance_uid in ('" + "', '".join(uids) + "')"
     beam_data = QuerySQL('Beams', cond_str)
 
@@ -333,7 +316,7 @@ def initialize_beam_data(uids):
                          'ssd': beam_data.ssd}
 
 
-def initialize_plan_data(uids):
+def update_plan_data(uids):
 
     cond_str = "study_instance_uid in ('" + "', '".join(uids) + "')"
     plan_data = QuerySQL('Plans', cond_str)
@@ -361,13 +344,6 @@ dvh_plots.multi_line('x', 'y', source=source, color='color', line_width=2)
 dvh_plots.patch('x_patch', 'y_patch', source=source_stat, alpha=0.15)
 dvh_plots.xaxis.axis_label = "Dose (Gy)"
 dvh_plots.yaxis.axis_label = "Normalized Volume"
-update_query_button = Button(label="Update", button_type="success", width=100)
-update_query_button.on_click(update_data)
-plan_query = Paragraph(text="Plans:", width=1000)
-rx_query = Paragraph(text="Rxs:", width=1000)
-beam_query = Paragraph(text="Beams:", width=1000)
-t = 'DVHs: ' + initial_condition
-dvh_query = Paragraph(text=t, width=1000)
 
 # Set up DataTable
 data_table_title = PreText(text="DVHs", width=1000)
@@ -383,7 +359,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=175),
            TableColumn(field="eud_a_value", title="a", width=80)]
 data_table = DataTable(source=source, columns=columns, width=1000, selectable=True)
 
-beam_table_title = PreText(text="Beams", width=1000)
+beam_table_title = PreText(text="Beams", width=1500)
 columns = [TableColumn(field="mrn", title="MRN", width=175),
            TableColumn(field="beam_number", title="Beam Number", width=80),
            TableColumn(field="fx_count", title="Fxs", width=80),
@@ -397,6 +373,8 @@ columns = [TableColumn(field="mrn", title="MRN", width=175),
            TableColumn(field="collimator_angle", title="Collimator Angle", width=80),
            TableColumn(field="control_point_count", title="Control Points", width=80),
            TableColumn(field="couch_angle", title="Couch Angle", width=80),
+           TableColumn(field="gantry_start", title="Gantry Start", width=80),
+           TableColumn(field="gantry_rot_dir", title="Gantry Rotation", width=80),
            TableColumn(field="gantry_end", title="Gantry End", width=80),
            TableColumn(field="radiation_type", title="Radiation Type", width=80),
            TableColumn(field="ssd", title="SSD", width=80)]
@@ -420,31 +398,25 @@ columns = [TableColumn(field="mrn", title="MRN"),
 
 data_table_plans = DataTable(source=source_plans, columns=columns, width=1000)
 
-# widgets = column(plan_query, rx_query, beam_query, dvh_query, update_query_button)
-layout_data = column(plan_query,
-                     rx_query,
-                     beam_query,
-                     dvh_query,
-                     update_query_button,
-                     dvh_plots,
-                     data_table_title, data_table,
-                     beam_table_title, data_table_beams,
-                     plans_table_title, data_table_plans)
-
-main_pre_text = PreText(text="Add selectors and sliders to design your query", width=500)
-main_add_selector_button = Button(label="Add Selector", button_type="default", width=200)
+update_button = Button(label="Update", button_type="success", width=400)
+update_button.on_click(update_data)
+main_add_selector_button = Button(label="Add Selector", button_type="default", width=250)
 main_add_selector_button.on_click(button_add_selector_row)
-main_add_slider_button = Button(label="Add Slider", button_type="primary", width=200)
+main_add_slider_button = Button(label="Add Slider", button_type="primary", width=250)
 main_add_slider_button.on_click(button_add_slider_row)
-query_row.append(row(main_pre_text, main_add_selector_button, main_add_slider_button))
+query_row.append(row(update_button, main_add_selector_button, main_add_slider_button))
 query_row_type.append('main')
-layout_query = layout([[main_pre_text, main_add_selector_button, main_add_slider_button]])
 
-tab_query = Panel(child=layout_query, title="Query")
-tab_data = Panel(child=layout_data, title="Data")
-tabs = Tabs(tabs=[tab_query, tab_data])
+layout = column(dvh_plots,
+                row(update_button, main_add_selector_button, main_add_slider_button),
+                data_table_title,
+                data_table,
+                beam_table_title,
+                data_table_beams,
+                plans_table_title,
+                data_table_plans)
 
-curdoc().add_root(tabs)
+button_add_selector_row()
+
+curdoc().add_root(layout)
 curdoc().title = "Live Free or DICOM"
-
-update()
