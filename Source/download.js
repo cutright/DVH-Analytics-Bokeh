@@ -1,3 +1,6 @@
+// Built from Bokeh Export CSV Example: 2017.04.27
+// https://github.com/bokeh/bokeh/tree/master/examples/app/export_csv
+
 var data = source.data;
 var filetext = 'DVH Data\nmrn,uid,roi_name,roi_type,rx_dose,volume,min_dose,mean_dose,max_dose,eud,a\n';
 for (i=0; i < data['mrn'].length; i++) {

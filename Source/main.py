@@ -1,5 +1,5 @@
 from bokeh.layouts import layout, column, row
-from bokeh.models import ColumnDataSource, Legend, CustomJS
+from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool
 from bokeh.models.widgets import Select, Button, PreText, TableColumn, DataTable, NumberFormatter, RadioButtonGroup, TextInput
 from bokeh.plotting import figure
 from bokeh.io import curdoc
@@ -411,13 +411,21 @@ def update_rx_data(uids):
 
 # set up layout
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair"
-dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools)
+dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools, logo=None)
 stats_min = dvh_plots.line('x', 'min', source=source_stats, line_width=2, color='black', line_dash='dotted', alpha=0.2)
 stats_q1 = dvh_plots.line('x', 'q1', source=source_stats, line_width=1, color='black', alpha=0.2)
-stats_median = dvh_plots.line('x', 'median', source=source_stats, line_width=2, color='lightpink', alpha=0.7)
+stats_median = dvh_plots.line('x', 'median', source=source_stats, line_width=2, color='lightpink', alpha=0.75)
 stats_mean = dvh_plots.line('x', 'mean', source=source_stats, line_width=2, color='lightseagreen', alpha=0.5)
 stats_q3 = dvh_plots.line('x', 'q3', source=source_stats, line_width=1, color='black', alpha=0.2)
 stats_max = dvh_plots.line('x', 'max', source=source_stats, line_width=2, color='black', line_dash='dotted', alpha=0.2)
+
+# dvh_plots.add_tools(HoverTool(renderers=[stats_min], tooltips=[('Plot', 'Min'), ("Dose", "@x"), ("Volume", "@min")]))
+# dvh_plots.add_tools(HoverTool(renderers=[stats_q1], tooltips=[('Plot', 'Q1'), ("Dose", "@x"), ("Volume", "@q1")]))
+# dvh_plots.add_tools(HoverTool(renderers=[stats_median], tooltips=[('Plot', 'Median'), ("Dose", "@x"), ("Volume", "@median")]))
+# dvh_plots.add_tools(HoverTool(renderers=[stats_mean], tooltips=[('Plot', 'Mead'), ("Dose", "@x"), ("Volume", "@mean")]))
+# dvh_plots.add_tools(HoverTool(renderers=[stats_q3], tooltips=[('Plot', 'Q3'), ("Dose", "@x"), ("Volume", "@q3")]))
+# dvh_plots.add_tools(HoverTool(renderers=[stats_max], tooltips=[('Plot', 'Max'), ("Dose", "@x"), ("Volume", "@max")]))
+
 dvh_plots.multi_line('x', 'y', source=source, selection_color='color', line_width=2, alpha=0, nonselection_alpha=0, selection_alpha=1)
 dvh_plots.patch('x_patch', 'y_patch', source=source_patch, alpha=0.15)
 dvh_plots.xaxis.axis_label = "Dose (Gy)"

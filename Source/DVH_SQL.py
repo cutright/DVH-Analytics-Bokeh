@@ -238,7 +238,10 @@ class DVH_SQL:
         if self.check_table_exists('Rxs'):
             self.cursor.execute('DROP TABLE Rxs;')
         self.cnx.commit()
-        self.execute_file("create_tables.sql")
+        script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
+        rel_path = "preferences/create_tables.sql"
+        abs_file_path = os.path.join(script_dir, rel_path)
+        self.execute_file(abs_file_path)
 
     def get_unique_values(self, table, column):
         query = "select distinct " + column + " from " + table + ";"
