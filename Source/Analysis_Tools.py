@@ -103,65 +103,24 @@ class DVH:
         # Initialize properties
         # Calculating all of these can be computationally expensive
         # so using @property method below only calculates these if called
-        self._min_dvh = np.ones(self.bin_count)
-        self._q1_dvh = np.ones(self.bin_count)
-        self._mean_dvh = np.ones(self.bin_count)
-        self._median_dvh = np.ones(self.bin_count)
-        self._q3_dvh = np.ones(self.bin_count)
-        self._max_dvh = np.ones(self.bin_count)
-        self._std_dvh = np.ones(self.bin_count)
+        self.min_dvh = np.zeros(self.bin_count)
+        self.q1_dvh = np.zeros(self.bin_count)
+        self.mean_dvh = np.zeros(self.bin_count)
+        self.median_dvh = np.zeros(self.bin_count)
+        self.q3_dvh = np.zeros(self.bin_count)
+        self.max_dvh = np.zeros(self.bin_count)
+
+        for x in range(0, self.bin_count):
+            y = self.dvh[x, :]
+            self.min_dvh[x] = np.min(y)
+            self.q1_dvh[x] = np.percentile(y, 25)
+            self.mean_dvh[x] = np.mean(y)
+            self.median_dvh[x] = np.median(y)
+            self.q3_dvh[x] = np.percentile(y, 75)
+            self.max_dvh[x] = np.max(y)
 
     def __repr__(self):
         return self.roi_statistics()
-
-    @property
-    def min_dvh(self):
-        dvh = np.zeros(self.bin_count)
-        for x in range(0, self.bin_count):
-            dvh[x] = np.min(self.dvh[x, :])
-        return dvh
-
-    @property
-    def q1_dvh(self):
-        dvh = np.zeros(self.bin_count)
-        for x in range(0, self.bin_count):
-            dvh[x] = np.percentile(self.dvh[x, :], 25)
-        return dvh
-
-    @property
-    def mean_dvh(self):
-        dvh = np.zeros(self.bin_count)
-        for x in range(0, self.bin_count):
-            dvh[x] = np.mean(self.dvh[x, :])
-        return dvh
-
-    @property
-    def median_dvh(self):
-        dvh = np.zeros(self.bin_count)
-        for x in range(0, self.bin_count):
-            dvh[x] = np.median(self.dvh[x, :])
-        return dvh
-
-    @property
-    def q3_dvh(self):
-        dvh = np.zeros(self.bin_count)
-        for x in range(0, self.bin_count):
-            dvh[x] = np.percentile(self.dvh[x, :], 75)
-        return dvh
-
-    @property
-    def max_dvh(self):
-        dvh = np.zeros(self.bin_count)
-        for x in range(0, self.bin_count):
-            dvh[x] = np.max(self.dvh[x, :])
-        return dvh
-
-    @property
-    def std_dvh(self):
-        dvh = np.zeros(self.bin_count)
-        for x in range(0, self.bin_count):
-            dvh[x] = np.std(self.dvh[x, :])
-        return dvh
 
     def write_roi_statistics(self, file_path):
         document = open(file_path[0], 'w')

@@ -104,7 +104,25 @@ def update_all_range_endpoints():
     global query_row, query_row_type
     for i in range(1, len(query_row)):
         if query_row_type[i] == 'range':
-            query_row[i].update_range_values_execute(query_row[i].select_category.value)
+            query_row[i].update_range_values(query_row[i].select_category.value)
+
+
+def is_physician_set():
+    global query_row, query_row_type
+    for i in range(1, len(query_row)):
+        if query_row_type[i] == 'selector':
+            if query_row[i].select_category.value == "Physician":
+                return True
+    return False
+
+
+def get_physician():
+    global query_row, query_row_type
+    for i in range(1, len(query_row)):
+        if query_row_type[i] == 'selector':
+            if query_row[i].select_category.value == "Physician":
+                return query_row[i].select_value.value
+    return None
 
 
 def update_data():
@@ -202,7 +220,7 @@ class AddRangeRow:
         self.category_options = range_categories.keys()
         self.category_options.sort()
         self.select_category = Select(value=self.category_options[-1], options=self.category_options, width=450)
-        self.select_category.on_change('value', self.update_range_values)
+        self.select_category.on_change('value', self.update_range_values_ticker)
 
         # Range slider
         self.sql_table = range_categories[self.select_category.value]['table']
@@ -211,7 +229,7 @@ class AddRangeRow:
         self.max_value = []
         self.text_min = TextInput(value='', title='', width=225)
         self.text_max = TextInput(value='', title='', width=225)
-        self.update_range_values_execute(self.select_category.value)
+        self.update_range_values(self.select_category.value)
 
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
         self.delete_last_row.on_click(self.delete_row)
@@ -221,10 +239,10 @@ class AddRangeRow:
                         self.text_max,
                         self.delete_last_row])
 
-    def update_range_values(self, attrname, old, new):
-        self.update_range_values_execute(new)
+    def update_range_values_ticker(self, attrname, old, new):
+        self.update_range_values(new)
 
-    def update_range_values_execute(self, new):
+    def update_range_values(self, new):
         table_new = range_categories[new]['table']
         var_name_new = range_categories[new]['var_name']
         if source.data['mrn']:

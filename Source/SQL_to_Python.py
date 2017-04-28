@@ -33,7 +33,10 @@ class QuerySQL:
     def cursor_to_list(self):
         rtn_list = []
         for row in self.cursor:
-            rtn_list.append(str(row[0]))
+            if isinstance(row[0], (int, long, float)):
+                rtn_list.append(row[0])
+            else:
+                rtn_list.append(str(row[0]))
         return rtn_list
 
 
