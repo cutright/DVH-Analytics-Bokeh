@@ -277,6 +277,9 @@ class DVH_SQL:
         cursor_return = self.cursor.fetchone()
         return cursor_return[0]
 
+    def get_roi_count_from_query(self, condition_str):
+        return len(self.query('DVHs', 'mrn', condition_str))
+
 
 if __name__ == '__main__':
     pass

@@ -10,7 +10,7 @@ import numpy as np
 import itertools
 from bokeh.layouts import layout, column, row
 from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool
-from bokeh.models.widgets import Select, Button, PreText, TableColumn, DataTable, NumberFormatter, RadioButtonGroup, TextInput
+from bokeh.models.widgets import Select, Button, PreText, TableColumn, DataTable, NumberFormatter, RadioButtonGroup, TextInput, RadioGroup
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from ROI_Name_Manager import DatabaseROIs
@@ -31,6 +31,19 @@ source_stats = ColumnDataSource(data=dict(x=[], min=[], q1=[], mean=[], median=[
 source_beams = ColumnDataSource(data=dict())
 source_plans = ColumnDataSource(data=dict())
 source_rxs = ColumnDataSource(data=dict())
+source_endpoints = ColumnDataSource(data=dict())
+endpoint_columns = {}
+for i in range(0, 10):
+    endpoint_columns[i] = ''
+source_endpoints.data = {'mrn': [],
+                         '1': [],
+                         '2': [],
+                         '3': [],
+                         '4': [],
+                         '5': [],
+                         '6': [],
+                         '7': [],
+                         '8': []}
 query_row = []
 query_row_type = []
 
@@ -76,21 +89,21 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
 def button_add_selector_row():
     global query_row_type
     query_row.append(AddSelectorRow())
-    layout.children.insert(1 + len(query_row_type), query_row[-1].row)
+    layout.children.insert(2 + len(query_row_type), query_row[-1].row)
     query_row_type.append('selector')
 
 
 def button_add_range_row():
     global query_row_type
     query_row.append(AddRangeRow())
-    layout.children.insert(1 + len(query_row_type), query_row[-1].row)
+    layout.children.insert(2 + len(query_row_type), query_row[-1].row)
     query_row_type.append('range')
 
 
 def button_add_endpoint_row():
     global query_row_type
     query_row.append(AddEndPointRow())
-    layout.children.insert(1 + len(query_row_type), query_row[-1].row)
+    layout.children.insert(2 + len(query_row_type), query_row[-1].row)
     query_row_type.append('endpoint')
 
 
@@ -173,6 +186,7 @@ def update_data():
     print str(datetime.now()), 'initializing source data', dvh_data.query
     update_dvh_data(dvh_data)
     update_all_range_endpoints()
+    update_endpoint_data(dvh_data)
 
 
 class AddSelectorRow:
@@ -206,7 +220,7 @@ class AddSelectorRow:
         self.select_value.value = new_options[0]
 
     def delete_row(self):
-        del (layout.children[1 + self.id])
+        del (layout.children[2 + self.id])
         query_row_type.pop(self.id)
         query_row.pop(self.id)
         update_query_row_ids()
@@ -255,7 +269,7 @@ class AddRangeRow:
         self.text_max.title = 'Max: ' + str(self.max_value) + ' ' + range_categories[new]['units']
 
     def delete_row(self):
-        del (layout.children[1 + self.id])
+        del (layout.children[2 + self.id])
         query_row_type.pop(self.id)
         query_row.pop(self.id)
         update_query_row_ids()
@@ -268,10 +282,8 @@ class AddEndPointRow:
         self.id = len(query_row)
         self.options = ["Dose to Vol", "Vol of Dose"]
         self.text_input_titles = ["Volume:", "Dose:"]
-        self.select_category = RadioButtonGroup(labels=self.options, active=0, width=225)
+        self.select_category = RadioButtonGroup(labels=self.options, active=0, width=450)
         self.select_category.on_change('active', self.update_endpoint_title)
-
-        self.operator = RadioButtonGroup(labels=["Less than", "Greater than"], active=0, width=225)
 
         # Value Dropdown
         self.text_input = TextInput(value='', title=self.text_input_titles[0], width=225)
@@ -283,7 +295,6 @@ class AddEndPointRow:
         self.delete_last_row.on_click(self.delete_row)
 
         self.row = row(self.select_category,
-                       self.operator,
                        self.text_input,
                        self.units,
                        self.delete_last_row)
@@ -293,7 +304,7 @@ class AddEndPointRow:
         self.units.labels = self.unit_labels[new]
 
     def delete_row(self):
-        del (layout.children[1 + self.id])
+        del (layout.children[2 + self.id])
         query_row_type.pop(self.id)
         query_row.pop(self.id)
         update_query_row_ids()
@@ -335,8 +346,14 @@ def update_dvh_data(dvh):
         max_dose.append(dvh.max_dose[i])
         eud.append(dvh.eud[i].tolist())
         eud_a_value.append(dvh.eud_a_value[i])
-        x_data.append(x_axis.tolist())
-        y_data.append(dvh.dvh[:, i].tolist())
+        if radio_group_dose.active == 0:
+            x_data.append(x_axis.tolist())
+        else:
+            x_data.append(np.divide(x_axis, rx_dose[i]).tolist())
+        if radio_group_volume.active == 0:
+            y_data.append(np.multiply(dvh.dvh[:, i], volume[i]).tolist())
+        else:
+            y_data.append(dvh.dvh[:, i].tolist())
 
     source.data = {'mrn': mrn,
                    'uid': uid,
@@ -355,15 +372,35 @@ def update_dvh_data(dvh):
                    'y': y_data,
                    'color': line_colors}
 
-    source_patch.data = {'x_patch': np.append(x_axis, x_axis[::-1]).tolist(),
-                         'y_patch': np.append(dvh.q3_dvh, dvh.q1_dvh[::-1]).tolist()}
-    source_stats.data = {'x': x_axis.tolist(),
-                         'min': dvh.min_dvh.tolist(),
-                         'q1': dvh.q1_dvh.tolist(),
-                         'mean': dvh.mean_dvh.tolist(),
-                         'median': dvh.median_dvh.tolist(),
-                         'q3': dvh.q3_dvh.tolist(),
-                         'max': dvh.max_dvh.tolist()}
+    if radio_group_dose.active == 0 and radio_group_volume.active == 1:
+        source_patch.data = {'x_patch': np.append(x_axis, x_axis[::-1]).tolist(),
+                             'y_patch': np.append(dvh.q3_dvh, dvh.q1_dvh[::-1]).tolist()}
+        source_stats.data = {'x': x_axis.tolist(),
+                             'min': dvh.min_dvh.tolist(),
+                             'q1': dvh.q1_dvh.tolist(),
+                             'mean': dvh.mean_dvh.tolist(),
+                             'median': dvh.median_dvh.tolist(),
+                             'q3': dvh.q3_dvh.tolist(),
+                             'max': dvh.max_dvh.tolist()}
+    else:
+        source_patch.data = {'x_patch': [],
+                             'y_patch': []}
+        source_stats.data = {'x': [],
+                             'min': [],
+                             'q1': [],
+                             'mean': [],
+                             'median': [],
+                             'q3': [],
+                             'max': []}
+
+    if radio_group_dose.active == 0:
+        dvh_plots.xaxis.axis_label = "Dose (Gy)"
+    else:
+        dvh_plots.xaxis.axis_label = "Relative Dose (to Rx)"
+    if radio_group_volume.active == 0:
+        dvh_plots.yaxis.axis_label = "Absolute Volume (cc)"
+    else:
+        dvh_plots.yaxis.axis_label = "Relative Volume"
 
     update_beam_data(dvh.study_instance_uid)
     update_plan_data(dvh.study_instance_uid)
@@ -436,22 +473,56 @@ def update_rx_data(uids):
                        'normalization_object': rx_data.normalization_object}
 
 
+def update_endpoint_data(dvh):
+    global query_row, query_row_type, endpoint_columns
+    for i in range(0, 8):
+        endpoint_columns[i] = ''
+    endpoints_map = {}
+    counter = 0
+    for i in range(0, len(query_row)):
+        if query_row_type[i] == 'endpoint':
+
+            x = float(query_row[i].text_input.value)
+            if query_row[i].units.active == 0:
+                relative = True
+                x /= 100
+            else:
+                relative = False
+            if query_row[i].select_category.active == 0:
+                endpoint_columns[counter] = 'D_' + str(x) + query_row[i].units.labels[0] + ' (Gy)'
+                endpoints_map[counter] = dvh.get_dose_to_volume(x, relative=relative).tolist()
+            else:
+                endpoint_columns[counter] = 'V_' + str(x) + query_row[i].units.labels[1] + ' (cc)'
+                endpoints_map[counter] = dvh.get_volume_of_dose(x, relative=relative)
+            counter += 1
+    for i in range(counter, 8):
+        endpoints_map[i] = []
+        for j in range(0, dvh.count):
+            endpoints_map[i].append('')
+
+    source_endpoints.data = {'mrn': dvh.mrn,
+                             '1': endpoints_map[0],
+                             '2': endpoints_map[1],
+                             '3': endpoints_map[2],
+                             '4': endpoints_map[3],
+                             '5': endpoints_map[4],
+                             '6': endpoints_map[5],
+                             '7': endpoints_map[6],
+                             '8': endpoints_map[7]}
+    for i in range(0, counter):
+        data_table_endpoints.columns[i+1] = TableColumn(field=str(i+1), title=endpoint_columns[i], width=100)
+
+
 # set up layout
-tools = "pan,wheel_zoom,box_zoom,reset,crosshair"
+tools = "pan,wheel_zoom,box_zoom,reset,crosshair,hover"
 dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools, logo=None)
+
 stats_min = dvh_plots.line('x', 'min', source=source_stats, line_width=2, color='black', line_dash='dotted', alpha=0.2)
 stats_q1 = dvh_plots.line('x', 'q1', source=source_stats, line_width=0.5, color='black', alpha=0.2)
 stats_median = dvh_plots.line('x', 'median', source=source_stats, line_width=2, color='lightpink', line_dash='dashed', alpha=0.75)
 stats_mean = dvh_plots.line('x', 'mean', source=source_stats, line_width=2, color='lightseagreen', line_dash='dashed', alpha=0.5)
 stats_q3 = dvh_plots.line('x', 'q3', source=source_stats, line_width=0.5, color='black', alpha=0.2)
 stats_max = dvh_plots.line('x', 'max', source=source_stats, line_width=2, color='black', line_dash='dotted', alpha=0.2)
-
-# dvh_plots.add_tools(HoverTool(renderers=[stats_min], tooltips=[('Plot', 'Min'), ("Dose", "@x"), ("Volume", "@min")]))
-# dvh_plots.add_tools(HoverTool(renderers=[stats_q1], tooltips=[('Plot', 'Q1'), ("Dose", "@x"), ("Volume", "@q1")]))
-# dvh_plots.add_tools(HoverTool(renderers=[stats_median], tooltips=[('Plot', 'Median'), ("Dose", "@x"), ("Volume", "@median")]))
-# dvh_plots.add_tools(HoverTool(renderers=[stats_mean], tooltips=[('Plot', 'Mead'), ("Dose", "@x"), ("Volume", "@mean")]))
-# dvh_plots.add_tools(HoverTool(renderers=[stats_q3], tooltips=[('Plot', 'Q3'), ("Dose", "@x"), ("Volume", "@q3")]))
-# dvh_plots.add_tools(HoverTool(renderers=[stats_max], tooltips=[('Plot', 'Max'), ("Dose", "@x"), ("Volume", "@max")]))
 
 dvh_plots.multi_line('x', 'y', source=source, selection_color='color', line_width=2, alpha=0, nonselection_alpha=0, selection_alpha=1)
 dvh_plots.patch('x_patch', 'y_patch', source=source_patch, alpha=0.15)
@@ -484,6 +555,19 @@ columns = [TableColumn(field="mrn", title="MRN", width=175),
            TableColumn(field="eud_a_value", title="a", width=80)]
 data_table = DataTable(source=source, columns=columns, width=1000, selectable=True)
 
+# Set up EndPoint DataTable
+endpoint_table_title = PreText(text="DVH Endpoints", width=1000)
+columns = [TableColumn(field="mrn", title="MRN", width=175),
+           TableColumn(field="1", title=endpoint_columns[0], width=120),
+           TableColumn(field="2", title=endpoint_columns[1], width=120),
+           TableColumn(field="3", title=endpoint_columns[2], width=120),
+           TableColumn(field="4", title=endpoint_columns[3], width=120),
+           TableColumn(field="5", title=endpoint_columns[4], width=120),
+           TableColumn(field="6", title=endpoint_columns[5], width=120),
+           TableColumn(field="7", title=endpoint_columns[6], width=120),
+           TableColumn(field="8", title=endpoint_columns[7], width=120)]
+data_table_endpoints = DataTable(source=source_endpoints, columns=columns, width=1000, selectable=True)
+
 beam_table_title = PreText(text="Beams", width=1500)
 columns = [TableColumn(field="mrn", title="MRN", width=175),
            TableColumn(field="beam_number", title="Beam Number", width=80),
@@ -493,14 +577,14 @@ columns = [TableColumn(field="mrn", title="MRN", width=175),
            TableColumn(field="beam_name", title="Beam Name", width=200),
            TableColumn(field="beam_dose", title="Beam Dose", formatter=NumberFormatter(format="0.00")),
            TableColumn(field="beam_energy", title="Beam Energy", width=80),
-           TableColumn(field="beam_mu", title="Beam MU", width=100),
+           TableColumn(field="beam_mu", title="Beam MU", width=100, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="beam_type", title="Beam Type", width=80),
-           TableColumn(field="collimator_angle", title="Collimator Angle", width=80),
+           TableColumn(field="collimator_angle", title="Collimator Angle", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="control_point_count", title="Control Points", width=80),
-           TableColumn(field="couch_angle", title="Couch Angle", width=80),
-           TableColumn(field="gantry_start", title="Gantry Start", width=80),
+           TableColumn(field="couch_angle", title="Couch Angle", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="gantry_start", title="Gantry Start", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="gantry_rot_dir", title="Gantry Rotation", width=80),
-           TableColumn(field="gantry_end", title="Gantry End", width=80),
+           TableColumn(field="gantry_end", title="Gantry End", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="radiation_type", title="Radiation Type", width=80),
            TableColumn(field="ssd", title="SSD", width=80)]
 data_table_beams = DataTable(source=source_beams, columns=columns, width=1000)
@@ -514,9 +598,9 @@ columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="patient_orientation", title="Orientation"),
            TableColumn(field="patient_sex", title="Gender"),
            TableColumn(field="physician", title="Rad Onc"),
-           TableColumn(field="rx_dose", title="Rx Dose"),
+           TableColumn(field="rx_dose", title="Rx Dose", formatter=NumberFormatter(format="0.00")),
            TableColumn(field="sim_study_date", title="Sim Study Date"),
-           TableColumn(field="total_mu", title="Total MU"),
+           TableColumn(field="total_mu", title="Total MU", formatter=NumberFormatter(format="0.0")),
            TableColumn(field="tx_energies", title="Tx Energies"),
            TableColumn(field="tx_modality", title="Tx Modality"),
            TableColumn(field="tx_site", title="Tx Site")]
@@ -535,6 +619,10 @@ columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="normalization_object", title="Norm Object")]
 data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1000)
 
+# Setup axis normalization radio buttons
+radio_group_dose = RadioGroup(labels=["Absolute Dose", "Relative Dose (Rx)"], active=0)
+radio_group_volume = RadioGroup(labels=["Absolute Volume", "Relative Volume"], active=1)
+
 update_button = Button(label="Update", button_type="success", width=200)
 update_button.on_click(update_data)
 download_button = Button(label="Download", button_type="default", width=200)
@@ -543,16 +631,17 @@ download_button.callback = CustomJS(args=dict(source=source,
                                               source_plans=source_plans,
                                               source_beams=source_beams),
                                     code=open(join(dirname(__file__), "download.js")).read())
-main_add_selector_button = Button(label="Add Selector", button_type="primary", width=200)
+main_add_selector_button = Button(label="Add Selection Filter", button_type="primary", width=200)
 main_add_selector_button.on_click(button_add_selector_row)
-main_add_range_button = Button(label="Add Range", button_type="primary", width=200)
+main_add_range_button = Button(label="Add Range Filter", button_type="primary", width=200)
 main_add_range_button.on_click(button_add_range_row)
 main_add_endpoint_button = Button(label="Add Endpoint", button_type="primary", width=200)
 main_add_endpoint_button.on_click(button_add_endpoint_row)
 query_row.append(row(update_button, main_add_selector_button, main_add_range_button))
 query_row_type.append('main')
 
-layout = column(dvh_plots,
+layout = column(row(radio_group_dose, radio_group_volume),
+                dvh_plots,
                 row(main_add_selector_button,
                     main_add_range_button,
                     main_add_endpoint_button,
@@ -560,6 +649,8 @@ layout = column(dvh_plots,
                     download_button),
                 data_table_title,
                 data_table,
+                endpoint_table_title,
+                data_table_endpoints,
                 rxs_table_title,
                 data_table_rxs,
                 beam_table_title,
