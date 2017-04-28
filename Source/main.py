@@ -146,33 +146,34 @@ def update_data():
     beam_query_str = []
     dvh_query_str = []
     for i in range(1, len(query_row)):
-        if query_row_type[i] == 'selector':
-            var_name = selector_categories[query_row[i].select_category.value]['var_name']
-            table = selector_categories[query_row[i].select_category.value]['table']
-            value = query_row[i].select_value.value
-            query_str = var_name + " = '" + value + "'"
-        elif query_row_type[i] == 'range':
-            query_row[i].select_category.value
-            var_name = range_categories[query_row[i].select_category.value]['var_name']
-            table = range_categories[query_row[i].select_category.value]['table']
-            if query_row[i].text_min.value != '':
-                value_low = query_row[i].text_min.value
-            else:
-                value_low = query_row[i].min_value
-            if query_row[i].text_max.value != '':
-                value_high = query_row[i].text_max.value
-            else:
-                value_high = query_row[i].max_value
-            query_str = var_name + " between " + str(value_low) + " and " + str(value_high)
+        if query_row_type[i] in {'selector', 'range'}:
+            if query_row_type[i] == 'selector':
+                var_name = selector_categories[query_row[i].select_category.value]['var_name']
+                table = selector_categories[query_row[i].select_category.value]['table']
+                value = query_row[i].select_value.value
+                query_str = var_name + " = '" + value + "'"
+            elif query_row_type[i] == 'range':
+                query_row[i].select_category.value
+                var_name = range_categories[query_row[i].select_category.value]['var_name']
+                table = range_categories[query_row[i].select_category.value]['table']
+                if query_row[i].text_min.value != '':
+                    value_low = query_row[i].text_min.value
+                else:
+                    value_low = query_row[i].min_value
+                if query_row[i].text_max.value != '':
+                    value_high = query_row[i].text_max.value
+                else:
+                    value_high = query_row[i].max_value
+                query_str = var_name + " between " + str(value_low) + " and " + str(value_high)
 
-        if table == 'Plans':
-            plan_query_str.append(query_str)
-        elif table == 'Rxs':
-            rx_query_str.append(query_str)
-        elif table == 'Beams':
-            beam_query_str.append(query_str)
-        elif table == 'DVHs':
-            dvh_query_str.append(query_str)
+            if table == 'Plans':
+                plan_query_str.append(query_str)
+            elif table == 'Rxs':
+                rx_query_str.append(query_str)
+            elif table == 'Beams':
+                beam_query_str.append(query_str)
+            elif table == 'DVHs':
+                dvh_query_str.append(query_str)
 
     plan_query_str = ' and '.join(plan_query_str)
     rx_query_str = ' and '.join(rx_query_str)
@@ -485,14 +486,15 @@ def update_endpoint_data(dvh):
             x = float(query_row[i].text_input.value)
             if query_row[i].units.active == 0:
                 relative = True
-                x /= 100
+                units = query_row[i].units.labels[0]
             else:
                 relative = False
+                units = query_row[i].units.labels[1]
             if query_row[i].select_category.active == 0:
-                endpoint_columns[counter] = 'D_' + str(x) + query_row[i].units.labels[0] + ' (Gy)'
-                endpoints_map[counter] = dvh.get_dose_to_volume(x, relative=relative).tolist()
+                endpoint_columns[counter] = 'D_' + str(x) + units + ' (Gy)'
+                endpoints_map[counter] = dvh.get_dose_to_volume(x/100, relative=relative).tolist()
             else:
-                endpoint_columns[counter] = 'V_' + str(x) + query_row[i].units.labels[1] + ' (cc)'
+                endpoint_columns[counter] = 'V_' + str(x) + units + ' (cc)'
                 endpoints_map[counter] = dvh.get_volume_of_dose(x, relative=relative)
             counter += 1
     for i in range(counter, 8):
