@@ -1,13 +1,22 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+"""
+main program for Bokeh server
+Created on Sun Apr 21 2017
+@author: Dan Cutright, PhD
+"""
+
+import numpy as np
+import itertools
 from bokeh.layouts import layout, column, row
 from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool
 from bokeh.models.widgets import Select, Button, PreText, TableColumn, DataTable, NumberFormatter, RadioButtonGroup, TextInput
 from bokeh.plotting import figure
 from bokeh.io import curdoc
-from ROI_Name_Manager import *
-from Analysis_Tools import *
-from SQL_to_Python import *
-import numpy as np
-import itertools
+from ROI_Name_Manager import DatabaseROIs
+from Analysis_Tools import DVH, get_study_instance_uids
+from DVH_SQL import DVH_SQL
+from SQL_to_Python import QuerySQL
 from bokeh.palettes import Category20_9 as palette
 from datetime import datetime
 from os.path import dirname, join
@@ -91,10 +100,11 @@ def update_query_row_ids():
         query_row[i].id = i
 
 
-def download_data():
-    print 'executing button click'
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    CustomJS(args=dict(source=source), code=open(os.path.join(dir_path, "download.js")).read())
+def update_all_range_endpoints():
+    global query_row, query_row_type
+    for i in range(1, len(query_row)):
+        if query_row_type[i] == 'range':
+            query_row[i].update_range_values_execute(query_row[i].select_category.value)
 
 
 def update_data():
@@ -144,6 +154,7 @@ def update_data():
     dvh_data = DVH(uid=uids, dvh_condition=dvh_query_str)
     print str(datetime.now()), 'initializing source data', dvh_data.query
     update_dvh_data(dvh_data)
+    update_all_range_endpoints()
 
 
 class AddSelectorRow:
@@ -190,22 +201,17 @@ class AddRangeRow:
         # Category Dropdown
         self.category_options = range_categories.keys()
         self.category_options.sort()
-        self.select_category = Select(value=self.category_options[0], options=self.category_options, width=450)
+        self.select_category = Select(value=self.category_options[-1], options=self.category_options, width=450)
         self.select_category.on_change('value', self.update_range_values)
 
         # Range slider
         self.sql_table = range_categories[self.select_category.value]['table']
         self.var_name = range_categories[self.select_category.value]['var_name']
-        self.min_value = DVH_SQL().get_min_value(self.sql_table, self.var_name)
-        if not self.min_value:
-            self.min_value = 0
-        self.max_value = DVH_SQL().get_max_value(self.sql_table, self.var_name)
-        if not self.max_value:
-            self.max_value = 100
-        min_title = 'Min: ' + str(self.min_value) + ' ' + range_categories[self.select_category.value]['units']
-        max_title = 'Max: ' + str(self.max_value) + ' ' + range_categories[self.select_category.value]['units']
-        self.text_min = TextInput(value='', title=min_title, width=225)
-        self.text_max = TextInput(value='', title=max_title, width=225)
+        self.min_value = []
+        self.max_value = []
+        self.text_min = TextInput(value='', title='', width=225)
+        self.text_max = TextInput(value='', title='', width=225)
+        self.update_range_values_execute(self.select_category.value)
 
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
         self.delete_last_row.on_click(self.delete_row)
@@ -216,6 +222,9 @@ class AddRangeRow:
                         self.delete_last_row])
 
     def update_range_values(self, attrname, old, new):
+        self.update_range_values_execute(new)
+
+    def update_range_values_execute(self, new):
         table_new = range_categories[new]['table']
         var_name_new = range_categories[new]['var_name']
         if source.data['mrn']:
@@ -413,10 +422,10 @@ def update_rx_data(uids):
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair"
 dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools, logo=None)
 stats_min = dvh_plots.line('x', 'min', source=source_stats, line_width=2, color='black', line_dash='dotted', alpha=0.2)
-stats_q1 = dvh_plots.line('x', 'q1', source=source_stats, line_width=1, color='black', alpha=0.2)
-stats_median = dvh_plots.line('x', 'median', source=source_stats, line_width=2, color='lightpink', alpha=0.75)
-stats_mean = dvh_plots.line('x', 'mean', source=source_stats, line_width=2, color='lightseagreen', alpha=0.5)
-stats_q3 = dvh_plots.line('x', 'q3', source=source_stats, line_width=1, color='black', alpha=0.2)
+stats_q1 = dvh_plots.line('x', 'q1', source=source_stats, line_width=0.5, color='black', alpha=0.2)
+stats_median = dvh_plots.line('x', 'median', source=source_stats, line_width=2, color='lightpink', line_dash='dashed', alpha=0.75)
+stats_mean = dvh_plots.line('x', 'mean', source=source_stats, line_width=2, color='lightseagreen', line_dash='dashed', alpha=0.5)
+stats_q3 = dvh_plots.line('x', 'q3', source=source_stats, line_width=0.5, color='black', alpha=0.2)
 stats_max = dvh_plots.line('x', 'max', source=source_stats, line_width=2, color='black', line_dash='dotted', alpha=0.2)
 
 # dvh_plots.add_tools(HoverTool(renderers=[stats_min], tooltips=[('Plot', 'Min'), ("Dose", "@x"), ("Volume", "@min")]))
@@ -526,7 +535,11 @@ query_row.append(row(update_button, main_add_selector_button, main_add_range_but
 query_row_type.append('main')
 
 layout = column(dvh_plots,
-                row(main_add_selector_button, main_add_range_button, main_add_endpoint_button, update_button, download_button),
+                row(main_add_selector_button,
+                    main_add_range_button,
+                    main_add_endpoint_button,
+                    update_button,
+                    download_button),
                 data_table_title,
                 data_table,
                 rxs_table_title,
