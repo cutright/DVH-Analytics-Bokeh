@@ -195,28 +195,35 @@ class DVH:
         return dvh
 
     def get_dose_to_volume(self, volume, **kwargs):
+        # if no kwargs, input and output assumed to be in Gy and cm^3
         doses = np.zeros(self.count)
         for x in range(0, self.count):
             dvh = np.zeros(len(self.dvh))
             for y in range(0, len(self.dvh)):
                 dvh[y] = self.dvh[y][x]
-                if 'relative' in kwargs and kwargs['relative']:
+                if 'input' in kwargs and kwargs['input'] == 'relative':
                     doses[x] = dose_to_volume(dvh, volume)
                 else:
                     doses[x] = dose_to_volume(dvh, volume, self.volume[x])
+        if 'output' in kwargs and kwargs['output'] == 'relative':
+            doses = np.divide(doses, self.rx_dose)
 
-        return doses
+        return doses.tolist()
 
     def get_volume_of_dose(self, dose, **kwargs):
-
+        # dose input is assumed to be in Gy
+        # output will be either fractional (relative) or in cc's
         roi_volume = []
+        dose = np.ones(self.count) * dose
+        if 'input' in kwargs and kwargs['input'] == 'relative':
+            dose = np.multiply(dose, self.rx_dose)
         for i in range(0, self.count):
-            x = [int(np.floor(dose * 100)), int(np.ceil(dose * 100))]
+            x = [int(np.floor(dose[i] * 100)), int(np.ceil(dose[i] * 100))]
             y = [self.dvh[x[0], i], self.dvh[x[1], i]]
-            if 'relative' in kwargs and kwargs['relative']:
-                roi_volume.append(np.interp(float(dose), x, y))
+            if 'output' in kwargs and kwargs['output'] == 'relative':
+                roi_volume.append(np.interp(float(dose[i]), x, y))
             else:
-                roi_volume.append(np.interp(float(dose), x, y) * self.volume[i])
+                roi_volume.append(np.interp(float(dose[i]), x, y) * self.volume[i])
 
         return roi_volume
 

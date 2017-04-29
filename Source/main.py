@@ -484,18 +484,20 @@ def update_endpoint_data(dvh):
         if query_row_type[i] == 'endpoint':
 
             x = float(query_row[i].text_input.value)
+            x_for_text = x
             if query_row[i].units.active == 0:
-                relative = True
+                endpoint_input = 'relative'
                 units = query_row[i].units.labels[0]
+                x /= 100
             else:
-                relative = False
+                endpoint_input = 'absolute'
                 units = query_row[i].units.labels[1]
             if query_row[i].select_category.active == 0:
-                endpoint_columns[counter] = 'D_' + str(x) + units + ' (Gy)'
-                endpoints_map[counter] = dvh.get_dose_to_volume(x/100, relative=relative).tolist()
+                endpoint_columns[counter] = 'D_' + str(x_for_text) + units + ' (Gy)'
+                endpoints_map[counter] = dvh.get_dose_to_volume(x, input=endpoint_input)
             else:
-                endpoint_columns[counter] = 'V_' + str(x) + units + ' (cc)'
-                endpoints_map[counter] = dvh.get_volume_of_dose(x, relative=relative)
+                endpoint_columns[counter] = 'V_' + str(x_for_text) + units + ' (cc)'
+                endpoints_map[counter] = dvh.get_volume_of_dose(x, input=endpoint_input)
             counter += 1
     for i in range(counter, 8):
         endpoints_map[i] = []
