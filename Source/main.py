@@ -26,7 +26,7 @@ colors = itertools.cycle(palette)
 current_dvh = []
 
 # Initialize variables
-source = ColumnDataSource(data=dict(color=[], x=[], y=[]))
+source = ColumnDataSource(data=dict(color=[], x=[], y=[], mrn=[], ep1=[], ep2=[], ep3=[], ep4=[], ep5=[], ep6=[], ep7=[], ep8=[]))
 source_patch = ColumnDataSource(data=dict(x_patch=[], y_patch=[]))
 source_stats = ColumnDataSource(data=dict(x=[], min=[], q1=[], mean=[], median=[], q3=[], max=[]))
 source_beams = ColumnDataSource(data=dict())
@@ -36,15 +36,7 @@ source_endpoints = ColumnDataSource(data=dict())
 endpoint_columns = {}
 for i in range(0, 10):
     endpoint_columns[i] = ''
-source_endpoints.data = {'mrn': [],
-                         '1': [],
-                         '2': [],
-                         '3': [],
-                         '4': [],
-                         '5': [],
-                         '6': [],
-                         '7': [],
-                         '8': []}
+
 query_row = []
 query_row_type = []
 
@@ -364,6 +356,7 @@ def update_dvh_data(dvh):
     eud_a_value = []
     x_data = []
     y_data = []
+    endpoint_columns = []
     for i in range(0, dvh.count):
         mrn.append(dvh.mrn[i])
         uid.append(dvh.study_instance_uid[i])
@@ -378,6 +371,7 @@ def update_dvh_data(dvh):
         max_dose.append(dvh.max_dose[i])
         eud.append(dvh.eud[i].tolist())
         eud_a_value.append(dvh.eud_a_value[i])
+        endpoint_columns.append('')
         if radio_group_dose.active == 0:
             x_data.append(x_axis.tolist())
         else:
@@ -402,7 +396,15 @@ def update_dvh_data(dvh):
                    'eud_a_value': eud_a_value,
                    'x': x_data,
                    'y': y_data,
-                   'color': line_colors}
+                   'color': line_colors,
+                   'ep1': endpoint_columns,
+                   'ep2': endpoint_columns,
+                   'ep3': endpoint_columns,
+                   'ep4': endpoint_columns,
+                   'ep5': endpoint_columns,
+                   'ep6': endpoint_columns,
+                   'ep7': endpoint_columns,
+                   'ep8': endpoint_columns}
 
     if radio_group_dose.active == 0 and radio_group_volume.active == 1:
         source_patch.data = {'x_patch': np.append(x_axis, x_axis[::-1]).tolist(),
@@ -461,7 +463,8 @@ def update_beam_data(uids):
                          'gantry_rot_dir': beam_data.gantry_rot_dir,
                          'gantry_start': beam_data.gantry_start,
                          'radiation_type': beam_data.radiation_type,
-                         'ssd': beam_data.ssd}
+                         'ssd': beam_data.ssd,
+                         'treatment_machine': beam_data.treatment_machine}
 
 
 def update_plan_data(uids):
@@ -483,7 +486,8 @@ def update_plan_data(uids):
                          'total_mu': plan_data.total_mu,
                          'tx_energies': plan_data.tx_energies,
                          'tx_modality': plan_data.tx_modality,
-                         'tx_site': plan_data.tx_site}
+                         'tx_site': plan_data.tx_site,
+                         'heterogeneity_correction': plan_data.heterogeneity_correction}
 
 
 def update_rx_data(uids):
@@ -512,7 +516,7 @@ def update_endpoint_data(dvh):
     endpoints_map = {}
     counter = 0
     for i in range(0, len(query_row)):
-        if query_row_type[i] == 'endpoint':
+        if query_row_type[i] == 'endpoint' and counter < 8:
             output_unit = ['Gy', 'cc']
             x = float(query_row[i].text_input.value)
             x_for_text = x
@@ -540,17 +544,26 @@ def update_endpoint_data(dvh):
         for j in range(0, dvh.count):
             endpoints_map[i].append('')
 
-    source_endpoints.data = {'mrn': dvh.mrn,
-                             '1': endpoints_map[0],
-                             '2': endpoints_map[1],
-                             '3': endpoints_map[2],
-                             '4': endpoints_map[3],
-                             '5': endpoints_map[4],
-                             '6': endpoints_map[5],
-                             '7': endpoints_map[6],
-                             '8': endpoints_map[7]}
+    tuple_list = {}
+    for i in range(0, 8):
+        current_tuple_list = []
+        for j in range(0, dvh.count):
+            current_tuple_list.append(tuple([j, endpoints_map[i][j]]))
+        tuple_list[i] = current_tuple_list
+
+    patches = {'ep1': tuple_list[0],
+               'ep2': tuple_list[1],
+               'ep3': tuple_list[2],
+               'ep4': tuple_list[3],
+               'ep5': tuple_list[4],
+               'ep6': tuple_list[5],
+               'ep7': tuple_list[6],
+               'ep8': tuple_list[7]}
+
+    source.patch(patches)
+
     for i in range(0, counter):
-        data_table_endpoints.columns[i+1] = TableColumn(field=str(i+1),
+        data_table_endpoints.columns[i+1] = TableColumn(field=str('ep' + str(i+1)),
                                                         title=endpoint_columns[i],
                                                         width=100,
                                                         formatter=NumberFormatter(format="0.00"))
@@ -601,15 +614,15 @@ data_table = DataTable(source=source, columns=columns, width=1000, selectable=Tr
 # Set up EndPoint DataTable
 endpoint_table_title = PreText(text="DVH Endpoints", width=1000)
 columns = [TableColumn(field="mrn", title="MRN", width=175),
-           TableColumn(field="1", title=endpoint_columns[0], width=120),
-           TableColumn(field="2", title=endpoint_columns[1], width=120),
-           TableColumn(field="3", title=endpoint_columns[2], width=120),
-           TableColumn(field="4", title=endpoint_columns[3], width=120),
-           TableColumn(field="5", title=endpoint_columns[4], width=120),
-           TableColumn(field="6", title=endpoint_columns[5], width=120),
-           TableColumn(field="7", title=endpoint_columns[6], width=120),
-           TableColumn(field="8", title=endpoint_columns[7], width=120)]
-data_table_endpoints = DataTable(source=source_endpoints, columns=columns, width=1000, selectable=True)
+           TableColumn(field="ep1", title=endpoint_columns[0], width=120),
+           TableColumn(field="ep2", title=endpoint_columns[1], width=120),
+           TableColumn(field="ep3", title=endpoint_columns[2], width=120),
+           TableColumn(field="ep4", title=endpoint_columns[3], width=120),
+           TableColumn(field="ep5", title=endpoint_columns[4], width=120),
+           TableColumn(field="ep6", title=endpoint_columns[5], width=120),
+           TableColumn(field="ep7", title=endpoint_columns[6], width=120),
+           TableColumn(field="ep8", title=endpoint_columns[7], width=120)]
+data_table_endpoints = DataTable(source=source, columns=columns, width=1000, selectable=True)
 
 beam_table_title = PreText(text="Beams", width=1500)
 columns = [TableColumn(field="mrn", title="MRN", width=175),
@@ -668,12 +681,14 @@ radio_group_volume = RadioGroup(labels=["Absolute Volume", "Relative Volume"], a
 
 update_button = Button(label="Update", button_type="success", width=200)
 update_button.on_click(update_data)
+
 download_button = Button(label="Download", button_type="default", width=200)
 download_button.callback = CustomJS(args=dict(source=source,
                                               source_rxs=source_rxs,
                                               source_plans=source_plans,
                                               source_beams=source_beams),
                                     code=open(join(dirname(__file__), "download.js")).read())
+
 main_add_selector_button = Button(label="Add Selection Filter", button_type="primary", width=200)
 main_add_selector_button.on_click(button_add_selector_row)
 main_add_range_button = Button(label="Add Range Filter", button_type="primary", width=200)

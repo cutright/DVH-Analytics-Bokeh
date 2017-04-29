@@ -2,7 +2,7 @@
 // https://github.com/bokeh/bokeh/tree/master/examples/app/export_csv
 
 var data = source.data;
-var filetext = 'DVH Data\nmrn,uid,roi_name,roi_type,rx_dose,volume,min_dose,mean_dose,max_dose,eud,a\n';
+var filetext = 'DVH Data\nmrn,uid,roi_name,roi_type,rx_dose,volume,min_dose,mean_dose,max_dose,eud,a,ep1,ep2,ep3,ep4,ep5,ep6,ep7,ep8\n';
 for (i=0; i < data['mrn'].length; i++) {
     var currRow = [data['mrn'][i].toString(),
                    data['uid'][i].toString(),
@@ -14,7 +14,15 @@ for (i=0; i < data['mrn'].length; i++) {
                    data['mean_dose'][i].toString(),
                    data['max_dose'][i].toString(),
                    data['eud'][i].toString(),
-                   data['eud_a_value'][i].toString().concat('\n')];
+                   data['eud_a_value'][i].toString(),
+                   data['ep1'][i].toString(),
+                   data['ep2'][i].toString(),
+                   data['ep3'][i].toString(),
+                   data['ep4'][i].toString(),
+                   data['ep5'][i].toString(),
+                   data['ep6'][i].toString(),
+                   data['ep7'][i].toString(),
+                   data['ep8'][i].toString().concat('\n')];
 
     var joined = currRow.join();
     filetext = filetext.concat(joined);
@@ -41,14 +49,15 @@ for (i=0; i < data['mrn'].length; i++) {
 }
 
 var data = source_plans.data;
-filetext = filetext.concat('\n\nPlan Data\nmrn,uid,age,birth_date,fxs,patient_orientation,patient_sex,physician,');
-filetext = filetext.concat('rx_dose,sim_study_date,total_mu,tx_energies,tx_modality,tx_site\n');
+filetext = filetext.concat('\n\nPlan Data\nmrn,uid,age,birth_date,fxs,heterogeneity_correction,patient_orientation,');
+filetext = filetext.concat('patient_sex,physician,rx_dose,sim_study_date,total_mu,tx_energies,tx_modality,tx_site\n');
 for (i=0; i < data['mrn'].length; i++) {
     var currRow = [data['mrn'][i].toString(),
                    data['uid'][i].toString(),
                    data['age'][i].toString(),
                    data['birth_date'][i].toString(),
                    data['fxs'][i].toString(),
+                   data['heterogeneity_correction'][i].toString(),
                    data['patient_orientation'][i].toString(),
                    data['patient_sex'][i].toString(),
                    data['physician'][i].toString(),
@@ -66,7 +75,7 @@ for (i=0; i < data['mrn'].length; i++) {
 var data = source_beams.data;
 filetext = filetext.concat('\n\nBeam Data\nmrn,uid,beam_number,fx_count,fx_grp_beam_count,fx_grp_number,beam_name,beam_dose,');
 filetext = filetext.concat('beam_energy,beam_mu,beam_type,collimator_angle,couch_angle,gantry_start,gantry_rot_dir,');
-filetext = filetext.concat('gantry_end,radiation_type,ssd\n');
+filetext = filetext.concat('gantry_end,radiation_type,ssd,treatment_machine\n');
 for (i=0; i < data['mrn'].length; i++) {
     var currRow = [data['mrn'][i].toString(),
                    data['uid'][i].toString(),
@@ -85,7 +94,8 @@ for (i=0; i < data['mrn'].length; i++) {
                    data['gantry_rot_dir'][i].toString(),
                    data['gantry_end'][i].toString(),
                    data['radiation_type'][i].toString(),
-                   data['ssd'][i].toString().concat('\n')];
+                   data['ssd'][i].toString(),
+                   data['treatment_machine'][i].toString().concat('\n')];
 
     var joined = currRow.join();
     filetext = filetext.concat(joined);
