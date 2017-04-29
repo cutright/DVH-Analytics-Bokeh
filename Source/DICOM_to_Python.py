@@ -368,7 +368,11 @@ class BeamTable:
                 gantry_rot_dir = first_cp.GantryRotationDirection
                 gantry_end = float(final_cp.GantryAngle)
                 collimator_angle = float(first_cp.BeamLimitingDeviceAngle)
+                if collimator_angle > 180:
+                    collimator_angle -= 360
                 couch_angle = float(first_cp.PatientSupportAngle)
+                if couch_angle > 180:
+                    couch_angle -= 360
 
                 # If beam is an arc, return average SSD, otherwise
                 if gantry_rot_dir in {'CW', 'CC'}:

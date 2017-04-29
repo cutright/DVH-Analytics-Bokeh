@@ -20,7 +20,7 @@ class DICOM_FileSet:
         self.dose = dose
 
 
-def get_file_paths(start_path):
+def get_file_paths(start_path, **kwargs):
 
     f = []
     print str(datetime.now()), 'getting file list'
@@ -36,10 +36,15 @@ def get_file_paths(start_path):
     dose_files = []
     study_uid_dose = []
 
-    print str(datetime.now()), 'verifying input files are not already imported'
+    if 'force_update' in kwargs and kwargs['force_update']:
+        print str(datetime.now()), 'forcing all dicom to be imported (i.e., not checking DB for potential duplicates)'
+        pass
+    else:
+        print str(datetime.now()), 'will verify input files are not already imported'
+    print str(datetime.now()), 'accumulating lists of plan, structure, and dose dicom files'
     for x in range(0, len(f)):
-        try:
-            if not is_file_imported(f[x]):
+        if 'force_update' in kwargs and kwargs['force_update']:
+            try:
                 dicom_file = dicom.read_file(f[x])
                 if dicom_file.Modality.lower() == 'rtplan':
                     plan_files.append(f[x])
@@ -50,12 +55,30 @@ def get_file_paths(start_path):
                 elif dicom_file.Modality.lower() == 'rtdose':
                     dose_files.append(f[x])
                     study_uid_dose.append(dicom_file.StudyInstanceUID)
-            else:
-                print f[x]
-                print "Already imported. Must delete from database before reimporting."
-        except Exception:
-            pass
-    print str(datetime.now()), 'verification complete'
+            except Exception:
+                pass
+        else:
+            try:
+                if not is_file_imported(f[x]):
+                    dicom_file = dicom.read_file(f[x])
+                    if dicom_file.Modality.lower() == 'rtplan':
+                        plan_files.append(f[x])
+                        study_uid_plan.append(dicom_file.StudyInstanceUID)
+                    elif dicom_file.Modality.lower() == 'rtstruct':
+                        structure_files.append(f[x])
+                        study_uid_structure.append(dicom_file.StudyInstanceUID)
+                    elif dicom_file.Modality.lower() == 'rtdose':
+                        dose_files.append(f[x])
+                        study_uid_dose.append(dicom_file.StudyInstanceUID)
+                else:
+                    print f[x]
+                    print "Already imported. Must delete from database before reimporting."
+            except Exception:
+                pass
+    if 'force_update' in kwargs and kwargs['force_update']:
+        pass
+    else:
+        print 'verification complete'
 
     print str(datetime.now()), 'sorting files by uid'
     dicom_files = {}
@@ -68,15 +91,18 @@ def get_file_paths(start_path):
             if study_uid_plan[a] == study_uid_dose[c]:
                 rt_dose = dose_files[c]
         dicom_files[a] = DICOM_FileSet(rt_plan, rt_structure, rt_dose)
-    print str(datetime.now()), 'files by sorted'
+    print str(datetime.now()), 'files sorted'
 
     return dicom_files
 
 
-def dicom_to_sql(start_path):
+def dicom_to_sql(start_path, **kwargs):
 
     sqlcnx = DVH_SQL()
-    f = get_file_paths(start_path)
+    force_update = False
+    if 'force_update' in kwargs and kwargs['force_update']:
+        force_update = True
+    f = get_file_paths(start_path, force_update=force_update)
 
     for n in range(0, len(f)):
         print f[n].structure
@@ -101,7 +127,7 @@ def rebuild_database(start_path):
     sqlcnx = DVH_SQL()
 
     sqlcnx.reinitialize_database()
-    dicom_to_sql(start_path)
+    dicom_to_sql(start_path, force_update=True)
     sqlcnx.cnx.close()
 
 
