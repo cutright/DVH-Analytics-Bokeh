@@ -41,7 +41,7 @@ class BeamRow:
                  fx_group, fxs, fx_grp_beam_count, beam_dose,
                  beam_mu, radiation_type, beam_energy, beam_type, control_point_count,
                  gantry_start, gantry_end, gantry_rot_dir, collimator_angle,
-                 couch_angle, isocenter, ssd):
+                 couch_angle, isocenter, ssd, treatment_machine):
         self.mrn = mrn
         self.study_instance_uid = study_instance_uid
         self.beam_number = beam_number
@@ -62,6 +62,7 @@ class BeamRow:
         self.couch_angle = couch_angle
         self.isocenter = isocenter
         self.ssd = ssd
+        self.treatment_machine = treatment_machine
 
 
 class RxRow:
@@ -91,6 +92,8 @@ class PlanRow:
         rt_plan_obj = rt_plan_dicompyler.GetPlan()
         rt_structure = dicom.read_file(structure_file)
         rt_dose = dicom.read_file(dose_file)
+
+        heterogeneity_correction = rt_dose.TissueHeterogeneityCorrection
 
         # Record Medical Record Number
         MRN = rt_plan.PatientID
@@ -254,6 +257,7 @@ class PlanRow:
         self.tx_time = tx_time
         self.total_mu = total_mu
         self.dose_grid_resolution = dose_grid_resolution
+        self.heterogeneity_correction = heterogeneity_correction
 
 
 class DVHTable:
@@ -340,6 +344,7 @@ class BeamTable:
                 beam_seq = rt_plan.BeamSequence[beam_num]
                 beam_name = beam_seq.BeamDescription
                 ref_beam_seq = fx_grp_seq.ReferencedBeamSequence[fx_grp_beam]
+                treatment_machine = beam_seq.TreatmentMachineName
 
                 beam_dose = float(ref_beam_seq.BeamDose)
                 beam_mu = float(ref_beam_seq.BeamMeterset)
@@ -371,6 +376,16 @@ class BeamTable:
                     for CP in range(0, control_point_count):
                         ssd += round(float(beam_seq.ControlPointSequence[CP].SourceToSurfaceDistance) / 10, 2)
                     ssd /= control_point_count
+                    if gantry_rot_dir == 'CW':
+                        if gantry_start > 176:
+                            gantry_start -= float(360)
+                        if gantry_end > 180:
+                            gantry_end -= float(360)
+                    elif gantry_rot_dir == 'CC':
+                        if gantry_start > 184:
+                            gantry_start -= float(360)
+                        if gantry_end > 180:
+                            gantry_end -= float(360)
                 else:
                     gantry_rot_dir = '-'
                     ssd = float(first_cp.SourceToSurfaceDistance) / 10
@@ -380,7 +395,7 @@ class BeamTable:
                                        fx_grp_beam_count, beam_dose, beam_mu, radiation_type,
                                        beam_energy, beam_type, control_point_count,
                                        gantry_start, gantry_end, gantry_rot_dir,
-                                       collimator_angle, couch_angle, isocenter, ssd)
+                                       collimator_angle, couch_angle, isocenter, ssd, treatment_machine)
 
                 values[beam_num] = current_beam
                 beam_num += 1
@@ -409,6 +424,7 @@ class BeamTable:
         self.couch_angle = [values[x].couch_angle for x in beam_range]
         self.isocenter = [values[x].isocenter for x in beam_range]
         self.ssd = [values[x].ssd for x in beam_range]
+        self.treatment_machine = [values[x].treatment_machine for x in beam_range]
 
 
 class RxTable:

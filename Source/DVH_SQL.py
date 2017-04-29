@@ -135,7 +135,8 @@ class DVH_SQL:
                      plan.tx_modality,
                      str(plan.tx_time),
                      str(plan.total_mu),
-                     plan.dose_grid_resolution]
+                     plan.dose_grid_resolution,
+                     plan.heterogeneity_correction]
         sql_input = '\',\''.join(sql_input)
         sql_input += '\');'
         sql_input = sql_input.replace("'(NULL)'", "(NULL)")
@@ -174,7 +175,8 @@ class DVH_SQL:
                          str(beams.collimator_angle[x]),
                          str(beams.couch_angle[x]),
                          beams.isocenter[x],
-                         str(round(beams.ssd[x], 2))]
+                         str(round(beams.ssd[x], 2)),
+                         beams.treatment_machine[x]]
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'
             prepend = 'INSERT INTO Beams VALUES (\''

@@ -10,6 +10,7 @@ from DVH_SQL import *
 from DICOM_to_Python import DVHTable, PlanRow, BeamTable, RxTable
 import os
 import dicom
+from datetime import datetime
 
 
 class DICOM_FileSet:
@@ -22,9 +23,11 @@ class DICOM_FileSet:
 def get_file_paths(start_path):
 
     f = []
+    print str(datetime.now()), 'getting file list'
     for root, dirs, files in os.walk(start_path, topdown=False):
         for name in files:
             f.append(os.path.join(root, name))
+    print str(datetime.now()), 'file list obtained'
 
     plan_files = []
     study_uid_plan = []
@@ -33,6 +36,7 @@ def get_file_paths(start_path):
     dose_files = []
     study_uid_dose = []
 
+    print str(datetime.now()), 'verifying input files are not already imported'
     for x in range(0, len(f)):
         try:
             if not is_file_imported(f[x]):
@@ -51,7 +55,9 @@ def get_file_paths(start_path):
                 print "Already imported. Must delete from database before reimporting."
         except Exception:
             pass
+    print str(datetime.now()), 'verification complete'
 
+    print str(datetime.now()), 'sorting files by uid'
     dicom_files = {}
     for a in range(0, len(plan_files)):
         rt_plan = plan_files[a]
@@ -62,6 +68,7 @@ def get_file_paths(start_path):
             if study_uid_plan[a] == study_uid_dose[c]:
                 rt_dose = dose_files[c]
         dicom_files[a] = DICOM_FileSet(rt_plan, rt_structure, rt_dose)
+    print str(datetime.now()), 'files by sorted'
 
     return dicom_files
 

@@ -23,6 +23,7 @@ from os.path import dirname, join
 
 db_rois = DatabaseROIs()
 colors = itertools.cycle(palette)
+current_dvh = []
 
 # Initialize variables
 source = ColumnDataSource(data=dict(color=[], x=[], y=[]))
@@ -63,7 +64,9 @@ selector_categories = {'Institutional ROI': {'var_name': 'institutional_roi', 't
                        'Physician': {'var_name': 'physician', 'table': 'Plans'},
                        'Tx Modality': {'var_name': 'tx_modality', 'table': 'Plans'},
                        'Tx Site': {'var_name': 'tx_site', 'table': 'Plans'},
-                       'Normalization': {'var_name': 'normalization_method', 'table': 'Rxs'}}
+                       'Normalization': {'var_name': 'normalization_method', 'table': 'Rxs'},
+                       'Treatment Machine': {'var_name': 'treatment_machine', 'table': 'Beams'},
+                       'Heterogeneity Correction': {'var_name': 'heterogeneity_correction', 'table': 'Plans'}}
 range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 'source': source_plans},
                     'Birth Date': {'var_name': 'birth_date', 'table': 'Plans', 'units': '', 'source': source_plans},
                     'Planned Fractions': {'var_name': 'fxs', 'table': 'Plans', 'units': '', 'source': source_plans},
@@ -139,7 +142,7 @@ def get_physician():
 
 
 def update_data():
-    global query_row_type, query_row
+    global query_row_type, query_row, current_dvh
     print str(datetime.now()), 'updating data'
     plan_query_str = []
     rx_query_str = []
@@ -183,11 +186,11 @@ def update_data():
     print str(datetime.now()), 'getting uids'
     uids = get_study_instance_uids(Plans=plan_query_str, Rxs=rx_query_str, Beams=beam_query_str)['union']
     print str(datetime.now()), 'getting dvh data'
-    dvh_data = DVH(uid=uids, dvh_condition=dvh_query_str)
-    print str(datetime.now()), 'initializing source data', dvh_data.query
-    update_dvh_data(dvh_data)
+    current_dvh = DVH(uid=uids, dvh_condition=dvh_query_str)
+    print str(datetime.now()), 'initializing source data', current_dvh.query
+    update_dvh_data(current_dvh)
     update_all_range_endpoints()
-    update_endpoint_data(dvh_data)
+    update_endpoint_data(current_dvh)
 
 
 class AddSelectorRow:
@@ -288,6 +291,7 @@ class AddEndPointRow:
 
         # Value Dropdown
         self.text_input = TextInput(value='', title=self.text_input_titles[0], width=225)
+        self.text_input.on_change('value', self.text_input_ticker)
 
         self.unit_labels = [["%", "cc"], ["%", "Gy"]]
         self.units = RadioButtonGroup(labels=self.unit_labels[0], active=0, width=225)
@@ -303,6 +307,9 @@ class AddEndPointRow:
     def update_endpoint_title(self, attrname, old, new):
         self.text_input.title = self.text_input_titles[new]
         self.units.labels = self.unit_labels[new]
+
+    def text_input_ticker(self, attrname, old, new):
+        update_endpoint_data(current_dvh)
 
     def delete_row(self):
         del (layout.children[2 + self.id])
