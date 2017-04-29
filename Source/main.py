@@ -285,37 +285,61 @@ class AddEndPointRow:
         # Category RadioButtonGroup
         self.id = len(query_row)
         self.options = ["Dose to Vol", "Vol of Dose"]
-        self.text_input_titles = ["Volume:", "Dose:"]
-        self.select_category = RadioButtonGroup(labels=self.options, active=0, width=450)
-        self.select_category.on_change('active', self.update_endpoint_title)
-
-        # Value Dropdown
-        self.text_input = TextInput(value='', title=self.text_input_titles[0], width=225)
-        self.text_input.on_change('value', self.text_input_ticker)
+        self.select_category = RadioButtonGroup(labels=self.options, active=0, width=225)
+        self.select_category.on_change('active', self.endpoint_category_ticker)
 
         self.unit_labels = [["%", "cc"], ["%", "Gy"]]
+
+        self.units_out = RadioButtonGroup(labels=self.unit_labels[1], active=1, width=225)
+        self.units_out.on_change('active', self.endpoint_units_out_ticker)
+
+        # Value Dropdown
+        self.text_input = TextInput(value='', title="Volume (%):", width=225)
+        self.text_input.on_change('value', self.endpoint_calc_ticker)
+
         self.units = RadioButtonGroup(labels=self.unit_labels[0], active=0, width=225)
+        self.units.on_change('active', self.endpoint_units_ticker)
 
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
         self.delete_last_row.on_click(self.delete_row)
 
         self.row = row(self.select_category,
+                       self.units_out,
                        self.text_input,
                        self.units,
                        self.delete_last_row)
 
-    def update_endpoint_title(self, attrname, old, new):
-        self.text_input.title = self.text_input_titles[new]
+    def endpoint_category_ticker(self, attrname, old, new):
+        self.update_text_input_title()
         self.units.labels = self.unit_labels[new]
+        self.units_out.labels = self.unit_labels[old]
+        if self.text_input.value != '':
+            update_endpoint_data(current_dvh)
 
-    def text_input_ticker(self, attrname, old, new):
-        update_endpoint_data(current_dvh)
+    def endpoint_calc_ticker(self, attrname, old, new):
+        if self.text_input.value != '':
+            update_endpoint_data(current_dvh)
+
+    def endpoint_units_ticker(self, attrname, old, new):
+        self.update_text_input_title()
+        if self.text_input.value != '':
+            update_endpoint_data(current_dvh)
+
+    def endpoint_units_out_ticker(self, attrname, old, new):
+        if self.text_input.value != '':
+            update_endpoint_data(current_dvh)
 
     def delete_row(self):
         del (layout.children[2 + self.id])
         query_row_type.pop(self.id)
         query_row.pop(self.id)
         update_query_row_ids()
+
+    def update_text_input_title(self):
+        if self.select_category.active == 0:
+            self.text_input.title = 'Volume (' + self.unit_labels[0][self.units.active] + '):'
+        elif self.select_category.active == 1:
+            self.text_input.title = 'Dose (' + self.unit_labels[1][self.units.active] + '):'
 
 
 def update_dvh_data(dvh):
@@ -489,7 +513,7 @@ def update_endpoint_data(dvh):
     counter = 0
     for i in range(0, len(query_row)):
         if query_row_type[i] == 'endpoint':
-
+            output_unit = ['Gy', 'cc']
             x = float(query_row[i].text_input.value)
             x_for_text = x
             if query_row[i].units.active == 0:
@@ -499,12 +523,17 @@ def update_endpoint_data(dvh):
             else:
                 endpoint_input = 'absolute'
                 units = query_row[i].units.labels[1]
-            if query_row[i].select_category.active == 0:
-                endpoint_columns[counter] = 'D_' + str(x_for_text) + units + ' (Gy)'
-                endpoints_map[counter] = dvh.get_dose_to_volume(x, input=endpoint_input)
+            if query_row[i].units_out.active == 0:
+                endpoint_output = 'relative'
+                output_unit = ['%', '%']
             else:
-                endpoint_columns[counter] = 'V_' + str(x_for_text) + units + ' (cc)'
-                endpoints_map[counter] = dvh.get_volume_of_dose(x, input=endpoint_input)
+                endpoint_output = 'absolute'
+            if query_row[i].select_category.active == 0:
+                endpoint_columns[counter] = 'D_' + str(x_for_text) + units + ' (' + output_unit[0] + ')'
+                endpoints_map[counter] = dvh.get_dose_to_volume(x, input=endpoint_input, output=endpoint_output)
+            else:
+                endpoint_columns[counter] = 'V_' + str(x_for_text) + units + ' (' + output_unit[1] + ')'
+                endpoints_map[counter] = dvh.get_volume_of_dose(x, input=endpoint_input, output=endpoint_output)
             counter += 1
     for i in range(counter, 8):
         endpoints_map[i] = []
@@ -521,7 +550,10 @@ def update_endpoint_data(dvh):
                              '7': endpoints_map[6],
                              '8': endpoints_map[7]}
     for i in range(0, counter):
-        data_table_endpoints.columns[i+1] = TableColumn(field=str(i+1), title=endpoint_columns[i], width=100)
+        data_table_endpoints.columns[i+1] = TableColumn(field=str(i+1),
+                                                        title=endpoint_columns[i],
+                                                        width=100,
+                                                        formatter=NumberFormatter(format="0.00"))
 
 
 # set up layout
