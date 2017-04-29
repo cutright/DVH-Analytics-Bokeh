@@ -24,6 +24,7 @@ from os.path import dirname, join
 db_rois = DatabaseROIs()
 colors = itertools.cycle(palette)
 current_dvh = []
+update_warning = True
 
 # Initialize variables
 source = ColumnDataSource(data=dict(color=[], x=[], y=[], mrn=[],
@@ -137,7 +138,38 @@ def get_physician():
 
 def update_data():
     global query_row_type, query_row, current_dvh
-    print str(datetime.now()), 'updating data'
+    uids, dvh_query_str = get_query()
+    print str(datetime.now()), 'getting dvh data'
+    current_dvh = DVH(uid=uids, dvh_condition=dvh_query_str)
+    print str(datetime.now()), 'initializing source data', current_dvh.query
+    update_dvh_data(current_dvh)
+    update_all_range_endpoints()
+    update_endpoint_data(current_dvh)
+
+
+def update_update_button_status():
+    uids, dvh_query_str = get_query()
+    count = DVH_SQL().get_roi_count_from_query(dvh_condition=dvh_query_str, uid=uids)
+    if count > 50:
+        update_button.button_type = "warning"
+        update_button.label = "Large Update (" + str(count) + ")"
+    else:
+        update_button.button_type = "success"
+        update_button.label = "Update"
+
+
+def radio_group_dose_ticker(attr, old, new):
+    if source.data['x'] != '':
+        update_data()
+
+
+def radio_group_volume_ticker(attr, old, new):
+    if source.data['x'] != '':
+        update_data()
+
+
+def get_query():
+    global query_row_type, query_row, current_dvh
     plan_query_str = []
     rx_query_str = []
     beam_query_str = []
@@ -179,12 +211,8 @@ def update_data():
 
     print str(datetime.now()), 'getting uids'
     uids = get_study_instance_uids(Plans=plan_query_str, Rxs=rx_query_str, Beams=beam_query_str)['union']
-    print str(datetime.now()), 'getting dvh data'
-    current_dvh = DVH(uid=uids, dvh_condition=dvh_query_str)
-    print str(datetime.now()), 'initializing source data', current_dvh.query
-    update_dvh_data(current_dvh)
-    update_all_range_endpoints()
-    update_endpoint_data(current_dvh)
+
+    return uids, dvh_query_str
 
 
 class AddSelectorRow:
@@ -202,6 +230,7 @@ class AddSelectorRow:
         self.var_name = selector_categories[self.select_category.value]['var_name']
         self.values = DVH_SQL().get_unique_values(self.sql_table, self.var_name)
         self.select_value = Select(value=self.values[0], options=self.values, width=450)
+        self.select_value.on_change('value', self.selector_values_ticker)
 
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
         self.delete_last_row.on_click(self.delete_row)
@@ -216,12 +245,17 @@ class AddSelectorRow:
         new_options = DVH_SQL().get_unique_values(table_new, var_name_new)
         self.select_value.options = new_options
         self.select_value.value = new_options[0]
+        update_update_button_status()
+
+    def selector_values_ticker(self, attrname, old, new):
+        update_update_button_status()
 
     def delete_row(self):
         del (layout.children[2 + self.id])
         query_row_type.pop(self.id)
         query_row.pop(self.id)
         update_query_row_ids()
+        update_update_button_status()
 
 
 class AddRangeRow:
@@ -241,6 +275,8 @@ class AddRangeRow:
         self.max_value = []
         self.text_min = TextInput(value='', title='', width=225)
         self.text_max = TextInput(value='', title='', width=225)
+        self.text_min.on_change('value', self.update_range_values_ticker)
+        self.text_max.on_change('value', self.update_range_values_ticker)
         self.update_range_values(self.select_category.value)
 
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
@@ -253,6 +289,7 @@ class AddRangeRow:
 
     def update_range_values_ticker(self, attrname, old, new):
         self.update_range_values(new)
+        update_update_button_status()
 
     def update_range_values(self, new):
         table_new = range_categories[new]['table']
@@ -265,12 +302,14 @@ class AddRangeRow:
             self.max_value = DVH_SQL().get_max_value(table_new, var_name_new)
         self.text_min.title = 'Min: ' + str(self.min_value) + ' ' + range_categories[new]['units']
         self.text_max.title = 'Max: ' + str(self.max_value) + ' ' + range_categories[new]['units']
+        update_update_button_status()
 
     def delete_row(self):
         del (layout.children[2 + self.id])
         query_row_type.pop(self.id)
         query_row.pop(self.id)
         update_query_row_ids()
+        update_update_button_status()
 
 
 class AddEndPointRow:
@@ -343,7 +382,7 @@ def update_dvh_data(dvh):
     for i, color in itertools.izip(range(0, dvh.count), colors):
         line_colors.append(color)
 
-    x_axis = np.linspace(0, dvh.bin_count, dvh.bin_count) / float(100)
+    x_axis = np.add(np.linspace(0, dvh.bin_count, dvh.bin_count) / float(100), 0.005)
     mrn = []
     uid = []
     roi_institutional = []
@@ -379,7 +418,7 @@ def update_dvh_data(dvh):
         endpoint_columns.append('')
         if radio_group_dose.active == 0:
             x_data.append(x_axis.tolist())
-            x_scale.append('cGy')
+            x_scale.append('Gy')
         else:
             x_data.append(np.divide(x_axis, rx_dose[i]).tolist())
             x_scale.append('%RxDose')
@@ -698,7 +737,9 @@ data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1000)
 
 # Setup axis normalization radio buttons
 radio_group_dose = RadioGroup(labels=["Absolute Dose", "Relative Dose (Rx)"], active=0)
+radio_group_dose.on_change('active', radio_group_dose_ticker)
 radio_group_volume = RadioGroup(labels=["Absolute Volume", "Relative Volume"], active=1)
+radio_group_volume.on_change('active', radio_group_volume_ticker)
 
 update_button = Button(label="Update", button_type="success", width=200)
 update_button.on_click(update_data)

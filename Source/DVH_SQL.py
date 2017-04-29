@@ -279,8 +279,24 @@ class DVH_SQL:
         cursor_return = self.cursor.fetchone()
         return cursor_return[0]
 
-    def get_roi_count_from_query(self, condition_str):
-        return len(self.query('DVHs', 'mrn', condition_str))
+    def get_roi_count_from_query(self, **kwargs):
+        if 'uid' in kwargs:
+            study_instance_uid = kwargs['uid']
+            db_constraints_list = []
+            for i in range(0, len(study_instance_uid)):
+                db_constraints_list.append(study_instance_uid[i])
+            condition = "study_instance_uid in ('"
+            condition += "', '".join(db_constraints_list)
+            condition += "')"
+            if 'dvh_condition' in kwargs and kwargs['dvh_condition']:
+                condition = " and " + condition
+        else:
+            condition = ''
+
+        if 'dvh_condition' in kwargs and kwargs['dvh_condition']:
+            condition = kwargs['dvh_condition'] + condition
+
+        return len(self.query('DVHs', 'mrn', condition))
 
 
 if __name__ == '__main__':
