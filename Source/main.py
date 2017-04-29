@@ -26,12 +26,14 @@ colors = itertools.cycle(palette)
 current_dvh = []
 
 # Initialize variables
-source = ColumnDataSource(data=dict(color=[], x=[], y=[], mrn=[], ep1=[], ep2=[], ep3=[], ep4=[], ep5=[], ep6=[], ep7=[], ep8=[]))
+source = ColumnDataSource(data=dict(color=[], x=[], y=[], mrn=[],
+                                    ep1=[], ep2=[], ep3=[], ep4=[], ep5=[], ep6=[], ep7=[], ep8=[]))
 source_patch = ColumnDataSource(data=dict(x_patch=[], y_patch=[]))
 source_stats = ColumnDataSource(data=dict(x=[], min=[], q1=[], mean=[], median=[], q3=[], max=[]))
 source_beams = ColumnDataSource(data=dict())
 source_plans = ColumnDataSource(data=dict())
 source_rxs = ColumnDataSource(data=dict())
+source_endpoint_names = ColumnDataSource(data=dict(ep1=[], ep2=[], ep3=[], ep4=[], ep5=[], ep6=[], ep7=[], ep8=[]))
 source_endpoints = ColumnDataSource(data=dict())
 endpoint_columns = {}
 for i in range(0, 10):
@@ -326,6 +328,7 @@ class AddEndPointRow:
         query_row_type.pop(self.id)
         query_row.pop(self.id)
         update_query_row_ids()
+        update_endpoint_data(current_dvh)
 
     def update_text_input_title(self):
         if self.select_category.active == 0:
@@ -357,6 +360,8 @@ def update_dvh_data(dvh):
     x_data = []
     y_data = []
     endpoint_columns = []
+    x_scale = []
+    y_scale = []
     for i in range(0, dvh.count):
         mrn.append(dvh.mrn[i])
         uid.append(dvh.study_instance_uid[i])
@@ -374,12 +379,16 @@ def update_dvh_data(dvh):
         endpoint_columns.append('')
         if radio_group_dose.active == 0:
             x_data.append(x_axis.tolist())
+            x_scale.append('cGy')
         else:
             x_data.append(np.divide(x_axis, rx_dose[i]).tolist())
+            x_scale.append('%RxDose')
         if radio_group_volume.active == 0:
             y_data.append(np.multiply(dvh.dvh[:, i], volume[i]).tolist())
+            y_scale.append('%Vol')
         else:
             y_data.append(dvh.dvh[:, i].tolist())
+            y_scale.append('cm^3')
 
     source.data = {'mrn': mrn,
                    'uid': uid,
@@ -404,7 +413,9 @@ def update_dvh_data(dvh):
                    'ep5': endpoint_columns,
                    'ep6': endpoint_columns,
                    'ep7': endpoint_columns,
-                   'ep8': endpoint_columns}
+                   'ep8': endpoint_columns,
+                   'x_scale': x_scale,
+                   'y_scale': y_scale}
 
     if radio_group_dose.active == 0 and radio_group_volume.active == 1:
         source_patch.data = {'x_patch': np.append(x_axis, x_axis[::-1]).tolist(),
@@ -562,6 +573,15 @@ def update_endpoint_data(dvh):
 
     source.patch(patches)
 
+    source_endpoint_names.data = {'ep1': [endpoint_columns[0]],
+                                  'ep2': [endpoint_columns[1]],
+                                  'ep3': [endpoint_columns[2]],
+                                  'ep4': [endpoint_columns[3]],
+                                  'ep5': [endpoint_columns[4]],
+                                  'ep6': [endpoint_columns[5]],
+                                  'ep7': [endpoint_columns[6]],
+                                  'ep8': [endpoint_columns[7]]}
+
     for i in range(0, counter):
         data_table_endpoints.columns[i+1] = TableColumn(field=str('ep' + str(i+1)),
                                                         title=endpoint_columns[i],
@@ -626,24 +646,25 @@ data_table_endpoints = DataTable(source=source, columns=columns, width=1000, sel
 
 beam_table_title = PreText(text="Beams", width=1500)
 columns = [TableColumn(field="mrn", title="MRN", width=175),
-           TableColumn(field="beam_number", title="Beam Number", width=80),
-           TableColumn(field="fx_count", title="Fxs", width=80),
-           TableColumn(field="fx_grp_beam_count", title="Fx Grp Beam Count", width=80),
-           TableColumn(field="fx_grp_number", title="Fx Grp Number", width=80),
-           TableColumn(field="beam_name", title="Beam Name", width=200),
-           TableColumn(field="beam_dose", title="Beam Dose", formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="beam_energy", title="Beam Energy", width=80),
-           TableColumn(field="beam_mu", title="Beam MU", width=100, formatter=NumberFormatter(format="0.0")),
-           TableColumn(field="beam_type", title="Beam Type", width=80),
-           TableColumn(field="collimator_angle", title="Collimator Angle", width=80, formatter=NumberFormatter(format="0.0")),
-           TableColumn(field="control_point_count", title="Control Points", width=80),
-           TableColumn(field="couch_angle", title="Couch Angle", width=80, formatter=NumberFormatter(format="0.0")),
-           TableColumn(field="gantry_start", title="Gantry Start", width=80, formatter=NumberFormatter(format="0.0")),
-           TableColumn(field="gantry_rot_dir", title="Gantry Rotation", width=80),
-           TableColumn(field="gantry_end", title="Gantry End", width=80, formatter=NumberFormatter(format="0.0")),
-           TableColumn(field="radiation_type", title="Radiation Type", width=80),
-           TableColumn(field="ssd", title="SSD", width=80)]
-data_table_beams = DataTable(source=source_beams, columns=columns, width=1000)
+           TableColumn(field="beam_number", title="Beam", width=50),
+           TableColumn(field="fx_grp_beam_count", title="Beams", width=50),
+           TableColumn(field="fx_grp_number", title="Rx Grp", width=60),
+           TableColumn(field="fx_count", title="Fxs", width=50),
+           TableColumn(field="beam_name", title="Name", width=150),
+           TableColumn(field="beam_dose", title="Dose", width=80, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="beam_energy", title="Energy", width=80),
+           TableColumn(field="beam_mu", title="MU", width=100, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="beam_type", title="Type", width=100),
+           TableColumn(field="collimator_angle", title="Col Ang", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="control_point_count", title="CPs", width=80),
+           TableColumn(field="couch_angle", title="Couch Ang", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="gantry_start", title="Gant Start", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="gantry_rot_dir", title="Gant Dir", width=80),
+           TableColumn(field="gantry_end", title="Gant End", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="radiation_type", title="Rad. Type", width=80),
+           TableColumn(field="ssd", title="SSD", width=80),
+           TableColumn(field="treatment_machine", title="Tx Machine", width=80)]
+data_table_beams = DataTable(source=source_beams, columns=columns, width=1500)
 
 plans_table_title = PreText(text="Plans", width=1000)
 columns = [TableColumn(field="mrn", title="MRN"),
@@ -660,17 +681,17 @@ columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="tx_energies", title="Tx Energies"),
            TableColumn(field="tx_modality", title="Tx Modality"),
            TableColumn(field="tx_site", title="Tx Site")]
-data_table_plans = DataTable(source=source_plans, columns=columns, width=1000)
+data_table_plans = DataTable(source=source_plans, columns=columns, width=1200)
 
 rxs_table_title = PreText(text="Rxs", width=1000)
 columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="plan_name", title="Plan Name"),
            TableColumn(field="fx_dose", title="Fx Dose", formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="rx_percent", title="Rx Isodose Line", formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="rx_percent", title="Rx Isodose", formatter=NumberFormatter(format="0.0")),
            TableColumn(field="rx_dose", title="Rx Dose", formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="fx_grp_count", title="Num of Fx Groups"),
+           TableColumn(field="fx_grp_number", title="Fx Grp"),
+           TableColumn(field="fx_grp_count", title="Fx Groups"),
            TableColumn(field="fx_grp_name", title="Fx Grp Name"),
-           TableColumn(field="fx_grp_number", title="Fx Grp Num"),
            TableColumn(field="normalization_method", title="Norm Method"),
            TableColumn(field="normalization_object", title="Norm Object")]
 data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1000)
@@ -686,7 +707,8 @@ download_button = Button(label="Download", button_type="default", width=200)
 download_button.callback = CustomJS(args=dict(source=source,
                                               source_rxs=source_rxs,
                                               source_plans=source_plans,
-                                              source_beams=source_beams),
+                                              source_beams=source_beams,
+                                              source_endpoint_names=source_endpoint_names),
                                     code=open(join(dirname(__file__), "download.js")).read())
 
 main_add_selector_button = Button(label="Add Selection Filter", button_type="primary", width=200)

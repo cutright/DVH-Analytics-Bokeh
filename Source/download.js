@@ -2,7 +2,19 @@
 // https://github.com/bokeh/bokeh/tree/master/examples/app/export_csv
 
 var data = source.data;
-var filetext = 'DVH Data\nmrn,uid,roi_name,roi_type,rx_dose,volume,min_dose,mean_dose,max_dose,eud,a,ep1,ep2,ep3,ep4,ep5,ep6,ep7,ep8\n';
+var ep_names = source_endpoint_names.data;
+var filetext = 'DVH Data\nmrn,uid,roi_name,roi_type,rx_dose,volume,min_dose,mean_dose,max_dose,eud,a,';
+ep_names_string = [ep_names['ep1'][0].toString(),
+                   ep_names['ep2'][0].toString(),
+                   ep_names['ep3'][0].toString(),
+                   ep_names['ep4'][0].toString(),
+                   ep_names['ep5'][0].toString(),
+                   ep_names['ep6'][0].toString(),
+                   ep_names['ep7'][0].toString(),
+                   ep_names['ep8'][0].toString()]
+filetext = filetext.concat(ep_names_string.join());
+filetext = filetext.concat('\n');
+
 for (i=0; i < data['mrn'].length; i++) {
     var currRow = [data['mrn'][i].toString(),
                    data['uid'][i].toString(),
@@ -99,6 +111,40 @@ for (i=0; i < data['mrn'].length; i++) {
 
     var joined = currRow.join();
     filetext = filetext.concat(joined);
+}
+
+var data = source.data;
+filetext = filetext.concat('\n\nDVHs\n');
+for (i=0; i < data['mrn'].length; i++) {
+    filetext = filetext.concat(data['mrn'][i]);
+    filetext = filetext.concat(',,');
+}
+filetext = filetext.concat('\n');
+
+for (i=0; i < data['mrn'].length; i++) {
+    filetext = filetext.concat(data['roi_name'][i]);
+    filetext = filetext.concat(',,');
+}
+filetext = filetext.concat('\n');
+
+for (i=0; i < data['mrn'].length; i++) {
+    filetext = filetext.concat('Dose (');
+    filetext = filetext.concat(data['x_scale'][i]);
+    filetext = filetext.concat('),');
+    filetext = filetext.concat('Volume (');
+    filetext = filetext.concat(data['y_scale'][i]);
+    filetext = filetext.concat('),');
+}
+filetext = filetext.concat('\n');
+
+for (i=0; i < data['x'][0].length; i++) {
+    for (j=0; j < data['mrn'].length; j++) {
+        filetext = filetext.concat(data['x'][j][i]);
+        filetext = filetext.concat(',');
+        filetext = filetext.concat(data['y'][j][i]);
+        filetext = filetext.concat(',');
+        }
+    filetext = filetext.concat('\n');
 }
 
 var filename = 'data_result.csv';
