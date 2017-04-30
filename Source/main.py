@@ -9,7 +9,7 @@ Created on Sun Apr 21 2017
 import numpy as np
 import itertools
 from bokeh.layouts import layout, column, row
-from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool
+from bokeh.models import ColumnDataSource, Legend, CustomJS
 from bokeh.models.widgets import Select, Button, PreText, TableColumn, DataTable, NumberFormatter, RadioButtonGroup, TextInput, RadioGroup
 from bokeh.plotting import figure
 from bokeh.io import curdoc
