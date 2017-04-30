@@ -89,6 +89,7 @@ def button_add_selector_row():
     query_row.append(AddSelectorRow())
     layout.children.insert(2 + len(query_row_type), query_row[-1].row)
     query_row_type.append('selector')
+    update_update_button_status()
 
 
 def button_add_range_row():
@@ -96,6 +97,7 @@ def button_add_range_row():
     query_row.append(AddRangeRow())
     layout.children.insert(2 + len(query_row_type), query_row[-1].row)
     query_row_type.append('range')
+    update_update_button_status()
 
 
 def button_add_endpoint_row():

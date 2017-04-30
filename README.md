@@ -44,6 +44,8 @@ corresponding to each of the column in the queried table.
 
 - [ ] Develop for SQL other than MySQL
 
+- [ ] Update stats DVHs for other DVH scales
+
 
 ## Dependencies
 * [Python](https://www.python.org) 2.7 tested
