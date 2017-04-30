@@ -172,10 +172,10 @@ def radio_group_volume_ticker(attr, old, new):
 
 def get_query():
     global query_row_type, query_row, current_dvh
-    plan_query_str = []
-    rx_query_str = []
-    beam_query_str = []
-    dvh_query_str = []
+    plan_query_map = {}
+    rx_query_map = {}
+    beam_query_map = {}
+    dvh_query_map = {}
     for i in range(1, len(query_row)):
         if query_row_type[i] in {'selector', 'range'}:
             if query_row_type[i] == 'selector':
@@ -198,13 +198,37 @@ def get_query():
                 query_str = var_name + " between " + str(value_low) + " and " + str(value_high)
 
             if table == 'Plans':
-                plan_query_str.append(query_str)
+                if var_name not in plan_query_map:
+                    plan_query_map[var_name] = []
+                plan_query_map[var_name].append(query_str)
             elif table == 'Rxs':
-                rx_query_str.append(query_str)
+                if var_name not in rx_query_map:
+                    rx_query_map[var_name] = []
+                rx_query_map[var_name].append(query_str)
             elif table == 'Beams':
-                beam_query_str.append(query_str)
+                if var_name not in beam_query_map:
+                    beam_query_map[var_name] = []
+                beam_query_map[var_name].append(query_str)
             elif table == 'DVHs':
-                dvh_query_str.append(query_str)
+                if var_name not in dvh_query_map:
+                    dvh_query_map[var_name] = []
+                dvh_query_map[var_name].append(query_str)
+
+    plan_query_str = []
+    for key in plan_query_map.iterkeys():
+        plan_query_str.append('(' + ' or '.join(plan_query_map[key]) + ')')
+
+    rx_query_str = []
+    for key in rx_query_map.iterkeys():
+        rx_query_str.append('(' + ' or '.join(rx_query_map[key]) + ')')
+
+    beam_query_str = []
+    for key in beam_query_map.iterkeys():
+        beam_query_str.append('(' + ' or '.join(beam_query_map[key]) + ')')
+
+    dvh_query_str = []
+    for key in dvh_query_map.iterkeys():
+        dvh_query_str.append('(' + ' or '.join(dvh_query_map[key]) + ')')
 
     plan_query_str = ' and '.join(plan_query_str)
     rx_query_str = ' and '.join(rx_query_str)
@@ -212,6 +236,9 @@ def get_query():
     dvh_query_str = ' and '.join(dvh_query_str)
 
     print str(datetime.now()), 'getting uids'
+    print str(datetime.now()), 'Plans = ', plan_query_str
+    print str(datetime.now()), 'Rxs = ', rx_query_str
+    print str(datetime.now()), 'Beams = ', beam_query_str
     uids = get_study_instance_uids(Plans=plan_query_str, Rxs=rx_query_str, Beams=beam_query_str)['union']
 
     return uids, dvh_query_str
