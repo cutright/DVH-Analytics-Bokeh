@@ -407,70 +407,46 @@ class AddEndPointRow:
 
 def update_dvh_data(dvh):
 
+    print str(datetime.now()), 'updating dvh data'
     line_colors = []
     for i, color in itertools.izip(range(0, dvh.count), colors):
         line_colors.append(color)
 
     x_axis = np.add(np.linspace(0, dvh.bin_count, dvh.bin_count) / float(100), 0.005)
-    mrn = []
-    uid = []
-    roi_institutional = []
-    roi_physician = []
-    roi_name = []
-    roi_type = []
-    rx_dose = []
-    volume = []
-    min_dose = []
-    mean_dose = []
-    max_dose = []
-    eud = []
-    eud_a_value = []
+
     x_data = []
     y_data = []
     endpoint_columns = []
     x_scale = []
     y_scale = []
     for i in range(0, dvh.count):
-        mrn.append(dvh.mrn[i])
-        uid.append(dvh.study_instance_uid[i])
-        roi_institutional.append(dvh.institutional_roi[i])
-        roi_physician.append(dvh.physician_roi[i])
-        roi_name.append(dvh.roi_name[i])
-        roi_type.append(dvh.roi_type[i])
-        rx_dose.append(dvh.rx_dose[i])
-        volume.append(dvh.volume[i])
-        min_dose.append(dvh.min_dose[i])
-        mean_dose.append(dvh.mean_dose[i])
-        max_dose.append(dvh.max_dose[i])
-        eud.append(dvh.eud[i].tolist())
-        eud_a_value.append(dvh.eud_a_value[i])
         endpoint_columns.append('')
         if radio_group_dose.active == 0:
             x_data.append(x_axis.tolist())
             x_scale.append('Gy')
         else:
-            x_data.append(np.divide(x_axis, rx_dose[i]).tolist())
+            x_data.append(np.divide(x_axis, dvh.rx_dose[i]).tolist())
             x_scale.append('%RxDose')
         if radio_group_volume.active == 0:
-            y_data.append(np.multiply(dvh.dvh[:, i], volume[i]).tolist())
-            y_scale.append('%Vol')
+            y_data.append(np.multiply(dvh.dvh[:, i], dvh.volume[i]).tolist())
+            y_scale.append('cm^3')
         else:
             y_data.append(dvh.dvh[:, i].tolist())
-            y_scale.append('cm^3')
-
-    source.data = {'mrn': mrn,
-                   'uid': uid,
-                   'roi_institutional': roi_institutional,
-                   'roi_physician': roi_physician,
-                   'roi_name': roi_name,
-                   'roi_type': roi_type,
-                   'rx_dose': rx_dose,
-                   'volume': volume,
-                   'min_dose': min_dose,
-                   'mean_dose': mean_dose,
-                   'max_dose': max_dose,
-                   'eud': eud,
-                   'eud_a_value': eud_a_value,
+            y_scale.append('%Vol')
+    print str(datetime.now()), 'writing source.data'
+    source.data = {'mrn': dvh.mrn,
+                   'uid': dvh.study_instance_uid,
+                   'roi_institutional': dvh.institutional_roi,
+                   'roi_physician': dvh.physician_roi,
+                   'roi_name': dvh.roi_name,
+                   'roi_type': dvh.roi_type,
+                   'rx_dose': dvh.rx_dose,
+                   'volume': dvh.volume,
+                   'min_dose': dvh.min_dose,
+                   'mean_dose': dvh.mean_dose,
+                   'max_dose': dvh.max_dose,
+                   'eud': dvh.eud,
+                   'eud_a_value': dvh.eud_a_value,
                    'x': x_data,
                    'y': y_data,
                    'color': line_colors,
@@ -484,27 +460,36 @@ def update_dvh_data(dvh):
                    'ep8': endpoint_columns,
                    'x_scale': x_scale,
                    'y_scale': y_scale}
+    print str(datetime.now()), 'source.data set'
+    print str(datetime.now()), 'beginning stat calcs'
 
-    if radio_group_dose.active == 0 and radio_group_volume.active == 1:
-        source_patch.data = {'x_patch': np.append(x_axis, x_axis[::-1]).tolist(),
-                             'y_patch': np.append(dvh.q3_dvh, dvh.q1_dvh[::-1]).tolist()}
-        source_stats.data = {'x': x_axis.tolist(),
-                             'min': dvh.min_dvh.tolist(),
-                             'q1': dvh.q1_dvh.tolist(),
-                             'mean': dvh.mean_dvh.tolist(),
-                             'median': dvh.median_dvh.tolist(),
-                             'q3': dvh.q3_dvh.tolist(),
-                             'max': dvh.max_dvh.tolist()}
+    if radio_group_dose.active == 1:
+        stat_dose_scale = 'relative'
+        x_axis = dvh.get_stat_dvh(type=False, dose=stat_dose_scale)
     else:
-        source_patch.data = {'x_patch': [],
-                             'y_patch': []}
-        source_stats.data = {'x': [],
-                             'min': [],
-                             'q1': [],
-                             'mean': [],
-                             'median': [],
-                             'q3': [],
-                             'max': []}
+        stat_dose_scale = 'absolute'
+    if radio_group_volume.active == 0:
+        stat_volume_scale = 'absolute'
+    else:
+        stat_volume_scale = 'relative'
+
+    print str(datetime.now()), 'calculating patches'
+    stat_dvhs = dvh.get_standard_stat_dvh(dose=stat_dose_scale, volume=stat_volume_scale)
+
+    print str(datetime.now()), 'patches calculated'
+
+    source_patch.data = {'x_patch': np.append(x_axis, x_axis[::-1]).tolist(),
+                         'y_patch': np.append(stat_dvhs['q3'], stat_dvhs['q1'][::-1]).tolist()}
+    print str(datetime.now()), 'patches set'
+    source_stats.data = {'x': x_axis.tolist(),
+                         'min': stat_dvhs['min'].tolist(),
+                         'q1': stat_dvhs['q1'].tolist(),
+                         'mean': stat_dvhs['mean'].tolist(),
+                         'median': stat_dvhs['median'].tolist(),
+                         'q3': stat_dvhs['q3'].tolist(),
+                         'max': stat_dvhs['max'].tolist()}
+
+    print str(datetime.now()), 'stats set'
 
     if radio_group_dose.active == 0:
         dvh_plots.xaxis.axis_label = "Dose (Gy)"
@@ -739,6 +724,7 @@ columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="age", title="Age"),
            TableColumn(field="birth_date", title="Birth Date"),
            TableColumn(field="dose_grid_res", title="Dose Grid Res"),
+           TableColumn(field="heterogeneity_correction", title="Heterogeneity"),
            TableColumn(field="fxs", title="Fxs"),
            TableColumn(field="patient_orientation", title="Orientation"),
            TableColumn(field="patient_sex", title="Gender"),
