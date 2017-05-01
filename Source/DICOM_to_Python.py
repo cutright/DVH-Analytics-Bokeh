@@ -93,7 +93,10 @@ class PlanRow:
         rt_structure = dicom.read_file(structure_file)
         rt_dose = dicom.read_file(dose_file)
 
-        heterogeneity_correction = rt_dose.TissueHeterogeneityCorrection
+        if isinstance(rt_dose.TissueHeterogeneityCorrection, basestring):
+            heterogeneity_correction = rt_dose.TissueHeterogeneityCorrection
+        else:
+            heterogeneity_correction = ','.join(rt_dose.TissueHeterogeneityCorrection)
 
         # Record Medical Record Number
         MRN = rt_plan.PatientID
@@ -273,9 +276,10 @@ class DVHTable:
         rt_structure = dicomparser.DicomParser(structure_file)
         rt_structures = rt_structure.GetStructures()
 
-        physician = rt_structure_dicom.ReferringPhysicianName.upper()
-        if hasattr(rt_structure_dicom, 'PhysiciansOfRecord') and not physician:
+        if hasattr(rt_structure_dicom, 'PhysiciansOfRecord'):
             physician = rt_structure_dicom.PhysiciansOfRecord.upper()
+        else:
+            physician = rt_structure_dicom.ReferringPhysicianName.upper()
 
         values = {}
         row_counter = 0
@@ -290,10 +294,8 @@ class DVHTable:
                     else:
                         st_type = rt_structures[key]['type']
                     current_roi_name = rt_structures[key]['name']
-                    institutional_roi_name = database_rois.get_institutional_roi(current_roi_name,
-                                                                   physician)
-                    physician_roi_name = database_rois.get_physician_roi(current_roi_name,
-                                                               physician)
+                    institutional_roi_name = database_rois.get_institutional_roi(current_roi_name, physician)
+                    physician_roi_name = database_rois.get_physician_roi(current_roi_name, physician)
                     current_dvh_row = DVHRow(mrn,
                                              study_instance_uid,
                                              institutional_roi_name,
@@ -342,16 +344,19 @@ class BeamTable:
 
             for fx_grp_beam in range(0, fx_grp_beam_count):
                 beam_seq = rt_plan.BeamSequence[beam_num]
-                beam_name = beam_seq.BeamDescription
+                if 'BeamDescription' in beam_seq:
+                    beam_name = beam_seq.BeamDescription
+                else:
+                    beam_name = beam_seq.BeamName
                 ref_beam_seq = fx_grp_seq.ReferencedBeamSequence[fx_grp_beam]
                 treatment_machine = beam_seq.TreatmentMachineName
 
                 beam_dose = float(ref_beam_seq.BeamDose)
                 beam_mu = float(ref_beam_seq.BeamMeterset)
 
-                isocenter = [str(ref_beam_seq.BeamDoseSpecificationPoint[0]),
-                             str(ref_beam_seq.BeamDoseSpecificationPoint[1]),
-                             str(ref_beam_seq.BeamDoseSpecificationPoint[2])]
+                isocenter = [str(round(ref_beam_seq.BeamDoseSpecificationPoint[0], 4)),
+                             str(round(ref_beam_seq.BeamDoseSpecificationPoint[1], 4)),
+                             str(round(ref_beam_seq.BeamDoseSpecificationPoint[2], 4))]
                 isocenter = ','.join(isocenter)
 
                 radiation_type = beam_seq.RadiationType

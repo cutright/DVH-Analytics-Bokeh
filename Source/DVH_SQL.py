@@ -10,6 +10,7 @@ Created on Sat Mar  4 11:33:10 2017
 import mysql.connector
 from mysql.connector import Error
 import os
+from datetime import datetime
 
 
 class DVH_SQL:
@@ -230,7 +231,7 @@ class DVH_SQL:
         self.cnx.commit()
 
     def reinitialize_database(self):
-
+        print str(datetime.now()), 'Dropping tables'
         if self.check_table_exists('Plans'):
             self.cursor.execute('DROP TABLE Plans;')
         if self.check_table_exists('DVHs'):
@@ -240,10 +241,13 @@ class DVH_SQL:
         if self.check_table_exists('Rxs'):
             self.cursor.execute('DROP TABLE Rxs;')
         self.cnx.commit()
+        print str(datetime.now()), 'Loading create_tables.sql'
         script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
         rel_path = "preferences/create_tables.sql"
         abs_file_path = os.path.join(script_dir, rel_path)
+        print str(datetime.now()), 'Executing create_tables.sql'
         self.execute_file(abs_file_path)
+        print str(datetime.now()), 'Tables created'
 
     def get_unique_values(self, table, column):
         query = "select distinct " + column + " from " + table + ";"

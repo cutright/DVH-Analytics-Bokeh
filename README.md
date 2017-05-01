@@ -40,13 +40,19 @@ corresponding to each of the column in the queried table.
 
 - [ ] Incorporate BED, TCP, NTCP calculations
 
-- [ ] Validate functions in *Analysis_Tools*
+- [X] Validate functions in *Analysis_Tools*
 
 - [ ] Develop for SQL other than MySQL
 
-- [ ] Update stats DVHs for other DVH scales
+- [X] Update stats DVHs for other DVH scales
 
 - [ ] Track wedge info on 3D beams
+
+- [ ] Look into filtering by date range
+
+- [ ] Dose grid resolution is undefined
+
+- [ ] Post-import file management 
 
 
 ## Dependencies

@@ -123,10 +123,12 @@ def dicom_to_sql(start_path, **kwargs):
 
 
 def rebuild_database(start_path):
-
+    print str(datetime.now()), 'connecting to SQL DB'
     sqlcnx = DVH_SQL()
+    print str(datetime.now()), 'connection established'
 
     sqlcnx.reinitialize_database()
+    print str(datetime.now()), 'DB reinitialized with no data'
     dicom_to_sql(start_path, force_update=True)
     sqlcnx.cnx.close()
 
