@@ -10,7 +10,8 @@ import numpy as np
 import itertools
 from bokeh.layouts import layout, column, row
 from bokeh.models import ColumnDataSource, Legend, CustomJS
-from bokeh.models.widgets import Select, Button, PreText, TableColumn, DataTable, NumberFormatter, RadioButtonGroup, TextInput, RadioGroup
+from bokeh.models.widgets import Select, Button, PreText, TableColumn, DataTable, \
+    NumberFormatter, RadioButtonGroup, TextInput, RadioGroup
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from ROI_Name_Manager import DatabaseROIs
@@ -21,12 +22,19 @@ from bokeh.palettes import Category20_9 as palette
 from datetime import datetime
 from os.path import dirname, join
 
+# Declare variables
 db_rois = DatabaseROIs()
 colors = itertools.cycle(palette)
 current_dvh = []
 update_warning = True
+query_row = []
+query_row_type = []
+endpoint_columns = {}
+for i in range(0, 10):
+    endpoint_columns[i] = ''
 
-# Initialize variables
+
+# Initialize ColumnDataSource variables
 source = ColumnDataSource(data=dict(color=[], x=[], y=[], mrn=[],
                                     ep1=[], ep2=[], ep3=[], ep4=[], ep5=[], ep6=[], ep7=[], ep8=[]))
 source_patch = ColumnDataSource(data=dict(x_patch=[], y_patch=[]))
@@ -36,17 +44,9 @@ source_plans = ColumnDataSource(data=dict())
 source_rxs = ColumnDataSource(data=dict())
 source_endpoint_names = ColumnDataSource(data=dict(ep1=[], ep2=[], ep3=[], ep4=[], ep5=[], ep6=[], ep7=[], ep8=[]))
 source_endpoints = ColumnDataSource(data=dict())
-endpoint_columns = {}
-for i in range(0, 10):
-    endpoint_columns[i] = ''
 
-query_row = []
-query_row_type = []
 
-# Get ROI maps
-db_rois = DatabaseROIs()
-
-# Categories map of dropdown values, SQL column, and SQL table
+# Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
 selector_categories = {'Institutional ROI': {'var_name': 'institutional_roi', 'table': 'DVHs'},
                        'Physician ROI': {'var_name': 'physician_roi', 'table': 'DVHs'},
                        'ROI Type': {'var_name': 'roi_type', 'table': 'DVHs'},
@@ -84,6 +84,7 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
                     'ROI Volume': {'var_name': 'volume', 'table': 'DVHs', 'units': 'cc', 'source': source}}
 
 
+# Functions that add widget rows
 def button_add_selector_row():
     global query_row_type
     query_row.append(AddSelectorRow())
@@ -107,12 +108,15 @@ def button_add_endpoint_row():
     query_row_type.append('endpoint')
 
 
+# Updates query row ids (after row deletion)
 def update_query_row_ids():
     global query_row
     for i in range(1, len(query_row)):
         query_row[i].id = i
 
 
+# find the widget rows that need text input title updates
+# and then call update_range_values to the needed widget row
 def update_all_range_endpoints():
     global query_row, query_row_type
     for i in range(1, len(query_row)):
@@ -120,6 +124,9 @@ def update_all_range_endpoints():
             query_row[i].update_range_values(query_row[i].select_category.value)
 
 
+# Determines if the physician has been specificed
+# will be used to remove the ability to select two physicians
+# and also update physician rois for only the specified physician
 def is_physician_set():
     global query_row, query_row_type
     for i in range(1, len(query_row)):
@@ -129,6 +136,7 @@ def is_physician_set():
     return False
 
 
+# returns the physician specified
 def get_physician():
     global query_row, query_row_type
     for i in range(1, len(query_row)):
@@ -138,6 +146,7 @@ def get_physician():
     return None
 
 
+# main update function
 def update_data():
     global query_row_type, query_row, current_dvh
     uids, dvh_query_str = get_query()
@@ -149,6 +158,7 @@ def update_data():
     update_endpoint_data(current_dvh)
 
 
+# Checks size of current query, changes update button to orange if over 50 DVHs
 def update_update_button_status():
     uids, dvh_query_str = get_query()
     count = DVH_SQL().get_roi_count_from_query(dvh_condition=dvh_query_str, uid=uids)
@@ -160,16 +170,22 @@ def update_update_button_status():
         update_button.label = "Update"
 
 
+# Ticker function for abs/rel dose radio buttons
+# any change will call update_data, if any source data has been retrieved from SQL
 def radio_group_dose_ticker(attr, old, new):
     if source.data['x'] != '':
         update_data()
 
 
+# Ticker function for abs/rel volume radio buttons
+# any change will call update_data, if any source data has been retrieved from SQL
 def radio_group_volume_ticker(attr, old, new):
     if source.data['x'] != '':
         update_data()
 
 
+# This function retuns the list of information needed to execute QuerySQL from
+# SQL_to_Python.py (i.e., uids and dvh_condition
 def get_query():
     global query_row_type, query_row, current_dvh
     plan_query_map = {}
@@ -214,6 +230,7 @@ def get_query():
                     dvh_query_map[var_name] = []
                 dvh_query_map[var_name].append(query_str)
 
+    # The multiple entries of the same variable are found, assume an 'or' condition
     plan_query_str = []
     for key in plan_query_map.iterkeys():
         plan_query_str.append('(' + ' or '.join(plan_query_map[key]) + ')')
@@ -230,6 +247,7 @@ def get_query():
     for key in dvh_query_map.iterkeys():
         dvh_query_str.append('(' + ' or '.join(dvh_query_map[key]) + ')')
 
+    # assumes an 'and' condition between variable types
     plan_query_str = ' and '.join(plan_query_str)
     rx_query_str = ' and '.join(rx_query_str)
     beam_query_str = ' and '.join(beam_query_str)
@@ -244,17 +262,16 @@ def get_query():
     return uids, dvh_query_str
 
 
+# This class adds a row suitable to filter discrete data from the SQL database
 class AddSelectorRow:
     def __init__(self):
-        # Plans Tab Widgets
-        # Category Dropdown
+
         self.id = len(query_row)
         self.category_options = selector_categories.keys()
         self.category_options.sort()
         self.select_category = Select(value="Institutional ROI", options=self.category_options, width=450)
         self.select_category.on_change('value', self.update_selector_values)
 
-        # Value Dropdown
         self.sql_table = selector_categories[self.select_category.value]['table']
         self.var_name = selector_categories[self.select_category.value]['var_name']
         self.values = DVH_SQL().get_unique_values(self.sql_table, self.var_name)
@@ -287,17 +304,15 @@ class AddSelectorRow:
         update_update_button_status()
 
 
+# This class adds a row suitable to filter continuous data from the SQL database
 class AddRangeRow:
     def __init__(self):
         self.id = len(query_row)
-        # Plans Tab Widgets
-        # Category Dropdown
         self.category_options = range_categories.keys()
         self.category_options.sort()
         self.select_category = Select(value=self.category_options[-1], options=self.category_options, width=450)
         self.select_category.on_change('value', self.update_range_values_ticker)
 
-        # Range slider
         self.sql_table = range_categories[self.select_category.value]['table']
         self.var_name = range_categories[self.select_category.value]['var_name']
         self.min_value = []
@@ -341,10 +356,10 @@ class AddRangeRow:
         update_update_button_status()
 
 
+# This class adds a row to calculate specified DVH endpoints
 class AddEndPointRow:
     def __init__(self):
-        # Plans Tab Widgets
-        # Category RadioButtonGroup
+
         self.id = len(query_row)
         self.options = ["Dose to Vol", "Vol of Dose"]
         self.select_category = RadioButtonGroup(labels=self.options, active=0, width=225)
@@ -355,7 +370,6 @@ class AddEndPointRow:
         self.units_out = RadioButtonGroup(labels=self.unit_labels[1], active=1, width=225)
         self.units_out.on_change('active', self.endpoint_units_out_ticker)
 
-        # Value Dropdown
         self.text_input = TextInput(value='', title="Volume (%):", width=225)
         self.text_input.on_change('value', self.endpoint_calc_ticker)
 
@@ -405,6 +419,9 @@ class AddEndPointRow:
             self.text_input.title = 'Dose (' + self.unit_labels[1][self.units.active] + '):'
 
 
+# input is a DVH class from Analysis_Tools.py
+# This function creates a new ColumnSourceData and calls
+# the functions to update beam, rx, and plans ColumnSourceData variables
 def update_dvh_data(dvh):
 
     print str(datetime.now()), 'updating dvh data'
@@ -505,6 +522,7 @@ def update_dvh_data(dvh):
     update_rx_data(dvh.study_instance_uid)
 
 
+# updates beam ColumnSourceData for a given list of uids
 def update_beam_data(uids):
     cond_str = "study_instance_uid in ('" + "', '".join(uids) + "')"
     beam_data = QuerySQL('Beams', cond_str)
@@ -531,6 +549,7 @@ def update_beam_data(uids):
                          'treatment_machine': beam_data.treatment_machine}
 
 
+# updates plan ColumnSourceData for a given list of uids
 def update_plan_data(uids):
 
     cond_str = "study_instance_uid in ('" + "', '".join(uids) + "')"
@@ -554,6 +573,7 @@ def update_plan_data(uids):
                          'heterogeneity_correction': plan_data.heterogeneity_correction}
 
 
+# updates rx ColumnSourceData for a given list of uids
 def update_rx_data(uids):
 
     cond_str = "study_instance_uid in ('" + "', '".join(uids) + "')"
@@ -573,6 +593,9 @@ def update_rx_data(uids):
                        'normalization_object': rx_data.normalization_object}
 
 
+# updates endpoint ColumnSourceData for a given DVH class from Analysis_Tools.py
+# note that endpoint ColumnSourceData exits in dvh data ColumnSourceData (i.e.,
+# the main ColumnSourceData variable, or 'source')
 def update_endpoint_data(dvh):
     global query_row, query_row_type, endpoint_columns
     for i in range(0, 8):
@@ -635,6 +658,7 @@ def update_endpoint_data(dvh):
                                   'ep7': [endpoint_columns[6]],
                                   'ep8': [endpoint_columns[7]]}
 
+    # Update table column names based on the query
     for i in range(0, counter):
         data_table_endpoints.columns[i+1] = TableColumn(field=str('ep' + str(i+1)),
                                                         title=endpoint_columns[i],
@@ -646,18 +670,61 @@ def update_endpoint_data(dvh):
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,hover"
 dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools, logo=None)
 
-stats_min = dvh_plots.line('x', 'min', source=source_stats, line_width=2, color='black', line_dash='dotted', alpha=0.2)
-stats_q1 = dvh_plots.line('x', 'q1', source=source_stats, line_width=0.5, color='black', alpha=0.2)
-stats_median = dvh_plots.line('x', 'median', source=source_stats, line_width=2, color='lightpink', line_dash='dashed', alpha=0.75)
-stats_mean = dvh_plots.line('x', 'mean', source=source_stats, line_width=2, color='lightseagreen', line_dash='dashed', alpha=0.5)
-stats_q3 = dvh_plots.line('x', 'q3', source=source_stats, line_width=0.5, color='black', alpha=0.2)
-stats_max = dvh_plots.line('x', 'max', source=source_stats, line_width=2, color='black', line_dash='dotted', alpha=0.2)
+# Add statistical plots to figure
+stats_min = dvh_plots.line('x', 'min',
+                           source=source_stats,
+                           line_width=2,
+                           color='black',
+                           line_dash='dotted',
+                           alpha=0.2)
+stats_q1 = dvh_plots.line('x', 'q1',
+                          source=source_stats,
+                          line_width=0.5,
+                          color='black',
+                          alpha=0.2)
+stats_median = dvh_plots.line('x', 'median',
+                              source=source_stats,
+                              line_width=2,
+                              color='lightpink',
+                              line_dash='dashed',
+                              alpha=0.75)
+stats_mean = dvh_plots.line('x', 'mean',
+                            source=source_stats,
+                            line_width=2,
+                            color='lightseagreen',
+                            line_dash='dashed',
+                            alpha=0.5)
+stats_q3 = dvh_plots.line('x', 'q3',
+                          source=source_stats,
+                          line_width=0.5,
+                          color='black',
+                          alpha=0.2)
+stats_max = dvh_plots.line('x', 'max',
+                           source=source_stats,
+                           line_width=2,
+                           color='black',
+                           line_dash='dotted',
+                           alpha=0.2)
 
-dvh_plots.multi_line('x', 'y', source=source, selection_color='color', line_width=2, alpha=0, nonselection_alpha=0, selection_alpha=1)
-dvh_plots.patch('x_patch', 'y_patch', source=source_patch, alpha=0.15)
+# Add all DVHs, but hide them until selected
+dvh_plots.multi_line('x', 'y',
+                     source=source,
+                     selection_color='color',
+                     line_width=2,
+                     alpha=0,
+                     nonselection_alpha=0,
+                     selection_alpha=1)
+
+# Shaded region between Q1 and Q3
+dvh_plots.patch('x_patch', 'y_patch',
+                source=source_patch,
+                alpha=0.15)
+
+# Set x and y axis labels
 dvh_plots.xaxis.axis_label = "Dose (Gy)"
 dvh_plots.yaxis.axis_label = "Normalized Volume"
 
+# Set the legend (for stat dvhs only)
 legend_stats = Legend(items=[
         ("Max", [stats_max]),
         ("Q3", [stats_q3]),
@@ -667,10 +734,11 @@ legend_stats = Legend(items=[
         ("Min", [stats_min])
     ], location=(0, 45))
 
+# Add the layout outside the plot, clicking legend item hides the line
 dvh_plots.add_layout(legend_stats, 'right')
 dvh_plots.legend.click_policy = "hide"
 
-# Set up DataTable
+# Set up DataTable for dvhs
 data_table_title = PreText(text="DVHs", width=1000)
 columns = [TableColumn(field="mrn", title="MRN", width=175),
            TableColumn(field="roi_name", title="ROI Name"),
@@ -697,6 +765,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=175),
            TableColumn(field="ep8", title=endpoint_columns[7], width=120)]
 data_table_endpoints = DataTable(source=source, columns=columns, width=1000, selectable=True)
 
+# Set up Beams DataTable
 beam_table_title = PreText(text="Beams", width=1500)
 columns = [TableColumn(field="mrn", title="MRN", width=175),
            TableColumn(field="beam_number", title="Beam", width=50),
@@ -719,6 +788,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=175),
            TableColumn(field="treatment_machine", title="Tx Machine", width=80)]
 data_table_beams = DataTable(source=source_beams, columns=columns, width=1500)
 
+# Set up Plans DataTable
 plans_table_title = PreText(text="Plans", width=1000)
 columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="age", title="Age"),
@@ -737,6 +807,7 @@ columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="tx_site", title="Tx Site")]
 data_table_plans = DataTable(source=source_plans, columns=columns, width=1200)
 
+# Set up Rxs DataTable
 rxs_table_title = PreText(text="Rxs", width=1000)
 columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="plan_name", title="Plan Name"),
@@ -756,9 +827,13 @@ radio_group_dose.on_change('active', radio_group_dose_ticker)
 radio_group_volume = RadioGroup(labels=["Absolute Volume", "Relative Volume"], active=1)
 radio_group_volume.on_change('active', radio_group_volume_ticker)
 
+# Begin defining main row of widgets below figure
+
+# define Update button
 update_button = Button(label="Update", button_type="success", width=200)
 update_button.on_click(update_data)
 
+# define Download button and call download.js on click
 download_button = Button(label="Download", button_type="default", width=200)
 download_button.callback = CustomJS(args=dict(source=source,
                                               source_rxs=source_rxs,
@@ -767,15 +842,25 @@ download_button.callback = CustomJS(args=dict(source=source,
                                               source_endpoint_names=source_endpoint_names),
                                     code=open(join(dirname(__file__), "download.js")).read())
 
+# define button to widget row for discrete data filtering
 main_add_selector_button = Button(label="Add Selection Filter", button_type="primary", width=200)
 main_add_selector_button.on_click(button_add_selector_row)
+
+# define button to widget row for continuous data filtering
 main_add_range_button = Button(label="Add Range Filter", button_type="primary", width=200)
 main_add_range_button.on_click(button_add_range_row)
+
+# define button to widget row for adding DVH endpoints
 main_add_endpoint_button = Button(label="Add Endpoint", button_type="primary", width=200)
 main_add_endpoint_button.on_click(button_add_endpoint_row)
+
+# not for display, but add these buttons to query_row
+# query row is simply used to keep track of pointers to query rows
+# allows code to dynamically add widgets and keep button funcionality contained
 query_row.append(row(update_button, main_add_selector_button, main_add_range_button))
 query_row_type.append('main')
 
+# define main layout to pass to curdoc()
 layout = column(row(radio_group_dose, radio_group_volume),
                 dvh_plots,
                 row(main_add_selector_button,
@@ -794,7 +879,9 @@ layout = column(row(radio_group_dose, radio_group_volume),
                 plans_table_title,
                 data_table_plans)
 
+# go ahead and add a selector row for the user
 button_add_selector_row()
 
+# Create the document Bokeh server will use to generate the webpage
 curdoc().add_root(layout)
 curdoc().title = "Live Free or DICOM"
