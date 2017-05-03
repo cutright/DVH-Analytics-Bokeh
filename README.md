@@ -54,6 +54,8 @@ corresponding to each of the column in the queried table.
 
 - [ ] Post-import file management
 
+- [ ] Write an update ROI category function in *DVH_SQL*
+
 
 ## Dependencies
 * [Python](https://www.python.org) 2.7 tested
