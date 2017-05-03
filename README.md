@@ -56,6 +56,8 @@ corresponding to each of the column in the queried table.
 
 - [ ] Write an update ROI category function in *DVH_SQL*
 
+- [ ] Clean and add comments to main.py code
+
 
 ## Dependencies
 * [Python](https://www.python.org) 2.7 tested
