@@ -54,8 +54,6 @@ corresponding to each of the column in the queried table.
 
 - [ ] Post-import file management
 
-- [ ] Clean-up code for rank_ptvs
-
 
 ## Dependencies
 * [Python](https://www.python.org) 2.7 tested
