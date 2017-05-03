@@ -52,7 +52,9 @@ corresponding to each of the column in the queried table.
 
 - [ ] Dose grid resolution is undefined
 
-- [ ] Post-import file management 
+- [ ] Post-import file management
+
+- [ ] Clean-up code for rank_ptvs
 
 
 ## Dependencies

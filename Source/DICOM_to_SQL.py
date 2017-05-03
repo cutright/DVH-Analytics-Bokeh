@@ -114,6 +114,8 @@ def dicom_to_sql(start_path, **kwargs):
         dvhs = DVHTable(f[n].structure, f[n].dose)
         rxs = RxTable(f[n].plan, f[n].structure)
 
+        setattr(dvhs, 'ptv_number', rank_ptvs_by_D95(dvhs))
+
         sqlcnx.insert_plan(plan)
         sqlcnx.insert_beams(beams)
         sqlcnx.insert_dvhs(dvhs)
@@ -154,6 +156,40 @@ def is_file_imported(file_path):
         return True
     else:
         return False
+
+
+def rank_ptvs_by_D95(dvhs):
+    ptv_number_list = []
+    ptv_index = []
+
+    for i in range(0, dvhs.count):
+        ptv_number_list.append(0)
+        if dvhs.roi_type[i] == 'PTV':
+            ptv_index.append(i)
+
+    ptv_count = len(ptv_index)
+
+    # Calculate D95 for each PTV
+    doses_to_rank = get_dose_to_volume(dvhs, ptv_index, 0.95)
+    order_index = sorted(range(ptv_count), key=lambda k: doses_to_rank[k])
+    final_order = sorted(range(ptv_count), key=lambda k: order_index[k])
+
+    for i in range(0, ptv_count):
+        ptv_number_list[ptv_index[i]] = final_order[i] + 1
+
+    return ptv_number_list
+
+
+def get_dose_to_volume(dvhs, indices, roi_fraction):
+    # Not precise (i.e., no interpolation) but good enough for sorting PTVs
+    doses = []
+    for x in indices:
+        abs_volume = dvhs.volume[x] * roi_fraction
+        dvh = dvhs.dvhs[x]
+        dose = next(x[0] for x in enumerate(dvh) if x[1] < abs_volume)
+        doses.append(dose)
+
+    return doses
 
 
 if __name__ == '__main__':

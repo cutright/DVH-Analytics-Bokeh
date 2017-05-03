@@ -87,7 +87,13 @@ class DVH_SQL:
         file_path = 'insert_values_DVHs.sql'
 
         # Import each ROI from ROI_PyTable, append to output text file
+        if max(dvh_table.ptv_number) > 1:
+            multi_ptv = True
+        else:
+            multi_ptv = False
         for x in range(0, dvh_table.count):
+            if multi_ptv and dvh_table.ptv_number[x] > 0:
+                dvh_table.roi_type[x] = 'PTV' + str(dvh_table.ptv_number[x])
             sql_input = [str(dvh_table.mrn[x]),
                          str(dvh_table.study_instance_uid[x]),
                          dvh_table.institutional_roi_name[x],
