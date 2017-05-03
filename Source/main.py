@@ -124,7 +124,7 @@ def update_all_range_endpoints():
             query_row[i].update_range_values(query_row[i].select_category.value)
 
 
-# Determines if the physician has been specificed
+# Determines if the physician has been specified
 # will be used to remove the ability to select two physicians
 # and also update physician rois for only the specified physician
 def is_physician_set():
