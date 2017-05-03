@@ -29,6 +29,8 @@ corresponding to each of the column in the queried table.
 
 
 ## To Do List
+- [ ] Design install script for a venv
+
 - [ ] Validate dicompyler-core DVH calculations
 
 - [ ] Write DICOM pre-import validation function
