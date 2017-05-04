@@ -667,7 +667,7 @@ def update_endpoint_data(dvh):
 
 
 # set up layout
-tools = "pan,wheel_zoom,box_zoom,reset,crosshair,hover"
+tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
 dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools, logo=None)
 
 # Add statistical plots to figure
