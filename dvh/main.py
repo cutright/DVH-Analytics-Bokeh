@@ -47,11 +47,12 @@ source_endpoints = ColumnDataSource(data=dict())
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
-selector_categories = {'Institutional ROI': {'var_name': 'institutional_roi', 'table': 'DVHs'},
-                       'Physician ROI': {'var_name': 'physician_roi', 'table': 'DVHs'},
+selector_categories = {'ROI (by institutional category)': {'var_name': 'institutional_roi', 'table': 'DVHs'},
+                       'ROI (by physician category)': {'var_name': 'physician_roi', 'table': 'DVHs'},
                        'ROI Type': {'var_name': 'roi_type', 'table': 'DVHs'},
                        'Beam Energy': {'var_name': 'beam_energy', 'table': 'Beams'},
                        'Beam Type': {'var_name': 'beam_type', 'table': 'Beams'},
+                       'Dose Grid Resolution': {'var_name': 'dose_grid_res', 'table': 'Plans'},
                        'Gantry Rotation Direction': {'var_name': 'gantry_rot_dir', 'table': 'Beams'},
                        'Radiation Type': {'var_name': 'radiation_type', 'table': 'Beams'},
                        'Patient Orientation': {'var_name': 'patient_orientation', 'table': 'Plans'},
@@ -87,25 +88,43 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
 # Functions that add widget rows
 def button_add_selector_row():
     global query_row_type
+    old_label = main_add_selector_button.label
+    old_type = main_add_selector_button.button_type
+    main_add_selector_button.label = 'Updating Layout...'
+    main_add_selector_button.button_type = 'warning'
     query_row.append(AddSelectorRow())
     layout.children.insert(2 + len(query_row_type), query_row[-1].row)
     query_row_type.append('selector')
     update_update_button_status()
+    main_add_selector_button.label = old_label
+    main_add_selector_button.button_type = old_type
 
 
 def button_add_range_row():
     global query_row_type
+    old_label = main_add_range_button.label
+    old_type = main_add_range_button.button_type
+    main_add_range_button.label = 'Updating Layout...'
+    main_add_range_button.button_type = 'warning'
     query_row.append(AddRangeRow())
     layout.children.insert(2 + len(query_row_type), query_row[-1].row)
     query_row_type.append('range')
     update_update_button_status()
+    main_add_range_button.label = old_label
+    main_add_range_button.button_type = old_type
 
 
 def button_add_endpoint_row():
     global query_row_type
+    old_label = main_add_endpoint_button.label
+    old_type = main_add_endpoint_button.button_type
+    main_add_endpoint_button.label = 'Updating Layout...'
+    main_add_endpoint_button.button_type = 'warning'
     query_row.append(AddEndPointRow())
     layout.children.insert(2 + len(query_row_type), query_row[-1].row)
     query_row_type.append('endpoint')
+    main_add_endpoint_button.label = old_label
+    main_add_endpoint_button.button_type = old_type
 
 
 # Updates query row ids (after row deletion)
@@ -149,6 +168,10 @@ def get_physician():
 # main update function
 def update_data():
     global query_row_type, query_row, current_dvh
+    old_update_button_label = update_button.label
+    old_update_button_type = update_button.button_type
+    update_button.label = 'Updating...'
+    update_button.button_type = 'warning'
     uids, dvh_query_str = get_query()
     print str(datetime.now()), 'getting dvh data'
     current_dvh = DVH(uid=uids, dvh_condition=dvh_query_str)
@@ -156,6 +179,8 @@ def update_data():
     update_dvh_data(current_dvh)
     update_all_range_endpoints()
     update_endpoint_data(current_dvh)
+    update_button.label = old_update_button_label
+    update_button.button_type = old_update_button_type
 
 
 # Checks size of current query, changes update button to orange if over 50 DVHs
@@ -244,8 +269,20 @@ def get_query():
         beam_query_str.append('(' + ' or '.join(beam_query_map[key]) + ')')
 
     dvh_query_str = []
+    skip_roi_names = False
+    roi_categories = {'physician_roi',
+                      'institutional_roi'}
+    if 'physician_roi' in dvh_query_map.keys():
+        if 'institutional_roi' in dvh_query_map.keys():
+            roi_name_query = dvh_query_map['physician_roi'] + \
+                             dvh_query_map['institutional_roi']
+            dvh_query_str.append('(' + ' or '.join(roi_name_query) + ')')
+            skip_roi_names = True
     for key in dvh_query_map.iterkeys():
-        dvh_query_str.append('(' + ' or '.join(dvh_query_map[key]) + ')')
+        if skip_roi_names and key in roi_categories:
+            pass
+        else:
+            dvh_query_str.append('(' + ' or '.join(dvh_query_map[key]) + ')')
 
     # assumes an 'and' condition between variable types
     plan_query_str = ' and '.join(plan_query_str)
@@ -269,7 +306,7 @@ class AddSelectorRow:
         self.id = len(query_row)
         self.category_options = selector_categories.keys()
         self.category_options.sort()
-        self.select_category = Select(value="Institutional ROI", options=self.category_options, width=450)
+        self.select_category = Select(value="ROI (by institutional category)", options=self.category_options, width=450)
         self.select_category.on_change('value', self.update_selector_values)
 
         self.sql_table = selector_categories[self.select_category.value]['table']
@@ -319,8 +356,6 @@ class AddRangeRow:
         self.max_value = []
         self.text_min = TextInput(value='', title='', width=225)
         self.text_max = TextInput(value='', title='', width=225)
-        self.text_min.on_change('value', self.update_range_values_ticker)
-        self.text_max.on_change('value', self.update_range_values_ticker)
         self.update_range_values(self.select_category.value)
 
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
@@ -333,7 +368,6 @@ class AddRangeRow:
 
     def update_range_values_ticker(self, attrname, old, new):
         self.update_range_values(new)
-        update_update_button_status()
 
     def update_range_values(self, new):
         table_new = range_categories[new]['table']
@@ -424,6 +458,7 @@ class AddEndPointRow:
 # the functions to update beam, rx, and plans ColumnSourceData variables
 def update_dvh_data(dvh):
 
+    update_button.label = 'Getting DVH data...'
     print str(datetime.now()), 'updating dvh data'
     line_colors = []
     for i, color in itertools.izip(range(0, dvh.count), colors):
@@ -479,6 +514,7 @@ def update_dvh_data(dvh):
                    'y_scale': y_scale}
     print str(datetime.now()), 'source.data set'
     print str(datetime.now()), 'beginning stat calcs'
+    update_button.label = 'Calculating stats...'
 
     if radio_group_dose.active == 1:
         stat_dose_scale = 'relative'
@@ -559,7 +595,7 @@ def update_plan_data(uids):
                          'uid': plan_data.study_instance_uid,
                          'age': plan_data.age,
                          'birth_date': plan_data.birth_date,
-                         'dose_grid_resolution': plan_data.dose_grid_res,
+                         'dose_grid_res': plan_data.dose_grid_res,
                          'fxs': plan_data.fxs,
                          'patient_orientation': plan_data.patient_orientation,
                          'patient_sex': plan_data.patient_sex,
@@ -668,7 +704,7 @@ def update_endpoint_data(dvh):
 
 # set up layout
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
-dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools, logo=None)
+dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
 
 # Add statistical plots to figure
 stats_min = dvh_plots.line('x', 'min',
