@@ -180,7 +180,7 @@ class PlanRow:
                         fx_reset = True
                     fx_dose = float(temp[temp.index('cgy')-1]) / 100
                     fxs += int(temp[temp.index('x') + 1])
-                    rx_dose += fx_dose * fxs
+                    rx_dose += fx_dose * float((temp[temp.index('x') + 1]))
                 elif temp[0] == 'tx:':
                     temp.remove('tx:')
                     tx_site = ' '.join(temp)
