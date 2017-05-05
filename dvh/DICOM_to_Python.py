@@ -169,13 +169,17 @@ class PlanRow:
         roi_counter = 0
         roi_count = len(rt_structure.StructureSetROISequence)
         roi_seq = rt_structure.StructureSetROISequence  # just limit num characters in code
+        fx_reset = False
         while (not tx_found) and (roi_counter < roi_count):
             roi_name = roi_seq[roi_counter].ROIName.lower()
             if len(roi_name) > 2:
                 temp = roi_name.split(' ')
                 if temp[0][0:2] == 'rx':
+                    if not fx_reset:
+                        fxs = 0
+                        fx_reset = True
                     fx_dose = float(temp[temp.index('cgy')-1]) / 100
-                    fxs = int(temp[temp.index('x') + 1])
+                    fxs += int(temp[temp.index('x') + 1])
                     rx_dose += fx_dose * fxs
                 elif temp[0] == 'tx:':
                     temp.remove('tx:')
