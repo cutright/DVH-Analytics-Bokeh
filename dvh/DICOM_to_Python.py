@@ -128,9 +128,10 @@ class PlanRow:
             age = relativedelta(sim_study_date_obj, birth_date_obj).years
 
         # Record physician initials from ReferringPhysicianName tag
-        physician = rt_plan.ReferringPhysicianName.upper()
-        if hasattr(rt_plan, 'PhysiciansOfRecord') and not physician:
+        if hasattr(rt_plan, 'PhysiciansOfRecord'):
             physician = rt_plan.PhysiciansOfRecord.upper()
+        else:
+            physician = rt_plan.ReferringPhysicianName.upper()
 
         # Initialize fx and MU counters, iterate over all rx's
         fxs = 0
@@ -271,6 +272,7 @@ class DVHTable:
     def __init__(self, structure_file, dose_file):
         # Get ROI Category Map
         database_rois = DatabaseROIs()
+
 
         # Import RT Structure and RT Dose files using dicompyler
         rt_structure_dicom = dicom.read_file(structure_file)

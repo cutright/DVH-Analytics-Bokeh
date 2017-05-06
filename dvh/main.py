@@ -47,8 +47,8 @@ source_endpoints = ColumnDataSource(data=dict())
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
-selector_categories = {'ROI (by institutional category)': {'var_name': 'institutional_roi', 'table': 'DVHs'},
-                       'ROI (by physician category)': {'var_name': 'physician_roi', 'table': 'DVHs'},
+selector_categories = {'ROI Institutional Category': {'var_name': 'institutional_roi', 'table': 'DVHs'},
+                       'ROI Physician Category': {'var_name': 'physician_roi', 'table': 'DVHs'},
                        'ROI Type': {'var_name': 'roi_type', 'table': 'DVHs'},
                        'Beam Energy': {'var_name': 'beam_energy', 'table': 'Beams'},
                        'Beam Type': {'var_name': 'beam_type', 'table': 'Beams'},
@@ -306,7 +306,7 @@ class AddSelectorRow:
         self.id = len(query_row)
         self.category_options = selector_categories.keys()
         self.category_options.sort()
-        self.select_category = Select(value="ROI (by institutional category)", options=self.category_options, width=450)
+        self.select_category = Select(value="ROI Institutional Category", options=self.category_options, width=450)
         self.select_category.on_change('value', self.update_selector_values)
 
         self.sql_table = selector_categories[self.select_category.value]['table']
@@ -355,7 +355,9 @@ class AddRangeRow:
         self.min_value = []
         self.max_value = []
         self.text_min = TextInput(value='', title='', width=225)
+        self.text_min.on_change('value', self.check_for_start_date_ticker)
         self.text_max = TextInput(value='', title='', width=225)
+        self.text_max.on_change('value', self.check_for_end_date_ticker)
         self.update_range_values(self.select_category.value)
 
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
@@ -365,6 +367,14 @@ class AddRangeRow:
                         self.text_min,
                         self.text_max,
                         self.delete_last_row])
+
+    def check_for_start_date_ticker(self, attrname, old, new):
+        if self.select_category.value.lower().find("date") > -1:
+            self.text_min.value = date_str_to_SQL_format(new, type='start')
+
+    def check_for_end_date_ticker(self, attrname, old, new):
+        if self.select_category.value.lower().find("date") > -1:
+            self.text_max.value = date_str_to_SQL_format(new, type='end')
 
     def update_range_values_ticker(self, attrname, old, new):
         self.update_range_values(new)
@@ -702,6 +712,32 @@ def update_endpoint_data(dvh):
                                                         formatter=NumberFormatter(format="0.00"))
 
 
+def date_str_to_SQL_format(date, **kwargs):
+
+    if kwargs['type'] == 'start':
+        append_month = '-01-01'
+        append_day = '-01'
+    else:
+        append_month = '-12-31'
+        append_day = '-31'
+    date_len = len(date)
+    if date.isdigit():
+        if date_len == 4:
+            date = date + append_month
+        elif date_len == 5:
+            date = date[0:4] + '0' + date[4] + append_day
+        elif date_len == 6:
+            date = date + append_day
+    else:
+        non_digit_count = date_len - sum(x.isdigit() for x in date)
+        if non_digit_count == 1:
+            date = date[0:4] + date[5:date_len]
+        else:
+            date = date[0:4] + date[5:7] + date[8:date_len]
+
+    return date
+
+
 # set up layout
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
 dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
@@ -790,7 +826,7 @@ data_table = DataTable(source=source, columns=columns, width=1000, selectable=Tr
 
 # Set up EndPoint DataTable
 endpoint_table_title = PreText(text="DVH Endpoints", width=1000)
-columns = [TableColumn(field="mrn", title="MRN", width=175),
+columns = [TableColumn(field="mrn", title="MRN", width=160),
            TableColumn(field="ep1", title=endpoint_columns[0], width=120),
            TableColumn(field="ep2", title=endpoint_columns[1], width=120),
            TableColumn(field="ep3", title=endpoint_columns[2], width=120),
@@ -803,7 +839,7 @@ data_table_endpoints = DataTable(source=source, columns=columns, width=1000, sel
 
 # Set up Beams DataTable
 beam_table_title = PreText(text="Beams", width=1500)
-columns = [TableColumn(field="mrn", title="MRN", width=175),
+columns = [TableColumn(field="mrn", title="MRN", width=105),
            TableColumn(field="beam_number", title="Beam", width=50),
            TableColumn(field="fx_grp_beam_count", title="Beams", width=50),
            TableColumn(field="fx_grp_number", title="Rx Grp", width=60),
@@ -825,20 +861,20 @@ columns = [TableColumn(field="mrn", title="MRN", width=175),
 data_table_beams = DataTable(source=source_beams, columns=columns, width=1500)
 
 # Set up Plans DataTable
-plans_table_title = PreText(text="Plans", width=1000)
-columns = [TableColumn(field="mrn", title="MRN"),
-           TableColumn(field="age", title="Age"),
+plans_table_title = PreText(text="Plans", width=1200)
+columns = [TableColumn(field="mrn", title="MRN", width=420),
+           TableColumn(field="age", title="Age", width=80),
            TableColumn(field="birth_date", title="Birth Date"),
            TableColumn(field="dose_grid_res", title="Dose Grid Res"),
            TableColumn(field="heterogeneity_correction", title="Heterogeneity"),
-           TableColumn(field="fxs", title="Fxs"),
+           TableColumn(field="fxs", title="Fxs", width=80),
            TableColumn(field="patient_orientation", title="Orientation"),
-           TableColumn(field="patient_sex", title="Gender"),
+           TableColumn(field="patient_sex", title="Sex", width=80),
            TableColumn(field="physician", title="Rad Onc"),
            TableColumn(field="rx_dose", title="Rx Dose", formatter=NumberFormatter(format="0.00")),
            TableColumn(field="sim_study_date", title="Sim Study Date"),
            TableColumn(field="total_mu", title="Total MU", formatter=NumberFormatter(format="0.0")),
-           TableColumn(field="tx_energies", title="Tx Energies"),
+           TableColumn(field="tx_energies", title="Energies"),
            TableColumn(field="tx_modality", title="Tx Modality"),
            TableColumn(field="tx_site", title="Tx Site")]
 data_table_plans = DataTable(source=source_plans, columns=columns, width=1200)
@@ -908,12 +944,12 @@ layout = column(row(radio_group_dose, radio_group_volume),
                 data_table,
                 endpoint_table_title,
                 data_table_endpoints,
+                plans_table_title,
+                data_table_plans,
                 rxs_table_title,
                 data_table_rxs,
                 beam_table_title,
-                data_table_beams,
-                plans_table_title,
-                data_table_plans)
+                data_table_beams)
 
 # go ahead and add a selector row for the user
 button_add_selector_row()
