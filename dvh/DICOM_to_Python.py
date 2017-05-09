@@ -108,11 +108,15 @@ class PlanRow:
 
         # Parse and record sim date
         sim_study_date = rt_plan.StudyDate
-        sim_study_year = int(sim_study_date[0:4])
-        sim_study_month = int(sim_study_date[4:6])
-        sim_study_day = int(sim_study_date[6:8])
-        sim_study_date_obj = datetime.datetime(sim_study_year, sim_study_month,
-                                               sim_study_day)
+        if sim_study_date:
+            sim_study_year = int(sim_study_date[0:4])
+            sim_study_month = int(sim_study_date[4:6])
+            sim_study_day = int(sim_study_date[6:8])
+            sim_study_date_obj = datetime.datetime(sim_study_year, sim_study_month,
+                                                   sim_study_day)
+        else:
+            sim_study_date = '18000101'
+            sim_study_date_obj = datetime.datetime(1800, 1, 1)
 
         # Calculate patient age at time of sim
         # Set to NULL birthday is not in DICOM file
@@ -125,7 +129,10 @@ class PlanRow:
             birth_month = int(birth_date[4:6])
             birth_day = int(birth_date[6:8])
             birth_date_obj = datetime.datetime(birth_year, birth_month, birth_day)
-            age = relativedelta(sim_study_date_obj, birth_date_obj).years
+            if sim_study_date == '18000101':
+                age = '(NULL)'
+            else:
+                age = relativedelta(sim_study_date_obj, birth_date_obj).years
 
         # Record physician initials from ReferringPhysicianName tag
         if hasattr(rt_plan, 'PhysiciansOfRecord'):
@@ -272,7 +279,6 @@ class DVHTable:
     def __init__(self, structure_file, dose_file):
         # Get ROI Category Map
         database_rois = DatabaseROIs()
-
 
         # Import RT Structure and RT Dose files using dicompyler
         rt_structure_dicom = dicom.read_file(structure_file)
