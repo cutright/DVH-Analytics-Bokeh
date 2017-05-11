@@ -740,7 +740,7 @@ def date_str_to_SQL_format(date, **kwargs):
 
 # set up layout
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
-dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools, logo=None, active_drag="box_zoom", webgl=True)
+dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
 
 # Add statistical plots to figure
 stats_min = dvh_plots.line('x', 'min',
