@@ -44,7 +44,7 @@ corresponding to each of the column in the queried table.
 
 - [X] Validate functions in *Analysis_Tools*
 
-- [ ] Develop for SQL other than MySQL
+- [ ] Develop for PostgreSQL
 
 - [X] Update stats DVHs for other DVH scales
 
@@ -52,7 +52,7 @@ corresponding to each of the column in the queried table.
 
 - [ ] Look into filtering by date range
 
-- [ ] Dose grid resolution is undefined
+- [X] Dose grid resolution is undefined
 
 - [ ] Post-import file management
 
