@@ -35,6 +35,8 @@ corresponding to each of the column in the queried table.
 
 - [ ] Add ability to plot a temporary plan not in the SQL DB
 
+- [X] Implement Orthanc DICOM Listener
+
 
 ### Lower Priorities
 - [ ] Design install script for a venv
