@@ -60,6 +60,9 @@ corresponding to each of the column in the queried table.
 
 - [X] Clean and add comments to main.py code
 
+- [ ] Add ability to plot a temporary plan not in the SQL DB
+
+- [ ] Move recalculate_ages() from *SQL_to_Python* to somewhere that makes sense
 
 ## Dependencies
 * [Python](https://www.python.org) 2.7 tested

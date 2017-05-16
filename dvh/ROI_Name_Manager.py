@@ -290,6 +290,27 @@ def update_uncategorized_rois_in_database():
     cnx.cnx.close()
 
 
+def reinitialize_roi_categories_in_database():
+    roi_map = DatabaseROIs()
+    dvh_data = QuerySQL('DVHs', "mrn != ''")
+    cnx = DVH_SQL()
+
+    for i in range(0, len(dvh_data.roi_name)):
+        uid = dvh_data.study_instance_uid[i]
+        physician = get_physician_from_uid(uid)
+        roi_name = dvh_data.roi_name[i]
+
+        new_physician_roi_category = roi_map.get_physician_roi(roi_name, physician)
+        new_institutional_roi_category = roi_map.get_institutional_roi(roi_name, physician)
+
+        print i, physician, new_institutional_roi_category, new_physician_roi_category, roi_name
+        condition = "study_instance_uid = '" + uid + "'" + "and roi_name = '" + roi_name + "'"
+        cnx.update('DVHs', 'physician_roi', new_physician_roi_category, condition)
+        cnx.update('DVHs', 'institutional_roi', new_institutional_roi_category, condition)
+
+    cnx.cnx.close()
+
+
 def print_uncategorized_rois():
     dvh_data = QuerySQL('DVHs', "physician_roi = 'uncategorized'")
     print 'physician, institutional_roi, physician_roi, roi_name'
