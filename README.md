@@ -70,6 +70,9 @@ corresponding to each of the column in the queried table.
 
 - [ ] Move recalculate_ages() from *SQL_to_Python* to somewhere that makes sense
 
+- [ ] Integrate the Django code
+    - [ ] Create home page of app links
+
 ## Dependencies
 * [Python](https://www.python.org) 2.7 tested
 * [MySQL](https://dev.mysql.com/downloads/mysql/) and [MySQL Connector](https://dev.mysql.com/downloads/connector/python/)
