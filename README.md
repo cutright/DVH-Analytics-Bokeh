@@ -29,6 +29,14 @@ corresponding to each of the column in the queried table.
 
 
 ## To Do List
+### Higher Priorities
+
+- [ ] Post-import file management
+
+- [ ] Add ability to plot a temporary plan not in the SQL DB
+
+
+### Lower Priorities
 - [ ] Design install script for a venv
 
 - [ ] Validate dicompyler-core DVH calculations
@@ -54,13 +62,9 @@ corresponding to each of the column in the queried table.
 
 - [X] Dose grid resolution is undefined
 
-- [ ] Post-import file management
-
 - [X] Write an update ROI category function for SQL DB
 
 - [X] Clean and add comments to main.py code
-
-- [ ] Add ability to plot a temporary plan not in the SQL DB
 
 - [ ] Move recalculate_ages() from *SQL_to_Python* to somewhere that makes sense
 
