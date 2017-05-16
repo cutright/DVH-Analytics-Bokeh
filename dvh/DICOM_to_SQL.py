@@ -11,6 +11,7 @@ from DICOM_to_Python import DVHTable, PlanRow, BeamTable, RxTable
 import os
 import dicom
 from datetime import datetime
+import sys
 
 
 class DICOM_FileSet:
@@ -193,4 +194,4 @@ def get_dose_to_volume(dvhs, indices, roi_fraction):
 
 
 if __name__ == '__main__':
-    dicom_to_sql()
+    dicom_to_sql(sys.argv[1])

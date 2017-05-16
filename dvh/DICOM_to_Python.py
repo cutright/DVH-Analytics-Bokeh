@@ -299,30 +299,33 @@ class DVHTable:
         for key in rt_structures:
             # Import DVH from RT Structure and RT Dose files
             if rt_structures[key]['type'] != 'MARKER':
-                current_dvh_calc = dvhcalc.get_dvh(structure_file, dose_file, key)
-                self.dvhs[row_counter] = current_dvh_calc.counts
-                if current_dvh_calc.volume > 0:
-                    print('Importing ' + current_dvh_calc.name)
-                    if rt_structures[key]['name'].lower().find('itv') == 0:
-                        roi_type = 'ITV'
-                    else:
-                        roi_type = rt_structures[key]['type']
-                    current_roi_name = rt_structures[key]['name']
-                    institutional_roi_name = database_rois.get_institutional_roi(current_roi_name, physician)
-                    physician_roi_name = database_rois.get_physician_roi(current_roi_name, physician)
-                    current_dvh_row = DVHRow(mrn,
-                                             study_instance_uid,
-                                             institutional_roi_name,
-                                             physician_roi_name,
-                                             current_roi_name,
-                                             roi_type,
-                                             current_dvh_calc.volume,
-                                             current_dvh_calc.min,
-                                             current_dvh_calc.mean,
-                                             current_dvh_calc.max,
-                                             ','.join(['%.2f' % num for num in current_dvh_calc.counts]))
-                    values[row_counter] = current_dvh_row
-                    row_counter += 1
+                try:
+                    current_dvh_calc = dvhcalc.get_dvh(structure_file, dose_file, key)
+                    self.dvhs[row_counter] = current_dvh_calc.counts
+                    if current_dvh_calc.volume > 0:
+                        print('Importing ' + current_dvh_calc.name)
+                        if rt_structures[key]['name'].lower().find('itv') == 0:
+                            roi_type = 'ITV'
+                        else:
+                            roi_type = rt_structures[key]['type']
+                        current_roi_name = rt_structures[key]['name']
+                        institutional_roi_name = database_rois.get_institutional_roi(current_roi_name, physician)
+                        physician_roi_name = database_rois.get_physician_roi(current_roi_name, physician)
+                        current_dvh_row = DVHRow(mrn,
+                                                 study_instance_uid,
+                                                 institutional_roi_name,
+                                                 physician_roi_name,
+                                                 current_roi_name,
+                                                 roi_type,
+                                                 current_dvh_calc.volume,
+                                                 current_dvh_calc.min,
+                                                 current_dvh_calc.mean,
+                                                 current_dvh_calc.max,
+                                                 ','.join(['%.2f' % num for num in current_dvh_calc.counts]))
+                        values[row_counter] = current_dvh_row
+                        row_counter += 1
+                except:
+                    print 'dvh import failed on ' + rt_structures[key]['name']
 
         self.count = row_counter
         dvh_range = range(0, self.count)

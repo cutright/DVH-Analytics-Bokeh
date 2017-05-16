@@ -56,7 +56,7 @@ corresponding to each of the column in the queried table.
 
 - [ ] Post-import file management
 
-- [ ] Write an update ROI category function in *DVH_SQL*
+- [X] Write an update ROI category function for SQL DB
 
 - [X] Clean and add comments to main.py code
 

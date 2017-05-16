@@ -7,7 +7,8 @@ Created on Fri Mar 24 13:43:28 2017
 """
 
 import os
-
+from SQL_to_Python import QuerySQL
+from DVH_SQL import DVH_SQL
 
 class ROISet:
     def __init__(self, institutional_roi_name, physician_roi_name, roi_name, physician):
@@ -18,17 +19,21 @@ class ROISet:
 
 
 class DatabaseROIs:
-    def __init__(self):
+    def __init__(self, *force_roi_map_rebuild):
         self.count = 0
         self.roi = {}
         self.institutional_roi_map = {}
         self.physician_roi_map = {}
         self.roi_map = {}
         self.physician_map = {}
-        script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
+        script_dir = os.path.dirname(__file__)
         rel_path = "preferences/database.roi"
         abs_file_path = os.path.join(script_dir, rel_path)
-        if os.path.isfile(rel_path):
+        if force_roi_map_rebuild:
+            force_roi_map_rebuild = force_roi_map_rebuild[0]
+        else:
+            force_roi_map_rebuild = False
+        if os.path.isfile(rel_path) and not force_roi_map_rebuild:
             with open(abs_file_path, 'r') as document:
                 for line in document:
                     if not line:
@@ -83,16 +88,15 @@ class DatabaseROIs:
 
     def __getitem__(self, x):
         indices = self.institutional_roi_map[x].split(',')
-        all = []
+        all_data = []
         for i in range(0, len(indices)):
-            s = []
-            s.append(self.roi[int(indices[i])].physician_roi_name)
-            s.append(self.roi[int(indices[i])].roi_name)
-            s.append(self.roi[int(indices[i])].physician)
+            s = [self.roi[int(indices[i])].physician_roi_name,
+                 self.roi[int(indices[i])].roi_name,
+                 self.roi[int(indices[i])].physician]
             s = ', '.join(s)
-            all.append(s)
-        all.sort()
-        return all
+            all_data.append(s)
+        all_data.sort()
+        return all_data
 
     def __iter__(self):
         return self.roi.itervalues()
@@ -251,6 +255,51 @@ class DatabaseROIs:
             document.write(line)
 
         document.close()
+
+
+def get_physician_from_uid(uid):
+    cnx = DVH_SQL()
+    condition = "study_instance_uid = '" + uid + "'"
+    results = cnx.query('Plans', 'physician', condition)
+
+    if len(results) > 1:
+        print 'Warning: multiple plans with this study_instance_uid exist'
+
+    return str(results[0][0])
+
+
+def update_uncategorized_rois_in_database():
+    roi_map = DatabaseROIs()
+    dvh_data = QuerySQL('DVHs', "physician_roi = 'uncategorized'")
+    cnx = DVH_SQL()
+
+    for i in range(0, len(dvh_data.roi_name)):
+        uid = dvh_data.study_instance_uid[i]
+        physician = get_physician_from_uid(uid)
+        roi_name = dvh_data.roi_name[i]
+
+        new_physician_roi_category = roi_map.get_physician_roi(roi_name, physician)
+        new_institutional_roi_category = roi_map.get_institutional_roi(roi_name, physician)
+
+        if new_physician_roi_category != 'uncategorized':
+            print i, physician, new_institutional_roi_category, new_physician_roi_category, roi_name
+            condition = "study_instance_uid = '" + uid + "'" + "and roi_name = '" + roi_name + "'"
+            cnx.update('DVHs', 'physician_roi', new_physician_roi_category, condition)
+            cnx.update('DVHs', 'institutional_roi', new_institutional_roi_category, condition)
+
+    cnx.cnx.close()
+
+
+def print_uncategorized_rois():
+    dvh_data = QuerySQL('DVHs', "physician_roi = 'uncategorized'")
+    print 'physician, institutional_roi, physician_roi, roi_name'
+    for i in range(0, len(dvh_data.roi_name)):
+        uid = dvh_data.study_instance_uid[i]
+        physician = get_physician_from_uid(uid)
+        roi_name = dvh_data.roi_name[i]
+        physician_roi = dvh_data.physician_roi[i]
+        institutional_roi = dvh_data.institutional_roi[i]
+        print physician, institutional_roi, physician_roi, roi_name
 
 
 if __name__ == '__main__':
