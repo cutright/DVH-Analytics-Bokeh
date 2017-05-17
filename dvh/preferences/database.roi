@@ -120,6 +120,8 @@ lens_right,lens_r,lens_rt,BBM
 lens_right,lens_r,right_lens,BBM
 lung_left,l lung,l_lung,BBM
 lung_right,r lung,r_lung,BBM
+lung_whole,whole lung,whole_lung,BBM
+lung_whole,whole lung,lungs,BBM
 optic_chiasm,chiasm,chiasm,BBM
 optic_chiasm,chiasm,opticchiasm,BBM
 optic_chiasm,chiasm,study_chiasm,BBM
@@ -168,6 +170,7 @@ spinal_cord,spinal_cord,spinal_cord,BBM
 spinal_cord,spinal_cord,spinal_cord,BBM
 spinal_cord,spinal_cord,spinalcord,BBM
 spinal_cord,spinal_cord,study_spinal_cord,BBM
+spinal_cord,spinal_cord,cord,BBM
 uncategorized,ae fold,study_ae_fold,BBM
 uncategorized,arytenoid,study_arytenoid,BBM
 uncategorized,bot,bot,BBM

@@ -12,13 +12,14 @@ lens_left: LENS_L: LENS_L, Lens_L, L lens, Lens Lt, left lens
 lens_right: LENS_R: LENRS_R, Lens_R, R lens, Lens Rt, right lens
 lung_left: L Lung: L Lung
 lung_right: R Lung: R Lung
+lung_whole: Whole Lung: whole lung, lungs
 optic_chiasm: CHIASM: CHIASM, OpticChiasm, STUDY CHIASM, optic chiasm
 optic_nerve_left: OPTICNERVE_L: OPTICNERVE_L, L Optic nerve, Left Optic Nerve, lt optic nerve, STUDY OPTIC NRV L, Optic Nerve_L, lt optic n, l optic n, L. Optic Nerve
 optic_nerve_right: OPTICNERVE_R: OPTICNERVE_R, R Optic nerve, Right Optic Nerve, rt optic nerve, STUDY OPTIC NRV R, Optic Nerve_R, rt optic n, r optic n, R. Optic Nerve
 orbit_left: EYE_L: EYE_L, L Eye, Left Eye, lt eye, lt globe, STUDY EYE L, L orbit, left orbit, left globe, L. Orbit
 orbit_right: EYE_R: EYE_R, R Eye, Right Eye, rt eye, rt globe, STUDY EYE R, R orbit, right orbit, right globe, R. Orbit
 skin: SkinOAR: SkinOAR, skin
-spinal_cord: SPINAL_CORD: SPINAL_CORD, Spinal cord, SpinalCord, STUDY SPINAL CORD
+spinal_cord: SPINAL_CORD: SPINAL_CORD, Spinal cord, SpinalCord, STUDY SPINAL CORD, cord
 uncategorized: AE FOLD: STUDY AE FOLD
 uncategorized: ARYTENOID: STUDY ARYTENOID
 uncategorized: BOT: BOT, STUDY BASE OF TONGUE, STUDY BOT, Base Of Tongue
