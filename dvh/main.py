@@ -9,7 +9,7 @@ Created on Sun Apr 21 2017
 import numpy as np
 import itertools
 from bokeh.layouts import layout, column, row
-from bokeh.models import ColumnDataSource, Legend, CustomJS
+from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool
 from bokeh.models.widgets import Select, Button, PreText, TableColumn, DataTable, \
     NumberFormatter, RadioButtonGroup, TextInput, RadioGroup
 from bokeh.plotting import figure
@@ -739,6 +739,12 @@ def date_str_to_SQL_format(date, **kwargs):
 
 
 # set up layout
+
+hover = HoverTool(
+        tooltips=[
+            ("(x,y)", "($x, $y)"),
+        ]
+    )
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
 dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
 
@@ -787,6 +793,11 @@ dvh_plots.multi_line('x', 'y',
                      nonselection_alpha=0,
                      selection_alpha=1)
 
+dvh_plots.add_tools(HoverTool(show_arrow=False,
+                              line_policy='next',
+                              tooltips=[('Dose', '$x'),
+                                        ('Volume', '$y')]))
+
 # Shaded region between Q1 and Q3
 dvh_plots.patch('x_patch', 'y_patch',
                 source=source_patch,
@@ -804,7 +815,7 @@ legend_stats = Legend(items=[
         ("Mean", [stats_mean]),
         ("Q1", [stats_q1]),
         ("Min", [stats_min])
-    ], location=(0, 45))
+    ], location=(0, 30))
 
 # Add the layout outside the plot, clicking legend item hides the line
 dvh_plots.add_layout(legend_stats, 'right')
