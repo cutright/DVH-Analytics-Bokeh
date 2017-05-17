@@ -31,7 +31,7 @@ corresponding to each of the column in the queried table.
 ## To Do List
 ### Higher Priorities
 
-- [ ] Post-import file management
+- [X] Post-import file management
 
 - [ ] Add ability to plot a temporary plan not in the SQL DB
 
@@ -52,23 +52,11 @@ corresponding to each of the column in the queried table.
 
 - [ ] Incorporate BED, TCP, NTCP calculations
 
-- [X] Validate functions in *Analysis_Tools*
-
 - [ ] Develop for PostgreSQL
-
-- [X] Update stats DVHs for other DVH scales
 
 - [ ] Track wedge info on 3D beams
 
 - [ ] Look into filtering by date range
-
-- [X] Dose grid resolution is undefined
-
-- [X] Write an update ROI category function for SQL DB
-
-- [X] Clean and add comments to main.py code
-
-- [ ] Move recalculate_ages() from *SQL_to_Python* to somewhere that makes sense
 
 - [ ] Integrate the Django code
     - [ ] Create home page of app links
