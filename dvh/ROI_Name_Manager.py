@@ -10,6 +10,7 @@ import os
 from SQL_to_Python import QuerySQL
 from DVH_SQL import DVH_SQL
 
+
 class ROISet:
     def __init__(self, institutional_roi_name, physician_roi_name, roi_name, physician):
         self.institutional_roi_name = institutional_roi_name
@@ -19,7 +20,7 @@ class ROISet:
 
 
 class DatabaseROIs:
-    def __init__(self, *force_roi_map_rebuild):
+    def __init__(self, **kwargs):
         self.count = 0
         self.roi = {}
         self.institutional_roi_map = {}
@@ -29,8 +30,8 @@ class DatabaseROIs:
         script_dir = os.path.dirname(__file__)
         rel_path = "preferences/database.roi"
         abs_file_path = os.path.join(script_dir, rel_path)
-        if force_roi_map_rebuild:
-            force_roi_map_rebuild = force_roi_map_rebuild[0]
+        if 'force_roi_map_rebuild' in kwargs and kwargs['force_roi_map_rebuild']:
+            force_roi_map_rebuild = True
         else:
             force_roi_map_rebuild = False
         if os.path.isfile(rel_path) and not force_roi_map_rebuild:
@@ -269,12 +270,13 @@ def get_physician_from_uid(uid):
 
 
 def update_uncategorized_rois_in_database():
-    roi_map = DatabaseROIs()
+    roi_map = DatabaseROIs(force_roi_map_rebuild=True)
     dvh_data = QuerySQL('DVHs', "physician_roi = 'uncategorized'")
     cnx = DVH_SQL()
 
     for i in range(0, len(dvh_data.roi_name)):
         uid = dvh_data.study_instance_uid[i]
+        mrn = dvh_data.mrn[i]
         physician = get_physician_from_uid(uid)
         roi_name = dvh_data.roi_name[i]
 
@@ -282,7 +284,7 @@ def update_uncategorized_rois_in_database():
         new_institutional_roi_category = roi_map.get_institutional_roi(roi_name, physician)
 
         if new_physician_roi_category != 'uncategorized':
-            print i, physician, new_institutional_roi_category, new_physician_roi_category, roi_name
+            print mrn, physician, new_institutional_roi_category, new_physician_roi_category, roi_name
             condition = "study_instance_uid = '" + uid + "'" + "and roi_name = '" + roi_name + "'"
             cnx.update('DVHs', 'physician_roi', new_physician_roi_category, condition)
             cnx.update('DVHs', 'institutional_roi', new_institutional_roi_category, condition)
