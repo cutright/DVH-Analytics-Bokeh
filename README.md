@@ -29,6 +29,16 @@ corresponding to each of the column in the queried table.
 
 
 ## To Do List
+### Higher Priorities
+
+- [X] Post-import file management
+
+- [ ] Add ability to plot a temporary plan not in the SQL DB
+
+- [X] Implement Orthanc DICOM Listener
+
+
+### Lower Priorities
 - [ ] Design install script for a venv
 
 - [ ] Validate dicompyler-core DVH calculations
@@ -42,24 +52,14 @@ corresponding to each of the column in the queried table.
 
 - [ ] Incorporate BED, TCP, NTCP calculations
 
-- [X] Validate functions in *Analysis_Tools*
-
-- [ ] Develop for SQL other than MySQL
-
-- [X] Update stats DVHs for other DVH scales
+- [ ] Develop for PostgreSQL
 
 - [ ] Track wedge info on 3D beams
 
 - [ ] Look into filtering by date range
 
-- [ ] Dose grid resolution is undefined
-
-- [ ] Post-import file management
-
-- [ ] Write an update ROI category function in *DVH_SQL*
-
-- [X] Clean and add comments to main.py code
-
+- [ ] Integrate the Django code
+    - [ ] Create home page of app links
 
 ## Dependencies
 * [Python](https://www.python.org) 2.7 tested

@@ -1,0 +1,2 @@
+inbox /home/dvh/dicom/dvh
+imported /home/dvh/dicom/imported

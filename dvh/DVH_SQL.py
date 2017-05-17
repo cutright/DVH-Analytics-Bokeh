@@ -72,6 +72,14 @@ class DVH_SQL:
 
         return results
 
+    def update(self, table_name, column, value, condition_str):
+        update = "Update " + table_name + " SET " + column + " = '" \
+                 + str(value) \
+                 + "' WHERE " + condition_str
+
+        self.cursor.execute(update)
+        self.cnx.commit()
+
     def is_study_instance_uid_in_table(self, table_name, study_instance_uid):
         query = 'Select study_instance_uid from ' + table_name
         query += " where study_instance_uid = '" + study_instance_uid + "';"
