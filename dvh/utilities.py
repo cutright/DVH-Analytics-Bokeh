@@ -2,6 +2,75 @@ from SQL_to_Python import QuerySQL
 from DVH_SQL import DVH_SQL
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+import os
+import dicom
+
+
+class Temp_DICOM_FileSet:
+    def __init__(self):
+
+        # Read SQL configuration file
+        script_dir = os.path.dirname(__file__)
+        rel_path = "preferences/import_settings.txt"
+        abs_file_path = os.path.join(script_dir, rel_path)
+        with open(abs_file_path, 'r') as document:
+            for line in document:
+                line = line.split()
+                if not line:
+                    continue
+                if line[0] == 'review':
+                    start_path = line[1:][0]
+
+        self.plan = []
+        self.structure = []
+        self.dose = []
+        self.mrn = []
+
+        f = []
+        print str(datetime.now()), 'getting file list'
+        for root, dirs, files in os.walk(start_path, topdown=False):
+            for name in files:
+                f.append(os.path.join(root, name))
+        print str(datetime.now()), 'file list obtained'
+
+        plan_files = []
+        study_uid_plan = []
+        structure_files = []
+        study_uid_structure = []
+        dose_files = []
+        study_uid_dose = []
+        mrns = []
+
+        print str(datetime.now()), 'accumulating lists of plan, structure, and dose dicom files'
+        for x in range(0, len(f)):
+            try:
+                dicom_file = dicom.read_file(f[x])
+                if dicom_file.Modality.lower() == 'rtplan':
+                    plan_files.append(f[x])
+                    study_uid_plan.append(dicom_file.StudyInstanceUID)
+                elif dicom_file.Modality.lower() == 'rtstruct':
+                    structure_files.append(f[x])
+                    study_uid_structure.append(dicom_file.StudyInstanceUID)
+                elif dicom_file.Modality.lower() == 'rtdose':
+                    dose_files.append(f[x])
+                    study_uid_dose.append(dicom_file.StudyInstanceUID)
+                mrns.append(dicom_file.PatientID)
+            except Exception:
+                pass
+
+        print str(datetime.now()), 'sorting files by uid'
+
+        for a in range(0, len(plan_files)):
+            self.plan.append(plan_files[a])
+            self.mrn.append(mrns[a])
+            for b in range(0, len(structure_files)):
+                if study_uid_plan[a] == study_uid_structure[b]:
+                    self.structure.append(structure_files[b])
+            for c in range(0, len(dose_files)):
+                if study_uid_plan[a] == study_uid_dose[c]:
+                    self.dose.append(dose_files[c])
+
+        print str(datetime.now()), 'files sorted'
 
 
 def recalculate_ages():
