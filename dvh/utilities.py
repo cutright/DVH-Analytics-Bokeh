@@ -2,6 +2,7 @@ from SQL_to_Python import QuerySQL
 from DVH_SQL import DVH_SQL
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from dicompylercore import dicomparser
 import os
 import dicom
 
@@ -54,15 +55,16 @@ class Temp_DICOM_FileSet:
                 elif dicom_file.Modality.lower() == 'rtdose':
                     dose_files.append(f[x])
                     study_uid_dose.append(dicom_file.StudyInstanceUID)
-                mrns.append(dicom_file.PatientID)
             except Exception:
                 pass
 
         print str(datetime.now()), 'sorting files by uid'
 
-        for a in range(0, len(plan_files)):
+        self.count = len(plan_files)
+
+        for a in range(0, self.count):
             self.plan.append(plan_files[a])
-            self.mrn.append(mrns[a])
+            self.mrn.append(dicom.read_file(plan_files[a]).PatientID)
             for b in range(0, len(structure_files)):
                 if study_uid_plan[a] == study_uid_structure[b]:
                     self.structure.append(structure_files[b])
@@ -70,7 +72,26 @@ class Temp_DICOM_FileSet:
                 if study_uid_plan[a] == study_uid_dose[c]:
                     self.dose.append(dose_files[c])
 
+        if self.count == 0:
+            self.plan.append('')
+            self.mrn.append('')
+            self.structure.append('')
+            self.dose.append('')
+
         print str(datetime.now()), 'files sorted'
+
+    def get_roi_names(self, mrn):
+
+        structure_file = self.structure[self.mrn.index(mrn)]
+        rt_st = dicomparser.DicomParser(structure_file)
+        rt_structures = rt_st.GetStructures()
+
+        roi = {}
+        for key in rt_structures:
+            if rt_structures[key]['type'].upper() not in {'MARKER', 'REGISTRATION', 'ISOCENTER'}:
+                roi[key] = rt_structures[key]['name']
+
+        return roi
 
 
 def recalculate_ages():
