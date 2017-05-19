@@ -33,7 +33,8 @@ corresponding to each of the column in the queried table.
 
 - [X] Post-import file management
 
-- [ ] Add ability to plot a temporary plan not in the SQL DB
+- [X] Add ability to plot a temporary plan not in the SQL DB
+    - [ ] Determine cause of slow UI response
 
 - [X] Implement Orthanc DICOM Listener
 
