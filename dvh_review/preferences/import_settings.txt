@@ -1,0 +1,3 @@
+inbox /home/dvh/dicom/dvh
+imported /home/dvh/dicom/imported
+review /home/dvh/dicom/dvh_review
