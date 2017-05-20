@@ -4,12 +4,9 @@ from DVH_SQL import *
 class QuerySQL:
     def __init__(self, table_name, condition_str, *unique):
 
-        if table_name in {'Beams', 'DVHs', 'Plans', 'Rxs'}:
-            create_properties = True
-        else:
-            create_properties = False
+        table_name = table_name.lower()
 
-        if create_properties:
+        if table_name in {'beams', 'dvhs', 'plans', 'rxs'}:
             self.table_name = table_name
             self.condition_str = condition_str
             self.cnx = DVH_SQL()

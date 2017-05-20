@@ -5,6 +5,7 @@ from dateutil.relativedelta import relativedelta
 from dicompylercore import dicomparser
 import os
 import dicom
+import datetime
 
 
 class Temp_DICOM_FileSet:
@@ -125,3 +126,15 @@ def recalculate_ages():
         cnx.update('Plans', 'age', str(age), condition)
 
     cnx.cnx.close()
+
+
+def datetime_str_to_obj(datetime_str):
+
+    year = int(datetime_str[0:4])
+    month = int(datetime_str[4:6])
+    day = int(datetime_str[6:8])
+    hour = int(datetime_str[8:10])
+    minute = int(datetime_str[10:12])
+    second = int(datetime_str[12:14])
+
+    return datetime.datetime(year, month, day, hour, minute, second)

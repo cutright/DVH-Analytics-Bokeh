@@ -38,9 +38,9 @@ corresponding to each of the column in the queried table.
 
 - [X] Implement Orthanc DICOM Listener
 
+- [ ] Design install script for a venv
 
 ### Lower Priorities
-- [ ] Design install script for a venv
 
 - [ ] Validate dicompyler-core DVH calculations
 
@@ -53,7 +53,7 @@ corresponding to each of the column in the queried table.
 
 - [ ] Incorporate BED, TCP, NTCP calculations
 
-- [ ] Develop for PostgreSQL
+- [X] Develop for PostgreSQL
 
 - [ ] Track wedge info on 3D beams
 
@@ -64,7 +64,7 @@ corresponding to each of the column in the queried table.
 
 ## Dependencies
 * [Python](https://www.python.org) 2.7 tested
-* [MySQL](https://dev.mysql.com/downloads/mysql/) and [MySQL Connector](https://dev.mysql.com/downloads/connector/python/)
+* [PostgreSQL](https://www.postgresql.org/) and [psycopg2](http://initd.org/psycopg/)
 * [numpy](https://pypi.python.org/pypi/numpy) 1.12.1 tested
 * [pydicom](https://github.com/darcymason/pydicom) 0.9.9
 * [dicompyler-core](https://pypi.python.org/pypi/dicompyler-core) 0.5.2

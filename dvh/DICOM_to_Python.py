@@ -12,6 +12,7 @@ from dicompylercore import dicomparser, dvhcalc
 import datetime
 from dateutil.relativedelta import relativedelta
 from ROI_Name_Manager import *
+from utilities import datetime_str_to_obj
 
 
 # Each ROI class object contains data to fill an entire row of the SQL table 'DVHs'
@@ -158,9 +159,9 @@ class PlanRow:
         patient_orientation = rt_plan.PatientSetupSequence[0].PatientPosition
 
         # Contest self-evident, their utility is not (yet)
-        plan_time_stamp = rt_plan.RTPlanDate + rt_plan.RTPlanTime
-        struct_time_stamp = rt_structure.StructureSetDate + rt_structure.StructureSetTime
-        dose_time_stamp = rt_dose.ContentDate + rt_dose.ContentTime
+        plan_time_stamp = datetime_str_to_obj(rt_plan.RTPlanDate + rt_plan.RTPlanTime)
+        struct_time_stamp = datetime_str_to_obj(rt_structure.StructureSetDate + rt_structure.StructureSetTime)
+        dose_time_stamp = datetime_str_to_obj(rt_dose.ContentDate + rt_dose.ContentTime)
 
         # Record treatment planning system vendor, name, and version
         tps_manufacturer = rt_plan.Manufacturer
@@ -241,7 +242,7 @@ class PlanRow:
 
         # Will require a yet to be named function to determine this
         # Applicable for brachy and Gamma Knife, not yet supported
-        tx_time = 0
+        tx_time = '00:00:00'
 
         # Record resolution of dose grid
         dose_grid_resolution = [str(round(float(rt_dose.PixelSpacing[0]), 1)),

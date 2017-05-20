@@ -1,5 +1,4 @@
-user root
-password dvh
 host localhost
-database DVH
-raise_on_warnings True
+user nightowl
+dbname dvh
+port 5432

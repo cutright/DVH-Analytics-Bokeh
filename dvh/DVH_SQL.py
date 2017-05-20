@@ -7,8 +7,7 @@ Created on Sat Mar  4 11:33:10 2017
 """
 
 # code currently only supports MySQL by Oracle
-import mysql.connector
-from mysql.connector import Error
+import psycopg2
 import os
 from datetime import datetime
 
@@ -32,22 +31,17 @@ class DVH_SQL:
                 elif line[1:][0].lower() == 'false':
                     config[line[0]] = False
 
-        try:
-            cnx = mysql.connector.connect(**config)
+        cnx = psycopg2.connect(**config)
 
-        except Error as error:
-            print(error)
-
-        finally:
-            self.cnx = cnx
-            self.cursor = cnx.cursor()
+        self.cnx = cnx
+        self.cursor = cnx.cursor()
 
     # Executes lines within text file named 'sql_file_name' to SQL
     def execute_file(self, sql_file_name):
 
         for line in open(sql_file_name):
             self.cursor.execute(line)
-            self.cnx.commit()
+        self.cnx.commit()
 
     def check_table_exists(self, table_name):
 
@@ -134,8 +128,9 @@ class DVH_SQL:
                      str(plan.birth_date),
                      str(plan.age),
                      plan.patient_sex,
-                     plan.sim_study_date,
-                     plan.physician, plan.tx_site,
+                     str(plan.sim_study_date),
+                     plan.physician,
+                     plan.tx_site,
                      str(plan.rx_dose),
                      str(plan.fxs),
                      plan.tx_energies,
@@ -274,7 +269,7 @@ class DVH_SQL:
         return unique_values
 
     def get_column_names(self, table_name):
-        query = "select column_name from information_schema.columns where table_schema = 'DVH' and table_name = '"
+        query = "select column_name from information_schema.columns where table_name = '"
         query += table_name
         query += "';"
         self.cursor.execute(query)
