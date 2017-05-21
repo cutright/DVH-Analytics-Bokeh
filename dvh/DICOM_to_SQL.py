@@ -233,17 +233,17 @@ def move_files_to_imported_path(file_paths, imported_path):
         file_path = getattr(file_paths, file_type)
         file_name = file_path.split('/')[-1]
         new = '/'.join([imported_path, file_name])
-        os.rename(file_path, new)
+        try:
+            os.rename(file_path, new)
+        except:
+            os.mkdir(imported_path)
+            os.rename(file_path, new)
 
 
 def organize_dicom_files(path):
     initial_path = os.path.dirname(os.path.realpath(__file__))
-    
-    try:
-        os.chdir(path)
-    except:
-        os.mkdir(path)
-        os.chdir(path)
+
+    os.chdir(path)
 
     files = [f for f in os.listdir('.') if os.path.isfile(os.path.join('.', f))]
 
