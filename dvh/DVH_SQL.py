@@ -33,17 +33,7 @@ class DVH_SQL:
 
         self.dbname = config['dbname']
 
-        try:
-            cnx = psycopg2.connect(**config)
-        except:
-            cnx = psycopg2.connect(host=config['host'], user=config['user'], port=config['port'])
-            cursor = cnx.cursor()
-            line = "alter user " + config['user'] + " createdb;"
-            cursor.execute(line)
-            line = "create database " + self.dbname + ";"
-            cursor.execute(line)
-            cnx.close()
-            cnx = psycopg2.connect(**config)
+        cnx = psycopg2.connect(**config)
 
         self.cnx = cnx
         self.cursor = cnx.cursor()
@@ -252,10 +242,6 @@ class DVH_SQL:
         self.cnx.commit()
 
     def reinitialize_database(self):
-
-        if not self.does_db_exist():
-            line = "create databse " + self.dbname + ";"
-            self.cursor.execute(line)
 
         print str(datetime.now()), 'Dropping tables'
         self.cursor.execute('DROP TABLE IF EXISTS Plans;')

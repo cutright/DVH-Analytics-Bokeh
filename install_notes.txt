@@ -1,0 +1,59 @@
+Installation instructions for LiveFreeOrDICOM
+
+#############
+Mac OS Sierra
+#############
+
+---------------
+Pre-requisites:
+---------------
+Chrome or Firefox:
+The web views are not supported on Internet Explorer or Safari.
+
+PostgreSQL:
+If you are familiar with PostgreSQL, you simply need to fill in the login information in
+dvh/preferences/SQL_Connection.cnf.
+
+If you are unfamiliar with SQL, simply go here and download the PostgreSQL app: http://postgresapp.com/
+Open the app, Click "Start", then double-click "postgres" with the cylindrical database icon
+type the following in the SQL terminal:
+create database dvh;
+NOTE: You may replace dvh with any database name you wish, but you must update dbname in
+dvh/preferences/SQL_Connection.cnf to reflect what database name you chose.
+This app must be running when writing or accessing data.
+
+Xcode Command Line Tools:
+Make sure Xcode command line tools are installed
+If the full Xcode package is installed (from the Mac App Store), entire the following into a terminal window:
+xcode-select --install
+
+pip (python package management):
+If you do not already have pip, enter the following into a terminal window:
+easy_install pip
+
+---------------------------
+Setting up your environment
+---------------------------
+Download the entire source code from Github either via git or manual download (unzip and move to desired location).
+
+From a terminal window, change your directory to the LiveFreeOrDICOM folder (e.g., cd ~/LiveFreeOrDICOM)
+
+execute the install_mac.sh script by typing:
+./install_mac.sh
+
+------------------------
+Processing test files
+------------------------
+From the same directory as the previous step, type the following:
+python dvh/DICOM_to_SQL.py
+
+This will take several minutes. DICOM_to_SQL will process all dicom files located in the inbox as specified
+in the file dvh/preferences/import_settings.txt and move them into the location specified by imported.
+
+--------
+Web view
+--------
+From the same directory as the previous step, type the following:
+bokeh serve --show dvh/
+If Chrome or Firefox is not your default browswer, you'll need to copy and paste the url into Chrome or Firefox.
+NOTE: Safari sort of works, but intermittently cuts off the websocket... so it's not reliable.

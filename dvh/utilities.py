@@ -1,3 +1,6 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
 from SQL_to_Python import QuerySQL
 from DVH_SQL import DVH_SQL
 from datetime import datetime

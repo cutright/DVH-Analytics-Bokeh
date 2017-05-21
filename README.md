@@ -2,7 +2,9 @@
 DICOM to SQL DVH Database
 
 This code is intended for Radiation Oncology departments to build a SQL database of DVH's and various planning parameters from DICOM files (Plan, Structure, Dose).
-This is a work in progress.
+
+
+For installation instructions, see install_notes.txt
 
 ## Code organization
 #### *DICOM_to_Python*  
