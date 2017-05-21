@@ -9,3 +9,4 @@ sudo -H pip install Requests
 sudo -H pip install Tornado==4.4.2
 sudo -H pip install PyYaml
 sudo -H pip install bokeh
+sudo -H pip install psycopg2
