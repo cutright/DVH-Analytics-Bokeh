@@ -31,18 +31,22 @@ class DVH_SQL:
                 elif line[1:][0].lower() == 'false':
                     config[line[0]] = False
 
+        self.dbname = config['dbname']
+
         try:
             cnx = psycopg2.connect(**config)
         except:
-            cnx = psycopg2.connect(host=config['host'], user=config['Owls'], port=config['port'])
-            line = "create databse " + self.dbname + ";"
-            cnx.cursor.execute(line)
+            cnx = psycopg2.connect(host=config['host'], user=config['user'], port=config['port'])
+            cursor = cnx.cursor()
+            line = "alter user " + config['user'] + " createdb;"
+            cursor.execute(line)
+            line = "create database " + self.dbname + ";"
+            cursor.execute(line)
             cnx.close()
             cnx = psycopg2.connect(**config)
 
         self.cnx = cnx
         self.cursor = cnx.cursor()
-        self.dbname = config['dbname']
 
     # Executes lines within text file named 'sql_file_name' to SQL
     def execute_file(self, sql_file_name):
