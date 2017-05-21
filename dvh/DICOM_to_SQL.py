@@ -259,4 +259,5 @@ def organize_dicom_files(path):
 
 
 if __name__ == '__main__':
+    DVH_SQL().reinitialize_database()
     dicom_to_sql()

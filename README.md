@@ -31,7 +31,10 @@ corresponding to each of the column in the queried table.
 ## To Do List
 ### Higher Priorities
 
-- [ ] Design install script for a venv
+- [X] Design install script for a venv
+    - [X] Mac
+    - [ ] Ubuntu
+    - [ ] Windows
 
 - [X] Add ability to plot a temporary plan not in the SQL DB
     - [ ] Design new app for plan review

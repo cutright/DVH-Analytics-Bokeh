@@ -35,6 +35,7 @@ class DVH_SQL:
 
         self.cnx = cnx
         self.cursor = cnx.cursor()
+        self.dbname = config['dbname']
 
     # Executes lines within text file named 'sql_file_name' to SQL
     def execute_file(self, sql_file_name):
@@ -240,6 +241,11 @@ class DVH_SQL:
         self.cnx.commit()
 
     def reinitialize_database(self):
+
+        if not self.does_db_exist():
+            line = "create databse " + self.dbname + ";"
+            self.cursor.execute(line)
+
         print str(datetime.now()), 'Dropping tables'
         if self.check_table_exists('Plans'):
             self.cursor.execute('DROP TABLE Plans;')
@@ -257,6 +263,17 @@ class DVH_SQL:
         print str(datetime.now()), 'Executing create_tables.sql'
         self.execute_file(abs_file_path)
         print str(datetime.now()), 'Tables created'
+
+    def does_db_exist(self):
+        # Check if database exists
+        line = "SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower('"
+        line += self.dbname + "');"
+        self.cursor.execute(line)
+
+        if len(self.cursor.fetchone()) > 0:
+            return True
+        else:
+            return False
 
     def get_unique_values(self, table, column):
         query = "select distinct " + column + " from " + table + ";"
