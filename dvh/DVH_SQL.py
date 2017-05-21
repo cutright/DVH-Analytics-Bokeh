@@ -31,7 +31,14 @@ class DVH_SQL:
                 elif line[1:][0].lower() == 'false':
                     config[line[0]] = False
 
-        cnx = psycopg2.connect(**config)
+        try:
+            cnx = psycopg2.connect(**config)
+        except:
+            cnx = psycopg2.connect(host=config['host'], user=config['Owls'], port=config['port'])
+            line = "create databse " + self.dbname + ";"
+            cnx.cursor.execute(line)
+            cnx.close()
+            cnx = psycopg2.connect(**config)
 
         self.cnx = cnx
         self.cursor = cnx.cursor()
