@@ -247,17 +247,13 @@ class DVH_SQL:
             self.cursor.execute(line)
 
         print str(datetime.now()), 'Dropping tables'
-        if self.check_table_exists('Plans'):
-            self.cursor.execute('DROP TABLE Plans;')
-        if self.check_table_exists('DVHs'):
-            self.cursor.execute('DROP TABLE DVHs;')
-        if self.check_table_exists('Beams'):
-            self.cursor.execute('DROP TABLE Beams;')
-        if self.check_table_exists('Rxs'):
-            self.cursor.execute('DROP TABLE Rxs;')
+        self.cursor.execute('DROP TABLE IF EXISTS Plans;')
+        self.cursor.execute('DROP TABLE IF EXISTS DVHs;')
+        self.cursor.execute('DROP TABLE IF EXISTS Beams;')
+        self.cursor.execute('DROP TABLE IF EXISTS Rxs;')
         self.cnx.commit()
         print str(datetime.now()), 'Loading create_tables.sql'
-        script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
+        script_dir = os.path.dirname(__file__)
         rel_path = "preferences/create_tables.sql"
         abs_file_path = os.path.join(script_dir, rel_path)
         print str(datetime.now()), 'Executing create_tables.sql'
