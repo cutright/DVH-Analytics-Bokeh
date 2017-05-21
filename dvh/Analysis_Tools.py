@@ -93,7 +93,7 @@ class DVH:
             # Lookup the EUD a value for current roi
             if self.physician_roi[i] in eud_a_values:
                 current_a = eud_a_values[self.physician_roi[i]]
-            elif self.roi_type[i].lower() in {'gtv', 'ctv', 'ptv'}:
+            elif self.roi_type[i].lower()[0:3] in {'gtv', 'ctv', 'ptv'}:
                 current_a = float(-10)
             else:
                 current_a = float(1)

@@ -138,3 +138,12 @@ def datetime_str_to_obj(datetime_str):
     second = int(datetime_str[12:14])
 
     return datetime.datetime(year, month, day, hour, minute, second)
+
+
+def date_str_to_obj(date_str):
+
+    year = int(date_str[0:4])
+    month = int(date_str[4:6])
+    day = int(date_str[6:8])
+
+    return datetime.datetime(year, month, day)

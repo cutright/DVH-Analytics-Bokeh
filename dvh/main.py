@@ -18,9 +18,10 @@ from ROI_Name_Manager import DatabaseROIs
 from Analysis_Tools import DVH, get_study_instance_uids
 from DVH_SQL import DVH_SQL
 from SQL_to_Python import QuerySQL
-from bokeh.palettes import Category20_9 as palette
+from bokeh.palettes import Colorblind8 as palette
 from datetime import datetime
 from os.path import dirname, join
+from utilities import date_str_to_obj
 
 # Declare variables
 db_rois = DatabaseROIs()
@@ -92,7 +93,7 @@ def button_add_selector_row():
     old_type = main_add_selector_button.button_type
     main_add_selector_button.label = 'Updating Layout...'
     main_add_selector_button.button_type = 'warning'
-    query_row.append(AddSelectorRow())
+    query_row.append(SelectorRow())
     layout.children.insert(2 + len(query_row_type), query_row[-1].row)
     query_row_type.append('selector')
     update_update_button_status()
@@ -106,7 +107,7 @@ def button_add_range_row():
     old_type = main_add_range_button.button_type
     main_add_range_button.label = 'Updating Layout...'
     main_add_range_button.button_type = 'warning'
-    query_row.append(AddRangeRow())
+    query_row.append(RangeRow())
     layout.children.insert(2 + len(query_row_type), query_row[-1].row)
     query_row_type.append('range')
     update_update_button_status()
@@ -120,7 +121,7 @@ def button_add_endpoint_row():
     old_type = main_add_endpoint_button.button_type
     main_add_endpoint_button.label = 'Updating Layout...'
     main_add_endpoint_button.button_type = 'warning'
-    query_row.append(AddEndPointRow())
+    query_row.append(EndPointRow())
     layout.children.insert(2 + len(query_row_type), query_row[-1].row)
     query_row_type.append('endpoint')
     main_add_endpoint_button.label = old_label
@@ -236,6 +237,9 @@ def get_query():
                     value_high = query_row[i].text_max.value
                 else:
                     value_high = query_row[i].max_value
+                if var_name in {'sim_study_date', 'birth_date'}:
+                    value_low = "'" + value_low + "'::date"
+                    value_high = "'" + value_high + "'::date"
                 query_str = var_name + " between " + str(value_low) + " and " + str(value_high)
 
             if table == 'Plans':
@@ -300,7 +304,7 @@ def get_query():
 
 
 # This class adds a row suitable to filter discrete data from the SQL database
-class AddSelectorRow:
+class SelectorRow:
     def __init__(self):
 
         self.id = len(query_row)
@@ -342,7 +346,7 @@ class AddSelectorRow:
 
 
 # This class adds a row suitable to filter continuous data from the SQL database
-class AddRangeRow:
+class RangeRow:
     def __init__(self):
         self.id = len(query_row)
         self.category_options = range_categories.keys()
@@ -401,7 +405,7 @@ class AddRangeRow:
 
 
 # This class adds a row to calculate specified DVH endpoints
-class AddEndPointRow:
+class EndPointRow:
     def __init__(self):
 
         self.id = len(query_row)
