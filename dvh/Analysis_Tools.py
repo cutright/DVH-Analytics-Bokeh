@@ -6,7 +6,6 @@ Created on Thu Mar  9 18:48:19 2017
 """
 
 import numpy as np
-from prettytable import PrettyTable
 from SQL_to_Python import *
 import os
 
@@ -99,34 +98,6 @@ class DVH:
                 current_a = float(1)
             self.eud.append(calc_eud(current_dvh, current_a))
             self.eud_a_value.append(current_a)
-
-    def __repr__(self):
-        return self.roi_statistics()
-
-    def write_roi_statistics(self, file_path):
-        document = open(file_path[0], 'w')
-        document.write(self.roi_statistics())
-        document.close()
-
-    def roi_statistics(self):
-        # Only use if running code in a python console
-        # Print 'Pretty Table' of data
-        roi_table = PrettyTable()
-        roi_table.field_names = ['MRN', 'InstitutionalROI', 'PhysicianROI', 'ROIName', 'Volume',
-                                 'Min Dose', 'Mean Dose', 'Max Dose', 'EUD', 'a']
-        for i in range(0, self.count):
-            roi_table.add_row([self.mrn[i],
-                               self.roi_institutional[i],
-                               self.roi_physician[i],
-                               self.roi_name[i],
-                               np.round(self.volume[i], 2),
-                               self.min_dose[i],
-                               self.mean_dose[i],
-                               self.max_dose[i],
-                               np.round(self.eud[i], 2),
-                               self.eud_a_value[i]])
-
-        return roi_table.get_string()
 
     def get_percentile_dvh(self, percentile):
         dvh = np.zeros(self.bin_count)

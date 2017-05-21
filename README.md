@@ -68,7 +68,6 @@ corresponding to each of the column in the queried table.
             * pydicom 1.0 is preferred and can be installed via pip using: pip install https://github.com/darcymason/pydicom/archive/master.zip
         * [matplotlib](http://matplotlib.sourceforge.net/) 1.3.0 or higher (for DVH calculation)
         * [six](https://pythonhosted.org/six/) 1.5 or higher
-* [Pretty Table](https://pypi.python.org/pypi/PrettyTable/) 0.7.2 (optional, for command line only)
 * [Bokeh](http://bokeh.pydata.org/en/latest/index.html) 0.12.5
     * requirements per [developer](http://bokeh.pydata.org/en/latest/docs/installation.html)
         * [NumPy](http://www.numpy.org/)
