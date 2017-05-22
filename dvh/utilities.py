@@ -8,7 +8,6 @@ from dateutil.relativedelta import relativedelta
 from dicompylercore import dicomparser
 import os
 import dicom
-import datetime
 
 
 class Temp_DICOM_FileSet:

@@ -18,32 +18,59 @@ from roi_name_manager import DatabaseROIs
 from analysis_tools import DVH, get_study_instance_uids
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL
-from bokeh.palettes import Colorblind8 as palette
+from bokeh.palettes import Category20_9 as palette
 from datetime import datetime
-from os.path import dirname, join
+from utilities import Temp_DICOM_FileSet
+from dicompylercore import dvhcalc, dicomparser
+import dicom
 
 # Declare variables
+widget_row_origin = 2
 db_rois = DatabaseROIs()
 colors = itertools.cycle(palette)
-current_dvh = []
-update_warning = True
 query_row = []
 query_row_type = []
 endpoint_columns = {}
-
+temp_dvh_info = Temp_DICOM_FileSet()
 for i in range(0, 10):
     endpoint_columns[i] = ''
-
+dvh_review_mrns = temp_dvh_info.mrn
+if dvh_review_mrns[0] != '':
+    dvh_review_rois = temp_dvh_info.get_roi_names(dvh_review_mrns[0]).values()
+else:
+    dvh_review_rois = ['']
+x = []
+y = []
 
 # Initialize ColumnDataSource variables
-source = ColumnDataSource(data=dict(color=[], x=[], y=[], mrn=[],
-                                    ep1=[], ep2=[], ep3=[], ep4=[], ep5=[], ep6=[], ep7=[], ep8=[]))
+temp = []
+temp_vec = []
+temp_null = []
+for i in range(0, 6):
+    temp.append(0)
+    temp_vec.append([''])
+    temp_null.append('')
+source = ColumnDataSource(data=dict(x=temp_vec,
+                                    y=temp_vec,
+                                    roi_name=temp_null,
+                                    volume=temp,
+                                    min_dose=temp,
+                                    mean_dose=temp,
+                                    max_dose=temp,
+                                    eud=temp,
+                                    eud_a_value=temp,
+                                    ep1=temp_null,
+                                    ep2=temp_null,
+                                    ep3=temp_null,
+                                    ep4=temp_null,
+                                    ep5=temp_null,
+                                    ep6=temp_null,
+                                    ep7=temp_null,
+                                    ep8=temp_null))
 source_patch = ColumnDataSource(data=dict(x_patch=[], y_patch=[]))
 source_stats = ColumnDataSource(data=dict(x=[], min=[], q1=[], mean=[], median=[], q3=[], max=[]))
-source_beams = ColumnDataSource(data=dict())
-source_plans = ColumnDataSource(data=dict())
-source_rxs = ColumnDataSource(data=dict())
-source_endpoint_names = ColumnDataSource(data=dict(ep1=[], ep2=[], ep3=[], ep4=[], ep5=[], ep6=[], ep7=[], ep8=[]))
+source_endpoint_names = ColumnDataSource(data=dict(ep1=[''], ep2=[''], ep3=[''], ep4=[''], ep5=[''],
+                                                   ep6=[''], ep7=[''], ep8=['']))
 source_endpoints = ColumnDataSource(data=dict())
 
 
@@ -64,26 +91,26 @@ selector_categories = {'ROI Institutional Category': {'var_name': 'institutional
                        'Normalization': {'var_name': 'normalization_method', 'table': 'Rxs'},
                        'Treatment Machine': {'var_name': 'treatment_machine', 'table': 'Beams'},
                        'Heterogeneity Correction': {'var_name': 'heterogeneity_correction', 'table': 'Plans'}}
-range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 'source': source_plans},
-                    'Birth Date': {'var_name': 'birth_date', 'table': 'Plans', 'units': '', 'source': source_plans},
-                    'Planned Fractions': {'var_name': 'fxs', 'table': 'Plans', 'units': '', 'source': source_plans},
-                    'Rx Dose': {'var_name': 'rx_dose', 'table': 'Plans', 'units': 'Gy', 'source': source_plans},
-                    'Rx Isodose': {'var_name': 'rx_percent', 'table': 'Rxs', 'units': '%', 'source': source_rxs},
-                    'Simulation Date': {'var_name': 'sim_study_date', 'table': 'Plans', 'units': '', 'source': source_plans},
-                    'Total Plan MU': {'var_name': 'total_mu', 'table': 'Plans', 'units': '', 'source': source_plans},
-                    'Fraction Dose': {'var_name': 'fx_dose', 'table': 'Rxs', 'units': 'Gy', 'source': source_rxs},
-                    'Beam Dose': {'var_name': 'beam_dose', 'table': 'Beams', 'units': 'Gy', 'source': source_beams},
-                    'Beam MU': {'var_name': 'beam_mu', 'table': 'Beams', 'units': '', 'source': source_beams},
-                    'Control Point Count': {'var_name': 'control_point_count', 'table': 'Beams', 'units': '', 'source': source_beams},
-                    'Collimator Angle': {'var_name': 'collimator_angle', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'Couch Angle': {'var_name': 'couch_angle', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'Gantry Start Angle': {'var_name': 'gantry_start', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'Gantry End Angle': {'var_name': 'gantry_end', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'SSD': {'var_name': 'ssd', 'table': 'Beams', 'units': 'cm', 'source': source_beams},
-                    'ROI Min Dose': {'var_name': 'min_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
-                    'ROI Mean Dose': {'var_name': 'mean_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
-                    'ROI Max Dose': {'var_name': 'max_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
-                    'ROI Volume': {'var_name': 'volume', 'table': 'DVHs', 'units': 'cc', 'source': source}}
+range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': ''},
+                    'Birth Date': {'var_name': 'birth_date', 'table': 'Plans', 'units': ''},
+                    'Planned Fractions': {'var_name': 'fxs', 'table': 'Plans', 'units': ''},
+                    'Rx Dose': {'var_name': 'rx_dose', 'table': 'Plans', 'units': 'Gy'},
+                    'Rx Isodose': {'var_name': 'rx_percent', 'table': 'Rxs', 'units': '%'},
+                    'Simulation Date': {'var_name': 'sim_study_date', 'table': 'Plans', 'units': ''},
+                    'Total Plan MU': {'var_name': 'total_mu', 'table': 'Plans', 'units': ''},
+                    'Fraction Dose': {'var_name': 'fx_dose', 'table': 'Rxs', 'units': 'Gy'},
+                    'Beam Dose': {'var_name': 'beam_dose', 'table': 'Beams', 'units': 'Gy'},
+                    'Beam MU': {'var_name': 'beam_mu', 'table': 'Beams', 'units': ''},
+                    'Control Point Count': {'var_name': 'control_point_count', 'table': 'Beams', 'units': ''},
+                    'Collimator Angle': {'var_name': 'collimator_angle', 'table': 'Beams', 'units': 'deg'},
+                    'Couch Angle': {'var_name': 'couch_angle', 'table': 'Beams', 'units': 'deg'},
+                    'Gantry Start Angle': {'var_name': 'gantry_start', 'table': 'Beams', 'units': 'deg'},
+                    'Gantry End Angle': {'var_name': 'gantry_end', 'table': 'Beams', 'units': 'deg'},
+                    'SSD': {'var_name': 'ssd', 'table': 'Beams', 'units': 'cm'},
+                    'ROI Min Dose': {'var_name': 'min_dose', 'table': 'DVHs', 'units': 'Gy'},
+                    'ROI Mean Dose': {'var_name': 'mean_dose', 'table': 'DVHs', 'units': 'Gy'},
+                    'ROI Max Dose': {'var_name': 'max_dose', 'table': 'DVHs', 'units': 'Gy'},
+                    'ROI Volume': {'var_name': 'volume', 'table': 'DVHs', 'units': 'cc'}}
 
 
 # Functions that add widget rows
@@ -93,8 +120,8 @@ def button_add_selector_row():
     old_type = main_add_selector_button.button_type
     main_add_selector_button.label = 'Updating Layout...'
     main_add_selector_button.button_type = 'warning'
-    query_row.append(SelectorRow())
-    layout.children.insert(2 + len(query_row_type), query_row[-1].row)
+    query_row.append(AddSelectorRow())
+    layout.children.insert(widget_row_origin + len(query_row_type), query_row[-1].row)
     query_row_type.append('selector')
     update_update_button_status()
     main_add_selector_button.label = old_label
@@ -107,25 +134,12 @@ def button_add_range_row():
     old_type = main_add_range_button.button_type
     main_add_range_button.label = 'Updating Layout...'
     main_add_range_button.button_type = 'warning'
-    query_row.append(RangeRow())
-    layout.children.insert(2 + len(query_row_type), query_row[-1].row)
+    query_row.append(AddRangeRow())
+    layout.children.insert(widget_row_origin + len(query_row_type), query_row[-1].row)
     query_row_type.append('range')
     update_update_button_status()
     main_add_range_button.label = old_label
     main_add_range_button.button_type = old_type
-
-
-def button_add_endpoint_row():
-    global query_row_type
-    old_label = main_add_endpoint_button.label
-    old_type = main_add_endpoint_button.button_type
-    main_add_endpoint_button.label = 'Updating Layout...'
-    main_add_endpoint_button.button_type = 'warning'
-    query_row.append(EndPointRow())
-    layout.children.insert(2 + len(query_row_type), query_row[-1].row)
-    query_row_type.append('endpoint')
-    main_add_endpoint_button.label = old_label
-    main_add_endpoint_button.button_type = old_type
 
 
 # Updates query row ids (after row deletion)
@@ -144,42 +158,19 @@ def update_all_range_endpoints():
             query_row[i].update_range_values(query_row[i].select_category.value)
 
 
-# Determines if the physician has been specified
-# will be used to remove the ability to select two physicians
-# and also update physician rois for only the specified physician
-def is_physician_set():
-    global query_row, query_row_type
-    for i in range(1, len(query_row)):
-        if query_row_type[i] == 'selector':
-            if query_row[i].select_category.value == "Physician":
-                return True
-    return False
-
-
-# returns the physician specified
-def get_physician():
-    global query_row, query_row_type
-    for i in range(1, len(query_row)):
-        if query_row_type[i] == 'selector':
-            if query_row[i].select_category.value == "Physician":
-                return query_row[i].select_value.value
-    return None
-
-
 # main update function
 def update_data():
-    global query_row_type, query_row, current_dvh
+    global query_row_type, query_row
     old_update_button_label = update_button.label
     old_update_button_type = update_button.button_type
     update_button.label = 'Updating...'
     update_button.button_type = 'warning'
     uids, dvh_query_str = get_query()
     print str(datetime.now()), 'getting dvh data'
-    current_dvh = DVH(uid=uids, dvh_condition=dvh_query_str)
-    print str(datetime.now()), 'initializing source data', current_dvh.query
-    update_dvh_data(current_dvh)
+    current_dvhs = DVH(uid=uids, dvh_condition=dvh_query_str)
+    print str(datetime.now()), 'initializing source data', current_dvhs.query
+    update_dvh_data(current_dvhs)
     update_all_range_endpoints()
-    update_endpoint_data(current_dvh)
     update_button.label = old_update_button_label
     update_button.button_type = old_update_button_type
 
@@ -193,27 +184,13 @@ def update_update_button_status():
         update_button.label = "Large Update (" + str(count) + ")"
     else:
         update_button.button_type = "success"
-        update_button.label = "Update"
-
-
-# Ticker function for abs/rel dose radio buttons
-# any change will call update_data, if any source data has been retrieved from SQL
-def radio_group_dose_ticker(attr, old, new):
-    if source.data['x'] != '':
-        update_data()
-
-
-# Ticker function for abs/rel volume radio buttons
-# any change will call update_data, if any source data has been retrieved from SQL
-def radio_group_volume_ticker(attr, old, new):
-    if source.data['x'] != '':
-        update_data()
+        update_button.label = "Update Stats"
 
 
 # This function retuns the list of information needed to execute QuerySQL from
 # SQL_to_Python.py (i.e., uids and dvh_condition
 def get_query():
-    global query_row_type, query_row, current_dvh
+    global query_row_type, query_row
     plan_query_map = {}
     rx_query_map = {}
     beam_query_map = {}
@@ -237,9 +214,6 @@ def get_query():
                     value_high = query_row[i].text_max.value
                 else:
                     value_high = query_row[i].max_value
-                if var_name in {'sim_study_date', 'birth_date'}:
-                    value_low = "'" + value_low + "'::date"
-                    value_high = "'" + value_high + "'::date"
                 query_str = var_name + " between " + str(value_low) + " and " + str(value_high)
 
             if table == 'Plans':
@@ -304,7 +278,7 @@ def get_query():
 
 
 # This class adds a row suitable to filter discrete data from the SQL database
-class SelectorRow:
+class AddSelectorRow:
     def __init__(self):
 
         self.id = len(query_row)
@@ -338,7 +312,7 @@ class SelectorRow:
         update_update_button_status()
 
     def delete_row(self):
-        del (layout.children[2 + self.id])
+        del (layout.children[widget_row_origin + self.id])
         query_row_type.pop(self.id)
         query_row.pop(self.id)
         update_query_row_ids()
@@ -346,7 +320,7 @@ class SelectorRow:
 
 
 # This class adds a row suitable to filter continuous data from the SQL database
-class RangeRow:
+class AddRangeRow:
     def __init__(self):
         self.id = len(query_row)
         self.category_options = range_categories.keys()
@@ -386,18 +360,14 @@ class RangeRow:
     def update_range_values(self, new):
         table_new = range_categories[new]['table']
         var_name_new = range_categories[new]['var_name']
-        if source.data['mrn']:
-            self.min_value = min(range_categories[new]['source'].data[var_name_new])
-            self.max_value = max(range_categories[new]['source'].data[var_name_new])
-        else:
-            self.min_value = DVH_SQL().get_min_value(table_new, var_name_new)
-            self.max_value = DVH_SQL().get_max_value(table_new, var_name_new)
+        self.min_value = DVH_SQL().get_min_value(table_new, var_name_new)
+        self.max_value = DVH_SQL().get_max_value(table_new, var_name_new)
         self.text_min.title = 'Min: ' + str(self.min_value) + ' ' + range_categories[new]['units']
         self.text_max.title = 'Max: ' + str(self.max_value) + ' ' + range_categories[new]['units']
         update_update_button_status()
 
     def delete_row(self):
-        del (layout.children[2 + self.id])
+        del (layout.children[widget_row_origin + self.id])
         query_row_type.pop(self.id)
         query_row.pop(self.id)
         update_query_row_ids()
@@ -405,8 +375,8 @@ class RangeRow:
 
 
 # This class adds a row to calculate specified DVH endpoints
-class EndPointRow:
-    def __init__(self):
+class AddEndPointRow:
+    def __init__(self, instance):
 
         self.id = len(query_row)
         self.options = ["Dose to Vol", "Vol of Dose"]
@@ -418,47 +388,39 @@ class EndPointRow:
         self.units_out = RadioButtonGroup(labels=self.unit_labels[1], active=1, width=225)
         self.units_out.on_change('active', self.endpoint_units_out_ticker)
 
-        self.text_input = TextInput(value='', title="Volume (%):", width=225)
+        self.text_input = TextInput(value='', title="Volume (%):", width=300)
         self.text_input.on_change('value', self.endpoint_calc_ticker)
 
         self.units = RadioButtonGroup(labels=self.unit_labels[0], active=0, width=225)
         self.units.on_change('active', self.endpoint_units_ticker)
 
-        self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
-        self.delete_last_row.on_click(self.delete_row)
+        self.label = PreText(text='Column ' + str(instance), width=100)
 
-        self.row = row(self.select_category,
+        self.row = row(self.label,
+                       self.select_category,
                        self.units_out,
                        self.text_input,
-                       self.units,
-                       self.delete_last_row)
+                       self.units)
 
     def endpoint_category_ticker(self, attrname, old, new):
         self.update_text_input_title()
         self.units.labels = self.unit_labels[new]
         self.units_out.labels = self.unit_labels[old]
         if self.text_input.value != '':
-            update_endpoint_data(current_dvh)
+            update_endpoint_data()
 
     def endpoint_calc_ticker(self, attrname, old, new):
         if self.text_input.value != '':
-            update_endpoint_data(current_dvh)
+            update_endpoint_data()
 
     def endpoint_units_ticker(self, attrname, old, new):
         self.update_text_input_title()
         if self.text_input.value != '':
-            update_endpoint_data(current_dvh)
+            update_endpoint_data()
 
     def endpoint_units_out_ticker(self, attrname, old, new):
         if self.text_input.value != '':
-            update_endpoint_data(current_dvh)
-
-    def delete_row(self):
-        del (layout.children[2 + self.id])
-        query_row_type.pop(self.id)
-        query_row.pop(self.id)
-        update_query_row_ids()
-        update_endpoint_data(current_dvh)
+            update_endpoint_data()
 
     def update_text_input_title(self):
         if self.select_category.active == 0:
@@ -487,61 +449,14 @@ def update_dvh_data(dvh):
     y_scale = []
     for i in range(0, dvh.count):
         endpoint_columns.append('')
-        if radio_group_dose.active == 0:
-            x_data.append(x_axis.tolist())
-            x_scale.append('Gy')
-        else:
-            x_data.append(np.divide(x_axis, dvh.rx_dose[i]).tolist())
-            x_scale.append('%RxDose')
-        if radio_group_volume.active == 0:
-            y_data.append(np.multiply(dvh.dvh[:, i], dvh.volume[i]).tolist())
-            y_scale.append('cm^3')
-        else:
-            y_data.append(dvh.dvh[:, i].tolist())
-            y_scale.append('%Vol')
-    print str(datetime.now()), 'writing source.data'
-    source.data = {'mrn': dvh.mrn,
-                   'uid': dvh.study_instance_uid,
-                   'roi_institutional': dvh.institutional_roi,
-                   'roi_physician': dvh.physician_roi,
-                   'roi_name': dvh.roi_name,
-                   'roi_type': dvh.roi_type,
-                   'rx_dose': dvh.rx_dose,
-                   'volume': dvh.volume,
-                   'min_dose': dvh.min_dose,
-                   'mean_dose': dvh.mean_dose,
-                   'max_dose': dvh.max_dose,
-                   'eud': dvh.eud,
-                   'eud_a_value': dvh.eud_a_value,
-                   'x': x_data,
-                   'y': y_data,
-                   'color': line_colors,
-                   'ep1': endpoint_columns,
-                   'ep2': endpoint_columns,
-                   'ep3': endpoint_columns,
-                   'ep4': endpoint_columns,
-                   'ep5': endpoint_columns,
-                   'ep6': endpoint_columns,
-                   'ep7': endpoint_columns,
-                   'ep8': endpoint_columns,
-                   'x_scale': x_scale,
-                   'y_scale': y_scale}
-    print str(datetime.now()), 'source.data set'
+        x_data.append(x_axis.tolist())
+        y_data.append(dvh.dvh[:, i].tolist())
+
     print str(datetime.now()), 'beginning stat calcs'
     update_button.label = 'Calculating stats...'
 
-    if radio_group_dose.active == 1:
-        stat_dose_scale = 'relative'
-        x_axis = dvh.get_stat_dvh(type=False, dose=stat_dose_scale)
-    else:
-        stat_dose_scale = 'absolute'
-    if radio_group_volume.active == 0:
-        stat_volume_scale = 'absolute'
-    else:
-        stat_volume_scale = 'relative'
-
     print str(datetime.now()), 'calculating patches'
-    stat_dvhs = dvh.get_standard_stat_dvh(dose=stat_dose_scale, volume=stat_volume_scale)
+    stat_dvhs = dvh.get_standard_stat_dvh(dose='absolute', volume='relative')
 
     print str(datetime.now()), 'patches calculated'
 
@@ -558,15 +473,6 @@ def update_dvh_data(dvh):
 
     print str(datetime.now()), 'stats set'
 
-    if radio_group_dose.active == 0:
-        dvh_plots.xaxis.axis_label = "Dose (Gy)"
-    else:
-        dvh_plots.xaxis.axis_label = "Relative Dose (to Rx)"
-    if radio_group_volume.active == 0:
-        dvh_plots.yaxis.axis_label = "Absolute Volume (cc)"
-    else:
-        dvh_plots.yaxis.axis_label = "Relative Volume"
-
     update_beam_data(dvh.study_instance_uid)
     update_plan_data(dvh.study_instance_uid)
     update_rx_data(dvh.study_instance_uid)
@@ -577,50 +483,12 @@ def update_beam_data(uids):
     cond_str = "study_instance_uid in ('" + "', '".join(uids) + "')"
     beam_data = QuerySQL('Beams', cond_str)
 
-    source_beams.data = {'mrn': beam_data.mrn,
-                         'uid': beam_data.study_instance_uid,
-                         'beam_dose': beam_data.beam_dose,
-                         'beam_energy': beam_data.beam_energy,
-                         'beam_mu': beam_data.beam_mu,
-                         'beam_name': beam_data.beam_name,
-                         'beam_number': beam_data.beam_number,
-                         'beam_type': beam_data.beam_type,
-                         'collimator_angle': beam_data.collimator_angle,
-                         'control_point_count': beam_data.control_point_count,
-                         'couch_angle': beam_data.couch_angle,
-                         'fx_count': beam_data.fx_count,
-                         'fx_grp_beam_count': beam_data.fx_grp_beam_count,
-                         'fx_grp_number': beam_data.fx_grp_number,
-                         'gantry_end': beam_data.gantry_end,
-                         'gantry_rot_dir': beam_data.gantry_rot_dir,
-                         'gantry_start': beam_data.gantry_start,
-                         'radiation_type': beam_data.radiation_type,
-                         'ssd': beam_data.ssd,
-                         'treatment_machine': beam_data.treatment_machine}
-
 
 # updates plan ColumnSourceData for a given list of uids
 def update_plan_data(uids):
 
     cond_str = "study_instance_uid in ('" + "', '".join(uids) + "')"
     plan_data = QuerySQL('Plans', cond_str)
-
-    source_plans.data = {'mrn': plan_data.mrn,
-                         'uid': plan_data.study_instance_uid,
-                         'age': plan_data.age,
-                         'birth_date': plan_data.birth_date,
-                         'dose_grid_res': plan_data.dose_grid_res,
-                         'fxs': plan_data.fxs,
-                         'patient_orientation': plan_data.patient_orientation,
-                         'patient_sex': plan_data.patient_sex,
-                         'physician': plan_data.physician,
-                         'rx_dose': plan_data.rx_dose,
-                         'sim_study_date': plan_data.sim_study_date,
-                         'total_mu': plan_data.total_mu,
-                         'tx_energies': plan_data.tx_energies,
-                         'tx_modality': plan_data.tx_modality,
-                         'tx_site': plan_data.tx_site,
-                         'heterogeneity_correction': plan_data.heterogeneity_correction}
 
 
 # updates rx ColumnSourceData for a given list of uids
@@ -629,24 +497,11 @@ def update_rx_data(uids):
     cond_str = "study_instance_uid in ('" + "', '".join(uids) + "')"
     rx_data = QuerySQL('Rxs', cond_str)
 
-    source_rxs.data = {'mrn': rx_data.mrn,
-                       'uid': rx_data.study_instance_uid,
-                       'plan_name': rx_data.plan_name,
-                       'fx_dose': rx_data.fx_dose,
-                       'rx_percent': rx_data.rx_percent,
-                       'fxs': rx_data.fxs,
-                       'rx_dose': rx_data.rx_dose,
-                       'fx_grp_count': rx_data.fx_grp_count,
-                       'fx_grp_name': rx_data.fx_grp_name,
-                       'fx_grp_number': rx_data.fx_grp_number,
-                       'normalization_method': rx_data.normalization_method,
-                       'normalization_object': rx_data.normalization_object}
-
 
 # updates endpoint ColumnSourceData for a given DVH class from Analysis_Tools.py
 # note that endpoint ColumnSourceData exits in dvh data ColumnSourceData (i.e.,
 # the main ColumnSourceData variable, or 'source')
-def update_endpoint_data(dvh):
+def update_endpoint_data():
     global query_row, query_row_type, endpoint_columns
     for i in range(0, 8):
         endpoint_columns[i] = ''
@@ -678,13 +533,13 @@ def update_endpoint_data(dvh):
             counter += 1
     for i in range(counter, 8):
         endpoints_map[i] = []
-        for j in range(0, dvh.count):
+        for j in range(0, 1):
             endpoints_map[i].append('')
 
     tuple_list = {}
     for i in range(0, 8):
         current_tuple_list = []
-        for j in range(0, dvh.count):
+        for j in range(0, 1):
             current_tuple_list.append(tuple([j, endpoints_map[i][j]]))
         tuple_list[i] = current_tuple_list
 
@@ -716,6 +571,75 @@ def update_endpoint_data(dvh):
                                                         formatter=NumberFormatter(format="0.00"))
 
 
+def update_dvh_review_mrns():
+    global temp_dvh_info, dvh_review_mrns
+    temp_dvh_info = Temp_DICOM_FileSet()
+    dvh_review_mrns = temp_dvh_info.mrn
+    select_reviewed_mrn.options = dvh_review_mrns
+
+
+def update_dvh_review_rois(attr, old, new):
+    global temp_dvh_info, dvh_review_rois
+    initial_button_type = calculate_review_dvh_button.button_type
+    calculate_review_dvh_button.button_type = "warning"
+    initial_label = calculate_review_dvh_button.label
+    calculate_review_dvh_button.label = "Updating..."
+    if new != '':
+        dvh_review_rois = temp_dvh_info.get_roi_names(new).values()
+        select_reviewed_dvh.options = dvh_review_rois
+        select_reviewed_dvh.value = dvh_review_rois[0]
+    else:
+        select_reviewed_dvh.options = ['']
+        select_reviewed_dvh.value = ['']
+
+    calculate_review_dvh_button.button_type = initial_button_type
+    calculate_review_dvh_button.label = initial_label
+
+
+def calculate_review_dvh():
+    global temp_dvh_info, dvh_review_rois, x, y
+
+    initial_button_type = calculate_review_dvh_button.button_type
+    initial_button_label = calculate_review_dvh_button.label
+    calculate_review_dvh_button.button_type = 'warning'
+    calculate_review_dvh_button.label = 'Calculating...'
+
+    file_index = temp_dvh_info.mrn.index(select_reviewed_mrn.value)
+    roi_index = dvh_review_rois.index(select_reviewed_dvh.value)
+    structure_file = temp_dvh_info.structure[file_index]
+    dose_file = temp_dvh_info.dose[file_index]
+    key = temp_dvh_info.get_roi_names(select_reviewed_mrn.value).keys()[roi_index]
+
+    rt_st = dicomparser.DicomParser(structure_file)
+    rt_structures = rt_st.GetStructures()
+    review_dvh = dvhcalc.get_dvh(structure_file, dose_file, key)
+
+    roi_name = rt_structures[key]['name']
+    volume = review_dvh.volume
+    min_dose = review_dvh.min
+    mean_dose = review_dvh.mean
+    max_dose = review_dvh.max
+    eud = 0
+    eud_a_value = 0
+    x = review_dvh.bincenters
+    y = np.divide(review_dvh.counts, max(review_dvh.counts)).tolist()
+
+    patches = {'x': [(0, x)],
+               'y': [(0, y)],
+               'roi_name': [(0, roi_name)],
+               'volume': [(0, volume)],
+               'min_dose': [(0, min_dose)],
+               'mean_dose': [(0, mean_dose)],
+               'max_dose': [(0, max_dose)],
+               'eud': [(0, eud)],
+               'eud_a_value': [(0, eud_a_value)]}
+
+    source.patch(patches)
+
+    calculate_review_dvh_button.button_type = initial_button_type
+    calculate_review_dvh_button.label = initial_button_label
+
+
 def date_str_to_SQL_format(date, **kwargs):
 
     if kwargs['type'] == 'start':
@@ -743,13 +667,7 @@ def date_str_to_SQL_format(date, **kwargs):
 
 
 # set up layout
-
-hover = HoverTool(
-        tooltips=[
-            ("(x,y)", "($x, $y)"),
-        ]
-    )
-tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
+tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save,hover"
 dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
 
 # Add statistical plots to figure
@@ -789,18 +707,7 @@ stats_max = dvh_plots.line('x', 'max',
                            alpha=0.2)
 
 # Add all DVHs, but hide them until selected
-dvh_plots.multi_line('x', 'y',
-                     source=source,
-                     selection_color='color',
-                     line_width=2,
-                     alpha=0,
-                     nonselection_alpha=0,
-                     selection_alpha=1)
-
-dvh_plots.add_tools(HoverTool(show_arrow=False,
-                              line_policy='next',
-                              tooltips=[('Dose', '$x'),
-                                        ('Volume', '$y')]))
+dvh_plots.multi_line('x', 'y', source=source, line_width=2)
 
 # Shaded region between Q1 and Q3
 dvh_plots.patch('x_patch', 'y_patch',
@@ -827,22 +734,18 @@ dvh_plots.legend.click_policy = "hide"
 
 # Set up DataTable for dvhs
 data_table_title = PreText(text="DVHs", width=1000)
-columns = [TableColumn(field="mrn", title="MRN", width=175),
-           TableColumn(field="roi_name", title="ROI Name"),
-           TableColumn(field="roi_type", title="ROI Type", width=80),
-           TableColumn(field="rx_dose", title="Rx Dose", width=100, formatter=NumberFormatter(format="0.00")),
+columns = [TableColumn(field="roi_name", title="ROI Name"),
            TableColumn(field="volume", title="Volume", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="min_dose", title="Min Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="mean_dose", title="Mean Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="max_dose", title="Max Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="eud", title="EUD", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="eud_a_value", title="a", width=80)]
-data_table = DataTable(source=source, columns=columns, width=1000, selectable=True)
+data_table = DataTable(source=source, columns=columns, width=1000, height=60)
 
 # Set up EndPoint DataTable
 endpoint_table_title = PreText(text="DVH Endpoints", width=1000)
-columns = [TableColumn(field="mrn", title="MRN", width=160),
-           TableColumn(field="ep1", title=endpoint_columns[0], width=120),
+columns = [TableColumn(field="ep1", title=endpoint_columns[0], width=120),
            TableColumn(field="ep2", title=endpoint_columns[1], width=120),
            TableColumn(field="ep3", title=endpoint_columns[2], width=120),
            TableColumn(field="ep4", title=endpoint_columns[3], width=120),
@@ -850,84 +753,32 @@ columns = [TableColumn(field="mrn", title="MRN", width=160),
            TableColumn(field="ep6", title=endpoint_columns[5], width=120),
            TableColumn(field="ep7", title=endpoint_columns[6], width=120),
            TableColumn(field="ep8", title=endpoint_columns[7], width=120)]
-data_table_endpoints = DataTable(source=source, columns=columns, width=1000, selectable=True)
+data_table_endpoints = DataTable(source=source, columns=columns, width=1000, height=75)
 
-# Set up Beams DataTable
-beam_table_title = PreText(text="Beams", width=1500)
-columns = [TableColumn(field="mrn", title="MRN", width=105),
-           TableColumn(field="beam_number", title="Beam", width=50),
-           TableColumn(field="fx_grp_beam_count", title="Beams", width=50),
-           TableColumn(field="fx_grp_number", title="Rx Grp", width=60),
-           TableColumn(field="fx_count", title="Fxs", width=50),
-           TableColumn(field="beam_name", title="Name", width=150),
-           TableColumn(field="beam_dose", title="Dose", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="beam_energy", title="Energy", width=80),
-           TableColumn(field="beam_mu", title="MU", width=100, formatter=NumberFormatter(format="0.0")),
-           TableColumn(field="beam_type", title="Type", width=100),
-           TableColumn(field="collimator_angle", title="Col Ang", width=80, formatter=NumberFormatter(format="0.0")),
-           TableColumn(field="control_point_count", title="CPs", width=80),
-           TableColumn(field="couch_angle", title="Couch Ang", width=80, formatter=NumberFormatter(format="0.0")),
-           TableColumn(field="gantry_start", title="Gant Start", width=80, formatter=NumberFormatter(format="0.0")),
-           TableColumn(field="gantry_rot_dir", title="Gant Dir", width=80),
-           TableColumn(field="gantry_end", title="Gant End", width=80, formatter=NumberFormatter(format="0.0")),
-           TableColumn(field="radiation_type", title="Rad. Type", width=80),
-           TableColumn(field="ssd", title="SSD", width=80),
-           TableColumn(field="treatment_machine", title="Tx Machine", width=80)]
-data_table_beams = DataTable(source=source_beams, columns=columns, width=1500)
+# Setup selectors for dvh review
+select_reviewed_mrn = Select(title='MRN to review',
+                             value=dvh_review_mrns[0],
+                             options=dvh_review_mrns,
+                             width=200)
+select_reviewed_mrn.on_change('value', update_dvh_review_rois)
 
-# Set up Plans DataTable
-plans_table_title = PreText(text="Plans", width=1200)
-columns = [TableColumn(field="mrn", title="MRN", width=420),
-           TableColumn(field="age", title="Age", width=80),
-           TableColumn(field="birth_date", title="Birth Date"),
-           TableColumn(field="dose_grid_res", title="Dose Grid Res"),
-           TableColumn(field="heterogeneity_correction", title="Heterogeneity"),
-           TableColumn(field="fxs", title="Fxs", width=80),
-           TableColumn(field="patient_orientation", title="Orientation"),
-           TableColumn(field="patient_sex", title="Sex", width=80),
-           TableColumn(field="physician", title="Rad Onc"),
-           TableColumn(field="rx_dose", title="Rx Dose", formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="sim_study_date", title="Sim Study Date"),
-           TableColumn(field="total_mu", title="Total MU", formatter=NumberFormatter(format="0.0")),
-           TableColumn(field="tx_energies", title="Energies"),
-           TableColumn(field="tx_modality", title="Tx Modality"),
-           TableColumn(field="tx_site", title="Tx Site")]
-data_table_plans = DataTable(source=source_plans, columns=columns, width=1200)
+select_reviewed_dvh = Select(title='ROI',
+                             value=dvh_review_rois[0],
+                             options=dvh_review_rois,
+                             width=500)
 
-# Set up Rxs DataTable
-rxs_table_title = PreText(text="Rxs", width=1000)
-columns = [TableColumn(field="mrn", title="MRN"),
-           TableColumn(field="plan_name", title="Plan Name"),
-           TableColumn(field="fx_dose", title="Fx Dose", formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="rx_percent", title="Rx Isodose", formatter=NumberFormatter(format="0.0")),
-           TableColumn(field="rx_dose", title="Rx Dose", formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="fx_grp_number", title="Fx Grp"),
-           TableColumn(field="fx_grp_count", title="Fx Groups"),
-           TableColumn(field="fx_grp_name", title="Fx Grp Name"),
-           TableColumn(field="normalization_method", title="Norm Method"),
-           TableColumn(field="normalization_object", title="Norm Object")]
-data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1000)
+calculate_review_dvh_button = Button(label="Calculate Review DVH",
+                                     button_type="success",
+                                     width=200)
+calculate_review_dvh_button.on_click(calculate_review_dvh)
 
-# Setup axis normalization radio buttons
-radio_group_dose = RadioGroup(labels=["Absolute Dose", "Relative Dose (Rx)"], active=0)
-radio_group_dose.on_change('active', radio_group_dose_ticker)
-radio_group_volume = RadioGroup(labels=["Absolute Volume", "Relative Volume"], active=1)
-radio_group_volume.on_change('active', radio_group_volume_ticker)
+update_dvh_review_mrns()
 
 # Begin defining main row of widgets below figure
 
 # define Update button
-update_button = Button(label="Update", button_type="success", width=200)
+update_button = Button(label="Update Stats", button_type="success", width=200)
 update_button.on_click(update_data)
-
-# define Download button and call download.js on click
-download_button = Button(label="Download", button_type="default", width=200)
-download_button.callback = CustomJS(args=dict(source=source,
-                                              source_rxs=source_rxs,
-                                              source_plans=source_plans,
-                                              source_beams=source_beams,
-                                              source_endpoint_names=source_endpoint_names),
-                                    code=open(join(dirname(__file__), "download.js")).read())
 
 # define button to widget row for discrete data filtering
 main_add_selector_button = Button(label="Add Selection Filter", button_type="primary", width=200)
@@ -937,38 +788,35 @@ main_add_selector_button.on_click(button_add_selector_row)
 main_add_range_button = Button(label="Add Range Filter", button_type="primary", width=200)
 main_add_range_button.on_click(button_add_range_row)
 
-# define button to widget row for adding DVH endpoints
-main_add_endpoint_button = Button(label="Add Endpoint", button_type="primary", width=200)
-main_add_endpoint_button.on_click(button_add_endpoint_row)
-
 # not for display, but add these buttons to query_row
 # query row is simply used to keep track of pointers to query rows
-# allows code to dynamically add widgets and keep button funcionality contained
+# allows code to dynamically add widgets and keep button functionality contained
 query_row.append(row(update_button, main_add_selector_button, main_add_range_button))
 query_row_type.append('main')
 
 # define main layout to pass to curdoc()
-layout = column(row(radio_group_dose, radio_group_volume),
-                dvh_plots,
+layout = column(dvh_plots,
+                row(select_reviewed_mrn, select_reviewed_dvh),
                 row(main_add_selector_button,
                     main_add_range_button,
-                    main_add_endpoint_button,
                     update_button,
-                    download_button),
+                    calculate_review_dvh_button),
                 data_table_title,
                 data_table,
                 endpoint_table_title,
                 data_table_endpoints,
-                plans_table_title,
-                data_table_plans,
-                rxs_table_title,
-                data_table_rxs,
-                beam_table_title,
-                data_table_beams)
+                AddEndPointRow(1).row,
+                AddEndPointRow(2).row,
+                AddEndPointRow(3).row,
+                AddEndPointRow(4).row,
+                AddEndPointRow(5).row,
+                AddEndPointRow(6).row,
+                AddEndPointRow(7).row,
+                AddEndPointRow(8).row,)
 
 # go ahead and add a selector row for the user
 button_add_selector_row()
 
 # Create the document Bokeh server will use to generate the webpage
 curdoc().add_root(layout)
-curdoc().title = "DVH Analytics"
+curdoc().title = "Live Free or DICOM"
