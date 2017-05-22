@@ -3,7 +3,7 @@
 
 from sql_to_python import QuerySQL
 from sql_connector import DVH_SQL
-from datetime import datetime
+import datetime
 from dateutil.relativedelta import relativedelta
 from dicompylercore import dicomparser
 import os
@@ -139,7 +139,9 @@ def datetime_str_to_obj(datetime_str):
     minute = int(datetime_str[10:12])
     second = int(datetime_str[12:14])
 
-    return datetime.datetime(year, month, day, hour, minute, second)
+    datetime_obj = datetime.datetime(year, month, day, hour, minute, second)
+
+    return datetime_obj
 
 
 def date_str_to_obj(date_str):

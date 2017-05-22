@@ -1,28 +1,14 @@
-Installation instructions for LiveFreeOrDICOM
-
-#############
-Mac OS Sierra
-#############
+Installation instructions for DVH Analytics
 
 ---------------
 Pre-requisites:
 ---------------
 Chrome or Firefox:
-The web views are not supported on Internet Explorer or Safari.
+The web views are not supported on Internet Explorer or Safari.  Please download Chrome or Firefox.
 
-PostgreSQL:
-If you are familiar with PostgreSQL, you simply need to fill in the login information in
-dvh/preferences/SQL_Connection.cnf.
 
-If you are unfamiliar with SQL, simply go here and download the PostgreSQL app: http://postgresapp.com/
-Open the app, Click "Start", then double-click "postgres" with the cylindrical database icon
-type the following in the SQL terminal:
-create database dvh;
-NOTE: You may replace dvh with any database name you wish, but you must update dbname in
-dvh/preferences/SQL_Connection.cnf to reflect what database name you chose.
-This app must be running when writing or accessing data.
-
-Xcode Command Line Tools:
+Xcode Command Line Tools (Mac Only)
+-----------------------------------
 Make sure Xcode command line tools are installed
 If the full Xcode package is installed (from the Mac App Store), entire the following into a terminal window:
 xcode-select --install
@@ -31,6 +17,38 @@ pip (python package management):
 If you do not already have pip, enter the following into a terminal window:
 easy_install pip
 
+
+PostgreSQL
+----------
+If you are familiar with PostgreSQL and have access to a PostgreSQL DB, you simply need to fill in the
+login information in:
+dvh/preferences/SQL_Connection.cnf.
+
+If you need PostgreSQL, here are some options for each OS
+
+Mac OS:
+Simply go here and download the PostgreSQL app: http://postgresapp.com/
+Open the app, Click "Start", then double-click "postgres" with the cylindrical database icon
+type the following in the SQL terminal:
+
+create database dvh;
+\q
+
+NOTE: You may replace dvh with any database name you wish, but you must update dbname in
+dvh/preferences/SQL_Connection.cnf to reflect what database name you chose.
+This app must be running when writing or accessing data.
+
+If you use OS authentication, make sure dvh/preferences/SQL_Connection.cnf does not have 'user' or 'password' names.
+If you choose to create a user and password, update said .cnf file appropriately.
+
+Ubuntu:
+Type the following in a terminal (pgadmin3 is not required, but is a great tool for those unfamiliar with SQL):
+sudo apt-get install postgresql postgresql-client postgresql-contrib libpq-dev
+sudo apt-get install pgadmin3
+Upon successful installation, open type 'pgadmin3' in the terminal to open the graphical admin.
+Create a user and database of your choice, and update dvh/preferences/sql_connection.cnf as appropriate.
+
+
 ---------------------------
 Setting up your environment
 ---------------------------
@@ -38,8 +56,10 @@ Download the entire source code from Github either via git or manual download (u
 
 From a terminal window, change your directory to the LiveFreeOrDICOM folder (e.g., cd ~/LiveFreeOrDICOM)
 
-execute the install_mac.sh script by typing:
-./install_mac.sh
+execute the install_mac.sh script by typing either:
+./install-python-packages_mac.sh
+    or
+./install-python-packages_ubuntu.sh
 
 ------------------------
 Processing test files
@@ -63,4 +83,3 @@ the bokeh server.  You may be interested in this if running from a computer with
 to access this bokeh server from across your network.
 bokeh serve --allow-websocket-origin=<new IP:port> dvh/
 bokeh serve dvh/ --port <some other port number>
-

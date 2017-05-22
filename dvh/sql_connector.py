@@ -16,7 +16,7 @@ class DVH_SQL:
     def __init__(self):
         # Read SQL configuration file
         script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
-        rel_path = "preferences/SQL_Connection.cnf"
+        rel_path = "preferences/sql_connection.cnf"
         abs_file_path = os.path.join(script_dir, rel_path)
         with open(abs_file_path, 'r') as document:
             config = {}
@@ -111,8 +111,8 @@ class DVH_SQL:
                          dvh_table.dvh_str[x]]
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'
-            Prepend = 'INSERT INTO DVHs VALUES (\''
-            sql_input = Prepend + str(sql_input)
+            prepend = 'INSERT INTO DVHs VALUES (\''
+            sql_input = prepend + str(sql_input)
             sql_input += '\n'
             with open(file_path, "a") as text_file:
                 text_file.write(sql_input)

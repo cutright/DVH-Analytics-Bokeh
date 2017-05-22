@@ -1,3 +1,5 @@
 host localhost
+user dvh
+password dvh
 dbname dvh
 port 5432

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 sudo -H pip install numpy
 sudo -H pip install pydicom
 sudo -H pip install matplotlib
