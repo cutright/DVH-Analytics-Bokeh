@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 
-from DVH_SQL import *
+from sql_connector import DVH_SQL
 
 
 class QuerySQL:

@@ -1,5 +1,5 @@
 # LiveFreeOrDICOM
-DICOM to SQL DVH Database
+DVH Database Manager and Viewer
 
 This code is intended for Radiation Oncology departments to build a SQL database of DVH's and various planning parameters from DICOM files (Plan, Structure, Dose).
 
@@ -59,6 +59,8 @@ corresponding to each of the column in the queried table.
     - [ ] Clean text representation in text field
 
 - [ ] Design UI for backend management
+
+- [ ] Combine data and stats into one ColumnDataSource so endpoints are calculated for stats
 
 
 ## Dependencies

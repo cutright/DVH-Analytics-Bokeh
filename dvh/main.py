@@ -14,14 +14,13 @@ from bokeh.models.widgets import Select, Button, PreText, TableColumn, DataTable
     NumberFormatter, RadioButtonGroup, TextInput, RadioGroup
 from bokeh.plotting import figure
 from bokeh.io import curdoc
-from ROI_Name_Manager import DatabaseROIs
-from Analysis_Tools import DVH, get_study_instance_uids
-from DVH_SQL import DVH_SQL
-from SQL_to_Python import QuerySQL
+from roi_name_manager import DatabaseROIs
+from analysis_tools import DVH, get_study_instance_uids
+from sql_connector import DVH_SQL
+from sql_to_python import QuerySQL
 from bokeh.palettes import Colorblind8 as palette
 from datetime import datetime
 from os.path import dirname, join
-from utilities import date_str_to_obj
 
 # Declare variables
 db_rois = DatabaseROIs()
@@ -31,6 +30,7 @@ update_warning = True
 query_row = []
 query_row_type = []
 endpoint_columns = {}
+
 for i in range(0, 10):
     endpoint_columns[i] = ''
 

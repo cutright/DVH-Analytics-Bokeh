@@ -1,8 +1,8 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 
-from SQL_to_Python import QuerySQL
-from DVH_SQL import DVH_SQL
+from sql_to_python import QuerySQL
+from sql_connector import DVH_SQL
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from dicompylercore import dicomparser

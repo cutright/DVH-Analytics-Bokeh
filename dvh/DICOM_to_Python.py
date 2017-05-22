@@ -11,7 +11,7 @@ import dicom  # PyDICOM
 from dicompylercore import dicomparser, dvhcalc
 import datetime
 from dateutil.relativedelta import relativedelta
-from ROI_Name_Manager import *
+from roi_name_manager import DatabaseROIs
 from utilities import datetime_str_to_obj
 
 

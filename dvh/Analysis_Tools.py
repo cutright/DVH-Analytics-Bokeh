@@ -6,7 +6,8 @@ Created on Thu Mar  9 18:48:19 2017
 """
 
 import numpy as np
-from SQL_to_Python import *
+from sql_connector import DVH_SQL
+from sql_to_python import QuerySQL, get_unique_list
 import os
 
 

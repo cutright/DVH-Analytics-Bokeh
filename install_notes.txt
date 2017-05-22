@@ -53,7 +53,14 @@ in the file dvh/preferences/import_settings.txt and move them into the location 
 --------
 Web view
 --------
-From the same directory as the previous step, type the following:
+From the same directory as the previous step, type the following to start the bokeh server:
 bokeh serve --show dvh/
 If Chrome or Firefox is not your default browswer, you'll need to copy and paste the url into Chrome or Firefox.
-NOTE: Safari sort of works, but intermittently cuts off the websocket... so it's not reliable.
+From within the active terminal, press ctrl + c to stop the Bokeh server.
+
+If you would like to specify an IP or port other than the default 127.0.0.1:5006, use the following when starting
+the bokeh server.  You may be interested in this if running from a computer with a static IP and would like
+to access this bokeh server from across your network.
+bokeh serve --allow-websocket-origin=<new IP:port> dvh/
+bokeh serve dvh/ --port <some other port number>
+

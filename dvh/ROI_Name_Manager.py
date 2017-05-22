@@ -7,8 +7,8 @@ Created on Fri Mar 24 13:43:28 2017
 """
 
 import os
-from SQL_to_Python import QuerySQL
-from DVH_SQL import DVH_SQL
+from sql_to_python import QuerySQL
+from sql_connector import DVH_SQL
 
 
 class ROISet:
