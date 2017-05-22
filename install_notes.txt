@@ -31,14 +31,16 @@ Make sure Xcode command line tools are installed
 If the full Xcode package is installed (from the Mac App Store), entire the following into a terminal window:
 xcode-select --install
 
-pip (python package management):
 
+PIP (python package management):
+--------------------------------
 From a terminal window, type
-for Mac OS:
-easy_install pip
 
-for Ubuntu:
+easy_install pip
+    for Mac, or
+
 sudo apt-get install python-pip
+    for Ubuntu
 
 Windows: follow the instructions here:
 https://pip.pypa.io/en/stable/installing/
