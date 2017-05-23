@@ -13,7 +13,7 @@ If any of these are not installed, see [Additional Notes](#additional-notes)
  - Download the entire source code from Github either via git or manual download.
  - From a terminal window, change your directory to the DVH-Analytics folder.
  - Execute the install script by typing the following from the project directory in a terminal:
-    - you may need the second statement on Mac or Linux if your user account does not have root privileges.
+    - You may need the second statement on Mac or Linux if your user account does not have root privileges.
 ~~~~
 $ pip install -r requirements.txt
 ~~~~
