@@ -12,7 +12,7 @@ For installation instructions, see install_notes.txt
     
 - [ ] Design a setup.py
 
-- [ ] Design test.py files
+- [X] Design test.py files
 
 - [ ] Design a main program to allow more fluid command line interaction
 
