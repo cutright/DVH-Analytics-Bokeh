@@ -1,10 +1,10 @@
 # Installation notes for DVH Analytics
 
 ## Pre-requisites:
- - Chrome or Firefox
- - PostgreSQL (tested with 9.6)
- - Python 2.7 (python3 not supported)
- - pip (python package manager)
+ - [Chrome](https://www.google.com/chrome/browser/desktop/) or [Firefox](https://www.mozilla.org/en-US/firefox/new/)
+ - [PostgreSQL](https://www.postgresql.org/) (tested with 9.6)
+ - [Python 2.7](https://www.python.org/downloads/release/python-2712/) (python3 not supported)
+ - [pip](https://pip.pypa.io/en/stable/installing/) (python package manager)
  - Xcode Command Line Tools (Mac only)  
 
 If any of these are not installed, see [Additional Notes](#additional-notes).
