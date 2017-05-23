@@ -45,6 +45,7 @@ def dicom_to_sql(**kwargs):
     force_update = False
     if 'force_update' in kwargs and kwargs['force_update']:
         force_update = True
+    print "getting files paths within " + import_settings['inbox']
     f = get_file_paths(import_settings['inbox'], force_update=force_update)
 
     for n in range(0, len(f)):
@@ -151,6 +152,9 @@ def get_file_paths(start_path, **kwargs):
         for c in range(0, len(dose_files)):
             if study_uid_plan[a] == study_uid_dose[c]:
                 rt_dose = dose_files[c]
+        print 'test file rt_plan: ' + rt_plan
+        print 'test file rt_structure: ' + rt_structure
+        print 'test file rt_dose: ' + rt_dose
         dicom_files[a] = DICOM_FileSet(rt_plan, rt_structure, rt_dose)
     print str(datetime.now()), 'files sorted'
 
