@@ -23,11 +23,11 @@ $ sudo pip install -r requirements.txt
 
 ## Processing test files
 From the same directory as the previous step, type the following:
-python dvh/dicom_to_sql.py
-
-This will take several minutes. This python code will process all dicom files located in the inbox as specified
-in the file dvh/preferences/import_settings.txt and move them into the location specified by 'imported' in the
-same file.
+~~~~
+$ python dvh/test.py
+~~~~
+This may take a few minutes. This python code will process all dicom files located in the test files folder.  
+If this test passes, then all dependencies are successfully installed (e.g., PostgreSQL, Python libraries).
 
 
 ## Web view

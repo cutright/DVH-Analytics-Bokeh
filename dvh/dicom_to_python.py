@@ -7,10 +7,10 @@ Created on Sun Feb 26 11:06:28 2017
 @author: Dan Cutright, PhD
 """
 
-import dicom  # PyDICOM
+import dicom  # pydicom
 from dicompylercore import dicomparser, dvhcalc
-import datetime
-from dateutil.relativedelta import relativedelta
+from datetime import datetime
+from dateutil import relativedelta  # python-dateutil
 from roi_name_manager import DatabaseROIs
 from utilities import datetime_str_to_obj
 
@@ -113,11 +113,10 @@ class PlanRow:
             sim_study_year = int(sim_study_date[0:4])
             sim_study_month = int(sim_study_date[4:6])
             sim_study_day = int(sim_study_date[6:8])
-            sim_study_date_obj = datetime.datetime(sim_study_year, sim_study_month,
-                                                   sim_study_day)
+            sim_study_date_obj = datetime(sim_study_year, sim_study_month, sim_study_day)
         else:
             sim_study_date = '18000101'
-            sim_study_date_obj = datetime.datetime(1800, 1, 1)
+            sim_study_date_obj = datetime(1800, 1, 1)
 
         # Calculate patient age at time of sim
         # Set to NULL birthday is not in DICOM file
@@ -129,7 +128,7 @@ class PlanRow:
             birth_year = int(birth_date[0:4])
             birth_month = int(birth_date[4:6])
             birth_day = int(birth_date[6:8])
-            birth_date_obj = datetime.datetime(birth_year, birth_month, birth_day)
+            birth_date_obj = datetime(birth_year, birth_month, birth_day)
             if sim_study_date == '18000101':
                 age = '(NULL)'
             else:

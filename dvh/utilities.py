@@ -3,7 +3,7 @@
 
 from sql_to_python import QuerySQL
 from sql_connector import DVH_SQL
-import datetime
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from dicompylercore import dicomparser
 import os
@@ -12,19 +12,22 @@ import sys
 
 
 class Temp_DICOM_FileSet:
-    def __init__(self):
+    def __init__(self, **kwargs):
 
         # Read SQL configuration file
         script_dir = os.path.dirname(__file__)
-        rel_path = "preferences/import_settings.txt"
-        abs_file_path = os.path.join(script_dir, rel_path)
-        with open(abs_file_path, 'r') as document:
-            for line in document:
-                line = line.split()
-                if not line:
-                    continue
-                if line[0] == 'review':
-                    start_path = line[1:][0]
+        if 'start_path' in kwargs:
+            start_path = kwargs['start_path']
+        else:
+            rel_path = "preferences/import_settings.txt"
+            abs_file_path = os.path.join(script_dir, rel_path)
+            with open(abs_file_path, 'r') as document:
+                for line in document:
+                    line = line.split()
+                    if not line:
+                        continue
+                    if line[0] == 'review':
+                        start_path = line[1:][0]
 
         self.plan = []
         self.structure = []
@@ -111,12 +114,12 @@ def recalculate_ages():
         birth_year = int(birth_date[0])
         birth_month = int(birth_date[1])
         birth_day = int(birth_date[2])
-        birth_date_obj = datetime.datetime(birth_year, birth_month, birth_day)
+        birth_date_obj = datetime(birth_year, birth_month, birth_day)
 
         sim_study_year = int(sim_study_date[0])
         sim_study_month = int(sim_study_date[1])
         sim_study_day = int(sim_study_date[2])
-        sim_study_date_obj = datetime.datetime(sim_study_year,
+        sim_study_date_obj = datetime(sim_study_year,
                                                sim_study_month,
                                                sim_study_day)
 
@@ -140,7 +143,7 @@ def datetime_str_to_obj(datetime_str):
     minute = int(datetime_str[10:12])
     second = int(datetime_str[12:14])
 
-    datetime_obj = datetime.datetime(year, month, day, hour, minute, second)
+    datetime_obj = datetime(year, month, day, hour, minute, second)
 
     return datetime_obj
 
@@ -151,7 +154,7 @@ def date_str_to_obj(date_str):
     month = int(date_str[4:6])
     day = int(date_str[6:8])
 
-    return datetime.datetime(year, month, day)
+    return datetime(year, month, day)
 
 
 def platform():
