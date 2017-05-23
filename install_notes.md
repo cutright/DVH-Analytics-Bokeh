@@ -14,7 +14,7 @@ If any of these are not installed, see [Additional Notes](#additional-notes)
  - From a terminal window, change your directory to the DVH-Analytics folder.
  - execute the install script by typing the following from the project directory in a terminal:
 ~~~~
-pip install -r requirements.txt
+$ pip install -r requirements.txt
 ~~~~
 
 ## Processing test files
@@ -29,7 +29,7 @@ same file.
 ## Web view
 From the same directory as the previous step, type the following to start the bokeh server:  
 ~~~~
-bokeh serve --show dvh/
+$ bokeh serve --show dvh/
 ~~~~
 If Chrome or Firefox is not your default browswer, you'll need to copy and paste the url into Chrome or Firefox.
 From within the active terminal, press ctrl + c to stop the Bokeh server.
@@ -38,10 +38,10 @@ If you would like to specify an IP or port other than the default 127.0.0.1:5006
 the bokeh server.  You may be interested in this if running from a computer with a static IP and would like
 to access this bokeh server from across your network.
 ~~~~
-bokeh serve --allow-websocket-origin=<new IP:port> dvh/
+$ bokeh serve --allow-websocket-origin=<new IP:port> dvh/
 ~~~~
 ~~~~
-bokeh serve dvh/ --port <some other port number>
+$ bokeh serve dvh/ --port <some other port number>
 ~~~~
 
 ----------------------------------------------------------------------------------------------
@@ -76,7 +76,7 @@ xcode-select --install
 If you are familiar with PostgreSQL and have access to a PostgreSQL DB, you simply need to fill in the
 login information in dvh/preferences/sql_connection.cnf.
 
-If you need PostgreSQL, here are some options for each OS
+If you need PostgreSQL, here are some options for each OS.
 
 #### Mac OS:
 Simply download the PostgreSQL app: http://postgresapp.com/  
@@ -102,8 +102,8 @@ If you choose to create a user and password, update said .cnf file appropriately
 #### Ubuntu
 Type the following in a terminal:
 ~~~~
-sudo apt-get install postgresql postgresql-client postgresql-contrib libpq-dev
-sudo apt-get install pgadmin3
+$ sudo apt-get install postgresql postgresql-client postgresql-contrib libpq-dev
+$ sudo apt-get install pgadmin3
 ~~~~
 Upon successful installation, open type 'pgadmin3' in the terminal to open the graphical admin.
  - Create a user and database of your choice (same instructions found below for Windows)
@@ -126,17 +126,17 @@ From a terminal window, type:
 
 *Mac*
 ~~~~
-easy_install pip
+$ easy_install pip
 ~~~~
 
 *Ubuntu*
 ~~~~
-sudo apt-get install python-pip
+$ sudo apt-get install python-pip
 ~~~~
 
 *Windows*  
 Download get-pip.py from here: https://pip.pypa.io/en/stable/installing/  
 Then compile:
 ~~~~
-python get-pip.py
+$ python get-pip.py
 ~~~~
