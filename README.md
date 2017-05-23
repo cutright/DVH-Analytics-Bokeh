@@ -9,14 +9,18 @@ For installation instructions, see install_notes.txt
 
 ## To Do List
 ### Higher Priorities
-
-- [X] Add ability to plot a temporary plan not in the SQL DB
-    - [ ] Design new app for plan review
     
 - [ ] Design a setup.py
+
 - [ ] Design test.py files
 
+- [ ] Design a main program to allow more fluid command line interaction
+
+- [ ] Design UI for backend management
+
 ### Lower Priorities
+- [X] Add ability to plot a temporary plan not in the SQL DB
+    - [ ] Design new app for plan review
 
 - [ ] Validate dicompyler-core DVH calculations
 
@@ -32,8 +36,6 @@ For installation instructions, see install_notes.txt
 
 - [X] Look into filtering by date range
     - [ ] Clean text representation in text field
-
-- [ ] Design UI for backend management
 
 - [ ] Combine data and stats into one ColumnDataSource so endpoints are calculated for stats
 

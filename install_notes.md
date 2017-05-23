@@ -82,7 +82,7 @@ login information in dvh/preferences/sql_connection.cnf.
 
 If you need PostgreSQL, here are some options for each OS.
 
-#### Mac OS:
+*Mac OS*  
 Simply download the PostgreSQL app: http://postgresapp.com/  
  - Open the app
  - Click "Start"
@@ -103,7 +103,7 @@ This app must be running when writing or accessing data.
 If you use OS authentication, make sure dvh/preferences/sql_connection.cnf does not have 'user' or 'password' names.
 If you choose to create a user and password, update said .cnf file appropriately.
 
-#### Ubuntu
+*Ubuntu*  
 Type the following in a terminal:
 ~~~~
 $ sudo apt-get install postgresql postgresql-client postgresql-contrib libpq-dev
@@ -113,7 +113,7 @@ Upon successful installation, open type 'pgadmin3' in the terminal to open the g
  - Create a user and database of your choice (same instructions found below for Windows)
  - Update dvh/preferences/sql_connection.cnf as appropriate.
 
-#### Windows
+*Windows*  
 Download the installer for BigSQL: https://www.bigsql.org/postgresql/installers.jsp/
 
  - Be sure to include pgAdmin3 LTS
