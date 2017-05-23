@@ -8,6 +8,7 @@ from dateutil.relativedelta import relativedelta
 from dicompylercore import dicomparser
 import os
 import dicom
+import sys
 
 
 class Temp_DICOM_FileSet:
@@ -151,3 +152,11 @@ def date_str_to_obj(date_str):
     day = int(date_str[6:8])
 
     return datetime.datetime(year, month, day)
+
+
+def platform():
+    if sys.platform.startswith('win'):
+        return 'windows'
+    elif sys.platform.startswith('darwin'):
+        return 'mac'
+    return 'linux'
