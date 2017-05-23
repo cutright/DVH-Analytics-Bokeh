@@ -9,12 +9,17 @@
 
 If any of these are not installed, see [Additional Notes](#additional-notes)
 
-## Setting up your python environment
+## Setting up your python environment (for any OS)
  - Download the entire source code from Github either via git or manual download.
  - From a terminal window, change your directory to the DVH-Analytics folder.
- - execute the install script by typing the following from the project directory in a terminal:
+ - Execute the install script by typing the following from the project directory in a terminal:
 ~~~~
 $ pip install -r requirements.txt
+~~~~
+
+or you may need this if on Mac or Linux and you need root privileges:
+~~~~
+$ sudo pip install -r requirements.txt
 ~~~~
 
 ## Processing test files
