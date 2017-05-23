@@ -10,11 +10,6 @@ For installation instructions, see install_notes.txt
 ## To Do List
 ### Higher Priorities
 
-- [X] Design install script for a venv
-    - [X] Mac
-    - [ ] Ubuntu
-    - [ ] Windows
-
 - [X] Add ability to plot a temporary plan not in the SQL DB
     - [ ] Design new app for plan review
 
