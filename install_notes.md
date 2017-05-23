@@ -74,8 +74,7 @@ xcode-select --install
 
 ### PostgreSQL
 If you are familiar with PostgreSQL and have access to a PostgreSQL DB, you simply need to fill in the
-login information in:
-*dvh/preferences/sql_connection.cnf*.
+login information in dvh/preferences/sql_connection.cnf.
 
 If you need PostgreSQL, here are some options for each OS
 
