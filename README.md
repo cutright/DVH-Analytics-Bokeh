@@ -10,10 +10,9 @@ For installation instructions, see install_notes.txt
 ## To Do List
 ### Higher Priorities
     
-- [ ] Design a setup.py
+- [ ] Design a setup.py (e.g, resolve sql_connect.cnf initialization)
 
 - [X] Design test.py files
-    - [ ] test in Windows
 
 - [ ] Design a main program to allow more fluid command line interaction
 

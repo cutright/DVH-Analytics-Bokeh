@@ -11,7 +11,8 @@ from analysis_tools import DVH
 from sql_to_python import DVH_SQL
 from utilities import Temp_DICOM_FileSet
 
-if __name__ == '__main__':
+
+def test_dvh_code():
 
     print "importing test files with dicom_to_sql.py"
     dicom_to_sql(start_path="test_files/example_dicom_files",
