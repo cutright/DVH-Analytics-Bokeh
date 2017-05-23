@@ -85,11 +85,11 @@ Simply download the PostgreSQL app: http://postgresapp.com/
  - Double-click "postgres" with the cylindrical database icon
  - Type the following in the SQL terminal:
 ~~~~
-create database dvh;
+postgres=# create database dvh;
 ~~~~
 Then quit by typing:
 ~~~~
-\q
+postgres=# \q
 ~~~~
 
 NOTE: You may replace dvh with any database name you wish, but you must update dbname in
