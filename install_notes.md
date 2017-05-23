@@ -44,9 +44,9 @@ bokeh serve dvh/ --port <some other port number>
 ----------------------------------------------------------------------------------------------
 ## Additional Notes
 
-### Python 2.7 (Windows only, Xcode command line tools for mac and Ubuntu both include Python 2.7)
-Download Python 2.7 (not 3.x) from:  
-https://www.python.org/downloads/windows/
+### Python 2.7  
+*(Windows only, Xcode command line tools for mac and Ubuntu both include Python 2.7)*  
+Download Python 2.7 (not 3.x) from: https://www.python.org/downloads/windows/
 
  - After the installation is complete, you'll need to edit your environment to include python in the command prompt.
  - Open a Windows Explorer.
