@@ -5,16 +5,17 @@
  - PostgreSQL (tested with 9.6)
  - Python 2.7 (python3 not supported)
  - pip (python package manager)
+ - Xcode Command Line Tools (Mac only)  
+
+If any of these are not installed, see [Additional Notes](#additional-notes).
 
 ## Setting up your python environment
  - Download the entire source code from Github either via git or manual download.
-   - Be sure command line tools are installed if on Mac OS. See [Additional Notes](#additional-notes).
  - From a terminal window, change your directory to the DVH-Analytics folder.
  - execute the install script by typing the following from the project directory in a terminal:
 ~~~~
 pip install -r requirements.txt
 ~~~~
-
 
 ## Processing test files
 From the same directory as the previous step, type the following:
@@ -26,8 +27,10 @@ same file.
 
 
 ## Web view
-From the same directory as the previous step, type the following to start the bokeh server:
+From the same directory as the previous step, type the following to start the bokeh server:  
+~~~~
 bokeh serve --show dvh/
+~~~~
 If Chrome or Firefox is not your default browswer, you'll need to copy and paste the url into Chrome or Firefox.
 From within the active terminal, press ctrl + c to stop the Bokeh server.
 
