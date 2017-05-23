@@ -25,9 +25,9 @@ if __name__ == '__main__':
     test_files = Temp_DICOM_FileSet(start_path="test_files/example_dicom_files")
 
     print "deleting test data from SQL database"
-    for mrn in test_files.mrn:
-        cond_str = "mrn = '" + mrn + "'"
-        print 'removing mrn = ' + mrn
+    for i in range(0, test_files.count):
+        cond_str = "mrn = '" + test_files.mrn[i] + "'"
+        print 'removing mrn = ' + test_files.mrn[i]
         DVH_SQL().delete_rows(cond_str)
 
     print "tests successful!"

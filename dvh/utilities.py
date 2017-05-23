@@ -17,7 +17,9 @@ class Temp_DICOM_FileSet:
         # Read SQL configuration file
         script_dir = os.path.dirname(__file__)
         if 'start_path' in kwargs:
-            start_path = kwargs['start_path']
+            rel_path = kwargs['start_path']
+            abs_file_path = os.path.join(script_dir, rel_path)
+            start_path = abs_file_path
         else:
             rel_path = "preferences/import_settings.txt"
             abs_file_path = os.path.join(script_dir, rel_path)

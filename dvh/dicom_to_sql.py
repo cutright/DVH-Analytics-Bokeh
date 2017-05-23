@@ -39,7 +39,9 @@ def dicom_to_sql(**kwargs):
                 import_settings[line[0]] = False
 
     if 'start_path' in kwargs and kwargs['start_path']:
-        import_settings['inbox'] = kwargs['start_path']
+        rel_path = kwargs['start_path']
+        abs_file_path = os.path.join(script_dir, rel_path)
+        import_settings['inbox'] = abs_file_path
 
     sqlcnx = DVH_SQL()
     force_update = False
