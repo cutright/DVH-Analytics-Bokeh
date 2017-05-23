@@ -7,7 +7,7 @@
  - [pip](https://pip.pypa.io/en/stable/installing/) (python package manager)
  - Xcode Command Line Tools (Mac only)  
 
-If any of these are not installed, see [Additional Notes](#additional-notes
+If any of these are not installed, see [Additional Notes](#additional-notes)
 
 ## Setting up your python environment
  - Download the entire source code from Github either via git or manual download.
