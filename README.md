@@ -12,6 +12,9 @@ For installation instructions, see install_notes.txt
 
 - [X] Add ability to plot a temporary plan not in the SQL DB
     - [ ] Design new app for plan review
+    
+- [ ] Design a setup.py
+- [ ] Design test.py files
 
 ### Lower Priorities
 
