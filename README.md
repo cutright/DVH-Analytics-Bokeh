@@ -13,6 +13,7 @@ For installation instructions, see install_notes.txt
 - [ ] Design a setup.py
 
 - [X] Design test.py files
+    - [ ] test in Windows
 
 - [ ] Design a main program to allow more fluid command line interaction
 
