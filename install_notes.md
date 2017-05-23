@@ -8,7 +8,7 @@
 
 ## Setting up your python environment
  - Download the entire source code from Github either via git or manual download.
-   - Be sure command line tools are installed if on Mac OS. See [Additional Notes](#Additional Notes).
+   - Be sure command line tools are installed if on Mac OS. See [Additional Notes](#AdditionalNotes).
  - From a terminal window, change your directory to the DVH-Analytics folder.
  - execute the install script by typing the following from the project directory in a terminal:
 ~~~~
