@@ -9,7 +9,7 @@
 
 If any of these are not installed, see [Additional Notes](#additional-notes)
 
-## Setting up your python environment (for any OS)
+## Setting up your python environment
  - Download the entire source code from Github either via git or manual download.
  - From a terminal window, change your directory to the DVH-Analytics folder.
  - Execute the install script by typing the following from the project directory in a terminal:
