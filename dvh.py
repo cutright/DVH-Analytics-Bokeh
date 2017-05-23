@@ -7,10 +7,10 @@ This is the main python file for command line implementation.
 """
 
 import sys
-from test import test_dvh_code
-from dicom_to_sql import dicom_to_sql
-from utilities import recalculate_ages
-from sql_connector import DVH_SQL
+from dvh.test import test_dvh_code
+from dvh.dicom_to_sql import dicom_to_sql
+from dvh.utilities import recalculate_ages
+from dvh.sql_connector import DVH_SQL
 
 
 def import_dicom(flags):
@@ -46,7 +46,7 @@ def print_patient_ids_with_no_ages():
 
     mrns = DVH_SQL().query('plans', 'mrn', 'age is NULL');
     if len(mrns) == 0:
-        print "No plans have been imported"
+        print "No plans found with no age"
     else:
         for i in range(0, len(mrns)):
             print str(mrns[i][0])
@@ -89,3 +89,6 @@ if __name__ == '__main__':
             cnx = DVH_SQL()
             cnx.close()
             print "SQL DB is alive!"
+
+        else:
+            print call + " is not a valid call"

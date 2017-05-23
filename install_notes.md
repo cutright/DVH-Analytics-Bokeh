@@ -24,7 +24,7 @@ $ sudo pip install -r requirements.txt
 ## Processing test files
 From the same directory as the previous step, type the following:
 ~~~~
-$ python dvh/test.py
+$ python dvh.py test
 ~~~~
 This may take a few minutes. This python code will process all dicom files located in the test files folder.  
 If this test passes, then all dependencies are successfully installed (e.g., PostgreSQL, Python libraries).

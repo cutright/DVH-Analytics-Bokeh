@@ -14,7 +14,8 @@ For installation instructions, see install_notes.txt
 
 - [X] Design test.py files
 
-- [ ] Design a main program to allow more fluid command line interaction
+- [X] Design a main program to allow more fluid command line interaction.
+  - [ ] In progress. Create a map of calls with explicit functions.
 
 - [ ] Design UI for backend management
 
