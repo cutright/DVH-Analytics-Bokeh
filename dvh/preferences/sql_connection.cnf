@@ -1,5 +1,3 @@
 host localhost
-user nightowl
-password dvh
 dbname dvh
 port 5432

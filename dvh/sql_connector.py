@@ -38,6 +38,9 @@ class DVH_SQL:
         self.cnx = cnx
         self.cursor = cnx.cursor()
 
+    def close(self):
+        self.cnx.close()
+
     # Executes lines within text file named 'sql_file_name' to SQL
     def execute_file(self, sql_file_name):
 

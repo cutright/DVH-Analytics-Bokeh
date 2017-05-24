@@ -11,6 +11,102 @@ from dvh.test import test_dvh_code
 from dvh.dicom_to_sql import dicom_to_sql
 from dvh.utilities import recalculate_ages
 from dvh.sql_connector import DVH_SQL
+import os
+from getpass import getpass
+
+
+def get_import_settings_from_user():
+    print "Please enter the full directory path for each category"
+
+    print "\nThis is where dicom files live before import."
+    inbox_file_path = raw_input('Inbox: ')
+
+    print "\nThis is where dicom files move to after import."
+    imported_file_path = raw_input('Imported: ')
+
+    print "\nThis is where dicom files to be reviewed live, but will not be imported."
+    review_file_path = raw_input('DVH Review: ')
+
+    import_settings = {'inbox': str(inbox_file_path),
+                       'imported': str(imported_file_path),
+                       'review': str(review_file_path)}
+
+    return import_settings
+
+
+def get_sql_connection_parameters_from_user():
+
+    print "\nPlease enter the host address\n(defaults to 'localhost' if left empty)"
+    host = raw_input('Host: ')
+    if not host:
+        host = 'localhost'
+
+    print "\nPlease enter the user name\n(leave empty for OS authentication)"
+    user = raw_input('User: ')
+
+    if user:
+        print "\nPlease enter the password, if any\n(will not display key strokes)"
+        password = getpass('Password: ')
+
+    print "\nPlease enter the database name\n(defaults to dvh if empty)"
+    dbname = raw_input('Database name: ')
+    if not dbname:
+        dbname = 'dvh'
+
+    print "\nPlease enter the database port\n(defaults to PostgreSQL default: 5432)"
+    port = raw_input('Port: ')
+    if not port:
+        port = '5432'
+
+    sql_connection_parameters = {'host': str(host),
+                                 'dbname': str(dbname),
+                                 'port': str(port)}
+
+    if user:
+        sql_connection_parameters['user'] = str(user)
+        sql_connection_parameters['password'] = str(password)
+
+    return sql_connection_parameters
+
+
+def write_import_settings(settings):
+
+    import_text = ['inbox ' + settings['inbox'],
+                   'imported ' + settings['imported'],
+                   'review ' + settings['review']]
+    import_text = '\n'.join(import_text)
+
+    script_dir = os.path.dirname(__file__)
+    rel_path = "dvh/preferences/import_settings.txt"
+    abs_file_path = os.path.join(script_dir, rel_path)
+
+    with open(abs_file_path, "w") as text_file:
+        text_file.write(import_text)
+
+
+def write_sql_connection_settings(config):
+
+    text = []
+    for key, value in config.iteritems():
+        text.append(key + ' ' + value)
+    text = '\n'.join(text)
+
+    script_dir = os.path.dirname(__file__)
+    rel_path = "dvh/preferences/sql_connection.cnf"
+    abs_file_path = os.path.join(script_dir, rel_path)
+
+    with open(abs_file_path, "w") as text_file:
+        text_file.write(text)
+
+
+def set_import_settings():
+    config = get_import_settings_from_user()
+    write_import_settings(config)
+
+
+def set_sql_connection_parameters():
+    config = get_sql_connection_parameters_from_user()
+    write_sql_connection_settings(config)
 
 
 def import_dicom(flags):
@@ -81,11 +177,13 @@ if __name__ == '__main__':
         elif call == 'print-patient-ids-with-no-age':
             print_patient_ids_with_no_ages()
 
-        elif call == 'initialize':
-            # create script with user input to create import_settings.txt and sql_connection.cnf
-            pass
+        elif call == 'settings':
+            if not flags or 'import' in flags:
+                set_import_settings()
+            if not flags or 'sql' in flags:
+                set_sql_connection_parameters()
 
-        elif call == 'ping':
+        elif call == 'echo':
             cnx = DVH_SQL()
             cnx.close()
             print "SQL DB is alive!"
