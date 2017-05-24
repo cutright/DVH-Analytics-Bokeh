@@ -1,3 +1,0 @@
-inbox /Users/nightowl/PycharmProjects/DVH-Analytics/inbox
-imported /Users/nightowl/PycharmProjects/DVH-Analytics/imported
-review /Users/nightowl/PycharmProjects/DVH-Analytics/review
