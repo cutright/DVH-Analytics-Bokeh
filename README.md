@@ -5,7 +5,7 @@ DVH Database focused on population statistics.
 
 This code is intended for Radiation Oncology departments to build a SQL database of DVHs and various planning parameters from DICOM files 
 (Plan, Structure, Dose). Currenly, only photon and electron plans have been tested with Philips Pinnacle, however, we intend to accomodate 
-proton and brachytherapy plans.  Additionally, this code extracts data directly from DICOM files and we intend to support an array of 
+proton and brachytherapy plans.  Additionally, this code extracts data directly from DICOM files and we intend to accomodate an array of 
 treatment planning system vendors.
 
 For installation instructions, see our [installation notes](https://github.com/cutright/DVH-Analytics/blob/master/install_notes.md).
