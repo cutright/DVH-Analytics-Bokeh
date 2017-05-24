@@ -44,6 +44,13 @@ For installation instructions, see our [installation notes](https://github.com/c
 
 - [ ] Design UI for backend management
 
+- [ ] Adapt code and validate for other treatment planning systems
+   - [ ] Monaco
+   - [ ] iPlan
+   - [ ] Protons
+   - [ ] Oncentra Brachytherapy
+   - [ ] Outside validation
+
 ### Lower Priorities
 - [X] Add ability to plot a temporary plan not in the SQL DB
     - [ ] Design new app for plan review
