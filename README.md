@@ -2,10 +2,13 @@
 <img src='https://cloud.githubusercontent.com/assets/4778878/26416076/49c71180-407a-11e7-9e21-83ea29eec739.png' align='right' width='350' alt="dicompyler screenshot">
 DVH Database Manager and Viewer
 
-This code is intended for Radiation Oncology departments to build a SQL database of DVH's and various planning parameters from DICOM files (Plan, Structure, Dose).
+This code is intended for Radiation Oncology departments to build a SQL database of DVHs and various planning parameters from DICOM files 
+(Plan, Structure, Dose). Currenly, only photon and electron plans have been tested with Philips Pinnacle, however, we intend to accomodate 
+proton and brachytherapy plans.  Additionally, this code extracts data directly from DICOM files and we intend to support an array of 
+treatment planning system vendors.
 
 
-For installation instructions, see install_notes.txt
+For installation instructions, see our [installation notes](https://github.com/cutright/DVH-Analytics/blob/master/install_notes.md).
 
 ## Dependencies
 * [Python](https://www.python.org) 2.7 tested
