@@ -31,6 +31,10 @@ directories or only SQL connection settings, simply append '--import' or '--sql'
 ~~~~
 $ python dvh.py settings --sql
 ~~~~
+If you'd like to verify communication between the python code and the SQL data base, type:
+~~~~
+$ python dvh.py echo
+~~~~
 
 ## Processing test files
 From the same directory as the previous step, type the following:
@@ -40,6 +44,24 @@ $ python dvh.py test
 This may take a few minutes. This python code will process all dicom files located in the test files folder.  
 If this test passes, then all dependencies are successfully installed (e.g., PostgreSQL, Python libraries).
 
+## Importing your own data
+From the same directory as the previous step, type the following:
+~~~~
+$ python dvh.py import
+~~~~
+Assuming all of the previous steps were successful, all dicom files anywhere within your inbox will be imported 
+into the SQL database, then organized by patient name and moved to the specified imported folder.  Note that by 
+default, the code will not import dicom files with Study Instance UIDs that are already in the database.  You 
+may over-ride any of these default behaviors with any combination of the following optional flags:
+ - force-update
+ - do-not-organize-files
+ - do-not-move-files
+
+For example, the following command will not check for duplicate database entries and will not remove the dicom files 
+from the inbox folder:
+~~~~
+$ python dvh.py import --force-update --do-not-move-files
+~~~~
 
 ## Web view
 From the same directory as the previous step, type the following to start the bokeh server:  

@@ -7,12 +7,115 @@ This is the main python file for command line implementation.
 """
 
 import sys
-from dvh.test import test_dvh_code
 from dvh.dicom_to_sql import dicom_to_sql
-from dvh.utilities import recalculate_ages
+from dvh.utilities import recalculate_ages, Temp_DICOM_FileSet
 from dvh.sql_connector import DVH_SQL
+from dvh.analysis_tools import DVH
 import os
 from getpass import getpass
+
+
+def is_import_settings_defined():
+
+    script_dir = os.path.dirname(__file__)
+    rel_path = "dvh/preferences/import_settings.txt"
+    abs_file_path = os.path.join(script_dir, rel_path)
+
+    if os.path.isfile(abs_file_path):
+        return True
+    else:
+        return False
+
+
+def is_sql_connection_defined():
+
+    script_dir = os.path.dirname(__file__)
+    rel_path = "dvh/preferences/sql_connection.cnf"
+    abs_file_path = os.path.join(script_dir, rel_path)
+
+    if os.path.isfile(abs_file_path):
+        return True
+    else:
+        return False
+
+
+def validate_import_settings():
+    script_dir = os.path.dirname(__file__)
+    rel_path = "dvh/preferences/import_settings.txt"
+    abs_file_path = os.path.join(script_dir, rel_path)
+
+    with open(abs_file_path, 'r') as document:
+        config = {}
+        for line in document:
+            line = line.split()
+            if not line:
+                continue
+            config[line[0]] = line[1:][0]
+
+    valid = True
+    for key, value in config.iteritems():
+        if not os.path.isdir(value):
+            print 'invalid', key, 'path: ', value
+            valid = False
+
+    return valid
+
+
+def validate_sql_connection():
+
+    try:
+        cnx = DVH_SQL()
+        cnx.close()
+        valid = True
+    except:
+        valid = False
+
+    return valid
+
+
+def test_dvh_code():
+
+    if not is_import_settings_defined() and not is_sql_connection_defined():
+        print "ERROR: Import and SQL settings are not yet defined.  Please run:\n    $ python dvh.py settings"
+    elif not is_import_settings_defined():
+        print "ERROR: Import settings are not yet defined.  Please run:\n    $ python dvh.py settings --import"
+    elif not is_sql_connection_defined():
+        print "ERROR: SQL settings are not yet defined.  Please run:\n    $ python dvh.py settings --sql"
+    else:
+        is_import_valid = validate_import_settings()
+        is_sql_connection_valid = validate_sql_connection()
+        if not is_import_valid and not is_sql_connection_valid:
+            print "ERROR: Create the directories listed above or input valid directories."
+            print "ERROR: Cannot connect to SQL."
+            print "Please run:"
+            print "    $ python dvh.py settings"
+        elif not is_import_valid:
+            print "ERROR: Create the directories listed above or input valid directories by running:"
+            print "    $ python dvh.py settings --import"
+        elif not is_sql_connection_valid:
+            print "ERROR: Cannot connect to SQL."
+            print "Verify database is active and/or update SQL connection information with:"
+            print "    $ python dvh.py settings --sql"
+
+        else:
+            print "importing test files with dicom_to_sql.py"
+            dicom_to_sql(start_path="test_files/example_dicom_files",
+                         organize_files=False,
+                         move_files=False)
+
+            print "reading data from SQL DB with analysis_tools.py"
+            test = DVH()
+
+            print "reading dicom information from test files with utilities.py"
+            test_files = Temp_DICOM_FileSet(start_path="test_files/example_dicom_files")
+
+            print "deleting test data from SQL database"
+            for i in range(0, test_files.count):
+                cond_str = "mrn = '" + test_files.mrn[i] + "'"
+                print 'removing mrn = ' + test_files.mrn[i]
+                DVH_SQL().delete_rows(cond_str)
+
+            print "tests successful!"
 
 
 def get_import_settings_from_user():
@@ -184,9 +287,10 @@ if __name__ == '__main__':
                 set_sql_connection_parameters()
 
         elif call == 'echo':
-            cnx = DVH_SQL()
-            cnx.close()
-            print "SQL DB is alive!"
+            if validate_sql_connection():
+                print "SQL DB is alive!"
+            else:
+                print "Connection to SQL DB could not be established."
 
         else:
-            print call + " is not a valid call"
+            print call, "is not a valid call"

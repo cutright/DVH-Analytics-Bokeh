@@ -25,11 +25,6 @@ class DVH_SQL:
                 if not line:
                     continue
                 config[line[0]] = line[1:][0]
-                # Convert strings to boolean
-                if line[1:][0].lower() == 'true':
-                    config[line[0]] = True
-                elif line[1:][0].lower() == 'false':
-                    config[line[0]] = False
 
         self.dbname = config['dbname']
 
