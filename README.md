@@ -8,6 +8,11 @@ This code is intended for Radiation Oncology departments to build a SQL database
 proton and brachytherapy plans.  Additionally, this code extracts data directly from DICOM files and we intend to accomodate an array of 
 treatment planning system vendors.
 
+The code primarily is built up these core libraries:
+* [pydicom](http://code.google.com/p/pydicom/) - Read, modify and write DICOM files with python code
+* [dicompyler-core](https://pypi.python.org/pypi/dicompyler-core) - Extensible radiation therapy research platform and viewer for DICOM and DICOM RT
+* [Bokeh](http://bokeh.pydata.org/en/latest/index.html) - Interactive Web Plotting for Python
+
 For installation instructions, see our [installation notes](https://github.com/cutright/DVH-Analytics/blob/master/install_notes.md).
 
 ## Dependencies
