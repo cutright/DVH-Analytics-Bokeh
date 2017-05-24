@@ -1,4 +1,5 @@
 # DVH Analytics
+<img src='https://cloud.githubusercontent.com/assets/4778878/26416076/49c71180-407a-11e7-9e21-83ea29eec739.png' align='right' width='350' alt="dicompyler screenshot">
 DVH Database Manager and Viewer
 
 This code is intended for Radiation Oncology departments to build a SQL database of DVH's and various planning parameters from DICOM files (Plan, Structure, Dose).
