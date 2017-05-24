@@ -27,16 +27,10 @@ Simply type in the following command to define the dicom directories and SQL con
 $ python dvh.py settings
 ~~~~
 The command line will walk you through the setup with a series of prompts.  If you wish to set only dicom 
-directories or only SQL connection settings, simply append with appropriate flags as shown below:
-~~~~
-$ python dvh.py settings --import
-~~~~
+directories or only SQL connection settings, simply append '--import' or '--sql'.  For example:
 ~~~~
 $ python dvh.py settings --sql
 ~~~~
-Alternatively, you can manually edit these files:  
-dvh/preferences/import_settings.txt  
-dvh/preferences/sql_connection.cnf
 
 ## Processing test files
 From the same directory as the previous step, type the following:
