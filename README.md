@@ -1,5 +1,5 @@
 # DVH Analytics
-<img src='https://cloud.githubusercontent.com/assets/4778878/26416076/49c71180-407a-11e7-9e21-83ea29eec739.png' align='right' width='300' alt="dicompyler screenshot">  
+<img src='https://cloud.githubusercontent.com/assets/4778878/26416762/9a649214-407c-11e7-9046-9688e5d7a95f.png' align='right' width='300' alt="DVH Analytics screenshot">  
   
 DVH Database focused on population statistics.
 
