@@ -1,12 +1,13 @@
 # DVH Analytics
 <img src='https://cloud.githubusercontent.com/assets/4778878/26416762/9a649214-407c-11e7-9046-9688e5d7a95f.png' align='right' width='300' alt="DVH Analytics screenshot">  
   
-DVH Database focused on population statistics.
+DVH Analytics is a code to help radiation oncology departments build an in-house database of treatment planning data 
+for the purpose of historical comparisons.
 
-This code is intended for Radiation Oncology departments to build a SQL database of DVHs and various planning parameters from DICOM files 
-(Plan, Structure, Dose). Currenly, only photon and electron plans have been tested with Philips Pinnacle, however, we intend to accomodate 
-proton and brachytherapy plans.  Additionally, this code extracts data directly from DICOM files and we intend to accomodate an array of 
-treatment planning system vendors.
+This code builds a SQL database of DVHs and various planning parameters from DICOM files 
+(i.e., Plan, Structure, Dose). Currently, only photon and electron plans have been tested with Philips Pinnacle,
+however, we intend to accomodate proton and brachytherapy plans as well.  Since this code extracts data
+directly from DICOM files, and we intend to accomodate an array of treatment planning system vendors.
 
 This code is built upon these core libraries:
 * [pydicom](http://code.google.com/p/pydicom/) - Read, modify and write DICOM files with python code
