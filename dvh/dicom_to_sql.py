@@ -10,7 +10,6 @@ from sql_connector import DVH_SQL
 from dicom_to_python import DVHTable, PlanRow, BeamTable, RxTable
 import os
 import dicom
-from datetime import datetime
 
 
 class DICOM_FileSet:

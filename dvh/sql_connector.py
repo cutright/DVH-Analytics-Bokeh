@@ -9,7 +9,6 @@ Created on Sat Mar  4 11:33:10 2017
 # code currently only supports MySQL by Oracle
 import psycopg2
 import os
-from datetime import datetime
 
 
 class DVH_SQL:
