@@ -229,7 +229,12 @@ def set_sql_connection_parameters():
     write_sql_connection_settings(config)
 
 
-def import_dicom(flags):
+def import_dicom(*flags):
+
+    if flags:
+        flags = flags[0]
+    else:
+        flags = []
 
     if 'force-update' in flags:
         force_update = True

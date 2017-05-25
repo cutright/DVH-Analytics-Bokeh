@@ -10,7 +10,7 @@ Created on Sun Feb 26 11:06:28 2017
 import dicom  # pydicom
 from dicompylercore import dicomparser, dvhcalc
 from datetime import datetime
-from dateutil import relativedelta  # python-dateutil
+from dateutil.relativedelta import relativedelta  # python-dateutil
 from roi_name_manager import DatabaseROIs
 from utilities import datetime_str_to_obj
 
@@ -115,8 +115,7 @@ class PlanRow:
             sim_study_day = int(sim_study_date[6:8])
             sim_study_date_obj = datetime(sim_study_year, sim_study_month, sim_study_day)
         else:
-            sim_study_date = '18000101'
-            sim_study_date_obj = datetime(1800, 1, 1)
+            sim_study_date = '(NULL)'
 
         # Calculate patient age at time of sim
         # Set to NULL birthday is not in DICOM file
@@ -129,12 +128,13 @@ class PlanRow:
             birth_month = int(birth_date[4:6])
             birth_day = int(birth_date[6:8])
             birth_date_obj = datetime(birth_year, birth_month, birth_day)
-            if sim_study_date == '18000101':
+            if sim_study_date == '(NULL)':
                 age = '(NULL)'
             else:
                 age = relativedelta(sim_study_date_obj, birth_date_obj).years
 
-        # Record physician initials from ReferringPhysicianName tag
+        # Record physician initials
+        # In Pinnacle, PhysiciansOfRecord refers to the Radiation Oncologist field
         if hasattr(rt_plan, 'PhysiciansOfRecord'):
             physician = rt_plan.PhysiciansOfRecord.upper()
         else:
@@ -157,7 +157,7 @@ class PlanRow:
         # Record patient position (e.g., HFS, HFP, FFS, or FFP)
         patient_orientation = rt_plan.PatientSetupSequence[0].PatientPosition
 
-        # Contest self-evident, their utility is not (yet)
+        # Context self-evident, their utility is not (yet)
         plan_time_stamp = datetime_str_to_obj(rt_plan.RTPlanDate + rt_plan.RTPlanTime)
         struct_time_stamp = datetime_str_to_obj(rt_structure.StructureSetDate + rt_structure.StructureSetTime)
         dose_time_stamp = datetime_str_to_obj(rt_dose.ContentDate + rt_dose.ContentTime)

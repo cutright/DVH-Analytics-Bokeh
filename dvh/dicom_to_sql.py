@@ -72,12 +72,12 @@ def dicom_to_sql(**kwargs):
         elif kwargs['move_files']:
             move_files_to_imported_path(f[n], import_settings['imported'])
 
-    # Default behavior is to organize files in the imported folder
-    # Only way to prevent organizing files is to set organize_files = False in kwargs
-    if 'organize_files' not in kwargs:
-        organize_dicom_files(import_settings['imported'])
-    elif kwargs['organize_files']:
-        organize_dicom_files(import_settings['imported'])
+        # Default behavior is to organize files in the imported folder
+        # Only way to prevent organizing files is to set organize_files = False in kwargs
+        if 'organize_files' not in kwargs:
+            organize_dicom_files(import_settings['imported'])
+        elif kwargs['organize_files']:
+            organize_dicom_files(import_settings['imported'])
 
     sqlcnx.cnx.close()
 
