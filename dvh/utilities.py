@@ -35,13 +35,13 @@ class Temp_DICOM_FileSet:
         self.structure = []
         self.dose = []
         self.mrn = []
+        self.study_instance_uid = []
 
         f = []
-        print str(datetime.now()), 'getting file list'
+
         for root, dirs, files in os.walk(start_path, topdown=False):
             for name in files:
                 f.append(os.path.join(root, name))
-        print str(datetime.now()), 'file list obtained'
 
         plan_files = []
         study_uid_plan = []
@@ -51,7 +51,6 @@ class Temp_DICOM_FileSet:
         study_uid_dose = []
         mrns = []
 
-        print str(datetime.now()), 'accumulating lists of plan, structure, and dose dicom files'
         for x in range(0, len(f)):
             try:
                 dicom_file = dicom.read_file(f[x])
@@ -67,13 +66,12 @@ class Temp_DICOM_FileSet:
             except Exception:
                 pass
 
-        print str(datetime.now()), 'sorting files by uid'
-
         self.count = len(plan_files)
 
         for a in range(0, self.count):
             self.plan.append(plan_files[a])
             self.mrn.append(dicom.read_file(plan_files[a]).PatientID)
+            self.study_instance_uid.append(dicom.read_file(plan_files[a]).StudyInstanceUID)
             for b in range(0, len(structure_files)):
                 if study_uid_plan[a] == study_uid_structure[b]:
                     self.structure.append(structure_files[b])
@@ -86,8 +84,6 @@ class Temp_DICOM_FileSet:
             self.mrn.append('')
             self.structure.append('')
             self.dose.append('')
-
-        print str(datetime.now()), 'files sorted'
 
     def get_roi_names(self, mrn):
 

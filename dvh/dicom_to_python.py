@@ -303,7 +303,7 @@ class DVHTable:
                     current_dvh_calc = dvhcalc.get_dvh(structure_file, dose_file, key)
                     self.dvhs[row_counter] = current_dvh_calc.counts
                     if current_dvh_calc.volume > 0:
-                        print('Importing ' + current_dvh_calc.name)
+                        print 'Importing ' + current_dvh_calc.name
                         if rt_structures[key]['name'].lower().find('itv') == 0:
                             roi_type = 'ITV'
                         else:

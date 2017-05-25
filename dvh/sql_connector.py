@@ -117,7 +117,7 @@ class DVH_SQL:
 
         self.execute_file(file_path)
         os.remove(file_path)
-        print('DVHs Imported.')
+        print 'DVHs imported'
 
     def insert_plan(self, plan):
 
@@ -158,7 +158,7 @@ class DVH_SQL:
 
         self.execute_file(file_path)
         os.remove(file_path)
-        print('Plan Imported.')
+        print 'Plan imported'
 
     def insert_beams(self, beams):
 
@@ -197,7 +197,7 @@ class DVH_SQL:
 
         self.execute_file(file_path)
         os.remove(file_path)
-        print('Beams Imported.')
+        print 'Beams imported'
 
     def insert_rxs(self, rx_table):
 
@@ -226,7 +226,7 @@ class DVH_SQL:
 
         self.execute_file(file_path)
         os.remove(file_path)
-        print('Rxs Imported.')
+        print 'Rxs imported'
 
     def delete_rows(self, condition_str):
 
@@ -241,19 +241,19 @@ class DVH_SQL:
 
     def reinitialize_database(self):
 
-        print str(datetime.now()), 'Dropping tables'
+        print 'Dropping tables'
         self.cursor.execute('DROP TABLE IF EXISTS Plans;')
         self.cursor.execute('DROP TABLE IF EXISTS DVHs;')
         self.cursor.execute('DROP TABLE IF EXISTS Beams;')
         self.cursor.execute('DROP TABLE IF EXISTS Rxs;')
         self.cnx.commit()
-        print str(datetime.now()), 'Loading create_tables.sql'
+        print 'Loading create_tables.sql'
         script_dir = os.path.dirname(__file__)
         rel_path = "preferences/create_tables.sql"
         abs_file_path = os.path.join(script_dir, rel_path)
-        print str(datetime.now()), 'Executing create_tables.sql'
+        print 'Executing create_tables.sql'
         self.execute_file(abs_file_path)
-        print str(datetime.now()), 'Tables created'
+        print 'Tables created'
 
     def does_db_exist(self):
         # Check if database exists

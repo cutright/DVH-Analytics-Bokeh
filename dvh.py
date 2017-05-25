@@ -13,6 +13,7 @@ from dvh.sql_connector import DVH_SQL
 from dvh.analysis_tools import DVH
 import os
 from getpass import getpass
+from datetime import datetime
 
 
 def is_import_settings_defined():
@@ -98,24 +99,25 @@ def test_dvh_code():
             print "    $ python dvh.py settings --sql"
 
         else:
-            print "importing test files with dicom_to_sql.py"
+            print "Importing test files"
             dicom_to_sql(start_path="test_files/example_dicom_files",
                          organize_files=False,
-                         move_files=False)
+                         move_files=False,
+                         force_update=False)
 
-            print "reading data from SQL DB with analysis_tools.py"
+            print "Reading data from SQL DB with analysis_tools.py"
             test = DVH()
 
-            print "reading dicom information from test files with utilities.py"
+            print "Reading dicom information from test files with utilities.py (for plan review module)"
             test_files = Temp_DICOM_FileSet(start_path="test_files/example_dicom_files")
 
-            print "deleting test data from SQL database"
+            print "Deleting test data from SQL database"
             for i in range(0, test_files.count):
-                cond_str = "mrn = '" + test_files.mrn[i] + "'"
-                print 'removing mrn = ' + test_files.mrn[i]
+                cond_str = "mrn = '" + test_files.mrn[i]
+                cond_str += "' and study_instance_uid = '" + test_files.study_instance_uid[i] + "'"
                 DVH_SQL().delete_rows(cond_str)
 
-            print "tests successful!"
+            print "Tests successful!"
 
 
 def get_import_settings_from_user():
@@ -229,7 +231,9 @@ def import_dicom(flags):
     else:
         move_files = True
 
-    dicom_to_sql(force_update=force_update, organize_files=organize_files, move_files=move_files)
+    dicom_to_sql(force_update=force_update,
+                 organize_files=organize_files,
+                 move_files=move_files)
 
 
 def print_patient_ids():
