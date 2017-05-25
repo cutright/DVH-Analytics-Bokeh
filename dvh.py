@@ -13,7 +13,6 @@ from dvh.sql_connector import DVH_SQL
 from dvh.analysis_tools import DVH
 import os
 from getpass import getpass
-from datetime import datetime
 
 
 def is_import_settings_defined():
@@ -71,7 +70,23 @@ def validate_sql_connection():
     except:
         valid = False
 
+    if valid:
+        print "SQL DB is alive!"
+    else:
+        print "Connection to SQL DB could not be established."
+        if not is_sql_connection_defined():
+            print "ERROR: SQL settings are not yet defined.  Please run:\n    $ python dvh.py settings --sql"
+
     return valid
+
+
+def settings(*flags):
+    if flags:
+        flags = flags[0]
+    if not flags or 'import' in flags:
+        set_import_settings()
+    if not flags or 'sql' in flags:
+        set_sql_connection_parameters()
 
 
 def test_dvh_code():
@@ -86,17 +101,17 @@ def test_dvh_code():
         is_import_valid = validate_import_settings()
         is_sql_connection_valid = validate_sql_connection()
         if not is_import_valid and not is_sql_connection_valid:
-            print "ERROR: Create the directories listed above or input valid directories."
-            print "ERROR: Cannot connect to SQL."
-            print "Please run:"
-            print "    $ python dvh.py settings"
+            print("ERROR: Create the directories listed above or input valid directories.")
+            print("ERROR: Cannot connect to SQL.")
+            print("Please run:")
+            print("    $ python dvh.py settings")
         elif not is_import_valid:
-            print "ERROR: Create the directories listed above or input valid directories by running:"
-            print "    $ python dvh.py settings --import"
+            print("ERROR: Create the directories listed above or input valid directories by running:")
+            print("    $ python dvh.py settings --import")
         elif not is_sql_connection_valid:
-            print "ERROR: Cannot connect to SQL."
-            print "Verify database is active and/or update SQL connection information with:"
-            print "    $ python dvh.py settings --sql"
+            print("ERROR: Cannot connect to SQL.")
+            print("Verify database is active and/or update SQL connection information with:")
+            print("    $ python dvh.py settings --sql")
 
         else:
             print "Importing test files"
@@ -236,65 +251,99 @@ def import_dicom(flags):
                  move_files=move_files)
 
 
-def print_patient_ids():
+def print_mrns():
     mrns = DVH_SQL().get_unique_values('plans', 'mrn')
     if len(mrns) == 0:
         print "No plans have been imported"
-    else:
-        for i in range(0, len(mrns)):
-            print mrns[i]
+
+    printed_mrns = []
+    for i in range(0, len(mrns)):
+        current_mrn = mrns[i]
+        if current_mrn not in printed_mrns:
+            printed_mrns.append(current_mrn)
+            print current_mrn
 
 
-def print_patient_ids_with_no_ages():
+def get_flags_modifier():
+    bad_command = False
+    flags = []
+    modifier = []
+    i = 1
+    while i < arg_count:
+        if sys.argv[i][0:2] == '--':
+            current_flag = sys.argv[i][2:len(sys.argv[i])]
 
-    mrns = DVH_SQL().query('plans', 'mrn', 'age is NULL');
-    if len(mrns) == 0:
-        print "No plans found with no age"
-    else:
-        for i in range(0, len(mrns)):
-            print str(mrns[i][0])
+            if current_flag in call_map[call]['flags']:
+                flags.append(current_flag)
+                try:
+                    if sys.argv[i + 1][0:2] != '--':
+                        if call_map[call]['modifier']:
+                            for j in range(i, arg_count):
+                                modifier.append(sys.argv[j+1])
+                            i = arg_count
+                        else:
+                            print "ERROR: Modifiers not allowed for --" + flags[-1]
+                            bad_command = True
+                            i += 1
+                except:
+                    pass
+            else:
+                print "ERROR: " + current_flag + " is not a valid flag"
+                bad_command = True
+        else:
+            if i > 1:
+                if not call_map[call]['modifier']:
+                    print "ERROR: multiple calls given"
+                    bad_command = True
+        i += 1
+
+    return flags, modifier, bad_command
+
+
+call_map = {'test': {'function': test_dvh_code,
+                     'flags': {},
+                     'modifier': False},
+            'echo': {'function': validate_sql_connection,
+                     'flags': {},
+                     'modifier': False},
+            'import': {'function': import_dicom,
+                       'flags': {'start_path', 'organize_files', 'move_files', 'force_update'},
+                       'modifier': False},
+            'print-mrns': {'function': print_mrns,
+                           'flags': {},
+                           'modifier': False},
+            'settings': {'function': settings,
+                         'flags': {'sql', 'import'},
+                         'modifier': False},
+            'recalculate-ages': {'function': recalculate_ages,
+                                 'flags': {},
+                                 'modifier': False}}
 
 
 if __name__ == '__main__':
 
     arg_count = len(sys.argv)
-    call = sys.argv[1]
-
-    flags = []
-    for i in range(0, arg_count):
-        if sys.argv[i][0:2] == '--':
-            flags.append(sys.argv[i][2:len(sys.argv[i])])
 
     if arg_count == 1:
-        print "argument required, for example 'python dvh-analytics.py test"
-
+        print "Argument required: python dvh.py <call>"
+        print "Call options are:"
+        for key in call_map.keys():
+            print key
     else:
-        if call == 'test':
-            test_dvh_code()
+        call = sys.argv[1]
 
-        elif call == 'import':
-            import_dicom(flags)
-
-        elif call == 'recalculate-ages':
-            recalculate_ages()
-
-        elif call == 'print-patient-ids':
-            print_patient_ids()
-
-        elif call == 'print-patient-ids-with-no-age':
-            print_patient_ids_with_no_ages()
-
-        elif call == 'settings':
-            if not flags or 'import' in flags:
-                set_import_settings()
-            if not flags or 'sql' in flags:
-                set_sql_connection_parameters()
-
-        elif call == 'echo':
-            if validate_sql_connection():
-                print "SQL DB is alive!"
-            else:
-                print "Connection to SQL DB could not be established."
+        if call not in call_map:
+            print call, "is not a valid call"
 
         else:
-            print call, "is not a valid call"
+            flags, modifier, bad_command = get_flags_modifier()
+
+            if not bad_command:
+                if not flags or len(flags) == 0:
+                    call_map[call]['function']()
+                elif flags and not modifier:
+                    call_map[call]['function'](flags)
+                elif flags and modifier:
+                    call_map[call]['function'](flags, modifier)
+            else:
+                print "Command not understood"
