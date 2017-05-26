@@ -9,6 +9,12 @@ Created on Fri Mar 24 13:43:28 2017
 import os
 from sql_to_python import QuerySQL
 from sql_connector import DVH_SQL
+from bokeh.layouts import layout, column, row
+from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool
+from bokeh.models.widgets import Select, Button, PreText, TableColumn, DataTable, \
+    NumberFormatter, RadioButtonGroup, TextInput, RadioGroup
+from bokeh.plotting import figure
+from bokeh.io import curdoc
 
 
 class ROISet:
@@ -185,9 +191,10 @@ class DatabaseROIs:
     def get_institution_roi_list(self):
         institution_rois = []
         for key in self.roi:
-            if self.roi[key].roi_name == self.is_institutional_roi(self.roi[key].roi_name):
-                if self.roi[key].roi_name not in institution_rois:
-                    institution_rois.append(self.roi[key].roi_name)
+            current_roi = self.roi[key].roi_name
+            if self.is_institutional_roi(current_roi):
+                if current_roi not in institution_rois:
+                    institution_rois.append(current_roi)
         institution_rois.sort()
         return institution_rois
 
@@ -323,6 +330,38 @@ def print_uncategorized_rois():
         physician_roi = dvh_data.physician_roi[i]
         institutional_roi = dvh_data.institutional_roi[i]
         print physician, institutional_roi, physician_roi, roi_name
+
+
+db = DatabaseROIs()
+
+
+def update_physician_roi_list(attr, old, new):
+    pass
+
+
+select_institutional_roi = Select(value='1',
+                                  options=db.get_institution_roi_list(),
+                                  width=100,
+                                  title='Institutional ROI')
+
+select_physician = Select(value=db.physicians[0],
+                          options=db.physicians,
+                          width=100,
+                          title='Physician')
+select_physician.on_change('value', update_physician_roi_list)
+
+select_physician_roi = Select(value=db.get_physician_roi_list(select_physician.value)[0],
+                              options=db.get_physician_roi_list(select_physician.value),
+                              width=100,
+                              title='Physician ROI')
+select_physician_roi.on_change('value', update_physician_roi_list)
+
+layout = column(row(select_institutional_roi),
+                row(select_physician, select_physician_roi))
+
+# Create the document Bokeh server will use to generate the webpage
+curdoc().add_root(layout)
+curdoc().title = "ROI Name Manager"
 
 
 if __name__ == '__main__':
