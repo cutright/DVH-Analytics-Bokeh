@@ -17,6 +17,8 @@
    - [ ] Outside validation
 
 ### Lower Priorities
+- [ ] Add an import  log
+
 - [ ] Include a column in Plans for staging and a way to update it post-import
 
 - [X] Add ability to plot a temporary plan not in the SQL DB
