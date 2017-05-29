@@ -18,7 +18,7 @@ from getpass import getpass
 def is_import_settings_defined():
 
     script_dir = os.path.dirname(__file__)
-    rel_path = "dvh/preferences/import_settings.txt"
+    rel_path = "dvh-analytics/preferences/import_settings.txt"
     abs_file_path = os.path.join(script_dir, rel_path)
 
     if os.path.isfile(abs_file_path):
@@ -30,7 +30,7 @@ def is_import_settings_defined():
 def is_sql_connection_defined():
 
     script_dir = os.path.dirname(__file__)
-    rel_path = "dvh/preferences/sql_connection.cnf"
+    rel_path = "dvh-analytics/preferences/sql_connection.cnf"
     abs_file_path = os.path.join(script_dir, rel_path)
 
     if os.path.isfile(abs_file_path):
@@ -41,7 +41,7 @@ def is_sql_connection_defined():
 
 def validate_import_settings():
     script_dir = os.path.dirname(__file__)
-    rel_path = "dvh/preferences/import_settings.txt"
+    rel_path = "dvh-analytics/preferences/import_settings.txt"
     abs_file_path = os.path.join(script_dir, rel_path)
 
     with open(abs_file_path, 'r') as document:
@@ -197,7 +197,7 @@ def write_import_settings(settings):
     import_text = '\n'.join(import_text)
 
     script_dir = os.path.dirname(__file__)
-    rel_path = "dvh/preferences/import_settings.txt"
+    rel_path = "dvh-analytics/preferences/import_settings.txt"
     abs_file_path = os.path.join(script_dir, rel_path)
 
     with open(abs_file_path, "w") as text_file:
@@ -212,7 +212,7 @@ def write_sql_connection_settings(config):
     text = '\n'.join(text)
 
     script_dir = os.path.dirname(__file__)
-    rel_path = "dvh/preferences/sql_connection.cnf"
+    rel_path = "dvh-analytics/preferences/sql_connection.cnf"
     abs_file_path = os.path.join(script_dir, rel_path)
 
     with open(abs_file_path, "w") as text_file:
