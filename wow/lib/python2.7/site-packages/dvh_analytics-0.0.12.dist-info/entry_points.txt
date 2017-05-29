@@ -1,0 +1,3 @@
+[console_scripts]
+dvh = dvh.__main__:main
+

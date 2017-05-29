@@ -1,0 +1,10 @@
+export declare var ONE_MILLI: number;
+export declare var ONE_SECOND: number;
+export declare var ONE_MINUTE: number;
+export declare var ONE_HOUR: number;
+export declare var ONE_DAY: number;
+export declare var ONE_MONTH: number;
+export declare var ONE_YEAR: number;
+export declare var copy_date: (date: any) => Date;
+export declare var last_month_no_later_than: (date: any) => any;
+export declare var last_year_no_later_than: (date: any) => any;

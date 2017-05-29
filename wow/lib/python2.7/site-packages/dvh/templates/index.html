@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+      <style>
+        h2 {
+            display: block;
+            font: "Libre Baskerville", sans-serif;
+            font-size: 1.5em;
+            margin-top: 0.83em;
+            margin-bottom: 0.83em;
+            margin-left: 12em;
+            margin-right: 0;
+            font-weight: bold;
+        }
+        img.one {
+            width: 20%;
+            margin-left: 1.5em;
+            margin-top: 1.5em;
+        }
+        </style>
+    <meta charset="utf-8">
+    <title>DVH Database</title>
+    {{ bokeh_css }}
+    {{ bokeh_js }}
+  </head>
+  <body>
+    <div class="content">
+      <img class="one" src="https://isgmh.northwestern.edu/files/2017/01/nm-2e6d91k.png">
+         <h2>Radiation Oncology DVH Database</h2>
+      {{ plot_div|indent(8) }}
+        {{ plot_script|indent(8) }}
+    </div>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+export declare var Asterisk: () => any;
+export declare var CircleCross: () => any;
+export declare var CircleX: () => any;
+export declare var Cross: () => any;
+export declare var Diamond: () => any;
+export declare var DiamondCross: () => any;
+export declare var InvertedTriangle: () => any;
+export declare var Square: () => any;
+export declare var SquareCross: () => any;
+export declare var SquareX: () => any;
+export declare var Triangle: () => any;
+export declare var X: () => any;

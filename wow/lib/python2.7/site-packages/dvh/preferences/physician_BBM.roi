@@ -1,0 +1,80 @@
+brachial_plexus: brachplex_cb: brachial_plexus, brachial_plexus_combined, brachial_plexus_total, brachialplexus, brachplex_cb, combined_bp, combined_brachial_plexus, study_brachial_plexus_cb, study_brachial_plexus_combined
+brachial_plexus_left: brachplex_l: brachial_plexus_l, brachial_plexus_left, brachialplexus_l, brachplex_l, l_brachial_plexus, left_brachial_plexus, lt._brachial_plexus, lt_bp, lt_brachial_plexus, study_brachial_plexus_l, study_brachial_plexus_left
+brachial_plexus_right: brachplex_r: brachial_plexus__r, brachial_plexus_r, brachial_plexus_right, brachialplexus_r, brachplex_r, r_brachial_plexus, right_brachial_plexus, rt_bp, rt_brachial_plexus, study_brachial_plexus_r, study_brachial_plexus_right
+brain: brain: brain, study_brain, whole_brain
+brainstem: brainstem: brain_stem, brainstem, study_brain_stem
+cochlea_combined: combined_cochlea: combined_cochlea
+cochlea_left: cochlea_l: cochlea_l, l._cochlea, l_cochlea, left_cochlea, lt_cochlea, study_cochlea_l
+cochlea_right: cochlea_r: cochlea_r, r._cochlea, r_cochlea, right_cochlea, rt_cochlea, study_cochlea_r
+external: external: external
+larynx: larynx: lar, larynx, larynx_cb, larynx_combo, larynx_total, study_larynx
+lens_left: lens_l: l_lens, left_lens, lens_l, lens_lt
+lens_right: lens_r: lenrs_r, lens_r, lens_rt, r_lens, right_lens
+lung_left: l_lung: l_lung
+lung_right: r_lung: r_lung
+lung_whole: whole_lung: lungs, whole_lung
+optic_chiasm: chiasm: chiasm, optic_chiasm, opticchiasm, study_chiasm
+optic_nerve_left: opticnerve_l: l._optic_nerve, l_optic_n, l_optic_nerve, left_optic_nerve, lt_optic_n, lt_optic_nerve, optic_nerve_l, opticnerve_l, study_optic_nrv_l
+optic_nerve_right: opticnerve_r: optic_nerve_r, opticnerve_r, r._optic_nerve, r_optic_n, r_optic_nerve, right_optic_nerve, rt_optic_n, rt_optic_nerve, study_optic_nrv_r
+orbit_left: eye_l: eye_l, l._orbit, l_eye, l_orbit, left_eye, left_globe, left_orbit, lt_eye, lt_globe, study_eye_l
+orbit_right: eye_r: eye_r, r._orbit, r_eye, r_orbit, right_eye, right_globe, right_orbit, rt_eye, rt_globe, study_eye_r
+skin: skinoar: skin, skinoar
+spinal_cord: spinal_cord: cord, spinal_cord, spinalcord, study_spinal_cord
+uncategorized: ae_fold: ae_fold, study_ae_fold
+uncategorized: anterior_scalene: anterior_scalene
+uncategorized: arytenoid: arytenoid, study_arytenoid
+uncategorized: bot: base_of_tongue, bot, study_base_of_tongue, study_bot
+uncategorized: carotid_cb: carotid_cb, study_carotid_cb
+uncategorized: carotid_l: carotid_l, l._carotid, l_carotid, l_carotid_vessels, left_carotid_vessel, left_carotid_vessels, lt_carotid, study_carotid_l
+uncategorized: carotid_r: carotid_r, r._carotid, r_carotid_vessels
+uncategorized: cervical_esoph: cervical_esoph
+uncategorized: cervicothoracic_esoph: c-t_esophagus, cerv_thor_esophagus, cervico-thoracic_esophagus, cervico_thoracic_esophagus, cervicothor_esoph, cervicothoracic_esoph, cervicothoracic_esophagus, cervicothroacic_esophagus, esophagus(cerv-thor), esophagus_cervical, esophagus_cervico_thoracic, esophagus_cervicothoracic, study_cervico-thoracic_esophagus, study_cervicothoracic_esophagus
+uncategorized: constr_inf: constr_inf, constrictor_inferior, inf_constrictor, inf_phar_cons, inf_pharyngeal_const, inferior_constrictor, inferior_constrictors, inferior_pharyngeal_constrictor, inferior_pharyngeal_constrictors, inferior_pharyngeal_contstrictor, pharyngeal_constrictor_(inf), pharyngeal_constrictor_inferior, pharyngeal_constrictors_inf, study_constrictors_inf, study_inferior_constrictors
+uncategorized: constr_mid: constr_mid, constrictor_middle, medial_constrictor, mid_phar_cons, mid_pharyngeal_const, middle_constrictor, middle_constrictors, middle_pharyngeal_constrictor, middle_pharyngeal_constrictors, middle_pharyngeal_contstrictor, pharyngeal_constrictor_(mid), pharyngeal_constrictor_middle, pharyngeal_constrictors_mid, study_constrictors_mid, study_middle_constrictors
+uncategorized: constr_sup: constr_sup, constrictor_superior, pharyngeal_constrictor_(sup), pharyngeal_constrictor_superior, pharyngeal_constrictors_sup, study_constrictors_sup, study_superior_constrictors, sup_phar_cons, sup_pharyngeal_const, superior_constrictor, superior_constrictors, superior_pharyngeal_constrictor, superior_pharyngeal_constrictors
+uncategorized: constrictors_cb: combinded_constrictors, combined_const, combined_constrictors, constrictor_cb, constrictors_cb, constrictors_total, study_combined_constrictors, study_constrictors_cb
+uncategorized: cricoid_cartilage: cricoid_cartilage, study_cricoid_cartilage
+uncategorized: cricopharyngeal_muscle: cricopharyngeal_muscle, study_cricopharyngeal_muscle
+uncategorized: ear_inner_l: ear_inner_l
+uncategorized: ear_inner_r: ear_inner_r
+uncategorized: ear_middle_l: ear_middle_l
+uncategorized: ear_middle_r: ear_middle_r
+uncategorized: epiglottis: epiglottis, study_epiglottis
+uncategorized: esophageal_inlet_muscle: esophageal_inlet_muscle, study_esophageal_inlet_muscle
+uncategorized: esophagus_up: esophagus_up
+uncategorized: glossoepiglottic_fold: glossoepiglottic_fold, study_glossoepiglottic_fold
+uncategorized: hyoid_bone: hyoid, hyoid_bone, hyyoid, study_hyoid_bone
+uncategorized: hypopharynx: hypopharynx, study_hypopharynx
+uncategorized: inferior_scalene: inferior_scalene
+uncategorized: infrahyoid_epiglottis: infrahyoid_epiglottis, study_infrahyoid_epiglottis
+uncategorized: larynx_glottic: glottic_larynx, larynx_glot, larynx_glottic, study_glottic_larynx, study_larynx_glottic
+uncategorized: larynx_gsl: larynx_gsl, larynxgsl
+uncategorized: larynx_subgl: larynx_infraglottic, larynx_sub, larynx_subgl, study_larynx_subglottic, study_subglottic_larynx, subglottic_larynx
+uncategorized: larynx_supragl: larynx_supr, larynx_supragl, larynx_supraglottic, study_larynx_supraglottic, study_supraglottic_larynx, supraglottic_larynx
+uncategorized: lips: lips, study_lips
+uncategorized: mandible: mandible, study_mandible
+uncategorized: middle_scalene: middle_scalene
+uncategorized: oral_cavity: oral_cavity, oralcavity, study_oral_cavity
+uncategorized: oral_tongue: oral_tongue, study_oral_tongue
+uncategorized: oropharynx: oropharynx, study_oropharynx
+uncategorized: parotid_cb: combined_parotid_gland, parotid_cb, parotid_combined, parotid_total, study_parotid_cb, study_parotid_combined
+uncategorized: parotid_l: l._parotid, l_parotid, left_parotid, left_parotid_gland, lt_parotid, parotid_l, parotid_left, study_parotid_l, study_parotid_left
+uncategorized: parotid_r: parotid_r, parotid_right, r._parotid, r_parotid, right_parotid, right_parotid_gland, rt_parotid, study_parotid_r, study_parotid_right
+uncategorized: pituitary: pituitary, pituitary_gland, pitutary_gland, study_pituitary_gl
+uncategorized: postcricoid_esoph: cricoid_esophagus, esophagus_post_cricoid, esophagus_postcricoid, p_cricoid_esophagus, post-cricoid_esophagus, post_cricoid_esophagus, postcricoid_esoph, postcricoid_esophagus, posterior_cricoid_esophagus, study_post-cricoid_esophagus
+uncategorized: prv: brachialplexus_prv, brainstem_prv, opticchiasm_prv, opticnerve_l_prv, opticnerve_r_prv, prv, spinalcord_prv
+uncategorized: r_carotid: r_carotid, right_carotid_vessel, right_carotid_vessels, rt_carotid, study_carotid_r
+uncategorized: salivary_combined: salivary_combined, study_salivary_combined
+uncategorized: submand_cb: combined_submandibular_glds, study_submandibular_gl_cb, submand_cb, submandibular_gland_combined
+uncategorized: submand_l: l._submandibular_gland, l_submand_gland, l_submandibular, l_submandibular_gland, left_submandibular_gland, lt_submandibular_gl, lt_submandibular_gland, study_submandibular_gl_l, submand_l, submandibula_l, submandibular_l
+uncategorized: submand_r: r._submandibular_gland, r_submand_gland, r_submandibular, r_submandibular_gland, right_submandibular_gland, rt_submandibular_gl, rt_submandibular_gland, study_submandibular_gl_r, submand_r, submandibula_r, submandibular_r
+uncategorized: suprahyoid_epiglottis: study_suprahyoid_epiglottis, suprahyoid_epiglottis
+uncategorized: temporallobe_l: temporallobe_l
+uncategorized: temporallobe_r: temporallobe_r
+uncategorized: thoracic_esoph: esophagus_thoracic, thoracic_esoph, thoracic_esophagus
+uncategorized: thyroid: study_throid_gland, study_thyroid_gl, thyroid, thyroid_gland
+uncategorized: thyroid_cartilage: study_thyroid_cartilage, thyroid_cartilage
+uncategorized: tmj: tmj
+uncategorized: tmjoint_l: tmjoint_l
+uncategorized: tmjoint_r: tmjoint_r
+uncategorized: uncategorized: study_cricopharyngeal_muscle, study_esophageal_inlet_muscles, study_hypopharynx, study_infrahyoid_epiglottis, study_oral_tongue, study_suprahyoid_epiglottis, uncategorized
