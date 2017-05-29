@@ -42,3 +42,5 @@
 - [ ] Clean text representation in date fields  
 
 - [ ] Combine data and stats into one ColumnDataSource so endpoints are calculated for stats
+
+- [ ] Adapt for python3
