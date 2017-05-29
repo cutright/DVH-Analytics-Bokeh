@@ -113,7 +113,10 @@ xcode-select --install
 
 ### PostgreSQL
 If you are familiar with PostgreSQL and have access to a PostgreSQL DB, you simply need to fill in the
-login information in dvh/preferences/sql_connection.cnf.
+login information by running:
+~~~
+$ dvh settings --sql
+~~~
 
 If you need PostgreSQL, here are some options for each OS.
 
@@ -131,12 +134,8 @@ Then quit by typing:
 \q
 ~~~~
 
-NOTE: You may replace dvh with any database name you wish, but you must update dbname in
-dvh/preferences/sql_connection.cnf to reflect what database name you chose.
-This app must be running when writing or accessing data.
-
-If you use OS authentication, make sure dvh/preferences/sql_connection.cnf does not have 'user' or 'password' names.
-If you choose to create a user and password, update said .cnf file appropriately.
+NOTE: You may replace dvh with any database name you wish, but you must update dbname in settings to reflect what 
+database name you chose.  
 
 *Ubuntu*  
 Type the following in a terminal:
@@ -144,9 +143,8 @@ Type the following in a terminal:
 $ sudo apt-get install postgresql postgresql-client postgresql-contrib libpq-dev
 $ sudo apt-get install pgadmin3
 ~~~~
-Upon successful installation, open type 'pgadmin3' in the terminal to open the graphical admin.
- - Create a user and database of your choice (same instructions found below for Windows)
- - Update dvh/preferences/sql_connection.cnf as appropriate.
+Upon successful installation, open type 'pgadmin3' in the terminal to open the graphical admin.  
+Then, create a user and database of your choice (same instructions found below for Windows)
 
 *Windows*  
 Download the installer for BigSQL: https://www.bigsql.org/postgresql/installers.jsp/
