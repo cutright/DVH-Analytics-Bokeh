@@ -7,262 +7,340 @@ Created on Fri Mar 24 13:43:28 2017
 """
 
 import os
+from fuzzywuzzy import fuzz
 from sql_to_python import QuerySQL
 from sql_connector import DVH_SQL
-from bokeh.layouts import layout, column, row
-from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool
-from bokeh.models.widgets import Select, Button, PreText, TableColumn, DataTable, \
-    NumberFormatter, RadioButtonGroup, TextInput, RadioGroup
-from bokeh.plotting import figure
-from bokeh.io import curdoc
 
 
-class ROISet:
-    def __init__(self, institutional_roi_name, physician_roi_name, roi_name, physician):
-        self.institutional_roi_name = institutional_roi_name
-        self.physician_roi_name = physician_roi_name
-        self.roi_name = roi_name
-        self.physician = physician
+class Physician:
+    def __init__(self, initials):
+        self.initials = initials
+
+        self.physician_rois = {}
+
+    def add_physician_roi(self, institutional_roi, physician_roi):
+        institutional_roi = clean_name(institutional_roi)
+        physician_roi = clean_name(physician_roi)
+        self.physician_rois[physician_roi] = {'institutional_roi': institutional_roi,
+                                              'variations': [physician_roi]}
+
+    def add_physician_roi_variation(self, physician_roi, variation):
+        physician_roi = clean_name(physician_roi)
+        variation = clean_name(variation)
+        if physician_roi in self.physician_rois.keys():
+            if variation not in self.physician_rois[physician_roi]['variations']:
+                self.physician_rois[physician_roi]['variations'].append(variation)
+                self.physician_rois[physician_roi]['variations'].sort()
 
 
 class DatabaseROIs:
-    def __init__(self, **kwargs):
-        self.count = 0
-        self.roi = {}
-        self.institutional_roi_map = {}
-        self.physician_roi_map = {}
-        self.roi_map = {}
-        self.physician_map = {}
-        script_dir = os.path.dirname(__file__)
-        rel_path = "preferences/database.roi"
-        abs_file_path = os.path.join(script_dir, rel_path)
-        if 'force_roi_map_rebuild' in kwargs and kwargs['force_roi_map_rebuild']:
-            force_roi_map_rebuild = True
-        else:
-            force_roi_map_rebuild = False
-        if os.path.isfile(rel_path) and not force_roi_map_rebuild:
+    def __init__(self):
+
+        self.physicians = {}
+        self.institutional_rois = []
+
+        self.script_dir = os.path.dirname(__file__)
+
+        # Import institutional roi names
+        rel_path = "preferences/institutional.roi"
+        abs_file_path = os.path.join(self.script_dir, rel_path)
+        if os.path.isfile(abs_file_path):
             with open(abs_file_path, 'r') as document:
                 for line in document:
                     if not line:
                         continue
-                    line = str(line).split(',')
-                    line[0] = line[0].strip()
-                    line[1] = line[1].strip()
-                    line[2] = line[2].strip()
-                    if line[3]:
-                        line[3] = line[3].strip()
-                    else:
-                        line[3] = 'default'
-                    current_roi_map = ROISet(line[0], line[1], line[2], line[3])
-                    self.update_maps(current_roi_map)
-                    self.roi[self.count] = current_roi_map
-                    self.count += 1
-        else:
-            rel_path = "preferences/default.roi"
-            abs_file_path = os.path.join(script_dir, rel_path)
-            with open(abs_file_path, 'r') as document:
-                for line in document:
-                    if not line:
-                        continue
-                    line = str(line).strip().lower()
-                    current_roi_map = ROISet(line, line, line, 'default')
-                    self.roi[self.count] = current_roi_map
-                    self.update_maps(current_roi_map)
-                    self.count += 1
+                    line = clean_name(str(line))
+                    self.institutional_rois.append(line)
 
-            rel_path = "preferences/physicians.roi"
-            abs_file_path = os.path.join(script_dir, rel_path)
-            with open(abs_file_path, 'r') as document:
-                self.physicians = []
-                physician_files = []
-                physician_count = 0
-                for line in document:
-                    if not line:
-                        continue
-                    line = str(line.strip()).upper()
-                    self.physicians.append(line)
-                    file_name = 'physician_map_' + line + '.roi'
-                    physician_files.append(file_name)
-                    physician_count += 1
+        physicians = get_physicians_from_roi_files()
+        for physician in physicians:
+            self.add_physician(physician)
 
-            for i in range(0, physician_count):
-                self.append(physician_files[i], self.physicians[i])
+        self.import_physician_roi_maps()
 
-            self.write_to_file()
+        if 'uncategorized' not in self.institutional_rois:
+            self.institutional_rois.append('uncategorized')
 
-    def __len__(self):
-        return self.count
+    ##############################################
+    # Import from file functions
+    ##############################################
+    def import_physician_roi_maps(self):
 
-    def __getitem__(self, x):
-        indices = self.institutional_roi_map[x].split(',')
-        all_data = []
-        for i in range(0, len(indices)):
-            s = [self.roi[int(indices[i])].physician_roi_name,
-                 self.roi[int(indices[i])].roi_name,
-                 self.roi[int(indices[i])].physician]
-            s = ', '.join(s)
-            all_data.append(s)
-        all_data.sort()
-        return all_data
+        for physician in self.physicians.keys():
+            rel_path = 'preferences/physician_' + physician + '.roi'
+            abs_file_path = os.path.join(self.script_dir, rel_path)
+            if os.path.isfile(abs_file_path):
+                self.import_physician_roi_map(abs_file_path, physician)
 
-    def __iter__(self):
-        return self.roi.itervalues()
+    def import_physician_roi_map(self, abs_file_path, physician):
 
-    def __repr__(self):
-        keys = []
-        for key in self.institutional_roi_map:
-            keys.append(key)
-        keys.sort()
-
-        return '\n'.join(keys)
-
-    def append(self, roi_file, physician):
-        script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
-        abs_file_path = os.path.join(script_dir, 'preferences/', roi_file)
         with open(abs_file_path, 'r') as document:
             for line in document:
                 if not line:
                     continue
+                line = str(line).lower().strip().replace(':', ',').split(',')
+                institutional_roi = line[0].strip()
+                physician_roi = line[1].strip()
 
-                line = line.lower().strip().replace(':', ',').split(',')
-                institutional_roi_name = line[0].strip()
-                physician_roi_name = line[1].strip()
+                self.add_institutional_roi(institutional_roi)
+                self.add_physician_roi(physician, institutional_roi, physician_roi)
+
                 for i in range(2, len(line)):
-                    current_roi_name = line[i].strip().replace(' ', '_')
-                    current_roi_set = ROISet(institutional_roi_name,
-                                             physician_roi_name,
-                                             current_roi_name,
-                                             physician)
-                    self.roi[self.count] = current_roi_set
-                    self.update_maps(current_roi_set)
-                    self.count += 1
+                    variation = clean_name(line[i])
+                    self.add_variation(physician, physician_roi, variation)
 
-    def is_institutional_roi(self, roi):
-        clean_roi = roi.replace(' ', '_').lower()
-        for key in self.institutional_roi_map:
-            if clean_roi == key.replace(' ','_').lower():
-                return True
-        return False
+    ###################################
+    # Physician functions
+    ###################################
+    def add_physician(self, physician):
+        physician = clean_name(physician).upper()
+        if physician not in self.get_physicians():
+            self.physicians[physician] = Physician(physician)
 
-    def is_physician_roi(self, roi):
-        clean_roi = roi.replace(' ', '_').lower()
-        for key in self.physician_roi_map:
-            if clean_roi == key.replace(' ','_').lower():
-                return True
-        return False
+    def delete_physician(self, physician):
+        physician = clean_name(physician)
+        self.physicians.pop(physician, None)
 
-    def is_roi(self, roi):
-        clean_roi = roi.replace(' ', '_').lower().strip()
-        for key in self.roi_map:
-            if clean_roi == key.replace(' ', '_').lower():
-                return True
-        return False
+    def get_physicians(self):
+        return self.physicians.keys()
+
+    def get_physician(self, physician):
+        return self.physicians[physician]
 
     def is_physician(self, physician):
-        for key in self.physician_map:
-            if physician.upper().strip() == key.upper():
+        physician = clean_name(physician).upper()
+        for initials in self.get_physicians():
+            if physician == initials:
                 return True
         return False
 
-    def get_physician_roi(self, roi, physician):
-        physician = physician.upper()
-        roi = roi.strip().replace(' ', '_').lower()
-        if not self.is_physician(physician):
-            physician = 'default'
-        if self.is_roi(roi):
-            indices = self.roi_map[roi].split(',')
-            for i in indices:
-                if physician == self.roi[int(i)].physician:
-                    return self.roi[int(i)].physician_roi_name
-            return 'uncategorized'
+    #################################
+    # Institutional ROI functions
+    #################################
+    def get_institutional_rois(self):
+        return self.institutional_rois
+
+    def get_institutional_roi(self, physician, roi):
+        physician = clean_name(physician).upper()
+        roi = clean_name(roi)
+        if roi in self.get_physician_rois(physician):
+            physician_roi = roi
         else:
-            return 'uncategorized'
+            physician_roi = self.get_physician_roi(physician, roi)
+        return self.physicians[physician].physician_rois[physician_roi]['institutional_roi']
 
-    def get_physician_roi_list(self, physician):
-        physician = physician.upper()
-        physician_rois = []
-        for key in self.roi:
-            if self.roi[key].roi_name == self.get_physician_roi(self.roi[key].roi_name, physician):
-                if self.roi[key].roi_name not in physician_rois:
-                    physician_rois.append(self.roi[key].roi_name)
-        physician_rois.sort()
-        return physician_rois
+    def add_institutional_roi(self, roi):
+        roi = clean_name(roi)
+        if roi not in self.institutional_rois:
+            self.institutional_rois.append(roi)
+            self.institutional_rois.sort()
 
-    def get_institution_roi_list(self):
-        institution_rois = []
-        for key in self.roi:
-            current_roi = self.roi[key].roi_name
-            if self.is_institutional_roi(current_roi):
-                if current_roi not in institution_rois:
-                    institution_rois.append(current_roi)
-        institution_rois.sort()
-        return institution_rois
+    def set_institutional_roi(self, new_institutional_roi, institutional_roi):
+        new_institutional_roi = clean_name(new_institutional_roi)
+        institutional_roi = clean_name(institutional_roi)
+        index = self.institutional_rois.index(institutional_roi)
+        self.institutional_rois.pop(index)
+        self.add_institutional_roi(new_institutional_roi)
+        for physician in self.get_physicians():
+            for physician_roi in self.get_physician_rois(physician):
+                physician_roi_obj = self.physicians[physician].physician_rois[physician_roi]
+                if physician_roi_obj['institutional_roi'] == institutional_roi:
+                    physician_roi_obj['institutional_roi'] = new_institutional_roi
 
-    def get_physician_list(self):
-        return self.physicians[0]
+    def delete_institutional_roi(self, roi):
+        self.set_institutional_roi('default', roi)
 
-    def get_institutional_roi(self, roi, physician):
-        physician = physician.upper()
-        roi = roi.strip().replace(' ', '_').lower()
-        if not self.is_physician(physician):
-            physician = 'default'
-        if self.is_roi(roi):
-            indices = self.roi_map[roi].split(',')
-            for i in indices:
-                if physician == self.roi[int(i)].physician:
-                    return self.roi[int(i)].institutional_roi_name
-            if self.is_institutional_roi(roi):
-                return roi
-            return 'uncategorized'
+    def is_institutional_roi(self, roi):
+        roi = clean_name(roi)
+        for institutional_roi in self.institutional_rois:
+            if roi == institutional_roi:
+                return True
+        return False
+
+    ########################################
+    # Physician ROI functions
+    ########################################
+    def get_physician_rois(self, physician):
+        physician = clean_name(physician).upper()
+        return self.physicians[physician].physician_rois.keys()
+
+    def get_physician_roi(self, physician, roi):
+        physician = clean_name(physician).upper()
+        roi = clean_name(roi)
+        for physician_roi in self.get_physician_rois(physician):
+            for variation in self.get_variations(physician, physician_roi):
+                if roi == variation:
+                    return physician_roi
+        return 'uncategorized'
+
+    def add_physician_roi(self, physician, institutional_roi, physician_roi):
+        physician = clean_name(physician).upper()
+        institutional_roi = clean_name(institutional_roi)
+        physician_roi = clean_name(physician_roi)
+        if physician_roi not in self.get_physician_rois(physician):
+            self.physicians[physician].add_physician_roi(institutional_roi, physician_roi)
+
+    def set_physician_roi(self, new_physician_roi, physician, physician_roi):
+        if new_physician_roi != physician_roi:
+            self.physicians[physician].physician_rois[new_physician_roi] = \
+                self.physicians[physician].physician_rois.pop(physician_roi, None)
+
+    def is_physician_roi(self, roi):
+        roi = clean_name(roi)
+        for physician in self.get_physicians():
+            for physician_roi in self.get_physician_rois(physician):
+                if roi == physician_roi:
+                    return True
+        return False
+
+    ###################################################
+    # Variation-of-Physician-ROI functions
+    ###################################################
+    def get_variations(self, physician, physician_roi):
+        physician = clean_name(physician).upper()
+        physician_roi = clean_name(physician_roi)
+        try:
+            return self.physicians[physician].physician_rois[physician_roi]['variations']
+        except KeyError:
+            return []
+
+    def add_variation(self, physician, physician_roi, variation):
+        physician = clean_name(physician).upper()
+        physician_roi = clean_name(physician_roi)
+        variation = clean_name(variation)
+        if variation not in self.get_variations(physician, physician_roi):
+            self.physicians[physician].add_physician_roi_variation(physician_roi, variation)
+
+    def delete_variation(self, physician, physician_roi, variation):
+        physician = clean_name(physician).upper()
+        physician_roi = clean_name(physician_roi)
+        variation = clean_name(variation)
+        if variation in self.get_variations(physician, physician_roi):
+            index = self.physicians[physician].physician_rois[physician_roi]['variations'].index(variation)
+            self.physicians[physician].physician_rois[physician_roi]['variations'].pop(index)
+            self.physicians[physician].physician_rois[physician_roi]['variations'].sort()
+
+    def set_variation(self, new_variation, physician, physician_roi, variation):
+        new_variation = clean_name(new_variation)
+        physician = clean_name(physician).upper()
+        physician_roi = clean_name(physician_roi)
+        variation = clean_name(variation)
+        if new_variation != variation:
+            self.add_variation(physician, physician_roi, new_variation)
+            self.delete_variation(physician, physician_roi, variation)
+
+    def is_roi(self, roi):
+        roi = clean_name(roi)
+        for physician in self.get_physicians():
+            for physician_roi in self.get_physician_rois(physician):
+                for variation in self.get_variations(physician, physician_roi):
+                    if roi == variation:
+                        return True
+        return False
+
+    def get_best_roi_match(self, roi, **kwargs):
+        roi = clean_name(roi)
+
+        scores = []
+        rois = []
+        physicians = []
+
+        for physician in self.get_physicians():
+            for physician_roi in self.get_physician_rois(physician):
+                scores.append(get_combined_fuzz_score(physician_roi, roi))
+                rois.append(physician_roi)
+                physicians.append(physician)
+                for variation in self.get_variations(physician, physician_roi):
+                    scores.append(get_combined_fuzz_score(variation, roi))
+                    rois.append(variation)
+                    physicians.append(physician)
+
+        for institutional_roi in self.institutional_rois:
+            scores.append(get_combined_fuzz_score(institutional_roi, roi))
+            rois.append(institutional_roi)
+            physicians.append('DEFAULT')
+
+        best = []
+
+        if 'length' in kwargs:
+            if kwargs['length'] > len(scores):
+                length = len(scores)
+            else:
+                length = kwargs['length']
         else:
-            return 'uncategorized'
+            length = 1
 
-    def update_maps(self, roi_set):
-        institutional_roi = roi_set.institutional_roi_name.replace(' ', '_').lower().strip()
-        physician_roi = roi_set.physician_roi_name.replace(' ', '_').lower().strip()
-        roi = roi_set.roi_name.replace(' ', '_').lower().strip()
-        physician = roi_set.physician.upper()
+        for i in range(0, length):
+            max_score = max(scores)
+            index = scores.index(max_score)
+            scores.pop(index)
+            best_match = rois.pop(index)
+            best_physician = physicians.pop(index)
+            if self.is_institutional_roi(best_match):
+                best_institutional_roi = best_match
+            else:
+                best_institutional_roi = 'uncategorized'
 
-        # Add roi index to institutional_roi_map
-        if self.is_institutional_roi(institutional_roi):
-            self.institutional_roi_map[institutional_roi] += ',' + str(self.count)
-        else:
-            self.institutional_roi_map[institutional_roi] = str(self.count)
+            best_physician_roi = self.get_physician_roi(best_physician, best_match)
 
-        # Add roi index to physician_roi_map
-        if self.is_physician_roi(physician_roi):
-            self.physician_roi_map[physician_roi] += ',' + str(self.count)
-        else:
-            self.physician_roi_map[physician_roi] = str(self.count)
+            best.append({'variation': best_match,
+                         'physician_roi': best_physician_roi,
+                         'physician': best_physician,
+                         'institutional_roi': best_institutional_roi,
+                         'score': max_score})
 
-        # Add roi index to roi_map
-        if self.is_roi(roi):
-            self.roi_map[roi] += ',' + str(self.count)
-        else:
-            self.roi_map[roi] = str(self.count)
+        return best
 
-        # Add roi index to physician_map
-        if self.is_physician(physician):
-            self.physician_map[physician] += ',' + str(self.count)
-        else:
-            self.physician_map[physician] = str(self.count)
-
+    ########################
+    # Export to file
+    ########################
     def write_to_file(self):
-        script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
-        rel_path = "preferences/database.roi"
-        abs_file_path = os.path.join(script_dir, rel_path)
-        document = open(abs_file_path, 'w')
+        script_dir = os.path.dirname(__file__)
 
-        for i in range(0, self.count):
-            line = [self.roi[i].institutional_roi_name,
-                    self.roi[i].physician_roi_name,
-                    self.roi[i].roi_name,
-                    self.roi[i].physician]
-            line = ','.join(line)
-            line += '\n'
-            document.write(line)
+        physicians = self.get_physicians()
+        physicians.pop(physicians.index('DEFAULT'))  # remove 'DEFAULT' physician
 
-        document.close()
+        for physician in physicians:
+            rel_dir = "preferences/"
+            file_name = 'physician_' + physician + '.roi'
+            abs_file_path = os.path.join(script_dir, rel_dir, file_name)
+            document = open(abs_file_path, 'w')
+            lines = []
+            for physician_roi in self.get_physician_rois(physician):
+                institutional_roi = self.get_institutional_roi(physician, physician_roi)
+                variations = self.get_variations(physician, physician_roi)
+                variations = ', '.join(variations)
+                line = [institutional_roi,
+                        physician_roi,
+                        variations]
+                line = ': '.join(line)
+                line += '\n'
+                lines.append(line)
+            lines.sort()
+            for line in lines:
+                document.write(line)
+
+            document.close()
+
+
+def clean_name(name):
+    return name.lower().strip().replace(' ', '_').replace('\'', '`')
+
+
+def get_physicians_from_roi_files():
+
+    script_dir = os.path.dirname(__file__)
+    rel_path = "preferences/"
+    abs_dir_path = os.path.join(script_dir, rel_path)
+
+    physicians = ['DEFAULT']
+    for file_name in os.listdir(abs_dir_path):
+        if file_name.startswith("physician_") and file_name.endswith(".roi"):
+            physician = file_name.replace('physician_', '').replace('.roi', '')
+            physician = clean_name(physician).upper()
+            physicians.append(physician)
+
+    return physicians
 
 
 def get_physician_from_uid(uid):
@@ -277,7 +355,7 @@ def get_physician_from_uid(uid):
 
 
 def update_uncategorized_rois_in_database():
-    roi_map = DatabaseROIs(force_roi_map_rebuild=True)
+    roi_map = DatabaseROIs()
     dvh_data = QuerySQL('DVHs', "physician_roi = 'uncategorized'")
     cnx = DVH_SQL()
 
@@ -287,16 +365,16 @@ def update_uncategorized_rois_in_database():
         physician = get_physician_from_uid(uid)
         roi_name = dvh_data.roi_name[i]
 
-        new_physician_roi_category = roi_map.get_physician_roi(roi_name, physician)
-        new_institutional_roi_category = roi_map.get_institutional_roi(roi_name, physician)
+        new_physician_roi = roi_map.get_physician_roi(physician, roi_name)
+        new_institutional_roi = roi_map.get_institutional_roi(physician, roi_name)
 
-        if new_physician_roi_category != 'uncategorized':
-            print mrn, physician, new_institutional_roi_category, new_physician_roi_category, roi_name
+        if new_physician_roi != 'uncategorized':
+            print mrn, physician, new_institutional_roi, new_physician_roi, roi_name
             condition = "study_instance_uid = '" + uid + "'" + "and roi_name = '" + roi_name + "'"
-            cnx.update('DVHs', 'physician_roi', new_physician_roi_category, condition)
-            cnx.update('DVHs', 'institutional_roi', new_institutional_roi_category, condition)
+            cnx.update('DVHs', 'physician_roi', new_physician_roi, condition)
+            cnx.update('DVHs', 'institutional_roi', new_institutional_roi, condition)
 
-    cnx.cnx.close()
+    cnx.close()
 
 
 def reinitialize_roi_categories_in_database():
@@ -309,15 +387,15 @@ def reinitialize_roi_categories_in_database():
         physician = get_physician_from_uid(uid)
         roi_name = dvh_data.roi_name[i]
 
-        new_physician_roi_category = roi_map.get_physician_roi(roi_name, physician)
-        new_institutional_roi_category = roi_map.get_institutional_roi(roi_name, physician)
+        new_physician_roi = roi_map.get_physician_roi(physician, roi_name)
+        new_institutional_roi = roi_map.get_institutional_roi(physician, roi_name)
 
-        print i, physician, new_institutional_roi_category, new_physician_roi_category, roi_name
+        print i, physician, new_institutional_roi, new_physician_roi, roi_name
         condition = "study_instance_uid = '" + uid + "'" + "and roi_name = '" + roi_name + "'"
-        cnx.update('DVHs', 'physician_roi', new_physician_roi_category, condition)
-        cnx.update('DVHs', 'institutional_roi', new_institutional_roi_category, condition)
+        cnx.update('DVHs', 'physician_roi', new_physician_roi, condition)
+        cnx.update('DVHs', 'institutional_roi', new_institutional_roi, condition)
 
-    cnx.cnx.close()
+    cnx.close()
 
 
 def print_uncategorized_rois():
@@ -332,36 +410,24 @@ def print_uncategorized_rois():
         print physician, institutional_roi, physician_roi, roi_name
 
 
-db = DatabaseROIs()
+def get_combined_fuzz_score(a, b, **kwargs):
+    a = clean_name(a)
+    b = clean_name(b)
 
+    if 'simple' in kwargs:
+        w_simple = float(kwargs['simple'])
+    else:
+        w_simple = float(1)
 
-def update_physician_roi_list(attr, old, new):
-    pass
+    if 'partial' in kwargs:
+        w_partial = float(kwargs['partial'])
+    else:
+        w_partial = float(1)
 
-
-select_institutional_roi = Select(value='1',
-                                  options=db.get_institution_roi_list(),
-                                  width=100,
-                                  title='Institutional ROI')
-
-select_physician = Select(value=db.physicians[0],
-                          options=db.physicians,
-                          width=100,
-                          title='Physician')
-select_physician.on_change('value', update_physician_roi_list)
-
-select_physician_roi = Select(value=db.get_physician_roi_list(select_physician.value)[0],
-                              options=db.get_physician_roi_list(select_physician.value),
-                              width=100,
-                              title='Physician ROI')
-select_physician_roi.on_change('value', update_physician_roi_list)
-
-layout = column(row(select_institutional_roi),
-                row(select_physician, select_physician_roi))
-
-# Create the document Bokeh server will use to generate the webpage
-curdoc().add_root(layout)
-curdoc().title = "ROI Name Manager"
+    simple = fuzz.ratio(a, b) * w_simple
+    partial = fuzz.partial_ratio(a, b) * w_partial
+    combined = float(simple) * float(partial) / float(10000)
+    return combined
 
 
 if __name__ == '__main__':

@@ -21,6 +21,7 @@ For installation instructions, see our [installation notes](https://github.com/c
 * [PostgreSQL](https://www.postgresql.org/) and [psycopg2](http://initd.org/psycopg/)
 * [numpy](https://pypi.python.org/pypi/numpy) 1.12.1 tested
 * [pydicom](https://github.com/darcymason/pydicom) 0.9.9
+* [fuzzy wuzzy](https://github.com/seatgeek/fuzzywuzzy) 0.15
 * [dicompyler-core](https://pypi.python.org/pypi/dicompyler-core) 0.5.2
     * requirements per [developer](https://github.com/bastula)
         * [numpy](http://www.numpy.org/) 1.2 or higher

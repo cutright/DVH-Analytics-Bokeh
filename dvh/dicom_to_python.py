@@ -11,7 +11,7 @@ import dicom  # pydicom
 from dicompylercore import dicomparser, dvhcalc
 from datetime import datetime
 from dateutil.relativedelta import relativedelta  # python-dateutil
-from roi_name_manager import DatabaseROIs
+from roi_name_manager import DatabaseROIs, clean_name
 from utilities import datetime_str_to_obj
 
 
@@ -19,12 +19,12 @@ from utilities import datetime_str_to_obj
 # This code will generate a list of ROI class objects
 # There will be a ROI class per structure of a Plan
 class DVHRow:
-    def __init__(self, mrn, study_instance_uid, institutional_roi_name, physician_roi_name,
+    def __init__(self, mrn, study_instance_uid, institutional_roi, physician_roi,
                  roi_name, roi_type, volume, min_dose, mean_dose, max_dose, dvh_str):
         self.mrn = mrn
         self.study_instance_uid = study_instance_uid
-        self.institutional_roi_name = institutional_roi_name
-        self.physician_roi_name = physician_roi_name
+        self.institutional_roi = institutional_roi
+        self.physician_roi = physician_roi
         self.roi_name = roi_name
         self.roi_type = roi_type
         self.volume = volume
@@ -299,41 +299,52 @@ class DVHTable:
         for key in rt_structures:
             # Import DVH from RT Structure and RT Dose files
             if rt_structures[key]['type'] != 'MARKER':
-                try:
-                    current_dvh_calc = dvhcalc.get_dvh(structure_file, dose_file, key)
-                    self.dvhs[row_counter] = current_dvh_calc.counts
-                    if current_dvh_calc.volume > 0:
-                        print 'Importing ' + current_dvh_calc.name
-                        if rt_structures[key]['name'].lower().find('itv') == 0:
-                            roi_type = 'ITV'
+
+                current_dvh_calc = dvhcalc.get_dvh(structure_file, dose_file, key)
+                self.dvhs[row_counter] = current_dvh_calc.counts
+                if current_dvh_calc.volume > 0:
+                    print 'Importing ' + current_dvh_calc.name
+                    if rt_structures[key]['name'].lower().find('itv') == 0:
+                        roi_type = 'ITV'
+                    else:
+                        roi_type = rt_structures[key]['type']
+                    current_roi_name = clean_name(rt_structures[key]['name'])
+
+                    if database_rois.is_roi(current_roi_name):
+                        if database_rois.is_physician(physician):
+                            institutional_roi = database_rois.get_institutional_roi(physician, current_roi_name)
+                            physician_roi = database_rois.get_physician_roi(physician, current_roi_name)
                         else:
-                            roi_type = rt_structures[key]['type']
-                        current_roi_name = rt_structures[key]['name']
-                        institutional_roi_name = database_rois.get_institutional_roi(current_roi_name, physician)
-                        physician_roi_name = database_rois.get_physician_roi(current_roi_name, physician)
-                        current_dvh_row = DVHRow(mrn,
-                                                 study_instance_uid,
-                                                 institutional_roi_name,
-                                                 physician_roi_name,
-                                                 current_roi_name,
-                                                 roi_type,
-                                                 current_dvh_calc.volume,
-                                                 current_dvh_calc.min,
-                                                 current_dvh_calc.mean,
-                                                 current_dvh_calc.max,
-                                                 ','.join(['%.2f' % num for num in current_dvh_calc.counts]))
-                        values[row_counter] = current_dvh_row
-                        row_counter += 1
-                except:
-                    print 'dvh import failed on ' + rt_structures[key]['name']
+                            if current_roi_name in database_rois.institutional_rois:
+                                institutional_roi = current_roi_name
+                            else:
+                                institutional_roi = 'uncategorized'
+                            physician_roi = 'uncategorized'
+                    else:
+                        institutional_roi = 'uncategorized'
+                        physician_roi = 'uncategorized'
+
+                    current_dvh_row = DVHRow(mrn,
+                                             study_instance_uid,
+                                             institutional_roi,
+                                             physician_roi,
+                                             current_roi_name,
+                                             roi_type,
+                                             current_dvh_calc.volume,
+                                             current_dvh_calc.min,
+                                             current_dvh_calc.mean,
+                                             current_dvh_calc.max,
+                                             ','.join(['%.2f' % num for num in current_dvh_calc.counts]))
+                    values[row_counter] = current_dvh_row
+                    row_counter += 1
 
         self.count = row_counter
         dvh_range = range(0, self.count)
 
         self.mrn = [values[x].mrn for x in dvh_range]
         self.study_instance_uid = [values[x].study_instance_uid for x in dvh_range]
-        self.institutional_roi_name = [values[x].institutional_roi_name for x in dvh_range]
-        self.physician_roi_name = [values[x].physician_roi_name for x in dvh_range]
+        self.institutional_roi = [values[x].institutional_roi for x in dvh_range]
+        self.physician_roi = [values[x].physician_roi for x in dvh_range]
         self.roi_name = [values[x].roi_name for x in dvh_range]
         self.roi_type = [values[x].roi_type for x in dvh_range]
         self.volume = [values[x].volume for x in dvh_range]

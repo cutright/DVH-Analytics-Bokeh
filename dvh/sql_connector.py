@@ -97,8 +97,8 @@ class DVH_SQL:
                 dvh_table.roi_type[x] = 'PTV' + str(dvh_table.ptv_number[x])
             sql_input = [str(dvh_table.mrn[x]),
                          str(dvh_table.study_instance_uid[x]),
-                         dvh_table.institutional_roi_name[x],
-                         dvh_table.physician_roi_name[x],
+                         dvh_table.institutional_roi[x],
+                         dvh_table.physician_roi[x],
                          dvh_table.roi_name[x].replace("'", "`"),
                          dvh_table.roi_type[x],
                          str(round(dvh_table.volume[x], 3)),

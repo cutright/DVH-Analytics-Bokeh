@@ -6,24 +6,22 @@ Created on Sun Apr 21 2017
 @author: Dan Cutright, PhD
 """
 
-import numpy as np
-import itertools
-from bokeh.layouts import layout, column, row
-from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool
-from bokeh.models.widgets import Select, Button, PreText, TableColumn, DataTable, \
-    NumberFormatter, RadioButtonGroup, TextInput, RadioGroup
-from bokeh.plotting import figure
-from bokeh.io import curdoc
-from roi_name_manager import DatabaseROIs
 from analysis_tools import DVH, get_study_instance_uids
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL
-from bokeh.palettes import Colorblind8 as palette
+import numpy as np
+import itertools
 from datetime import datetime
 from os.path import dirname, join
+from bokeh.layouts import layout, column, row
+from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool
+from bokeh.plotting import figure
+from bokeh.io import curdoc
+from bokeh.palettes import Colorblind8 as palette
+from bokeh.models.widgets import Select, Button, PreText, TableColumn, DataTable, \
+    NumberFormatter, RadioButtonGroup, TextInput, RadioGroup
 
 # Declare variables
-db_rois = DatabaseROIs()
 colors = itertools.cycle(palette)
 current_dvh = []
 update_warning = True
