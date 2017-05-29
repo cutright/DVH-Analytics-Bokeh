@@ -7,7 +7,7 @@
  - [pip](https://pip.pypa.io/en/stable/installing/) (python package manager)
  - Xcode Command Line Tools (Mac only)  
 
-If any of these are not installed, see [Additional Notes](#additional-notes)
+If any of these are not installed, see [Additional Notes](#additional-notes).  
 
 ## Setting up your python environment
 DVH Analytics if available via pip install:
@@ -39,8 +39,9 @@ To verify all of your settings are valid and installation was successful, type:
 ~~~~
 $ dvh test
 ~~~~
-This may take a couple minutes. This python code will process all dicom files located in the test files folder.  
-If this test passes, then all dependencies are successfully installed (e.g., PostgreSQL, Python libraries).
+This will process all dicom files located in the test files folder. If this test passes, then all dependencies are 
+successfully installed (e.g., PostgreSQL, Python libraries), import directories are valid, and communication with your 
+SQL DB has been established.
 
 ## Importing your own data
 To import your own data:
