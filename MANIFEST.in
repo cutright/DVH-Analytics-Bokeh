@@ -1,9 +1,0 @@
-include dvh-analytics/preferences/create_tables.sql
-include dvh-analytics/preferences/sql_connection.cnf
-include dvh-analytics/preferences/*.txt
-include dvh-analytics/preferences/*.roi
-include dvh-analytics/templates/index.html
-include dvh-analytics/test_files/*
-include CHANGES.txt
-include LICENSE
-include README.md
