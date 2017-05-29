@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name='dvh-analytics',
     packages=['dvh-analytics'],
-    version='0.1.0',
+    version='0.0.1',
     description='Create a SQL database of DVHs',
     author='Dan Cutright',
     author_email='dan.cutright@gmail.com',
