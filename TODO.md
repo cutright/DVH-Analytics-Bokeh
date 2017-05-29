@@ -2,10 +2,6 @@
 ### Higher Priorities
     
 
-- [X] Design a main program to allow more fluid command line interaction.
-  - [X] In progress. Create a map of calls with explicit functions.  
-  
-
 - [ ] Design UI for limited backend management (e.g., roi name maps)  
   - [X] Need to completely rewrite roi_name_manager.py
   - [ ] Use new best guess function in UI design
