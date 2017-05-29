@@ -10,63 +10,64 @@
 If any of these are not installed, see [Additional Notes](#additional-notes)
 
 ## Setting up your python environment
- - Download the entire source code from Github either via git or manual download.
- - From a terminal window, change your directory to the DVH-Analytics folder.
- - Execute the install script by typing the following from the project directory in a terminal:
-    - You may need the second statement on Mac or Linux if your user account does not have root privileges.
+DVH Analytics if available via pip install:
 ~~~~
-$ pip install -r requirements.txt
+$ pip install dvh-analytics
 ~~~~
+If you're on Mac or Linux, you may need:
 ~~~~
-$ sudo pip install -r requirements.txt
+$ sudo pip install dvh-analytics
 ~~~~
 
 ## Define directories and connection settings
 Simply type in the following command to define the dicom directories and SQL connection settings:
 ~~~~
-$ python dvh.py settings
+$ dvh settings
 ~~~~
 The command line will walk you through the setup with a series of prompts.  If you wish to set only dicom 
 directories or only SQL connection settings, simply append '--import' or '--sql'.  For example:
 ~~~~
-$ python dvh.py settings --sql
+$ dvh settings --sql
 ~~~~
 If you'd like to verify communication between the python code and the SQL data base, type:
 ~~~~
-$ python dvh.py echo
+$ dvh echo
 ~~~~
 
 ## Processing test files
-From the same directory as the previous step, type the following:
+To verify all of your settings are valid and installation was successful, type:
 ~~~~
-$ python dvh.py test
+$ dvh test
 ~~~~
-This may take a few minutes. This python code will process all dicom files located in the test files folder.  
+This may take a couple minutes. This python code will process all dicom files located in the test files folder.  
 If this test passes, then all dependencies are successfully installed (e.g., PostgreSQL, Python libraries).
 
 ## Importing your own data
-From the same directory as the previous step, type the following:
+To import your own data:
 ~~~~
-$ python dvh.py import
+$ dvh import
 ~~~~
 Assuming all of the previous steps were successful, all dicom files anywhere within your inbox will be imported 
 into the SQL database, then organized by patient name and moved to the specified imported folder.  Note that by 
 default, the code will not import dicom files with Study Instance UIDs that are already in the database.  You 
 may over-ride any of these default behaviors with any combination of the following optional flags:
  - force-update
- - do-not-organize-files
- - do-not-move-files
-
+ - do-not-organize
+ - do-not-move  
+ 
 For example, the following command will not check for duplicate database entries and will not remove the dicom files 
 from the inbox folder:
 ~~~~
-$ python dvh.py import --force-update --do-not-move-files
+$ dvh import --force-update --do-not-move-files
 ~~~~
-
+If you'd like to import from a directory other than the one in your settings:
+~~~~
+$ dvh import --start-path /someabsolute/directory/name
+~~~~
 ## Web view
-From the same directory as the previous step, type the following to start the bokeh server:  
+Type the following to start the Bokeh server:  
 ~~~~
-$ bokeh serve --show dvh/
+$ dvh run
 ~~~~
 If Chrome or Firefox is not your default browswer, you'll need to copy and paste the url into Chrome or Firefox.
 From within the active terminal, press ctrl + c to stop the Bokeh server.
@@ -75,10 +76,10 @@ If you would like to specify an IP or port other than the default 127.0.0.1:5006
 the bokeh server.  You may be interested in this if running from a computer with a static IP and would like
 to access this bokeh server from across your network.
 ~~~~
-$ bokeh serve --allow-websocket-origin=<new IP:port> dvh/
+$ dvh run --allow-websocket-origin <new IP:port>
 ~~~~
 ~~~~
-$ bokeh serve dvh/ --port <some other port number>
+$ dvh run --port <some other port number>
 ~~~~
 
 ----------------------------------------------------------------------------------------------

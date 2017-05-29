@@ -6,19 +6,20 @@ Created on Thu May 23 16:57 2017
 This is the main python file for command line implementation.
 """
 
-import sys
-from dvh.dicom_to_sql import dicom_to_sql
-from dvh.utilities import recalculate_ages, Temp_DICOM_FileSet
-from dvh.sql_connector import DVH_SQL
-from dvh.analysis_tools import DVH
+from dicom_to_sql import dicom_to_sql
+from utilities import recalculate_ages, Temp_DICOM_FileSet
+from sql_connector import DVH_SQL
+from analysis_tools import DVH
 import os
 from getpass import getpass
+import argparse
+from subprocess import call
 
 
 def is_import_settings_defined():
 
     script_dir = os.path.dirname(__file__)
-    rel_path = "dvh-analytics/preferences/import_settings.txt"
+    rel_path = "preferences/import_settings.txt"
     abs_file_path = os.path.join(script_dir, rel_path)
 
     if os.path.isfile(abs_file_path):
@@ -30,7 +31,7 @@ def is_import_settings_defined():
 def is_sql_connection_defined():
 
     script_dir = os.path.dirname(__file__)
-    rel_path = "dvh-analytics/preferences/sql_connection.cnf"
+    rel_path = "preferences/sql_connection.cnf"
     abs_file_path = os.path.join(script_dir, rel_path)
 
     if os.path.isfile(abs_file_path):
@@ -41,7 +42,7 @@ def is_sql_connection_defined():
 
 def validate_import_settings():
     script_dir = os.path.dirname(__file__)
-    rel_path = "dvh-analytics/preferences/import_settings.txt"
+    rel_path = "preferences/import_settings.txt"
     abs_file_path = os.path.join(script_dir, rel_path)
 
     with open(abs_file_path, 'r') as document:
@@ -50,7 +51,10 @@ def validate_import_settings():
             line = line.split()
             if not line:
                 continue
-            config[line[0]] = line[1:][0]
+            try:
+                config[line[0]] = line[1:][0]
+            except:
+                config[line[0]] = ''
 
     valid = True
     for key, value in config.iteritems():
@@ -75,28 +79,34 @@ def validate_sql_connection():
     else:
         print "Connection to SQL DB could not be established."
         if not is_sql_connection_defined():
-            print "ERROR: SQL settings are not yet defined.  Please run:\n    $ python dvh.py settings --sql"
+            print "ERROR: SQL settings are not yet defined.  Please run:\n    $ dvh" \
+                  " settings --sql"
 
     return valid
 
 
-def settings(*flags):
-    if flags:
-        flags = flags[0]
-    if not flags or 'import' in flags:
+def settings(**kwargs):
+    if not kwargs:
         set_import_settings()
-    if not flags or 'sql' in flags:
         set_sql_connection_parameters()
+    else:
+        if 'dir' in kwargs and kwargs['dir']:
+            set_import_settings()
+        if 'sql' in kwargs and kwargs['sql']:
+            set_sql_connection_parameters()
 
 
 def test_dvh_code():
 
     if not is_import_settings_defined() and not is_sql_connection_defined():
-        print "ERROR: Import and SQL settings are not yet defined.  Please run:\n    $ python dvh.py settings"
+        print "ERROR: Import and SQL settings are not yet defined.  Please run:\n    $ dvh" \
+              " settings"
     elif not is_import_settings_defined():
-        print "ERROR: Import settings are not yet defined.  Please run:\n    $ python dvh.py settings --import"
+        print "ERROR: Import settings are not yet defined.  Please run:\n    $ dvh" \
+              " settings --dir"
     elif not is_sql_connection_defined():
-        print "ERROR: SQL settings are not yet defined.  Please run:\n    $ python dvh.py settings --sql"
+        print "ERROR: SQL settings are not yet defined.  Please run:\n    $ dvh" \
+              " settings --sql"
     else:
         is_import_valid = validate_import_settings()
         is_sql_connection_valid = validate_sql_connection()
@@ -104,18 +114,21 @@ def test_dvh_code():
             print("ERROR: Create the directories listed above or input valid directories.")
             print("ERROR: Cannot connect to SQL.")
             print("Please run:")
-            print("    $ python dvh.py settings")
+            print("    $ dvh"
+                  " settings")
         elif not is_import_valid:
             print("ERROR: Create the directories listed above or input valid directories by running:")
-            print("    $ python dvh.py settings --import")
+            print("    $ dvh"
+                  " settings --dir")
         elif not is_sql_connection_valid:
             print("ERROR: Cannot connect to SQL.")
             print("Verify database is active and/or update SQL connection information with:")
-            print("    $ python dvh.py settings --sql")
+            print("    $ dvh"
+                  " settings --sql")
 
         else:
             print "Importing test files"
-            dicom_to_sql(start_path="test_files/example_dicom_files",
+            dicom_to_sql(start_path="test_files/",
                          organize_files=False,
                          move_files=False,
                          force_update=False)
@@ -124,7 +137,7 @@ def test_dvh_code():
             test = DVH()
 
             print "Reading dicom information from test files with utilities.py (for plan review module)"
-            test_files = Temp_DICOM_FileSet(start_path="test_files/example_dicom_files")
+            test_files = Temp_DICOM_FileSet(start_path="test_files/")
 
             print "Deleting test data from SQL database"
             for i in range(0, test_files.count):
@@ -197,7 +210,7 @@ def write_import_settings(settings):
     import_text = '\n'.join(import_text)
 
     script_dir = os.path.dirname(__file__)
-    rel_path = "dvh-analytics/preferences/import_settings.txt"
+    rel_path = "preferences/import_settings.txt"
     abs_file_path = os.path.join(script_dir, rel_path)
 
     with open(abs_file_path, "w") as text_file:
@@ -212,7 +225,7 @@ def write_sql_connection_settings(config):
     text = '\n'.join(text)
 
     script_dir = os.path.dirname(__file__)
-    rel_path = "dvh-analytics/preferences/sql_connection.cnf"
+    rel_path = "preferences/sql_connection.cnf"
     abs_file_path = os.path.join(script_dir, rel_path)
 
     with open(abs_file_path, "w") as text_file:
@@ -229,33 +242,6 @@ def set_sql_connection_parameters():
     write_sql_connection_settings(config)
 
 
-def import_dicom(*flags):
-
-    if flags:
-        flags = flags[0]
-    else:
-        flags = []
-
-    if 'force-update' in flags:
-        force_update = True
-    else:
-        force_update = False
-
-    if 'do-not-organize-files' in flags:
-        organize_files = False
-    else:
-        organize_files = True
-
-    if 'do-not-move-files' in flags:
-        move_files = False
-    else:
-        move_files = True
-
-    dicom_to_sql(force_update=force_update,
-                 organize_files=organize_files,
-                 move_files=move_files)
-
-
 def print_mrns():
     mrns = DVH_SQL().get_unique_values('plans', 'mrn')
     if len(mrns) == 0:
@@ -269,86 +255,109 @@ def print_mrns():
             print current_mrn
 
 
-def get_flags_modifier():
-    bad_command = False
-    flags = []
-    modifier = []
-    i = 1
-    while i < arg_count:
-        if sys.argv[i][0:2] == '--':
-            current_flag = sys.argv[i][2:len(sys.argv[i])]
+def main():
+    parser = argparse.ArgumentParser(description='Command line interface for DVH Analytics')
+    parser.add_argument('--sql',
+                        help='Modify SQL connection settings',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--dir',
+                        help='Modify import directory settings',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--start-path',
+                        dest='start_path',
+                        help='modify the start path for dicom import',
+                        default=None)
+    parser.add_argument('--do-not-organize',
+                        help='Import will organize files by default. Set to False to leave files in the same hierarchy',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--do-not-move',
+                        help='Import will move files by default.  Set to False to leave files where they are',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--force-update',
+                        help='Import will add to SQL DB even if DB already contains data from dicom files',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--allow-websocket-origin',
+                        dest='allow_websocket_origin',
+                        help='Allows Bokeh server to accept a non-default origin',
+                        default=None)
+    parser.add_argument('--port',
+                        dest='port',
+                        help='Initializes Bokeh server on a non-default port',
+                        default=None)
+    parser.add_argument('command', nargs='+', help='bar help')
+    args = parser.parse_args()
 
-            if current_flag in call_map[call]['flags']:
-                flags.append(current_flag)
-                try:
-                    if sys.argv[i + 1][0:2] != '--':
-                        if call_map[call]['modifier']:
-                            for j in range(i, arg_count):
-                                modifier.append(sys.argv[j+1])
-                            i = arg_count
-                        else:
-                            print "ERROR: Modifiers not allowed for --" + flags[-1]
-                            bad_command = True
-                            i += 1
-                except:
-                    pass
+    if args.command:
+
+        if args.command[0] == 'settings':
+            if not args.sql and not args.dir:
+                settings()
             else:
-                print "ERROR: " + current_flag + " is not a valid flag"
-                bad_command = True
-        else:
-            if i > 1:
-                if not call_map[call]['modifier']:
-                    print "ERROR: multiple calls given"
-                    bad_command = True
-        i += 1
+                if args.sql:
+                    settings(sql=True)
+                if args.dir:
+                    settings(dir=True)
 
-    return flags, modifier, bad_command
+        elif args.command[0] == 'test':
+            test_dvh_code()
 
+        elif args.command[0] == 'echo':
+            validate_sql_connection()
 
-call_map = {'test': {'function': test_dvh_code,
-                     'flags': {},
-                     'modifier': False},
-            'echo': {'function': validate_sql_connection,
-                     'flags': {},
-                     'modifier': False},
-            'import': {'function': import_dicom,
-                       'flags': {'start_path', 'organize_files', 'move_files', 'force_update'},
-                       'modifier': False},
-            'print-mrns': {'function': print_mrns,
-                           'flags': {},
-                           'modifier': False},
-            'settings': {'function': settings,
-                         'flags': {'sql', 'import'},
-                         'modifier': False},
-            'recalculate-ages': {'function': recalculate_ages,
-                                 'flags': {},
-                                 'modifier': False}}
+        elif args.command[0] == 'print_mrns':
+            print_mrns()
+
+        elif args.command[0] == 'recalculate_ages':
+            recalculate_ages()
+
+        elif args.command[0] == 'import':
+
+            # Set defaults
+            start_path = False
+            organize_files = True
+            move_files = True
+            force_update = False
+
+            if args.start_path:
+                if os.path.isdir(args.start_path):
+                    start_path = str(args.start_path)
+                else:
+                    print args.start_path, 'is not a valid path'
+            if args.do_not_organize:
+                organize_files = False
+            if args.do_not_move:
+                move_files = False
+            if args.force_update:
+                force_update = True
+
+            dicom_to_sql(start_path=start_path,
+                         organize_files=organize_files,
+                         move_files=move_files,
+                         force_update=force_update)
+        elif args.command[0] == 'run':
+
+            command = ["bokeh", "serve"]
+
+            script_dir = os.path.dirname(__file__)
+
+            if args.allow_websocket_origin:
+                command.append("--allow-websocket-origin")
+                command.append(args.allow_websocket_origin)
+            if args.port:
+                command.append("--port")
+                command.append(args.port)
+            if not args.allow_websocket_origin and not args.port:
+                command.append("--show")
+
+            command.append(script_dir)
+
+            call(command)
 
 
 if __name__ == '__main__':
-
-    arg_count = len(sys.argv)
-
-    if arg_count == 1:
-        print "Argument required: python dvh.py <call>"
-        print "Call options are:"
-        for key in call_map.keys():
-            print key
-    else:
-        call = sys.argv[1]
-
-        if call not in call_map:
-            print call, "is not a valid call"
-
-        else:
-            flags, modifier, bad_command = get_flags_modifier()
-
-            if not bad_command:
-                if not flags or len(flags) == 0:
-                    call_map[call]['function']()
-                elif flags and not modifier:
-                    call_map[call]['function'](flags)
-                elif flags and modifier:
-                    call_map[call]['function'](flags, modifier)
-            else:
-                print "Command not understood"
+    main()

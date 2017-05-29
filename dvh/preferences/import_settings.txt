@@ -1,0 +1,3 @@
+inbox ./test_files
+imported ./test_files
+review ./test_files
