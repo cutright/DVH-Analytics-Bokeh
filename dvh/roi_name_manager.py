@@ -64,6 +64,14 @@ class DatabaseROIs:
     ##############################################
     # Import from file functions
     ##############################################
+    def get_institutional_rois(self):
+        return self.institutional_rois
+
+    def get_institutional_roi(self, physician, physician_roi):
+        physician = clean_name(physician).upper()
+        physician_roi = clean_name(physician_roi)
+        return self.physicians[physician].physician_rois[physician_roi]['institutional_roi']
+
     def import_physician_roi_maps(self):
 
         for physician in self.physicians.keys():
@@ -98,7 +106,7 @@ class DatabaseROIs:
             self.physicians[physician] = Physician(physician)
 
     def delete_physician(self, physician):
-        physician = clean_name(physician)
+        physician = clean_name(physician).upper()
         self.physicians.pop(physician, None)
 
     def get_physicians(self):
@@ -120,15 +128,6 @@ class DatabaseROIs:
     def get_institutional_rois(self):
         return self.institutional_rois
 
-    def get_institutional_roi(self, physician, roi):
-        physician = clean_name(physician).upper()
-        roi = clean_name(roi)
-        if roi in self.get_physician_rois(physician):
-            physician_roi = roi
-        else:
-            physician_roi = self.get_physician_roi(physician, roi)
-        return self.physicians[physician].physician_rois[physician_roi]['institutional_roi']
-
     def add_institutional_roi(self, roi):
         roi = clean_name(roi)
         if roi not in self.institutional_rois:
@@ -142,13 +141,14 @@ class DatabaseROIs:
         self.institutional_rois.pop(index)
         self.add_institutional_roi(new_institutional_roi)
         for physician in self.get_physicians():
-            for physician_roi in self.get_physician_rois(physician):
-                physician_roi_obj = self.physicians[physician].physician_rois[physician_roi]
-                if physician_roi_obj['institutional_roi'] == institutional_roi:
-                    physician_roi_obj['institutional_roi'] = new_institutional_roi
+            if physician != 'DEFAULT':
+                for physician_roi in self.get_physician_rois(physician):
+                    physician_roi_obj = self.physicians[physician].physician_rois[physician_roi]
+                    if physician_roi_obj['institutional_roi'] == institutional_roi:
+                        physician_roi_obj['institutional_roi'] = new_institutional_roi
 
     def delete_institutional_roi(self, roi):
-        self.set_institutional_roi('default', roi)
+        self.set_institutional_roi('uncategorized', roi)
 
     def is_institutional_roi(self, roi):
         roi = clean_name(roi)
@@ -162,7 +162,15 @@ class DatabaseROIs:
     ########################################
     def get_physician_rois(self, physician):
         physician = clean_name(physician).upper()
-        return self.physicians[physician].physician_rois.keys()
+        if self.is_physician(physician):
+            physician_rois = self.physicians[physician].physician_rois.keys()
+            if physician_rois:
+                physician_rois.sort()
+                return physician_rois
+            else:
+                return ['']
+        else:
+            return ['']
 
     def get_physician_roi(self, physician, roi):
         physician = clean_name(physician).upper()
@@ -200,9 +208,13 @@ class DatabaseROIs:
         physician = clean_name(physician).upper()
         physician_roi = clean_name(physician_roi)
         try:
-            return self.physicians[physician].physician_rois[physician_roi]['variations']
+            variations = self.physicians[physician].physician_rois[physician_roi]['variations']
+            if variations:
+                return variations
+            else:
+                return ['']
         except KeyError:
-            return []
+            return ['']
 
     def add_variation(self, physician, physician_roi, variation):
         physician = clean_name(physician).upper()
