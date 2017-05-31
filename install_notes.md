@@ -33,6 +33,10 @@ If you'd like to verify communication between the python code and the SQL data b
 ~~~~
 $ dvh echo
 ~~~~
+Alternatively, you can run the following for a GUI setup (ROI management still in testing):
+~~~~
+$ dvh setup
+~~~~
 
 ## Processing test files
 To verify all of your settings are valid and installation was successful, type:

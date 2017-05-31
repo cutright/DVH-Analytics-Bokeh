@@ -110,7 +110,10 @@ class DatabaseROIs:
         self.physicians.pop(physician, None)
 
     def get_physicians(self):
-        return self.physicians.keys()
+        physicians = self.physicians.keys()
+        if 'DEFAULT' in physicians:
+            physicians.pop(physicians.index('DEFAULT'))
+        return physicians
 
     def get_physician(self, physician):
         return self.physicians[physician]
@@ -157,6 +160,20 @@ class DatabaseROIs:
                 return True
         return False
 
+    def get_unused_institutional_rois(self, physician):
+        used_rois = []
+        for physician_roi in self.get_physician_rois(physician):
+            used_rois.append(self.get_institutional_roi(physician, physician_roi))
+
+        unused_rois = ['']
+        for roi in self.institutional_rois:
+            if roi not in used_rois:
+                unused_rois.append(roi)
+        if 'uncategorized' not in unused_rois:
+            unused_rois.append('uncategorized')
+
+        return unused_rois
+
     ########################################
     # Physician ROI functions
     ########################################
@@ -186,12 +203,19 @@ class DatabaseROIs:
         institutional_roi = clean_name(institutional_roi)
         physician_roi = clean_name(physician_roi)
         if physician_roi not in self.get_physician_rois(physician):
-            self.physicians[physician].add_physician_roi(institutional_roi, physician_roi)
+            if institutional_roi in self.institutional_rois:
+                self.physicians[physician].add_physician_roi(institutional_roi, physician_roi)
 
     def set_physician_roi(self, new_physician_roi, physician, physician_roi):
         if new_physician_roi != physician_roi:
             self.physicians[physician].physician_rois[new_physician_roi] = \
                 self.physicians[physician].physician_rois.pop(physician_roi, None)
+
+    def delete_physician_roi(self, physician, physician_roi):
+        physician = clean_name(physician).upper()
+        physician_roi = clean_name(physician_roi)
+        if physician_roi in self.get_physician_rois(physician):
+            self.physicians[physician].physician_rois.pop(physician_roi, None)
 
     def is_physician_roi(self, roi):
         roi = clean_name(roi)
@@ -215,6 +239,18 @@ class DatabaseROIs:
                 return ['']
         except KeyError:
             return ['']
+
+    def get_all_variations_of_physician(self, physician):
+        physician = clean_name(physician).upper()
+        variations = []
+        for physician_roi in self.get_physician_rois(physician):
+            for variation in self.get_variations(physician, physician_roi):
+                variations.append(variation)
+        if variations:
+            variations.sort()
+        else:
+            variations = ['']
+        return variations
 
     def add_variation(self, physician, physician_roi, variation):
         physician = clean_name(physician).upper()
@@ -336,7 +372,7 @@ class DatabaseROIs:
 
 
 def clean_name(name):
-    return name.lower().strip().replace(' ', '_').replace('\'', '`')
+    return str(name).lower().strip().replace(' ', '_').replace('\'', '`')
 
 
 def get_physicians_from_roi_files():

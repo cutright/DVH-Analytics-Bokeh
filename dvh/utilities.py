@@ -161,3 +161,112 @@ def platform():
     elif sys.platform.startswith('darwin'):
         return 'mac'
     return 'linux'
+
+
+def is_import_settings_defined():
+
+    script_dir = os.path.dirname(__file__)
+    rel_path = "preferences/import_settings.txt"
+    abs_file_path = os.path.join(script_dir, rel_path)
+
+    if os.path.isfile(abs_file_path):
+        return True
+    else:
+        return False
+
+
+def is_sql_connection_defined():
+
+    script_dir = os.path.dirname(__file__)
+    rel_path = "preferences/sql_connection.cnf"
+    abs_file_path = os.path.join(script_dir, rel_path)
+
+    if os.path.isfile(abs_file_path):
+        return True
+    else:
+        return False
+
+
+def write_import_settings(directories):
+
+    import_text = ['inbox ' + directories['inbox'],
+                   'imported ' + directories['imported'],
+                   'review ' + directories['review']]
+    import_text = '\n'.join(import_text)
+
+    script_dir = os.path.dirname(__file__)
+    rel_path = "preferences/import_settings.txt"
+    abs_file_path = os.path.join(script_dir, rel_path)
+
+    with open(abs_file_path, "w") as text_file:
+        text_file.write(import_text)
+
+
+def write_sql_connection_settings(config):
+
+    text = []
+    for key, value in config.iteritems():
+        if value:
+            text.append(key + ' ' + value)
+    text = '\n'.join(text)
+
+    script_dir = os.path.dirname(__file__)
+    rel_path = "preferences/sql_connection.cnf"
+    abs_file_path = os.path.join(script_dir, rel_path)
+
+    with open(abs_file_path, "w") as text_file:
+        text_file.write(text)
+
+
+def validate_import_settings():
+    script_dir = os.path.dirname(__file__)
+    rel_path = "preferences/import_settings.txt"
+    abs_file_path = os.path.join(script_dir, rel_path)
+
+    with open(abs_file_path, 'r') as document:
+        config = {}
+        for line in document:
+            line = line.split()
+            if not line:
+                continue
+            try:
+                config[line[0]] = line[1:][0]
+            except:
+                config[line[0]] = ''
+
+    valid = True
+    for key, value in config.iteritems():
+        if not os.path.isdir(value):
+            print 'invalid', key, 'path: ', value
+            valid = False
+
+    return valid
+
+
+def validate_sql_connection(*config):
+
+    if config:
+        try:
+            cnx = DVH_SQL(config[0])
+            cnx.close()
+            valid = True
+        except:
+            valid = False
+    else:
+        try:
+            cnx = DVH_SQL()
+            cnx.close()
+            valid = True
+        except:
+            valid = False
+
+    if valid:
+        print "SQL DB is alive!"
+    else:
+        print "Connection to SQL DB could not be established."
+        if not is_sql_connection_defined():
+            print "ERROR: SQL settings are not yet defined.  Please run:\n    $ dvh" \
+                  " settings --sql"
+
+    return valid
+

@@ -12,18 +12,22 @@ import os
 
 
 class DVH_SQL:
-    def __init__(self):
-        # Read SQL configuration file
-        script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
-        rel_path = "preferences/sql_connection.cnf"
-        abs_file_path = os.path.join(script_dir, rel_path)
-        with open(abs_file_path, 'r') as document:
-            config = {}
-            for line in document:
-                line = line.split()
-                if not line:
-                    continue
-                config[line[0]] = line[1:][0]
+    def __init__(self, *config):
+
+        if config:
+            config = config[0]
+        else:
+            # Read SQL configuration file
+            script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
+            rel_path = "preferences/sql_connection.cnf"
+            abs_file_path = os.path.join(script_dir, rel_path)
+            with open(abs_file_path, 'r') as document:
+                config = {}
+                for line in document:
+                    line = line.split()
+                    if not line:
+                        continue
+                    config[line[0]] = line[1:][0]
 
         self.dbname = config['dbname']
 

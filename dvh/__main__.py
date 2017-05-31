@@ -10,79 +10,12 @@ from dicom_to_sql import dicom_to_sql
 from utilities import recalculate_ages, Temp_DICOM_FileSet
 from sql_connector import DVH_SQL
 from analysis_tools import DVH
+from utilities import is_import_settings_defined, is_sql_connection_defined,\
+    write_import_settings, write_sql_connection_settings, validate_import_settings, validate_sql_connection
 import os
 from getpass import getpass
 import argparse
 from subprocess import call
-
-
-def is_import_settings_defined():
-
-    script_dir = os.path.dirname(__file__)
-    rel_path = "preferences/import_settings.txt"
-    abs_file_path = os.path.join(script_dir, rel_path)
-
-    if os.path.isfile(abs_file_path):
-        return True
-    else:
-        return False
-
-
-def is_sql_connection_defined():
-
-    script_dir = os.path.dirname(__file__)
-    rel_path = "preferences/sql_connection.cnf"
-    abs_file_path = os.path.join(script_dir, rel_path)
-
-    if os.path.isfile(abs_file_path):
-        return True
-    else:
-        return False
-
-
-def validate_import_settings():
-    script_dir = os.path.dirname(__file__)
-    rel_path = "preferences/import_settings.txt"
-    abs_file_path = os.path.join(script_dir, rel_path)
-
-    with open(abs_file_path, 'r') as document:
-        config = {}
-        for line in document:
-            line = line.split()
-            if not line:
-                continue
-            try:
-                config[line[0]] = line[1:][0]
-            except:
-                config[line[0]] = ''
-
-    valid = True
-    for key, value in config.iteritems():
-        if not os.path.isdir(value):
-            print 'invalid', key, 'path: ', value
-            valid = False
-
-    return valid
-
-
-def validate_sql_connection():
-
-    try:
-        cnx = DVH_SQL()
-        cnx.close()
-        valid = True
-    except:
-        valid = False
-
-    if valid:
-        print "SQL DB is alive!"
-    else:
-        print "Connection to SQL DB could not be established."
-        if not is_sql_connection_defined():
-            print "ERROR: SQL settings are not yet defined.  Please run:\n    $ dvh" \
-                  " settings --sql"
-
-    return valid
 
 
 def settings(**kwargs):
@@ -200,36 +133,6 @@ def get_sql_connection_parameters_from_user():
         sql_connection_parameters['password'] = str(password)
 
     return sql_connection_parameters
-
-
-def write_import_settings(settings):
-
-    import_text = ['inbox ' + settings['inbox'],
-                   'imported ' + settings['imported'],
-                   'review ' + settings['review']]
-    import_text = '\n'.join(import_text)
-
-    script_dir = os.path.dirname(__file__)
-    rel_path = "preferences/import_settings.txt"
-    abs_file_path = os.path.join(script_dir, rel_path)
-
-    with open(abs_file_path, "w") as text_file:
-        text_file.write(import_text)
-
-
-def write_sql_connection_settings(config):
-
-    text = []
-    for key, value in config.iteritems():
-        text.append(key + ' ' + value)
-    text = '\n'.join(text)
-
-    script_dir = os.path.dirname(__file__)
-    rel_path = "preferences/sql_connection.cnf"
-    abs_file_path = os.path.join(script_dir, rel_path)
-
-    with open(abs_file_path, "w") as text_file:
-        text_file.write(text)
 
 
 def set_import_settings():
@@ -355,6 +258,18 @@ def main():
                 command.append("--show")
 
             command.append(script_dir)
+
+            call(command)
+
+        elif args.command[0] == 'setup':
+
+            command = ["bokeh", "serve", "--show", "--port", "5007"]
+
+            script_dir = os.path.dirname(__file__)
+            file_name = 'settings.py'
+            abs_file_path = os.path.join(script_dir, file_name)
+
+            command.append(abs_file_path)
 
             call(command)
 
