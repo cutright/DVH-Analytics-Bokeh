@@ -38,7 +38,7 @@ def test_dvh_code():
         print "ERROR: Import settings are not yet defined.  Please run:\n    $ dvh" \
               " settings --dir"
     elif not is_sql_connection_defined():
-        print "ERROR: SQL settings are not yet defined.  Please run:\n    $ dvh" \
+        print "ERROR: Invalid or empty SQL settings.  Please run:\n    $ dvh" \
               " settings --sql"
     else:
         is_import_valid = validate_import_settings()

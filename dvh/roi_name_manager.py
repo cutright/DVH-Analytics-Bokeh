@@ -161,9 +161,11 @@ class DatabaseROIs:
         return False
 
     def get_unused_institutional_rois(self, physician):
+        physician = clean_name(physician).upper()
         used_rois = []
-        for physician_roi in self.get_physician_rois(physician):
-            used_rois.append(self.get_institutional_roi(physician, physician_roi))
+        if self.get_physician_rois(physician)[0] != '':
+            for physician_roi in self.get_physician_rois(physician):
+                used_rois.append(self.get_institutional_roi(physician, physician_roi))
 
         unused_rois = ['']
         for roi in self.institutional_rois:

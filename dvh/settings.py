@@ -134,6 +134,8 @@ def update_sql_settings():
 
 
 def update_inbox_status(attr, old, new):
+    directories['inbox'] = new
+
     script_dir = os.path.dirname(__file__)
     rel_path = new[2:len(new)]
     abs_dir_path = os.path.join(script_dir, rel_path)
@@ -141,12 +143,19 @@ def update_inbox_status(attr, old, new):
     if os.path.isdir(new) or (os.path.isdir(abs_dir_path) and new[0:2] == './'):
         input_inbox.title = "Inbox"
         save_dir_button.button_type = 'success'
+    elif not new:
+        input_inbox.title = "Inbox --- Path Needed ---"
+        save_dir_button.button_type = 'warning'
     else:
         input_inbox.title = "Inbox --- Invalid Path ---"
         save_dir_button.button_type = 'warning'
 
+    update_dir_save_status()
+
 
 def update_imported_status(attr, old, new):
+    directories['imported'] = new
+
     script_dir = os.path.dirname(__file__)
     rel_path = new[2:len(new)]
     abs_dir_path = os.path.join(script_dir, rel_path)
@@ -154,12 +163,20 @@ def update_imported_status(attr, old, new):
     if os.path.isdir(new) or (os.path.isdir(abs_dir_path) and new[0:2] == './'):
         input_imported.title = "Imported"
         save_dir_button.button_type = 'success'
+    elif not new:
+        input_imported.title = "Imported --- Path Needed ---"
+        save_dir_button.button_type = 'warning'
     else:
         input_imported.title = "Imported --- Invalid Path ---"
         save_dir_button.button_type = 'warning'
 
+    update_dir_save_status()
+
 
 def update_review_status(attr, old, new):
+
+    directories['review'] = new
+
     script_dir = os.path.dirname(__file__)
     rel_path = new[2:len(new)]
     abs_dir_path = os.path.join(script_dir, rel_path)
@@ -167,8 +184,31 @@ def update_review_status(attr, old, new):
     if os.path.isdir(new) or (os.path.isdir(abs_dir_path) and new[0:2] == './'):
         input_review.title = "Review"
         save_dir_button.button_type = 'success'
+    elif not new:
+        input_review.title = "Review --- Path Needed ---"
+        save_dir_button.button_type = 'warning'
     else:
         input_review.title = "Review --- Invalid Path ---"
+        save_dir_button.button_type = 'warning'
+
+    update_dir_save_status()
+
+
+def update_dir_save_status():
+
+    dir_save_status = True
+
+    script_dir = os.path.dirname(__file__)
+
+    for path in directories.itervalues():
+        rel_path = path[2:len(path)]
+        abs_dir_path = os.path.join(script_dir, rel_path)
+        if not(os.path.isdir(path) or (os.path.isdir(abs_dir_path) and path[0:2] == './')):
+            dir_save_status = False
+
+    if dir_save_status:
+        save_dir_button.button_type = 'success'
+    else:
         save_dir_button.button_type = 'warning'
 
 
@@ -237,8 +277,18 @@ def update_linked_institutional_roi():
 def update_physician_roi(attr, old, new):
     select_physician_roi.options = db.get_physician_rois(new)
     try:
-        select_physician_roi.value = db.get_physician_rois(new)[0]
+        select_physician_roi.value = select_physician_roi.options[0]
     except KeyError:
+        pass
+    update_select_linked_physician_roi()
+
+
+def update_select_linked_physician_roi():
+    options = db.get_unused_institutional_rois(select_physician.value)
+    select_linked_institutional_roi.options = options
+    try:
+        select_linked_institutional_roi.options = options[0]
+    except ValueError:
         pass
 
 
@@ -273,8 +323,10 @@ def select_physician_roi_change(attr, old, new):
 # Physician functions
 ##############################
 def update_physician_select():
-    select_physician.options = db.get_physicians()
-    select_physician.value = db.get_physicians()[0]
+    options = db.get_physicians()
+    options.sort()
+    select_physician.options = options
+    select_physician.value = options[0]
 
 
 def add_physician():
@@ -282,13 +334,13 @@ def add_physician():
     if len(new) > 50:
         new = new[0:50]
     if new and new not in db.get_physicians():
+        input_physician.value = ''
         db.add_physician(new)
         select_physician.options = db.get_physicians()
         try:
             select_physician.value = new
         except KeyError:
             pass
-        input_physician.value = ''
     elif new in db.get_physicians():
         input_physician.value = ''
 
@@ -479,6 +531,7 @@ reload_dir_button = Button(label='Reload', button_type='primary', width=100)
 reload_dir_button.on_click(reload_directories)
 save_dir_button = Button(label='Save', button_type='success', width=100)
 save_dir_button.on_click(save_directories)
+update_dir_save_status()
 
 reload_sql_settings_button = Button(label='Reload', button_type='primary', width=100)
 reload_sql_settings_button.on_click(reload_sql_settings)
