@@ -3,7 +3,7 @@
 // March 30, 2017
 // Notes for POI-generation scripts
 
-Both scripts of the following scripts are required for expected functionality:
+Both of the following scripts are required for expected functionality:
 DVH-Analytics_Create-POIs.Script.p3rtp
 DVH-Analytics_Create-Rx-POI.Script.p3rtp
 
