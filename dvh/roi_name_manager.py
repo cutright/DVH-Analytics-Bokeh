@@ -70,7 +70,10 @@ class DatabaseROIs:
     def get_institutional_roi(self, physician, physician_roi):
         physician = clean_name(physician).upper()
         physician_roi = clean_name(physician_roi)
-        return self.physicians[physician].physician_rois[physician_roi]['institutional_roi']
+        try:
+            return self.physicians[physician].physician_rois[physician_roi]['institutional_roi']
+        except KeyError:
+            return ''
 
     def import_physician_roi_maps(self):
 
