@@ -5,7 +5,7 @@
 // Adds a a tx site point
 
 Store.FloatAt.RxCount = 1;
-TrialList.Current.PrescriptionList.ChildrenEachCurrent.#"@".Script.ExecuteNow = "/usr/local/adacnew/PinnacleSiteData/Scripts/DC-Create-Rx-POI.Script.p3rtp";
+TrialList.Current.PrescriptionList.ChildrenEachCurrent.#"@".Script.ExecuteNow = "/usr/local/adacnew/PinnacleSiteData/Scripts/DVH-Analytics_Create-Rx-POI.Script.p3rtp";
 
 Store.FreeAt.RxCount = "";
 Store.FreeAt.MaxDose = "Max Dose";
