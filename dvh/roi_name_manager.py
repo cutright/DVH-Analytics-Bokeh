@@ -64,17 +64,6 @@ class DatabaseROIs:
     ##############################################
     # Import from file functions
     ##############################################
-    def get_institutional_rois(self):
-        return self.institutional_rois
-
-    def get_institutional_roi(self, physician, physician_roi):
-        physician = clean_name(physician).upper()
-        physician_roi = clean_name(physician_roi)
-        try:
-            return self.physicians[physician].physician_rois[physician_roi]['institutional_roi']
-        except KeyError:
-            return ''
-
     def import_physician_roi_maps(self):
 
         for physician in self.physicians.keys():
@@ -100,6 +89,20 @@ class DatabaseROIs:
                     variation = clean_name(line[i])
                     self.add_variation(physician, physician_roi, variation)
 
+    ##############################################
+    # Institutional ROI functions
+    ##############################################
+    def get_institutional_rois(self):
+        return self.institutional_rois
+
+    def get_institutional_roi(self, physician, physician_roi):
+        physician = clean_name(physician).upper()
+        physician_roi = clean_name(physician_roi)
+        if physician == 'DEFAULT':
+            return physician_roi
+        else:
+            return self.physicians[physician].physician_rois[physician_roi]['institutional_roi']
+
     ###################################
     # Physician functions
     ###################################
@@ -113,10 +116,7 @@ class DatabaseROIs:
         self.physicians.pop(physician, None)
 
     def get_physicians(self):
-        physicians = self.physicians.keys()
-        if 'DEFAULT' in physicians:
-            physicians.pop(physicians.index('DEFAULT'))
-        return physicians
+        return self.physicians.keys()
 
     def get_physician(self, physician):
         return self.physicians[physician]
@@ -170,7 +170,7 @@ class DatabaseROIs:
             for physician_roi in self.get_physician_rois(physician):
                 used_rois.append(self.get_institutional_roi(physician, physician_roi))
 
-        unused_rois = ['']
+        unused_rois = []
         for roi in self.institutional_rois:
             if roi not in used_rois:
                 unused_rois.append(roi)
@@ -202,6 +202,17 @@ class DatabaseROIs:
                 if roi == variation:
                     return physician_roi
         return 'uncategorized'
+
+    def get_physician_roi_from_institutional_roi(self, physician, institutional_roi):
+        physician = clean_name(physician).upper()
+        institutional_roi = clean_name(institutional_roi)
+        if institutional_roi == 'uncategorized':
+            return ['uncategorized']
+        for physician_roi in self.get_physician_rois(physician):
+            if institutional_roi == self.get_institutional_roi(physician, physician_roi):
+                return physician_roi
+        else:
+            return ['uncategorized']
 
     def add_physician_roi(self, physician, institutional_roi, physician_roi):
         physician = clean_name(physician).upper()
@@ -236,6 +247,8 @@ class DatabaseROIs:
     def get_variations(self, physician, physician_roi):
         physician = clean_name(physician).upper()
         physician_roi = clean_name(physician_roi)
+        if physician_roi == 'uncategorized':
+            return ['uncategorized']
         try:
             variations = self.physicians[physician].physician_rois[physician_roi]['variations']
             if variations:
@@ -374,6 +387,49 @@ class DatabaseROIs:
                 document.write(line)
 
             document.close()
+
+        for physician in get_physicians_from_roi_files():
+            if physician not in physicians and physician != 'DEFAULT':
+                print physician
+                rel_dir = "preferences/"
+                file_name = 'physician_' + physician + '.roi'
+                abs_file_path = os.path.join(script_dir, rel_dir, file_name)
+                os.remove(abs_file_path)
+
+    ################
+    # Plotting tools
+    ################
+    def get_physician_roi_visual_coordinates(self, physician, physician_roi):
+
+        institutional_roi = self.get_institutional_roi(physician, physician_roi)
+
+        table = {'name': [institutional_roi, physician_roi],
+                 'x': [1, 2],
+                 'y': [0, 0],
+                 'x0': [1, 2],
+                 'y0': [0, 0],
+                 'x1': [2, 1],
+                 'y1': [0, 0]}
+
+        variations = self.get_variations(physician, physician_roi)
+        variations_count = len(variations)
+        if not variations_count % 2:  # if even
+            initial_y = (float(variations_count) / float(2)) - 0.5
+        else:
+            initial_y = float(variations_count - 1) / float(2)
+        variation_counter = 0
+        for variation in variations:
+            y = initial_y - variation_counter
+            table['name'].append(variation)
+            table['x'].append(3)
+            table['y'].append(y)
+            table['x0'].append(2)
+            table['y0'].append(0)
+            table['x1'].append(3)
+            table['y1'].append(y)
+            variation_counter += 1
+
+        return table
 
 
 def clean_name(name):

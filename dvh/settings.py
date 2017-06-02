@@ -13,10 +13,11 @@ import time
 from roi_name_manager import DatabaseROIs, clean_name
 from sql_to_python import QuerySQL
 from sql_connector import DVH_SQL
-from bokeh.models.widgets import Select, Button, Tabs, Panel, TextInput, RadioGroup, Div
+from bokeh.models.widgets import Select, Button, Tabs, Panel, TextInput, RadioButtonGroup, Div
 from bokeh.layouts import layout, column, row
 from bokeh.plotting import figure
 from bokeh.io import curdoc
+from bokeh.models import ColumnDataSource, LabelSet, Range1d, Scroll
 import re
 
 
@@ -26,6 +27,16 @@ import re
 
 directories = {}
 config = {}
+categories = ["Institutional ROI", "Physician", "Physician ROI", "Variation"]
+operators = ["Add", "Delete", "Rename"]
+
+data = {'name': [],
+        'x': [],
+        'y': [],
+        'x0': [],
+        'y0': [],
+        'x1': [],
+        'y1': []}
 
 
 def load_directories():
@@ -242,33 +253,31 @@ db = DatabaseROIs()
 ###############################
 def delete_institutional_roi():
     db.delete_institutional_roi(select_institutional_roi.value)
-    select_institutional_roi.options = db.get_institutional_rois()
-    select_institutional_roi.value = db.get_institutional_rois()[0]
-    update_linked_institutional_roi()
+    new_options = db.get_institutional_rois()
+    select_institutional_roi.options = new_options
+    select_institutional_roi.value = new_options[0]
 
 
 def add_institutional_roi():
-    new = clean_name(re.sub(r'\W+', '', input_institutional_roi.value.replace(' ', '_')))
+    new = clean_name(re.sub(r'\W+', '', input_text.value.replace(' ', '_')))
     if len(new) > 50:
         new = new[0:50]
     if new and new not in db.get_institutional_rois():
         db.add_institutional_roi(new)
-        update_institutional_roi_select()
         select_institutional_roi.value = new
-        input_institutional_roi.value = ''
+        input_text.value = ''
     elif new in db.get_institutional_rois():
-        input_institutional_roi.value = ''
+        input_text.value = ''
 
 
-def update_institutional_roi_select():
-    select_institutional_roi.options = db.get_institutional_rois()
+def select_institutional_roi_change(attr, old, new):
+    update_input_text()
 
 
 def update_linked_institutional_roi():
-    roi = db.get_institutional_roi(select_physician.value, select_physician_roi.value)
-    if not roi:
-        roi = 'uncategorized'
-    div_linked_institutional_roi.text = "Linked to Institutional ROI: <i>" + roi + "</i>"
+    div_institutional_roi.text = "<i>Linked Institutional ROI: " + \
+                                 db.get_institutional_roi(select_physician.value,
+                                                          select_physician_roi.value) + "</i>"
 
 
 ##############################################
@@ -280,31 +289,19 @@ def update_physician_roi(attr, old, new):
         select_physician_roi.value = select_physician_roi.options[0]
     except KeyError:
         pass
-    update_select_linked_physician_roi()
-
-
-def update_select_linked_physician_roi():
-    options = db.get_unused_institutional_rois(select_physician.value)
-    select_linked_institutional_roi.options = options
-    try:
-        select_linked_institutional_roi.options = options[0]
-    except ValueError:
-        pass
 
 
 def add_physician_roi():
-    new = clean_name(re.sub(r'\W+', '', input_physician_roi.value.replace(' ', '_'))).lower()
+    new = clean_name(re.sub(r'\W+', '', input_text.value.replace(' ', '_'))).lower()
     if len(new) > 50:
         new = new[0:50]
     if new and new not in db.get_physicians():
-        db.add_physician_roi(select_physician.value, select_linked_institutional_roi.value, new)
+        db.add_physician_roi(select_physician.value, select_unlinked_institutional_roi.value, new)
         select_physician_roi.options = db.get_physician_rois(select_physician.value)
         select_physician_roi.value = new
-        input_physician_roi.value = ''
-        update_linked_institutional_roi()
-        select_linked_institutional_roi.value = ''
+        input_text.value = ''
     elif new in db.get_physicians():
-        input_physician_roi.value = ''
+        input_text.value = ''
 
 
 def delete_physician_roi():
@@ -315,8 +312,10 @@ def delete_physician_roi():
 
 
 def select_physician_roi_change(attr, old, new):
-    update_variation()
     update_linked_institutional_roi()
+    update_variation()
+    update_input_text()
+    update_column_source_data()
 
 
 ##############################
@@ -327,14 +326,16 @@ def update_physician_select():
     options.sort()
     select_physician.options = options
     select_physician.value = options[0]
+    update_input_text()
+    update_column_source_data()
 
 
 def add_physician():
-    new = str(clean_name(re.sub(r'\W+', '', input_physician.value.replace(' ', '_'))).upper())
+    new = str(clean_name(re.sub(r'\W+', '', input_text.value.replace(' ', '_'))).upper())
     if len(new) > 50:
         new = new[0:50]
     if new and new not in db.get_physicians():
-        input_physician.value = ''
+        input_text.value = ''
         db.add_physician(new)
         select_physician.options = db.get_physicians()
         try:
@@ -342,31 +343,42 @@ def add_physician():
         except KeyError:
             pass
     elif new in db.get_physicians():
-        input_physician.value = ''
+        input_text.value = ''
 
 
 def delete_physician():
     if select_physician.value != 'DEFAULT':
         db.delete_physician(select_physician.value)
-        select_physician.options = db.get_physicians()
-        select_physician.value = db.get_physicians()[0]
+        new_options = db.get_physicians()
+        select_physician.options = new_options
+        select_physician.value = new_options[0]
+
+
+def select_physician_change(attr, old, new):
+    update_physician_roi_select()
+    update_input_text()
+    update_select_unlinked_institutional_roi()
 
 
 ###################################
 # Physician ROI Variation functions
 ###################################
 def update_physician_roi_select():
-    select_physician_roi.options = db.get_physician_rois(select_physician.value)
-    select_physician_roi.value = db.get_physician_rois(select_physician.value)[0]
+    new_options = db.get_physician_rois(select_physician.value)
+    select_physician_roi.options = new_options
+    select_physician_roi.value = new_options[0]
+    update_input_text()
+    update_column_source_data()
 
 
 def update_variation():
     select_variation.options = db.get_variations(select_physician.value,
                                                  select_physician_roi.value)
+    select_variation.value = select_variation.options[0]
 
 
 def add_variation():
-    new = clean_name(re.sub(r'\W+', '', input_variation.value.replace(' ', '_'))).lower()
+    new = clean_name(re.sub(r'\W+', '', input_text.value.replace(' ', '_'))).lower()
     if len(new) > 50:
         new = new[0:50]
     if new and new not in db.get_all_variations_of_physician(select_physician.value):
@@ -374,144 +386,297 @@ def add_variation():
                          select_physician_roi.value,
                          new)
         select_variation.value = new
-        input_variation.value = ''
+        input_text.value = ''
         update_variation()
         select_variation.value = new
     elif new in db.get_variations(select_physician.value,
                                   select_physician_roi.value):
-        input_variation.value = ''
+        input_text.value = ''
 
 
 def delete_variation():
     if select_variation.value != select_physician_roi.value:
         db.delete_variation(select_physician.value, select_physician_roi.value, select_variation.value)
-        select_variation.options = db.get_variations(select_physician.value, select_physician_roi.value)
-        select_variation.value = db.get_variations(select_physician.value, select_physician_roi.value)[0]
+        new_options = db.get_variations(select_physician.value, select_physician_roi.value)
+        select_variation.options = new_options
+        select_variation.value = new_options[0]
+
+
+def select_variation_change(attr, old, new):
+    update_input_text()
 
 
 ################
 # Misc functions
 ################
+def update_input_text_title():
+    title = operators[operator.active] + " " + categories[category.active] + ":"
+    input_text.title = title
+    update_action_text()
+
+
+def update_input_text_value():
+    if operator.active != 0:
+        if category.active == 0:
+            input_text.value = select_institutional_roi.value
+        elif category.active == 1:
+            input_text.value = select_physician.value
+        elif category.active == 2:
+            input_text.value = select_physician_roi.value
+        elif category.active == 3:
+            input_text.value = select_variation.value
+    else:
+        input_text.value = ''
+    update_action_text()
+
+
+def operator_change(attr, old, new):
+    update_input_text()
+    update_action_text()
+
+
+def category_change(attr, old, new):
+    update_input_text()
+    update_action_text()
+
+
+def update_input_text():
+    update_input_text_title()
+    update_input_text_value()
+
+
+def update_action_text():
+    input_text_value = clean_name(re.sub(r'\W+', '', input_text.value.replace(' ', '_')))
+    if category.active == 1:
+        input_text_value = input_text_value.upper()
+    if input_text_value != '':
+        text = "<b>" + input_text.title[:-1] + " </b><i>"
+        if operator.active == 2:
+            if category.active == 0:
+                in_value = select_institutional_roi.value
+            elif category.active == 1:
+                in_value = select_physician.value
+            elif category.active == 2:
+                in_value = select_physician_roi.value
+            elif category.active == 3:
+                in_value = select_variation.value
+            text += in_value + "</i>"
+
+            output = input_text_value
+            text += " to <i>" + output + "</i>"
+            if in_value == output:
+                text = "<b>No Action</b>"
+        elif operator.active == 1 and category.active == 3:
+            if input_text_value == select_variation.value or \
+                            input_text_value not in db.get_variations(select_physician.value,
+                                                                      select_physician_roi.value):
+                text = "<b>No Action</b>"
+
+        else:
+            output = input_text_value
+            text += "</i><i>" + output + "</i>"
+
+        if operator.active == 0 and category.active == 2:
+            text += " linked to Institutional ROI <i>" + select_unlinked_institutional_roi.value + "</i>"
+    else:
+        text = "<b>No Action</b>"
+
+    if select_physician.value == 'DEFAULT' and category.active != 0:
+        text = "<b>No Action</b>"
+
+    div_action.text = text
+
+
+def input_text_change(attr, old, new):
+    update_action_text()
+
+
 def reload_db():
     global db
     db = DatabaseROIs()
+    input_text.value = ''
+    try:
+        new_options = db.get_institutional_rois()
+        select_institutional_roi.options = new_options
+        select_institutional_roi.value = new_options[0]
 
-    update_physician_select()
-    update_physician_roi_select()
-    update_institutional_roi_select()
-    select_institutional_roi.value = db.get_institutional_rois()[0]
-    select_linked_institutional_roi.value = ''
-    update_variation()
-    update_linked_institutional_roi()
+        new_options = db.get_physicians()
+    except:
+        pass
+    if len(options) > 1:
+        new_value = options[1]
+    else:
+        new_value = options[0]
+    select_physician.options = new_options
+    select_physician.value = new_value
+
+
+def save_db():
+    db.write_to_file()
+
+
+def update_column_source_data():
+    source.data = db.get_physician_roi_visual_coordinates(select_physician.value,
+                                                          select_physician_roi.value)
+    new_y_range = float(len(db.get_variations("BBM", "larynx"))) / float(2) + float(100)
+    p.y_range = Range1d(-new_y_range, new_y_range)
+
+
+function_map = {'Add Institutional ROI': add_institutional_roi,
+                'Add Physician': add_physician,
+                'Add Physician ROI': add_physician_roi,
+                'Add Variation': add_variation,
+                'Delete Institutional ROI': delete_institutional_roi,
+                'Delete Physician': delete_physician,
+                'Delete Physician ROI': delete_physician_roi,
+                'Delete Variation': delete_variation}
+
+
+def execute_button_click():
+    function_map[input_text.title.strip(':')]()
+    update_column_source_data()
+    update_select_unlinked_institutional_roi()
+
+
+def update_select_unlinked_institutional_roi():
+    new_options = db.get_unused_institutional_rois(select_physician.value)
+    select_unlinked_institutional_roi.options = new_options
+    select_unlinked_institutional_roi.value = new_options[0]
+    new_title = "Unlinked Institutional ROIs for " + select_physician.value
+    select_unlinked_institutional_roi.title = new_title
+
+
+def unlinked_institutional_roi_change(attr, old, new):
+    update_action_text()
 
 
 ######################################################
 # Layout objects
-###########################################
-
-empty_plot = figure()
-empty_tab = Panel(child=empty_plot, title='Empty')
+######################################################
 
 # !!!!!!!!!!!!!!!!!!!!!!!
 # ROI Name Manger objects
 # !!!!!!!!!!!!!!!!!!!!!!!
-div_default_roi = Div(text="<b>Institutional ROI</b>")
-div_physician = Div(text="<b>Physician</b>")
-div_physician_roi = Div(text="<b>Physician ROI</b>")
-div_variation = Div(text="<b>Physician ROI Variation</b>")
-div_horizontal_bar = Div(text="<hr>", width=1000)
-div_horizontal_bar2 = Div(text="<hr>", width=1000)
-div_horizontal_bar3 = Div(text="<hr>", width=1000)
-div_horizontal_bar4 = Div(text="<hr>", width=1000)
+div_institutional_roi = Div(text="<i>Linked Institutional ROI</i>", width=300)
 
-# Institutional ROI objects
-select_institutional_roi = Select(value=db.get_institutional_rois()[0],
-                                  options=db.get_institutional_rois(),
+# Selectors
+options = db.get_institutional_rois()
+select_institutional_roi = Select(value=options[0],
+                                  options=options,
                                   width=300,
-                                  title='Current Institutional ROIs')
-delete_institutional_roi_button = Button(label="Delete", button_type="warning", width=100)
-delete_institutional_roi_button.on_click(delete_institutional_roi)
-input_institutional_roi = TextInput(value='', title="Add new Institutional ROI", width=300)
-add_institutional_roi_button = Button(label="Add", button_type="success", width=100)
-add_institutional_roi_button.on_click(add_institutional_roi)
+                                  title='All Institutional ROIs')
 
-# Reload and Save objects
-reload_button_institutional = Button(label='Reload', button_type='primary', width=100)
-reload_button_institutional.on_click(reload_db)
-save_button_institutional = Button(label='Save', button_type='success', width=100)
-
-institutional_roi_layout = layout([[div_default_roi],
-                                   [select_institutional_roi, delete_institutional_roi_button],
-                                   [input_institutional_roi, add_institutional_roi_button],
-                                   [reload_button_institutional, save_button_institutional]])
-
-# Physician objects
-select_physician = Select(value=db.get_physicians()[0],
-                          options=db.get_physicians(),
+options = db.get_physicians()
+if len(options) > 1:
+    value = options[1]
+else:
+    value = options[0]
+select_physician = Select(value=value,
+                          options=options,
                           width=300,
                           title='Physician')
-select_physician.on_change('value', update_physician_roi)
-delete_physician_button = Button(label="Delete", button_type="warning", width=100)
-delete_physician_button.on_click(delete_physician)
-input_physician = TextInput(value='', title="Add new physician", width=300)
-add_physician_button = Button(label="Add", button_type="success", width=100)
-add_physician_button.on_click(add_physician)
 
-# Physician ROI objects
-select_physician_roi = Select(value=db.get_physician_rois(select_physician.value)[0],
-                              options=db.get_physician_rois(select_physician.value),
+options = db.get_physician_rois(select_physician.value)
+select_physician_roi = Select(value=options[0],
+                              options=options,
                               width=300,
-                              title='Physician ROI')
-select_physician_roi.on_change('value', select_physician_roi_change)
-select_linked_institutional_roi = Select(value=db.get_unused_institutional_rois(select_physician.value)[0],
-                                         options=db.get_unused_institutional_rois(select_physician.value),
-                                         width=300,
-                                         title='Linked Institutional ROI')
-div_linked_institutional_roi = Div(text="", width=500)
-update_linked_institutional_roi()
-delete_physician_roi_button = Button(label="Delete", button_type="warning", width=100)
-delete_physician_roi_button.on_click(delete_physician_roi)
-input_physician_roi = TextInput(value='', title="Add new physician ROI", width=300)
-add_physician_roi_button = Button(label="Add", button_type="success", width=100)
-add_physician_roi_button.on_click(add_physician_roi)
+                              title='Physician ROIs')
 
-reload_button_physician = Button(label='Reload', button_type='primary', width=100)
-reload_button_physician.on_click(reload_db)
-save_button_physician = Button(label='Save', button_type='success', width=100)
-
-# Physician ROI Variation objects
-select_variation = Select(value=db.get_variations(select_physician.value,
-                                                  select_physician_roi.value)[0],
-                          options=db.get_variations(select_physician.value,
-                                                    select_physician_roi.value),
+options = db.get_variations(select_physician.value, select_physician_roi.value)
+select_variation = Select(value=options[0],
+                          options=options,
                           width=300,
-                          title='Physician ROI Variation')
-delete_variation_button = Button(label="Delete", button_type="warning", width=100)
-delete_variation_button.on_click(delete_variation)
-input_variation = TextInput(value='', title="Add new variation", width=300)
-add_variation_button = Button(label="Add", button_type="success", width=100)
-add_variation_button.on_click(add_variation)
+                          title='Variations')
 
-physician_layout = layout([[div_physician],
-                           [select_physician, delete_physician_button],
-                           [input_physician, add_physician_button],
-                           [div_horizontal_bar],
-                           [div_physician_roi],
-                           [select_physician_roi, delete_physician_roi_button],
-                           [div_linked_institutional_roi],
-                           [div_horizontal_bar2],
-                           [input_physician_roi],
-                           [select_linked_institutional_roi, add_physician_roi_button],
-                           [div_horizontal_bar3],
-                           [div_variation],
-                           [select_variation, delete_variation_button],
-                           [input_variation, add_variation_button],
-                           [reload_button_physician, save_button_physician]])
+options = db.get_unused_institutional_rois(select_physician.value)
+title = 'Unlinked Institutional ROIs for ' + select_physician.value
+select_unlinked_institutional_roi = Select(value=options[0],
+                                           options=options,
+                                           width=300,
+                                           title=title)
+
+div_horizontal_bar1 = Div(text="<hr>", width=900)
+div_horizontal_bar2 = Div(text="<hr>", width=900)
+
+div_action = Div(text="<b>No Action</b>", width=600)
+
+input_text = TextInput(value='',
+                       title='Add Institutional ROI:',
+                       width=300)
+
+# RadioButtonGroups
+category = RadioButtonGroup(labels=categories,
+                            active=0,
+                            width=400)
+operator = RadioButtonGroup(labels=operators,
+                            active=0,
+                            width=200)
+
+# Ticker calls
+select_institutional_roi.on_change('value', select_institutional_roi_change)
+select_physician.on_change('value', select_physician_change)
+select_physician_roi.on_change('value', select_physician_roi_change)
+select_variation.on_change('value', select_variation_change)
+category.on_change('active', category_change)
+operator.on_change('active', operator_change)
+input_text.on_change('value', input_text_change)
+select_unlinked_institutional_roi.on_change('value', unlinked_institutional_roi_change)
+
+# Button objects
+action_button = Button(label='Perform Action', button_type='primary', width=200)
+reload_button_roi = Button(label='Reload', button_type='primary', width=100)
+save_button_roi = Button(label='Save', button_type='success', width=100)
+
+action_button.on_click(execute_button_click)
+reload_button_roi.on_click(reload_db)
+save_button_roi.on_click(save_db)
+
+update_linked_institutional_roi()
+
+# Plot
+p = figure(plot_width=1000, plot_height=500,
+           x_range=["Institutional ROI", "Physician ROI", "Variations"],
+           x_axis_location="above",
+           title="(Linked by Physician and Physician ROI dropdowns)",
+           tools="pan, ywheel_zoom",
+           logo=None)
+p.toolbar.active_scroll = "auto"
+p.title.align = 'center'
+p.title.text_font_style = "italic"
+p.xaxis.axis_line_color = None
+p.xaxis.major_tick_line_color = None
+p.xaxis.minor_tick_line_color = None
+p.xaxis.major_label_text_font_size = "15pt"
+p.xgrid.grid_line_color = None
+p.ygrid.grid_line_color = None
+p.yaxis.visible = False
+p.outline_line_color = None
+p.y_range = Range1d(-5, 5)
+
+source = ColumnDataSource(data=data)
+p.circle("x", "y", size=12, source=source, line_color="black", fill_alpha=0.8)
+labels = LabelSet(x="x", y="y", text="name", y_offset=8,
+                  text_font_size="15pt", text_color="#555555",
+                  source=source, text_align='center')
+p.add_layout(labels)
+p.segment(x0='x0', y0='y0', x1='x1', y1='y1', source=source, alpha=0.5)
+
+roi_layout = layout([[select_institutional_roi, select_unlinked_institutional_roi],
+                     [div_horizontal_bar1],
+                     [select_physician],
+                     [select_physician_roi, select_variation],
+                     [div_institutional_roi],
+                     [div_horizontal_bar2],
+                     [input_text, operator, category],
+                     [div_action],
+                     [action_button, reload_button_roi, save_button_roi],
+                     [p]])
 
 # !!!!!!!!!!!!!!!!!!!!!!!
 # Import and SQL objects
 # !!!!!!!!!!!!!!!!!!!!!!!
 div_import = Div(text="<b>DICOM Directories</b>")
+div_horizontal_bar_settings = Div(text="<hr>", width=900)
 input_inbox = TextInput(value=directories['inbox'], title="Inbox", width=300)
 input_inbox.on_change('value', update_inbox_status)
 input_imported = TextInput(value=directories['imported'], title="Imported", width=300)
@@ -545,7 +710,7 @@ settings_layout = layout([[div_import],
                           [input_imported],
                           [input_review],
                           [reload_dir_button, save_dir_button],
-                          [div_horizontal_bar4],
+                          [div_horizontal_bar_settings],
                           [div_sql],
                           [input_host, input_port],
                           [input_user, input_password],
@@ -556,10 +721,9 @@ settings_layout = layout([[div_import],
 # Tabs and document
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 settings_tab = Panel(child=settings_layout, title='Directories & SQL Settings')
-institutional_tab = Panel(child=institutional_roi_layout, title='Institutional ROIs')
-physician_tab = Panel(child=physician_layout, title='Physician ROIs')
+roi_tab = Panel(child=roi_layout, title='ROI Name Manager')
 
-tabs = Tabs(tabs=[settings_tab, institutional_tab, physician_tab, empty_tab])
+tabs = Tabs(tabs=[settings_tab, roi_tab])
 
 # Create the document Bokeh server will use to generate the webpage
 curdoc().add_root(tabs)
