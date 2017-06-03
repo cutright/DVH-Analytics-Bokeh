@@ -20,26 +20,9 @@ $ sudo pip install dvh-analytics
 ~~~~
 
 ## Define directories and connection settings
-#### Option 1
-Simply type in the following command to define the dicom directories and SQL connection settings:
+Type in the following to define the dicom directories and SQL connection settings:
 ~~~~
 $ dvh setup
-~~~~
-NOTE: The ROI management module for this GUI is still in testing  
-  
-#### Option 2
-Alternatively, you can run the following for a command-line setup:
-~~~~
-$ dvh settings
-~~~~
-The command line will walk you through the setup with a series of prompts.  If you wish to set only dicom 
-directories or only SQL connection settings, simply append '--import' or '--sql'.  For example:
-~~~~
-$ dvh settings --sql
-~~~~
-If you'd like to verify communication between the python code and the SQL data base, type:
-~~~~
-$ dvh echo
 ~~~~
 
 ## Processing test files
