@@ -10,7 +10,7 @@
 If any of these are not installed, see [Additional Notes](#additional-notes).  
 
 ## Setting up your python environment
-DVH Analytics if available via pip install:
+DVH Analytics is available via pip install:
 ~~~~
 $ pip install dvh-analytics
 ~~~~
