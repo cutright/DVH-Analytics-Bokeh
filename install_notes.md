@@ -65,7 +65,7 @@ If Chrome or Firefox is not your default browswer, you'll need to copy and paste
 From within the active terminal, press ctrl + c to stop the Bokeh server.
 
 If you would like to specify an IP or port other than the default 127.0.0.1:5006, use the following when starting
-the bokeh server.  You may be interested in this if running from a computer with a static IP and would like
+the bokeh server.  You may be interested in this if you are running from a computer with a static IP and would like
 to access this bokeh server from across your network.
 ~~~~
 $ dvh run --allow-websocket-origin <new IP:port>
