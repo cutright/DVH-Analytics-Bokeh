@@ -259,25 +259,32 @@ def delete_institutional_roi():
 
 
 def add_institutional_roi():
-    new = clean_name(re.sub(r'\W+', '', input_text.value.replace(' ', '_')))
+    new = clean_input(input_text.value)
     if len(new) > 50:
         new = new[0:50]
     if new and new not in db.get_institutional_rois():
         db.add_institutional_roi(new)
+        select_institutional_roi.options = db.get_institutional_rois()
         select_institutional_roi.value = new
         input_text.value = ''
-    elif new in db.get_institutional_rois():
-        input_text.value = ''
+        update_select_unlinked_institutional_roi()
 
 
 def select_institutional_roi_change(attr, old, new):
     update_input_text()
 
 
-def update_linked_institutional_roi():
-    div_institutional_roi.text = "<i>Linked Institutional ROI: " + \
-                                 db.get_institutional_roi(select_physician.value,
-                                                          select_physician_roi.value) + "</i>"
+def update_institutional_roi_select():
+    new_options = db.get_institutional_rois()
+    select_institutional_roi.options = new_options
+    select_institutional_roi.value = new_options[0]
+
+
+def rename_institutional_roi():
+    new = clean_input(input_text.value)
+    db.set_institutional_roi(new, select_institutional_roi.value)
+    update_institutional_roi_select()
+    select_institutional_roi.value = new
 
 
 ##############################################
@@ -292,7 +299,7 @@ def update_physician_roi(attr, old, new):
 
 
 def add_physician_roi():
-    new = clean_name(re.sub(r'\W+', '', input_text.value.replace(' ', '_'))).lower()
+    new = clean_input(input_text.value)
     if len(new) > 50:
         new = new[0:50]
     if new and new not in db.get_physicians():
@@ -312,10 +319,17 @@ def delete_physician_roi():
 
 
 def select_physician_roi_change(attr, old, new):
-    update_linked_institutional_roi()
     update_variation()
     update_input_text()
     update_column_source_data()
+    update_select_unlinked_institutional_roi()
+
+
+def rename_physician_roi():
+    new = clean_input(input_text.value)
+    db.set_physician_roi(new, select_physician.value, select_physician_roi.value)
+    update_physician_roi_select()
+    select_physician_roi.value = new
 
 
 ##############################
@@ -331,7 +345,7 @@ def update_physician_select():
 
 
 def add_physician():
-    new = str(clean_name(re.sub(r'\W+', '', input_text.value.replace(' ', '_'))).upper())
+    new = clean_input(input_text.value).upper()
     if len(new) > 50:
         new = new[0:50]
     if new and new not in db.get_physicians():
@@ -360,6 +374,13 @@ def select_physician_change(attr, old, new):
     update_select_unlinked_institutional_roi()
 
 
+def rename_physician():
+    new = clean_input(input_text.value)
+    db.set_physician(new, select_physician.value)
+    update_physician_select()
+    select_physician.value = new
+
+
 ###################################
 # Physician ROI Variation functions
 ###################################
@@ -378,7 +399,7 @@ def update_variation():
 
 
 def add_variation():
-    new = clean_name(re.sub(r'\W+', '', input_text.value.replace(' ', '_'))).lower()
+    new = clean_input(input_text.value)
     if len(new) > 50:
         new = new[0:50]
     if new and new not in db.get_all_variations_of_physician(select_physician.value):
@@ -406,25 +427,35 @@ def select_variation_change(attr, old, new):
     update_input_text()
 
 
+def rename_physician_roi():
+    new = clean_input(input_text.value)
+    db.set_physician_roi(new, select_physician.value, select_physician_roi.value)
+    update_physician_roi_select()
+    select_physician_roi.value = new
+
+
 ################
 # Misc functions
 ################
+def rename_variation():
+    new = clean_input(input_text.value)
+    db.set_variation(new, select_physician.value, select_physician_roi.value, select_variation.value)
+    update_variation()
+    select_variation.value = new
+
+
 def update_input_text_title():
-    title = operators[operator.active] + " " + categories[category.active] + ":"
-    input_text.title = title
+    input_text.title = operators[operator.active] + " " + categories[category.active] + ":"
     update_action_text()
 
 
 def update_input_text_value():
+    category_map = {0: select_institutional_roi.value,
+                    1: select_physician.value,
+                    2: select_physician_roi.value,
+                    3: select_variation.value}
     if operator.active != 0:
-        if category.active == 0:
-            input_text.value = select_institutional_roi.value
-        elif category.active == 1:
-            input_text.value = select_physician.value
-        elif category.active == 2:
-            input_text.value = select_physician_roi.value
-        elif category.active == 3:
-            input_text.value = select_variation.value
+        input_text.value = category_map[category.active]
     else:
         input_text.value = ''
     update_action_text()
@@ -446,45 +477,47 @@ def update_input_text():
 
 
 def update_action_text():
-    input_text_value = clean_name(re.sub(r'\W+', '', input_text.value.replace(' ', '_')))
+    category_map = {0: select_institutional_roi.value,
+                    1: select_physician.value,
+                    2: select_physician_roi.value,
+                    3: select_variation.value}
+
+    current = {0: db.get_institutional_rois(),
+               1: db.get_physicians(),
+               2: db.get_physician_rois(select_physician.value),
+               3: db.get_variations(select_physician.value, select_physician_roi.value)}
+
+    in_value = category_map[category.active]
+
+    input_text_value = clean_input(input_text.value)
     if category.active == 1:
         input_text_value = input_text_value.upper()
-    if input_text_value != '':
+
+    if input_text_value == '' or \
+            (select_physician.value == 'DEFAULT' and category.active != 0) or \
+            (operator.active == 1 and input_text_value not in current[category.active]) or \
+            (operator.active == 2 and input_text_value in current[category.active]) or \
+            (operator.active != 0 and category.active == 3 and select_variation.value == select_physician_roi.value):
+        text = "<b>No Action</b>"
+
+    else:
+
         text = "<b>" + input_text.title[:-1] + " </b><i>"
-        if operator.active == 2:
-            if category.active == 0:
-                in_value = select_institutional_roi.value
-            elif category.active == 1:
-                in_value = select_physician.value
-            elif category.active == 2:
-                in_value = select_physician_roi.value
-            elif category.active == 3:
-                in_value = select_variation.value
-            text += in_value + "</i>"
-
-            output = input_text_value
-            text += " to <i>" + output + "</i>"
-            if in_value == output:
-                text = "<b>No Action</b>"
-        elif operator.active == 1 and category.active == 3:
-            if input_text_value == select_variation.value or \
-                            input_text_value not in db.get_variations(select_physician.value,
-                                                                      select_physician_roi.value):
-                text = "<b>No Action</b>"
-
+        if operator.active == 0:
+            text += input_text_value
         else:
-            output = input_text_value
-            text += "</i><i>" + output + "</i>"
+            text += in_value
+        text += "</i>"
+        output = input_text_value
 
         if operator.active == 0 and category.active == 2:
             text += " linked to Institutional ROI <i>" + select_unlinked_institutional_roi.value + "</i>"
-    else:
-        text = "<b>No Action</b>"
 
-    if select_physician.value == 'DEFAULT' and category.active != 0:
-        text = "<b>No Action</b>"
+        elif operator.active == 2:
+            text += " to <i>" + output + "</i>"
 
     div_action.text = text
+    action_button.label = input_text.title[:-1]
 
 
 def input_text_change(attr, old, new):
@@ -492,21 +525,24 @@ def input_text_change(attr, old, new):
 
 
 def reload_db():
-    global db
-    db = DatabaseROIs()
-    input_text.value = ''
-    try:
-        new_options = db.get_institutional_rois()
-        select_institutional_roi.options = new_options
-        select_institutional_roi.value = new_options[0]
+    global db, category, operator
 
-        new_options = db.get_physicians()
-    except:
-        pass
-    if len(options) > 1:
-        new_value = options[1]
+    db = DatabaseROIs()
+
+    category.active = 0
+    operator.active = 0
+
+    input_text.value = ''
+
+    new_options = db.get_institutional_rois()
+    select_institutional_roi.options = new_options
+    select_institutional_roi.value = new_options[0]
+
+    new_options = db.get_physicians()
+    if len(new_options) > 1:
+        new_value = new_options[1]
     else:
-        new_value = options[0]
+        new_value = new_options[0]
     select_physician.options = new_options
     select_physician.value = new_value
 
@@ -518,8 +554,11 @@ def save_db():
 def update_column_source_data():
     source.data = db.get_physician_roi_visual_coordinates(select_physician.value,
                                                           select_physician_roi.value)
-    new_y_range = float(len(db.get_variations("BBM", "larynx"))) / float(2) + float(100)
-    p.y_range = Range1d(-new_y_range, new_y_range)
+
+
+def clean_input(text):
+    new = clean_name(re.sub(r'\W+', '', text.replace(' ', '_'))).lower()
+    return new
 
 
 function_map = {'Add Institutional ROI': add_institutional_roi,
@@ -529,25 +568,33 @@ function_map = {'Add Institutional ROI': add_institutional_roi,
                 'Delete Institutional ROI': delete_institutional_roi,
                 'Delete Physician': delete_physician,
                 'Delete Physician ROI': delete_physician_roi,
-                'Delete Variation': delete_variation}
+                'Delete Variation': delete_variation,
+                'Rename Institutional ROI': rename_institutional_roi,
+                'Rename Physician': rename_physician,
+                'Rename Physician ROI': rename_physician_roi,
+                'Rename Variation': rename_variation}
 
 
 def execute_button_click():
     function_map[input_text.title.strip(':')]()
     update_column_source_data()
-    update_select_unlinked_institutional_roi()
+
+
+def unlinked_institutional_roi_change(attr, old, new):
+    if select_physician.value != 'DEFAULT':
+        db.set_linked_institutional_roi(new, select_physician.value, select_physician_roi.value)
+        update_action_text()
+        update_column_source_data()
 
 
 def update_select_unlinked_institutional_roi():
     new_options = db.get_unused_institutional_rois(select_physician.value)
+    new_value = db.get_institutional_roi(select_physician.value, select_physician_roi.value)
+    if new_value not in options:
+        new_options.append(new_value)
+        new_options.sort()
     select_unlinked_institutional_roi.options = new_options
-    select_unlinked_institutional_roi.value = new_options[0]
-    new_title = "Unlinked Institutional ROIs for " + select_physician.value
-    select_unlinked_institutional_roi.title = new_title
-
-
-def unlinked_institutional_roi_change(attr, old, new):
-    update_action_text()
+    select_unlinked_institutional_roi.value = new_value
 
 
 ######################################################
@@ -557,8 +604,6 @@ def unlinked_institutional_roi_change(attr, old, new):
 # !!!!!!!!!!!!!!!!!!!!!!!
 # ROI Name Manger objects
 # !!!!!!!!!!!!!!!!!!!!!!!
-div_institutional_roi = Div(text="<i>Linked Institutional ROI</i>", width=300)
-
 # Selectors
 options = db.get_institutional_rois()
 select_institutional_roi = Select(value=options[0],
@@ -589,11 +634,14 @@ select_variation = Select(value=options[0],
                           title='Variations')
 
 options = db.get_unused_institutional_rois(select_physician.value)
-title = 'Unlinked Institutional ROIs for ' + select_physician.value
-select_unlinked_institutional_roi = Select(value=options[0],
+value = db.get_institutional_roi(select_physician.value, select_physician_roi.value)
+if value not in options:
+    options.append(value)
+    options.sort()
+select_unlinked_institutional_roi = Select(value=value,
                                            options=options,
                                            width=300,
-                                           title=title)
+                                           title='Linked Institutional ROI')
 
 div_horizontal_bar1 = Div(text="<hr>", width=900)
 div_horizontal_bar2 = Div(text="<hr>", width=900)
@@ -631,8 +679,6 @@ action_button.on_click(execute_button_click)
 reload_button_roi.on_click(reload_db)
 save_button_roi.on_click(save_db)
 
-update_linked_institutional_roi()
-
 # Plot
 p = figure(plot_width=1000, plot_height=500,
            x_range=["Institutional ROI", "Physician ROI", "Variations"],
@@ -660,12 +706,12 @@ labels = LabelSet(x="x", y="y", text="name", y_offset=8,
                   source=source, text_align='center')
 p.add_layout(labels)
 p.segment(x0='x0', y0='y0', x1='x1', y1='y1', source=source, alpha=0.5)
+update_column_source_data()
 
-roi_layout = layout([[select_institutional_roi, select_unlinked_institutional_roi],
+roi_layout = layout([[select_institutional_roi],
                      [div_horizontal_bar1],
                      [select_physician],
-                     [select_physician_roi, select_variation],
-                     [div_institutional_roi],
+                     [select_physician_roi, select_variation, select_unlinked_institutional_roi],
                      [div_horizontal_bar2],
                      [input_text, operator, category],
                      [div_action],
