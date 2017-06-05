@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 from sql_to_python import QuerySQL
 from sql_connector import DVH_SQL
 from datetime import datetime
@@ -237,13 +238,13 @@ def validate_import_settings():
     valid = True
     for key, value in config.iteritems():
         if not os.path.isdir(value):
-            print 'invalid', key, 'path: ', value
+            print('invalid', key, 'path:', value, sep=" ")
             valid = False
 
     return valid
 
 
-def validate_sql_connection(*config):
+def validate_sql_connection(*config, **kwargs):
 
     if config:
         try:
@@ -260,13 +261,14 @@ def validate_sql_connection(*config):
         except:
             valid = False
 
-    if valid:
-        print "SQL DB is alive!"
-    else:
-        print "Connection to SQL DB could not be established."
-        if not is_sql_connection_defined():
-            print "ERROR: SQL settings are not yet defined.  Please run:\n    $ dvh" \
-                  " settings --sql"
+    if not kwargs or ('verbose' in kwargs and kwargs['verbose']):
+        if valid:
+            print("SQL DB is alive!")
+        else:
+            print("Connection to SQL DB could not be established.")
+            if not is_sql_connection_defined():
+                print("ERROR: SQL settings are not yet defined.  Please run:\n",
+                      "    $ dvh settings --sql", sep="")
 
     return valid
 

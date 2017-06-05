@@ -1,11 +1,13 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
-main program for Bokeh server
+main program for Bokeh server for Plan Review
 Created on Sun Apr 21 2017
 @author: Dan Cutright, PhD
+This module is still under development
 """
 
+from __future__ import print_function
 import numpy as np
 import itertools
 from bokeh.layouts import layout, column, row
@@ -22,7 +24,6 @@ from bokeh.palettes import Category20_9 as palette
 from datetime import datetime
 from utilities import Temp_DICOM_FileSet
 from dicompylercore import dvhcalc, dicomparser
-import dicom
 
 # Declare variables
 widget_row_origin = 2
@@ -166,9 +167,9 @@ def update_data():
     update_button.label = 'Updating...'
     update_button.button_type = 'warning'
     uids, dvh_query_str = get_query()
-    print str(datetime.now()), 'getting dvh data'
+    print(str(datetime.now()), 'getting dvh data', sep=' ')
     current_dvhs = DVH(uid=uids, dvh_condition=dvh_query_str)
-    print str(datetime.now()), 'initializing source data', current_dvhs.query
+    print(str(datetime.now()), 'initializing source data', current_dvhs.query, sep=' ')
     update_dvh_data(current_dvhs)
     update_all_range_endpoints()
     update_button.label = old_update_button_label
@@ -268,10 +269,10 @@ def get_query():
     beam_query_str = ' and '.join(beam_query_str)
     dvh_query_str = ' and '.join(dvh_query_str)
 
-    print str(datetime.now()), 'getting uids'
-    print str(datetime.now()), 'Plans = ', plan_query_str
-    print str(datetime.now()), 'Rxs = ', rx_query_str
-    print str(datetime.now()), 'Beams = ', beam_query_str
+    print(str(datetime.now()), 'getting uids', sep=' ')
+    print(str(datetime.now()), 'Plans =', plan_query_str, sep=' ')
+    print(str(datetime.now()), 'Rxs =', rx_query_str, sep=' ')
+    print(str(datetime.now()), 'Beams =', beam_query_str, sep=' ')
     uids = get_study_instance_uids(Plans=plan_query_str, Rxs=rx_query_str, Beams=beam_query_str)['union']
 
     return uids, dvh_query_str
@@ -435,7 +436,7 @@ class AddEndPointRow:
 def update_dvh_data(dvh):
 
     update_button.label = 'Getting DVH data...'
-    print str(datetime.now()), 'updating dvh data'
+    print(str(datetime.now()), 'updating dvh data', sep=' ')
     line_colors = []
     for i, color in itertools.izip(range(0, dvh.count), colors):
         line_colors.append(color)
@@ -452,17 +453,17 @@ def update_dvh_data(dvh):
         x_data.append(x_axis.tolist())
         y_data.append(dvh.dvh[:, i].tolist())
 
-    print str(datetime.now()), 'beginning stat calcs'
+    print(str(datetime.now()), 'beginning stat calcs', sep=' ')
     update_button.label = 'Calculating stats...'
 
-    print str(datetime.now()), 'calculating patches'
+    print(str(datetime.now()), 'calculating patches', sep=' ')
     stat_dvhs = dvh.get_standard_stat_dvh(dose='absolute', volume='relative')
 
-    print str(datetime.now()), 'patches calculated'
+    print(str(datetime.now()), 'patches calculated', sep=' ')
 
     source_patch.data = {'x_patch': np.append(x_axis, x_axis[::-1]).tolist(),
                          'y_patch': np.append(stat_dvhs['q3'], stat_dvhs['q1'][::-1]).tolist()}
-    print str(datetime.now()), 'patches set'
+    print(str(datetime.now()), 'patches set', sep=' ')
     source_stats.data = {'x': x_axis.tolist(),
                          'min': stat_dvhs['min'].tolist(),
                          'q1': stat_dvhs['q1'].tolist(),
@@ -471,7 +472,7 @@ def update_dvh_data(dvh):
                          'q3': stat_dvhs['q3'].tolist(),
                          'max': stat_dvhs['max'].tolist()}
 
-    print str(datetime.now()), 'stats set'
+    print(str(datetime.now()), 'stats set', sep=' ')
 
     update_beam_data(dvh.study_instance_uid)
     update_plan_data(dvh.study_instance_uid)
@@ -819,4 +820,4 @@ button_add_selector_row()
 
 # Create the document Bokeh server will use to generate the webpage
 curdoc().add_root(layout)
-curdoc().title = "Live Free or DICOM"
+curdoc().title = "DVH Analytics: Plan Review"

@@ -6,6 +6,8 @@ Created on Sun Apr 21 2017
 @author: Dan Cutright, PhD
 """
 
+
+from __future__ import print_function
 from analysis_tools import DVH, get_study_instance_uids
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL
@@ -18,8 +20,8 @@ from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
-from bokeh.models.widgets import Select, Button, PreText, TableColumn, DataTable, \
-    NumberFormatter, RadioButtonGroup, TextInput, RadioGroup
+from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, \
+    NumberFormatter, RadioButtonGroup, TextInput, RadioGroup, Div
 
 # Declare variables
 colors = itertools.cycle(palette)
@@ -172,9 +174,9 @@ def update_data():
     update_button.label = 'Updating...'
     update_button.button_type = 'warning'
     uids, dvh_query_str = get_query()
-    print str(datetime.now()), 'getting dvh data'
+    print(str(datetime.now()), 'getting dvh data', sep=' ')
     current_dvh = DVH(uid=uids, dvh_condition=dvh_query_str)
-    print str(datetime.now()), 'initializing source data', current_dvh.query
+    print(str(datetime.now()), 'initializing source data ', current_dvh.query, sep=' ')
     update_dvh_data(current_dvh)
     update_all_range_endpoints()
     update_endpoint_data(current_dvh)
@@ -292,10 +294,10 @@ def get_query():
     beam_query_str = ' and '.join(beam_query_str)
     dvh_query_str = ' and '.join(dvh_query_str)
 
-    print str(datetime.now()), 'getting uids'
-    print str(datetime.now()), 'Plans = ', plan_query_str
-    print str(datetime.now()), 'Rxs = ', rx_query_str
-    print str(datetime.now()), 'Beams = ', beam_query_str
+    print(str(datetime.now()), 'getting uids', sep=' ')
+    print(str(datetime.now()), 'Plans =', plan_query_str, sep=' ')
+    print(str(datetime.now()), 'Rxs =', rx_query_str, sep=' ')
+    print(str(datetime.now()), 'Beams =', beam_query_str, sep=' ')
     uids = get_study_instance_uids(Plans=plan_query_str, Rxs=rx_query_str, Beams=beam_query_str)['union']
 
     return uids, dvh_query_str
@@ -471,7 +473,7 @@ class EndPointRow:
 def update_dvh_data(dvh):
 
     update_button.label = 'Getting DVH data...'
-    print str(datetime.now()), 'updating dvh data'
+    print(str(datetime.now()), 'updating dvh data', sep=' ')
     line_colors = []
     for i, color in itertools.izip(range(0, dvh.count), colors):
         line_colors.append(color)
@@ -497,7 +499,7 @@ def update_dvh_data(dvh):
         else:
             y_data.append(dvh.dvh[:, i].tolist())
             y_scale.append('%Vol')
-    print str(datetime.now()), 'writing source.data'
+    print(str(datetime.now()), 'writing source.data', sep=' ')
     source.data = {'mrn': dvh.mrn,
                    'uid': dvh.study_instance_uid,
                    'roi_institutional': dvh.institutional_roi,
@@ -524,8 +526,8 @@ def update_dvh_data(dvh):
                    'ep8': endpoint_columns,
                    'x_scale': x_scale,
                    'y_scale': y_scale}
-    print str(datetime.now()), 'source.data set'
-    print str(datetime.now()), 'beginning stat calcs'
+    print(str(datetime.now()), ' source.data set', sep=' ')
+    print(str(datetime.now()), ' beginning stat calcs', sep=' ')
     update_button.label = 'Calculating stats...'
 
     if radio_group_dose.active == 1:
@@ -538,14 +540,14 @@ def update_dvh_data(dvh):
     else:
         stat_volume_scale = 'relative'
 
-    print str(datetime.now()), 'calculating patches'
+    print(str(datetime.now()), 'calculating patches', sep=' ')
     stat_dvhs = dvh.get_standard_stat_dvh(dose=stat_dose_scale, volume=stat_volume_scale)
 
-    print str(datetime.now()), 'patches calculated'
+    print(str(datetime.now()), 'patches calculated', sep=' ')
 
     source_patch.data = {'x_patch': np.append(x_axis, x_axis[::-1]).tolist(),
                          'y_patch': np.append(stat_dvhs['q3'], stat_dvhs['q1'][::-1]).tolist()}
-    print str(datetime.now()), 'patches set'
+    print(str(datetime.now()), 'patches set', sep=' ')
     source_stats.data = {'x': x_axis.tolist(),
                          'min': stat_dvhs['min'].tolist(),
                          'q1': stat_dvhs['q1'].tolist(),
@@ -554,7 +556,7 @@ def update_dvh_data(dvh):
                          'q3': stat_dvhs['q3'].tolist(),
                          'max': stat_dvhs['max'].tolist()}
 
-    print str(datetime.now()), 'stats set'
+    print(str(datetime.now()), ' stats set', sep=' ')
 
     if radio_group_dose.active == 0:
         dvh_plots.xaxis.axis_label = "Dose (Gy)"
@@ -824,7 +826,7 @@ dvh_plots.add_layout(legend_stats, 'right')
 dvh_plots.legend.click_policy = "hide"
 
 # Set up DataTable for dvhs
-data_table_title = PreText(text="DVHs", width=1000)
+data_table_title = Div(text="<b>DVHs</b>", width=1000)
 columns = [TableColumn(field="mrn", title="MRN", width=175),
            TableColumn(field="roi_name", title="ROI Name"),
            TableColumn(field="roi_type", title="ROI Type", width=80),
@@ -838,7 +840,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=175),
 data_table = DataTable(source=source, columns=columns, width=1000, selectable=True)
 
 # Set up EndPoint DataTable
-endpoint_table_title = PreText(text="DVH Endpoints", width=1000)
+endpoint_table_title = Div(text="<b>DVH Endpoints</b>", width=1000)
 columns = [TableColumn(field="mrn", title="MRN", width=160),
            TableColumn(field="ep1", title=endpoint_columns[0], width=120),
            TableColumn(field="ep2", title=endpoint_columns[1], width=120),
@@ -851,7 +853,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=160),
 data_table_endpoints = DataTable(source=source, columns=columns, width=1000, selectable=True)
 
 # Set up Beams DataTable
-beam_table_title = PreText(text="Beams", width=1500)
+beam_table_title = Div(text="<b>Beams</b>", width=1500)
 columns = [TableColumn(field="mrn", title="MRN", width=105),
            TableColumn(field="beam_number", title="Beam", width=50),
            TableColumn(field="fx_grp_beam_count", title="Beams", width=50),
@@ -874,7 +876,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=105),
 data_table_beams = DataTable(source=source_beams, columns=columns, width=1500)
 
 # Set up Plans DataTable
-plans_table_title = PreText(text="Plans", width=1200)
+plans_table_title = Div(text="<b>Plans</b>", width=1200)
 columns = [TableColumn(field="mrn", title="MRN", width=420),
            TableColumn(field="age", title="Age", width=80),
            TableColumn(field="birth_date", title="Birth Date"),
@@ -893,7 +895,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=420),
 data_table_plans = DataTable(source=source_plans, columns=columns, width=1200)
 
 # Set up Rxs DataTable
-rxs_table_title = PreText(text="Rxs", width=1000)
+rxs_table_title = Div(text="<b>Rxs</b>", width=1000)
 columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="plan_name", title="Plan Name"),
            TableColumn(field="fx_dose", title="Fx Dose", formatter=NumberFormatter(format="0.00")),
@@ -941,7 +943,7 @@ main_add_endpoint_button.on_click(button_add_endpoint_row)
 
 # not for display, but add these buttons to query_row
 # query row is simply used to keep track of pointers to query rows
-# allows code to dynamically add widgets and keep button funcionality contained
+# allows code to dynamically add widgets and keep button functionality contained
 query_row.append(row(update_button, main_add_selector_button, main_add_range_button))
 query_row_type.append('main')
 
@@ -957,10 +959,10 @@ layout = column(row(radio_group_dose, radio_group_volume),
                 data_table,
                 endpoint_table_title,
                 data_table_endpoints,
-                plans_table_title,
-                data_table_plans,
                 rxs_table_title,
                 data_table_rxs,
+                plans_table_title,
+                data_table_plans,
                 beam_table_title,
                 data_table_beams)
 
@@ -969,4 +971,4 @@ button_add_selector_row()
 
 # Create the document Bokeh server will use to generate the webpage
 curdoc().add_root(layout)
-curdoc().title = "DVH Analytics"
+curdoc().title = "DVH Analytics: Study"

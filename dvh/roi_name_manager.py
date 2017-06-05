@@ -6,6 +6,7 @@ Created on Fri Mar 24 13:43:28 2017
 @author: nightowl
 """
 
+from __future__ import print_function
 import os
 from fuzzywuzzy import fuzz
 from sql_to_python import QuerySQL
@@ -409,7 +410,7 @@ class DatabaseROIs:
 
         for physician in get_physicians_from_roi_files():
             if physician not in physicians and physician != 'DEFAULT':
-                print physician
+                print(physician)
                 rel_dir = "preferences/"
                 file_name = 'physician_' + physician + '.roi'
                 abs_file_path = os.path.join(script_dir, rel_dir, file_name)
@@ -477,7 +478,7 @@ def get_physician_from_uid(uid):
     results = cnx.query('Plans', 'physician', condition)
 
     if len(results) > 1:
-        print 'Warning: multiple plans with this study_instance_uid exist'
+        print('Warning: multiple plans with this study_instance_uid exist')
 
     return str(results[0][0])
 
@@ -497,7 +498,7 @@ def update_uncategorized_rois_in_database():
         new_institutional_roi = roi_map.get_institutional_roi(physician, roi_name)
 
         if new_physician_roi != 'uncategorized':
-            print mrn, physician, new_institutional_roi, new_physician_roi, roi_name
+            print(mrn, physician, new_institutional_roi, new_physician_roi, roi_name, sep=' ')
             condition = "study_instance_uid = '" + uid + "'" + "and roi_name = '" + roi_name + "'"
             cnx.update('DVHs', 'physician_roi', new_physician_roi, condition)
             cnx.update('DVHs', 'institutional_roi', new_institutional_roi, condition)
@@ -518,7 +519,7 @@ def reinitialize_roi_categories_in_database():
         new_physician_roi = roi_map.get_physician_roi(physician, roi_name)
         new_institutional_roi = roi_map.get_institutional_roi(physician, roi_name)
 
-        print i, physician, new_institutional_roi, new_physician_roi, roi_name
+        print(i, physician, new_institutional_roi, new_physician_roi, roi_name, sep=' ')
         condition = "study_instance_uid = '" + uid + "'" + "and roi_name = '" + roi_name + "'"
         cnx.update('DVHs', 'physician_roi', new_physician_roi, condition)
         cnx.update('DVHs', 'institutional_roi', new_institutional_roi, condition)
@@ -528,14 +529,14 @@ def reinitialize_roi_categories_in_database():
 
 def print_uncategorized_rois():
     dvh_data = QuerySQL('DVHs', "physician_roi = 'uncategorized'")
-    print 'physician, institutional_roi, physician_roi, roi_name'
+    print('physician, institutional_roi, physician_roi, roi_name')
     for i in range(0, len(dvh_data.roi_name)):
         uid = dvh_data.study_instance_uid[i]
         physician = get_physician_from_uid(uid)
         roi_name = dvh_data.roi_name[i]
         physician_roi = dvh_data.physician_roi[i]
         institutional_roi = dvh_data.institutional_roi[i]
-        print physician, institutional_roi, physician_roi, roi_name
+        print(physician, institutional_roi, physician_roi, roi_name, sep=' ')
 
 
 def get_combined_fuzz_score(a, b, **kwargs):

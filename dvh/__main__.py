@@ -6,6 +6,7 @@ Created on Thu May 23 16:57 2017
 This is the main python file for command line implementation.
 """
 
+from __future__ import print_function
 from dicom_to_sql import dicom_to_sql
 from utilities import recalculate_ages, Temp_DICOM_FileSet
 from sql_connector import DVH_SQL
@@ -32,65 +33,64 @@ def settings(**kwargs):
 def test_dvh_code():
 
     if not is_import_settings_defined() and not is_sql_connection_defined():
-        print "ERROR: Import and SQL settings are not yet defined.  Please run:\n    $ dvh" \
-              " settings"
+        print("ERROR: Import and SQL settings are not yet defined.",
+              "Please run:\n",
+              "    $ dvh settings", sep='')
     elif not is_import_settings_defined():
-        print "ERROR: Import settings are not yet defined.  Please run:\n    $ dvh" \
-              " settings --dir"
+        print("ERROR: Import settings are not yet defined.",
+              "Please run:\n",
+              "    $ dvh settings --dir", sep='')
     elif not is_sql_connection_defined():
-        print "ERROR: Invalid or empty SQL settings.  Please run:\n    $ dvh" \
-              " settings --sql"
+        print("ERROR: Invalid or empty SQL settings.",
+              "Please run:\n",
+              "    $ dvh settings --sql", sep='')
     else:
         is_import_valid = validate_import_settings()
         is_sql_connection_valid = validate_sql_connection()
         if not is_import_valid and not is_sql_connection_valid:
-            print("ERROR: Create the directories listed above or input valid directories.")
-            print("ERROR: Cannot connect to SQL.")
-            print("Please run:")
-            print("    $ dvh"
-                  " settings")
+            print("ERROR: Create the directories listed above or input valid directories.\n",
+                  "ERROR: Cannot connect to SQL.\n",
+                  "Please run:\n    $ dvh settings", sep='')
         elif not is_import_valid:
-            print("ERROR: Create the directories listed above or input valid directories by running:")
-            print("    $ dvh"
-                  " settings --dir")
+            print("ERROR: Create the directories listed above or input valid directories by running:\n",
+                  "    $ dvh settings --dir", sep='')
         elif not is_sql_connection_valid:
-            print("ERROR: Cannot connect to SQL.")
-            print("Verify database is active and/or update SQL connection information with:")
-            print("    $ dvh"
-                  " settings --sql")
+            print("ERROR: Cannot connect to SQL.\n",
+                  "Verify database is active and/or update SQL connection information with:\n",
+                  "    $ dvh settings --sql", sep='')
 
         else:
-            print "Importing test files"
+            print("Importing test files")
             dicom_to_sql(start_path="test_files/",
                          organize_files=False,
                          move_files=False,
                          force_update=False)
 
-            print "Reading data from SQL DB with analysis_tools.py"
+            print("Reading data from SQL DB with analysis_tools.py")
             test = DVH()
 
-            print "Reading dicom information from test files with utilities.py (for plan review module)"
+            print("Reading dicom information from test files with utilities.py (for plan review module)")
             test_files = Temp_DICOM_FileSet(start_path="test_files/")
 
-            print "Deleting test data from SQL database"
+            print("Deleting test data from SQL database")
             for i in range(0, test_files.count):
                 cond_str = "mrn = '" + test_files.mrn[i]
                 cond_str += "' and study_instance_uid = '" + test_files.study_instance_uid[i] + "'"
                 DVH_SQL().delete_rows(cond_str)
 
-            print "Tests successful!"
+            print("Tests successful!")
 
 
 def get_import_settings_from_user():
-    print "Please enter the full directory path for each category"
+    print("Please enter the full directory path for each category")
 
-    print "\nThis is where dicom files live before import."
+    print("This is where dicom files live before import.")
     inbox_file_path = raw_input('Inbox: ')
 
-    print "\nThis is where dicom files move to after import."
+    print("This is where dicom files move to after import.")
     imported_file_path = raw_input('Imported: ')
 
-    print "\nThis is where dicom files to be reviewed live, but will not be imported."
+    print("This is where dicom files to be reviewed live, but will not be imported.")
     review_file_path = raw_input('DVH Review: ')
 
     import_settings = {'inbox': str(inbox_file_path),
@@ -102,24 +102,24 @@ def get_import_settings_from_user():
 
 def get_sql_connection_parameters_from_user():
 
-    print "\nPlease enter the host address\n(defaults to 'localhost' if left empty)"
+    print("Please enter the host address\n(defaults to 'localhost' if left empty)")
     host = raw_input('Host: ')
     if not host:
         host = 'localhost'
 
-    print "\nPlease enter the user name\n(leave empty for OS authentication)"
+    print("Please enter the user name\n(leave empty for OS authentication)")
     user = raw_input('User: ')
 
     if user:
-        print "\nPlease enter the password, if any\n(will not display key strokes)"
+        print("Please enter the password, if any\n(will not display key strokes)")
         password = getpass('Password: ')
 
-    print "\nPlease enter the database name\n(defaults to dvh if empty)"
+    print("Please enter the database name\n(defaults to dvh if empty)")
     dbname = raw_input('Database name: ')
     if not dbname:
         dbname = 'dvh'
 
-    print "\nPlease enter the database port\n(defaults to PostgreSQL default: 5432)"
+    print("Please enter the database port\n(defaults to PostgreSQL default: 5432)")
     port = raw_input('Port: ')
     if not port:
         port = '5432'
@@ -148,14 +148,14 @@ def set_sql_connection_parameters():
 def print_mrns():
     mrns = DVH_SQL().get_unique_values('plans', 'mrn')
     if len(mrns) == 0:
-        print "No plans have been imported"
+        print("No plans have been imported")
 
     printed_mrns = []
     for i in range(0, len(mrns)):
         current_mrn = mrns[i]
         if current_mrn not in printed_mrns:
             printed_mrns.append(current_mrn)
-            print current_mrn
+            print(current_mrn)
 
 
 def main():
@@ -230,7 +230,7 @@ def main():
                 if os.path.isdir(args.start_path):
                     start_path = str(args.start_path)
                 else:
-                    print args.start_path, 'is not a valid path'
+                    print(args.start_path, 'is not a valid path', sep=' ')
             if args.do_not_organize:
                 organize_files = False
             if args.do_not_move:
@@ -242,7 +242,7 @@ def main():
                          organize_files=organize_files,
                          move_files=move_files,
                          force_update=force_update)
-        elif args.command[0] == 'run':
+        elif args.command[0] == 'run' or args.command[0] == 'study':
 
             command = ["bokeh", "serve"]
 
@@ -267,6 +267,18 @@ def main():
 
             script_dir = os.path.dirname(__file__)
             file_name = 'settings.py'
+            abs_file_path = os.path.join(script_dir, file_name)
+
+            command.append(abs_file_path)
+
+            call(command)
+
+        elif args.command[0] == 'review':
+
+            command = ["bokeh", "serve", "--show", "--port", "5008"]
+
+            script_dir = os.path.dirname(__file__)
+            file_name = 'plan_review.py'
             abs_file_path = os.path.join(script_dir, file_name)
 
             command.append(abs_file_path)

@@ -7,6 +7,7 @@ Created on Sun Feb 26 11:06:28 2017
 @author: Dan Cutright, PhD
 """
 
+from __future__ import print_function
 import dicom  # pydicom
 from dicompylercore import dicomparser, dvhcalc
 from datetime import datetime
@@ -303,7 +304,7 @@ class DVHTable:
                 current_dvh_calc = dvhcalc.get_dvh(structure_file, dose_file, key)
                 self.dvhs[row_counter] = current_dvh_calc.counts
                 if current_dvh_calc.volume > 0:
-                    print 'Importing ' + current_dvh_calc.name
+                    print('Importing', current_dvh_calc.name, sep=' ')
                     if rt_structures[key]['name'].lower().find('itv') == 0:
                         roi_type = 'ITV'
                     else:

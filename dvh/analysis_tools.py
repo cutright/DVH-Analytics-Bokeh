@@ -5,6 +5,7 @@ Created on Thu Mar  9 18:48:19 2017
 @author: nightowl
 """
 
+from __future__ import print_function
 import numpy as np
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL, get_unique_list
@@ -163,7 +164,7 @@ class DVH:
             dvh = np.zeros(bin_count)
 
             if 'volume' in kwargs and kwargs['volume'] == 'absolute':
-                print 'converting dvh to abs volume'
+                print('converting dvh to abs volume')
                 dvhs = self.dvhs_to_abs_vol(dvhs)
 
             if kwargs['type'] == 'min':
@@ -193,7 +194,7 @@ class DVH:
 
             return dvh
         else:
-            print "keyword argument of 'type=': min, mean, median, max, percentile, or std required"
+            print("keyword argument of 'type=': min, mean, median, max, percentile, or std required")
             return False
 
     def get_standard_stat_dvh(self, **kwargs):
@@ -207,7 +208,7 @@ class DVH:
             dvhs = self.dvh
 
         if 'volume' in kwargs and kwargs['volume'] == 'absolute':
-            print 'converting dvh to abs volume'
+            print('converting dvh to abs volume')
             dvhs = self.dvhs_to_abs_vol(dvhs)
 
         dvh_min = np.zeros(bin_count)
@@ -252,6 +253,7 @@ class DVH:
         x2 = np.divide(np.linspace(0, new_bin_count, new_bin_count), f)
         return x2, y2
 
+
 # Returns the isodose level outlining the given volume
 def dose_to_volume(dvh, volume, *roi_volume):
     # if an roi_volume is not given, volume is assumed to be fractional
@@ -287,7 +289,7 @@ def get_study_instance_uids(**kwargs):
     complete_list = []
     for key, value in kwargs.iteritems():
         if key not in {'Plans', 'DVHs', 'Beams', 'Rxs'}:
-            print key + ' is not a valid table name\nSelect from Plans, DVHs, Beams, or Rxs.'
+            print(key, ' is not a valid table name\nSelect from Plans, DVHs, Beams, or Rxs.', sep=' ')
             return
         study_instance_uids[key] = QuerySQL(key, value).study_instance_uid
         for sub_value in study_instance_uids[key]:

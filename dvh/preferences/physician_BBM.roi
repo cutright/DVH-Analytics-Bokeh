@@ -6,7 +6,7 @@ brainstem: brainstem: brain_stem, brainstem, study_brain_stem
 cochlea_combined: combined_cochlea: combined_cochlea
 cochlea_left: cochlea_l: cochlea_l, l._cochlea, l_cochlea, left_cochlea, lt_cochlea, study_cochlea_l
 cochlea_right: cochlea_r: cochlea_r, r._cochlea, r_cochlea, right_cochlea, rt_cochlea, study_cochlea_r
-external: external: external
+external: external: ext, external, external_roi
 larynx: larynx: lar, larynx, larynx_cb, larynx_combo, larynx_total, study_larynx
 lens_left: lens_l: l_lens, left_lens, lens_l, lens_lt
 lens_right: lens_r: lenrs_r, lens_r, lens_rt, r_lens, right_lens
@@ -49,9 +49,9 @@ uncategorized: inferior_scalene: inferior_scalene
 uncategorized: infrahyoid_epiglottis: infrahyoid_epiglottis, study_infrahyoid_epiglottis
 uncategorized: larynx_glottic: glottic_larynx, larynx_glot, larynx_glottic, study_glottic_larynx, study_larynx_glottic
 uncategorized: larynx_gsl: larynx_gsl, larynxgsl
-uncategorized: larynx_subgl: larynx_infraglottic, larynx_sub, larynx_subgl, study_larynx_subglottic, study_subglottic_larynx, subglottic_larynx
+uncategorized: larynx_subgl: larynx_infraglottic, larynx_sub, larynx_subg, larynx_subgl, study_larynx_subglottic, study_subglottic_larynx, subglottic_larynx
 uncategorized: larynx_supragl: larynx_supr, larynx_supragl, larynx_supraglottic, study_larynx_supraglottic, study_supraglottic_larynx, supraglottic_larynx
-uncategorized: lips: lips, study_lips
+uncategorized: lips: lips, lips_avoid, study_lips
 uncategorized: mandible: mandible, study_mandible
 uncategorized: middle_scalene: middle_scalene
 uncategorized: oral_cavity: oral_cavity, oralcavity, study_oral_cavity
@@ -77,4 +77,4 @@ uncategorized: thyroid_cartilage: study_thyroid_cartilage, thyroid_cartilage
 uncategorized: tmj: tmj
 uncategorized: tmjoint_l: tmjoint_l
 uncategorized: tmjoint_r: tmjoint_r
-uncategorized: uncategorized: study_cricopharyngeal_muscle, study_esophageal_inlet_muscles, study_hypopharynx, study_infrahyoid_epiglottis, study_oral_tongue, study_suprahyoid_epiglottis, uncategorized
+uncategorized: uncategorized: uncategorized

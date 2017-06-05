@@ -6,7 +6,7 @@ Created on Sat Mar  4 11:33:10 2017
 @author: Dan Cutright, PhD
 """
 
-# code currently only supports MySQL by Oracle
+from __future__ import print_function
 import psycopg2
 import os
 
@@ -109,7 +109,8 @@ class DVH_SQL:
                          str(round(dvh_table.min_dose[x], 2)),
                          str(round(dvh_table.mean_dose[x], 2)),
                          str(round(dvh_table.max_dose[x], 2)),
-                         dvh_table.dvh_str[x]]
+                         dvh_table.dvh_str[x],
+                         'False']
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'
             prepend = 'INSERT INTO DVHs VALUES (\''
@@ -120,7 +121,7 @@ class DVH_SQL:
 
         self.execute_file(file_path)
         os.remove(file_path)
-        print 'DVHs imported'
+        print('DVHs imported')
 
     def insert_plan(self, plan):
 
@@ -161,7 +162,7 @@ class DVH_SQL:
 
         self.execute_file(file_path)
         os.remove(file_path)
-        print 'Plan imported'
+        print('Plan imported')
 
     def insert_beams(self, beams):
 
@@ -200,7 +201,7 @@ class DVH_SQL:
 
         self.execute_file(file_path)
         os.remove(file_path)
-        print 'Beams imported'
+        print('Beams imported')
 
     def insert_rxs(self, rx_table):
 
@@ -229,7 +230,7 @@ class DVH_SQL:
 
         self.execute_file(file_path)
         os.remove(file_path)
-        print 'Rxs imported'
+        print('Rxs imported')
 
     def delete_rows(self, condition_str):
 
@@ -242,21 +243,25 @@ class DVH_SQL:
         self.cursor.execute('DELETE FROM Beams WHERE ' + condition_str + ';')
         self.cnx.commit()
 
+    def delete_dvh(self, roi_name):
+        self.cursor.execute("DELETE FROM DVHs WHERE roi_name = '" + roi_name + "';")
+        self.cnx.commit()
+
     def reinitialize_database(self):
 
-        print 'Dropping tables'
+        print('Dropping tables')
         self.cursor.execute('DROP TABLE IF EXISTS Plans;')
         self.cursor.execute('DROP TABLE IF EXISTS DVHs;')
         self.cursor.execute('DROP TABLE IF EXISTS Beams;')
         self.cursor.execute('DROP TABLE IF EXISTS Rxs;')
         self.cnx.commit()
-        print 'Loading create_tables.sql'
+        print('Loading create_tables.sql')
         script_dir = os.path.dirname(__file__)
         rel_path = "preferences/create_tables.sql"
         abs_file_path = os.path.join(script_dir, rel_path)
-        print 'Executing create_tables.sql'
+        print('Executing create_tables.sql')
         self.execute_file(abs_file_path)
-        print 'Tables created'
+        print('Tables created')
 
     def does_db_exist(self):
         # Check if database exists

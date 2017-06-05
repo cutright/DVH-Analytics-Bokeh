@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 from sql_connector import DVH_SQL
 
 
@@ -28,7 +29,7 @@ class QuerySQL:
                     rtn_list = self.cursor_to_list()
                 setattr(self, column, rtn_list)
         else:
-            print 'Table name in valid. Please select from Beams, DVHs, Plans, or Rxs.'
+            print('Table name in valid. Please select from Beams, DVHs, Plans, or Rxs.')
 
     def cursor_to_list(self):
         rtn_list = []

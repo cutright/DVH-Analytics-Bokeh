@@ -11,13 +11,12 @@ from utilities import is_import_settings_defined, is_sql_connection_defined,\
 import os
 import time
 from roi_name_manager import DatabaseROIs, clean_name
-from sql_to_python import QuerySQL
 from sql_connector import DVH_SQL
 from bokeh.models.widgets import Select, Button, Tabs, Panel, TextInput, RadioButtonGroup, Div
-from bokeh.layouts import layout, column, row
+from bokeh.layouts import layout
 from bokeh.plotting import figure
 from bokeh.io import curdoc
-from bokeh.models import ColumnDataSource, LabelSet, Range1d, Scroll
+from bokeh.models import ColumnDataSource, LabelSet, Range1d
 import re
 
 
@@ -233,7 +232,7 @@ def echo():
         echo_button.button_type = 'primary'
         echo_button.label = 'Echo'
     else:
-        echo_button.button_type = 'danger'
+        echo_button.button_type = 'warning'
         echo_button.label = 'Fail'
         time.sleep(1.5)
         echo_button.button_type = 'primary'
@@ -456,6 +455,8 @@ def update_input_text_value():
                     3: select_variation.value}
     if operator.active != 0:
         input_text.value = category_map[category.active]
+    elif operator.active == 0 and category.active == 3:
+        input_text.value = select_uncategorized_variation.value
     else:
         input_text.value = ''
     update_action_text()
@@ -597,6 +598,117 @@ def update_select_unlinked_institutional_roi():
     select_unlinked_institutional_roi.value = new_value
 
 
+def update_uncategorized_variation_change(attr, old, new):
+    update_input_text()
+
+
+def update_uncategorized_variation_select():
+    new_options = get_uncategorized_variations(select_physician.value)
+    new_options.sort()
+    old_value_index = select_uncategorized_variation.options.index(select_uncategorized_variation.value)
+    select_uncategorized_variation.options = new_options
+    if old_value_index < len(new_options) - 1:
+        select_uncategorized_variation.value = new_options[old_value_index]
+    else:
+        select_uncategorized_variation.value = new_options[old_value_index - 1]
+    update_input_text()
+
+
+def update_ignored_variations_select():
+    new_options = get_ignored_variations(select_physician.value)
+    new_options.sort()
+    select_ignored_variations.options = new_options
+    select_ignored_variations.value = new_options[0]
+
+
+def get_uncategorized_variations(physician):
+    global config
+    if validate_sql_connection(config, verbose=False):
+        physician = clean_name(physician).upper()
+        condition = "physician_roi = 'uncategorized'"
+        cursor_rtn = DVH_SQL().query('dvhs', 'roi_name', condition)
+        variations = db.get_all_variations_of_physician(physician)
+        uncategorized_variations = []
+        for row in cursor_rtn:
+            variation = str(row[0])
+            if clean_name(variation) not in variations:
+                uncategorized_variations.append(variation)
+        return uncategorized_variations
+    else:
+        return ['Could not connect to SQL']
+
+
+def get_ignored_variations(physician):
+    global config
+    if validate_sql_connection(config, verbose=False):
+        physician = clean_name(physician).upper()
+        condition = "physician_roi = 'ignored'"
+        cursor_rtn = DVH_SQL().query('dvhs', 'roi_name', condition)
+        variations = db.get_all_variations_of_physician(physician)
+        uncategorized_variations = []
+        for row in cursor_rtn:
+            variation = str(row[0])
+            if clean_name(variation) not in variations:
+                uncategorized_variations.append(variation)
+        return uncategorized_variations
+    else:
+        return ['Could not connect to SQL']
+
+
+def delete_dvh():
+    DVH_SQL().delete_dvh(select_uncategorized_variation.value)
+    update_uncategorized_variation_select()
+    update_ignored_variations_select()
+
+
+def ignore_dvh():
+    condition = "roi_name = '" + select_uncategorized_variation.value + "'"
+    DVH_SQL().update('DVHs', 'physician_roi', 'ignored', condition)
+    update_uncategorized_variation_select()
+    update_ignored_variations_select()
+
+
+def update_uncategorized_rois_in_db():
+    cnx = DVH_SQL()
+
+    cursor_rtn = cnx.query('dvhs', 'roi_name, study_instance_uid', "physician_roi = 'uncategorized'")
+    for row in cursor_rtn:
+        variation = str(row[0])
+        study_instance_uid = str(row[1])
+        physician = cnx.query('plans', 'physician', "study_instance_uid = '" + study_instance_uid + "'")[0][0]
+        if physician in db.get_physicians():
+            new_physician_roi = db.get_physician_roi(physician, variation)
+            condition_str = "physician_roi = 'uncategorized' and study_instance_uid = '" + study_instance_uid + "'"
+            cnx.update('dvhs', 'physician_roi', new_physician_roi, condition_str)
+    print('Uncategorized ROIs updated')
+    cnx.close()
+    db.write_to_file()
+    update_uncategorized_variation_select()
+    update_ignored_variations_select()
+
+
+def remap_all_rois_in_db():
+    cnx = DVH_SQL()
+
+    cursor_rtn = cnx.query('dvhs', 'roi_name, study_instance_uid')
+    for row in cursor_rtn:
+        variation = str(row[0])
+        study_instance_uid = str(row[1])
+        physician = cnx.query('plans', 'physician', "study_instance_uid = '" + study_instance_uid + "'")[0][0]
+        if physician in db.get_physicians():
+            new_physician_roi = db.get_physician_roi(physician, variation)
+            new_institutional_roi = db.get_institutional_roi(physician, new_physician_roi)
+            condition_str = "roi_name = '" + variation + "' and study_instance_uid = '" + study_instance_uid + "'"
+            cnx.update('dvhs', 'physician_roi', new_physician_roi, condition_str)
+            cnx.update('dvhs', 'institutional_roi', new_institutional_roi, condition_str)
+    print('ROI remap complete')
+    cnx.close()
+    db.write_to_file()
+    update_uncategorized_variation_select()
+    update_ignored_variations_select()
+
+
+
 ######################################################
 # Layout objects
 ######################################################
@@ -604,6 +716,8 @@ def update_select_unlinked_institutional_roi():
 # !!!!!!!!!!!!!!!!!!!!!!!
 # ROI Name Manger objects
 # !!!!!!!!!!!!!!!!!!!!!!!
+div_warning = Div(text="<b>WARNING:</b> Buttons in red or orange write to database", width=600)
+
 # Selectors
 options = db.get_institutional_rois()
 select_institutional_roi = Select(value=options[0],
@@ -642,6 +756,18 @@ select_unlinked_institutional_roi = Select(value=value,
                                            options=options,
                                            width=300,
                                            title='Linked Institutional ROI')
+options = get_uncategorized_variations(select_physician.value)
+options.sort()
+select_uncategorized_variation = Select(value=options[0],
+                                        options=options,
+                                        width=300,
+                                        title='Uncategorized Variations')
+options = get_ignored_variations(select_physician.value)
+options.sort()
+select_ignored_variations = Select(value=options[0],
+                                   options=options,
+                                   width=300,
+                                   title='Ignored Variations')
 
 div_horizontal_bar1 = Div(text="<hr>", width=900)
 div_horizontal_bar2 = Div(text="<hr>", width=900)
@@ -669,15 +795,24 @@ category.on_change('active', category_change)
 operator.on_change('active', operator_change)
 input_text.on_change('value', input_text_change)
 select_unlinked_institutional_roi.on_change('value', unlinked_institutional_roi_change)
+select_uncategorized_variation.on_change('value', update_uncategorized_variation_change)
 
 # Button objects
-action_button = Button(label='Perform Action', button_type='primary', width=200)
-reload_button_roi = Button(label='Reload', button_type='primary', width=100)
-save_button_roi = Button(label='Save', button_type='success', width=100)
+action_button = Button(label='Add Institutional ROI', button_type='primary', width=200)
+reload_button_roi = Button(label='Reload Map', button_type='primary', width=100)
+save_button_roi = Button(label='Save Map', button_type='success', width=100)
+ignore_button_roi = Button(label='Ignore', button_type='warning', width=150)
+delete_button_roi = Button(label='Delete DVH', button_type='danger', width=150)
+update_uncategorized_rois_button = Button(label='Update Uncategorized ROIs in DB', button_type='warning', width=300)
+remap_all_rois_button = Button(label='Remap all ROIs in DB', button_type='warning', width=300)
 
 action_button.on_click(execute_button_click)
 reload_button_roi.on_click(reload_db)
 save_button_roi.on_click(save_db)
+delete_button_roi.on_click(delete_dvh)
+ignore_button_roi.on_click(ignore_dvh)
+update_uncategorized_rois_button.on_click(update_uncategorized_rois_in_db)
+remap_all_rois_button.on_click(remap_all_rois_in_db)
 
 # Plot
 p = figure(plot_width=1000, plot_height=500,
@@ -712,6 +847,9 @@ roi_layout = layout([[select_institutional_roi],
                      [div_horizontal_bar1],
                      [select_physician],
                      [select_physician_roi, select_variation, select_unlinked_institutional_roi],
+                     [select_uncategorized_variation, select_ignored_variations],
+                     [ignore_button_roi, delete_button_roi, update_uncategorized_rois_button, remap_all_rois_button],
+                     [div_warning],
                      [div_horizontal_bar2],
                      [input_text, operator, category],
                      [div_action],
@@ -773,7 +911,7 @@ tabs = Tabs(tabs=[settings_tab, roi_tab])
 
 # Create the document Bokeh server will use to generate the webpage
 curdoc().add_root(tabs)
-curdoc().title = "DVH Analytics Settings"
+curdoc().title = "DVH Analytics: Settings"
 
 
 if __name__ == '__main__':

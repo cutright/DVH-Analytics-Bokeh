@@ -6,6 +6,7 @@ Created on Thu Mar  2 22:15:52 2017
 @author: nightowl
 """
 
+from __future__ import print_function
 from sql_connector import DVH_SQL
 from dicom_to_python import DVHTable, PlanRow, BeamTable, RxTable
 import os
@@ -49,9 +50,9 @@ def dicom_to_sql(**kwargs):
     f = get_file_paths(import_settings['inbox'], force_update=force_update)
 
     for n in range(0, len(f)):
-        print f[n].structure
-        print f[n].plan
-        print f[n].dose
+        print(f[n].structure)
+        print(f[n].plan)
+        print(f[n].dose)
 
         plan = PlanRow(f[n].plan, f[n].structure, f[n].dose)
         beams = BeamTable(f[n].plan)
@@ -97,7 +98,7 @@ def get_file_paths(start_path, **kwargs):
     study_uid_dose = []
 
     if 'force_update' in kwargs and kwargs['force_update']:
-        print 'WARNING: Forcing all dicom to be imported (i.e., not checking DB for potential duplicates)'
+        print('WARNING: Forcing all dicom to be imported (i.e., not checking DB for potential duplicates)')
 
     db_entry_found = False
     for x in range(0, len(f)):
@@ -130,9 +131,9 @@ def get_file_paths(start_path, **kwargs):
                         study_uid_dose.append(dicom_file.StudyInstanceUID)
                 else:
                     if not db_entry_found:
-                        print "The following files are already imported. Must delete from database before reimporting."
+                        print("The following files are already imported. Must delete from database before reimporting.")
                         db_entry_found = True
-                    print f[x]
+                    print(f[x])
             except Exception:
                 pass
 
@@ -151,12 +152,12 @@ def get_file_paths(start_path, **kwargs):
 
 
 def rebuild_database(start_path):
-    print 'connecting to SQL DB'
+    print('connecting to SQL DB')
     sqlcnx = DVH_SQL()
-    print 'connection established'
+    print('connection established')
 
     sqlcnx.reinitialize_database()
-    print 'DB reinitialized with no data'
+    print('DB reinitialized with no data')
     dicom_to_sql(start_path=start_path,
                  force_update=True,
                  move_files=False,
@@ -251,7 +252,7 @@ def organize_dicom_files(path):
 
         old = files[i]
         new = '/'.join([path, name, file_name])
-        print old, new
+        print(old, new, sep= ' ')
         os.rename(old, new)
 
     os.chdir(initial_path)

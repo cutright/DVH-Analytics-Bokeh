@@ -1,11 +1,5 @@
 ## To Do List
 ### Higher Priorities
-    
-
-- [ ] Design UI for limited backend management (e.g., roi name maps)  
-  - [X] Need to completely rewrite roi_name_manager.py
-  - [ ] Use new best guess function in UI design
-
 
 - [ ] Adapt code and validate for other treatment planning systems
    - [ ] Monaco
@@ -43,4 +37,8 @@
 
 - [ ] Combine data and stats into one ColumnDataSource so endpoints are calculated for stats
 
+
 - [ ] Adapt for python3
+  - [X] print functions updated 
+
+
