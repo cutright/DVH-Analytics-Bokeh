@@ -385,11 +385,22 @@ class DatabaseROIs:
     def write_to_file(self):
         script_dir = os.path.dirname(__file__)
 
+        rel_dir = "preferences/"
+
+        file_name = 'institutional.roi'
+        abs_file_path = os.path.join(script_dir, rel_dir, file_name)
+        document = open(abs_file_path, 'w')
+        lines = self.institutional_rois
+        lines.sort()
+        lines = '\n'.join(lines)
+        for line in lines:
+            document.write(line)
+        document.close()
+
         physicians = self.get_physicians()
         physicians.pop(physicians.index('DEFAULT'))  # remove 'DEFAULT' physician
 
         for physician in physicians:
-            rel_dir = "preferences/"
             file_name = 'physician_' + physician + '.roi'
             abs_file_path = os.path.join(script_dir, rel_dir, file_name)
             document = open(abs_file_path, 'w')
@@ -412,8 +423,6 @@ class DatabaseROIs:
 
         for physician in get_physicians_from_roi_files():
             if physician not in physicians and physician != 'DEFAULT':
-                print(physician)
-                rel_dir = "preferences/"
                 file_name = 'physician_' + physician + '.roi'
                 abs_file_path = os.path.join(script_dir, rel_dir, file_name)
                 os.remove(abs_file_path)
@@ -455,7 +464,7 @@ class DatabaseROIs:
 
 
 def clean_name(name):
-    return str(name).lower().strip().replace(' ', '_').replace('\'', '`')
+    return str(name).lower().strip().replace('\'', '`').replace('_', ' ')
 
 
 def get_physicians_from_roi_files():

@@ -1,53 +1,55 @@
-ctv
-gtv
-itv
-ptv
-brachial_plexus
-brachial_plexus_left
-brachial_plexus_right
+brachial plexus
+brachial plexus left
+brachial plexus right
 brain
 brainstem
-bronchus_large
-bronchus_smaller_airways
-cauda_equina
+bronchus large
+bronchus smaller airways
+cauda equina
 cochlea
-cochlea_left
-cochlea_right
+cochlea combined
+cochlea left
+cochlea right
 colon
-ear_inner
+ctv
+ear inner
 esophagus
 external
-femoral_head
-femoral_head_left
-femoral_head_right
-great_vessels
+femoral head
+femoral head left
+femoral head right
+great vessels
+gtv
 heart
-kidney_both
-kidney_left
-kidney_right
+itv
+kidney both
+kidney left
+kidney right
 larynx
-lens_left
-lens_right
+lens left
+lens right
 liver
-lung_whole
-lung_left
-lung_right
+lung left
+lung right
+lung whole
 mandible
-optic_chiasm
-optic_nerve
-optic_nerve_left
-optic_nerve_right
+optic chiasm
+optic nerve
+optic nerve left
+optic nerve right
 orbit
-orbit_left
-orbit_right
+orbit left
+orbit right
 parotid
-parotid_left
-parotid_right
+parotid left
+parotid right
+ptv
 rectum
 rib
-sacral_plexus
+sacral plexus
 skin
-spinal_cord
+spinal cord
 stomach
 trachea
 uncategorized
+whole lung - itv

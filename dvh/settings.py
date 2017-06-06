@@ -9,6 +9,7 @@ Created on Fri Mar 24 13:43:28 2017
 from utilities import is_import_settings_defined, is_sql_connection_defined,\
     write_import_settings, write_sql_connection_settings, validate_sql_connection
 import os
+import sys
 import time
 from roi_name_manager import DatabaseROIs, clean_name
 from sql_connector import DVH_SQL
@@ -258,7 +259,7 @@ def delete_institutional_roi():
 
 
 def add_institutional_roi():
-    new = clean_input(input_text.value)
+    new = clean_name(input_text.value)
     if len(new) > 50:
         new = new[0:50]
     if new and new not in db.get_institutional_rois():
@@ -280,7 +281,7 @@ def update_institutional_roi_select():
 
 
 def rename_institutional_roi():
-    new = clean_input(input_text.value)
+    new = clean_name(input_text.value)
     db.set_institutional_roi(new, select_institutional_roi.value)
     update_institutional_roi_select()
     select_institutional_roi.value = new
@@ -298,11 +299,11 @@ def update_physician_roi(attr, old, new):
 
 
 def add_physician_roi():
-    new = clean_input(input_text.value)
+    new = clean_name(input_text.value)
     if len(new) > 50:
         new = new[0:50]
     if new and new not in db.get_physicians():
-        db.add_physician_roi(select_physician.value, select_unlinked_institutional_roi.value, new)
+        db.add_physician_roi(select_physician.value, 'uncategorized', new)
         select_physician_roi.options = db.get_physician_rois(select_physician.value)
         select_physician_roi.value = new
         input_text.value = ''
@@ -325,7 +326,7 @@ def select_physician_roi_change(attr, old, new):
 
 
 def rename_physician_roi():
-    new = clean_input(input_text.value)
+    new = clean_name(input_text.value)
     db.set_physician_roi(new, select_physician.value, select_physician_roi.value)
     update_physician_roi_select()
     select_physician_roi.value = new
@@ -344,7 +345,7 @@ def update_physician_select():
 
 
 def add_physician():
-    new = clean_input(input_text.value).upper()
+    new = clean_name(input_text.value).upper()
     if len(new) > 50:
         new = new[0:50]
     if new and new not in db.get_physicians():
@@ -376,7 +377,7 @@ def select_physician_change(attr, old, new):
 
 
 def rename_physician():
-    new = clean_input(input_text.value)
+    new = clean_name(input_text.value)
     db.set_physician(new, select_physician.value)
     update_physician_select()
     select_physician.value = new
@@ -400,7 +401,7 @@ def update_variation():
 
 
 def add_variation():
-    new = clean_input(input_text.value)
+    new = clean_name(input_text.value)
     if len(new) > 50:
         new = new[0:50]
     if new and new not in db.get_all_variations_of_physician(select_physician.value):
@@ -429,7 +430,7 @@ def select_variation_change(attr, old, new):
 
 
 def rename_physician_roi():
-    new = clean_input(input_text.value)
+    new = clean_name(input_text.value)
     db.set_physician_roi(new, select_physician.value, select_physician_roi.value)
     update_physician_roi_select()
     select_physician_roi.value = new
@@ -439,7 +440,7 @@ def rename_physician_roi():
 # Misc functions
 ################
 def rename_variation():
-    new = clean_input(input_text.value)
+    new = clean_name(input_text.value)
     db.set_variation(new, select_physician.value, select_physician_roi.value, select_variation.value)
     update_variation()
     select_variation.value = new
@@ -492,7 +493,7 @@ def update_action_text():
 
     in_value = category_map[category.active]
 
-    input_text_value = clean_input(input_text.value)
+    input_text_value = clean_name(input_text.value)
     if category.active == 1:
         input_text_value = input_text_value.upper()
 
@@ -514,7 +515,7 @@ def update_action_text():
         output = input_text_value
 
         if operator.active == 0 and category.active == 2:
-            text += " linked to Institutional ROI <i>" + select_unlinked_institutional_roi.value + "</i>"
+            text += " linked to Institutional ROI <i>uncategorized</i>"
 
         elif operator.active == 2:
             text += " to <i>" + output + "</i>"
@@ -558,12 +559,6 @@ def update_column_source_data():
     source.data = db.get_physician_roi_visual_coordinates(select_physician.value,
                                                           select_physician_roi.value)
 
-
-def clean_input(text):
-    new = clean_name(text)
-    return new
-
-
 function_map = {'Add Institutional ROI': add_institutional_roi,
                 'Add Physician': add_physician,
                 'Add Physician ROI': add_physician_roi,
@@ -594,7 +589,7 @@ def unlinked_institutional_roi_change(attr, old, new):
 def update_select_unlinked_institutional_roi():
     new_options = db.get_unused_institutional_rois(select_physician.value)
     new_value = db.get_institutional_roi(select_physician.value, select_physician_roi.value)
-    if new_value not in options:
+    if new_value not in new_options:
         new_options.append(new_value)
         new_options.sort()
     select_unlinked_institutional_roi.options = new_options
@@ -613,7 +608,10 @@ def update_uncategorized_variation_select():
     if old_value_index < len(new_options) - 1:
         select_uncategorized_variation.value = new_options[old_value_index]
     else:
-        select_uncategorized_variation.value = new_options[old_value_index - 1]
+        try:
+            select_uncategorized_variation.value = new_options[old_value_index - 1]
+        except IndexError:
+            select_uncategorized_variation.value = new_options[0]
     update_input_text()
 
 
@@ -633,10 +631,10 @@ def get_uncategorized_variations(physician):
         uncategorized_variations = []
         cnx = DVH_SQL()
         for row in cursor_rtn:
-            variation = str(row[0])
+            variation = clean_name(str(row[0]))
             study_instance_uid = str(row[1])
             physician_db = cnx.query('plans', 'physician', "study_instance_uid = '" + study_instance_uid + "'")[0][0]
-            if physician == physician_db:
+            if physician == physician_db and variation not in uncategorized_variations:
                 uncategorized_variations.append(variation)
         if uncategorized_variations:
             return uncategorized_variations
@@ -658,7 +656,10 @@ def get_ignored_variations(physician):
             variation = str(row[0])
             if clean_name(variation) not in variations:
                 uncategorized_variations.append(variation)
-        return uncategorized_variations
+        if uncategorized_variations:
+            return uncategorized_variations
+        else:
+            return ['']
     else:
         return ['Could not connect to SQL']
 
@@ -670,8 +671,18 @@ def delete_dvh():
 
 
 def ignore_dvh():
-    condition = "roi_name = '" + select_uncategorized_variation.value + "'"
-    DVH_SQL().update('DVHs', 'physician_roi', 'ignored', condition)
+    global config
+    cnx = DVH_SQL()
+    if validate_sql_connection(config, verbose=False):
+        condition = "physician_roi = 'uncategorized'"
+        cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', condition)
+        for row in cursor_rtn:
+            variation = str(row[0])
+            study_instance_uid = str(row[1])
+            if clean_name(variation) == select_uncategorized_variation.value:
+                cnx.update('dvhs', 'physician_roi', 'ignored', "roi_name = '" + variation +
+                           "' and study_instance_uid = '" + study_instance_uid + "'")
+    cnx.close()
     update_uncategorized_variation_select()
     update_ignored_variations_select()
 
@@ -680,7 +691,11 @@ def update_uncategorized_rois_in_db():
     cnx = DVH_SQL()
 
     cursor_rtn = cnx.query('dvhs', 'roi_name, study_instance_uid', "physician_roi = 'uncategorized'")
+    complete = len(cursor_rtn)
+    progress = 0
+    initial_label = update_uncategorized_rois_button.label
     for row in cursor_rtn:
+        progress += 1
         variation = str(row[0])
         study_instance_uid = str(row[1])
         physician = cnx.query('plans', 'physician', "study_instance_uid = '" + study_instance_uid + "'")[0][0]
@@ -688,7 +703,9 @@ def update_uncategorized_rois_in_db():
             new_physician_roi = db.get_physician_roi(physician, variation)
             condition_str = "physician_roi = 'uncategorized' and study_instance_uid = '" + study_instance_uid + "'"
             cnx.update('dvhs', 'physician_roi', new_physician_roi, condition_str)
-    print('Uncategorized ROIs updated')
+        percent = int(float(100) * (float(progress) / float(complete)))
+        update_uncategorized_rois_button.label = "Remap progress: " + str(percent) + "%"
+    update_uncategorized_rois_button.label = initial_label
     cnx.close()
     db.write_to_file()
     update_uncategorized_variation_select()
@@ -699,7 +716,11 @@ def remap_all_rois_in_db():
     cnx = DVH_SQL()
 
     cursor_rtn = cnx.query('dvhs', 'roi_name, study_instance_uid')
+    progress = 0
+    complete = len(cursor_rtn)
+    initial_label = remap_all_rois_button.label
     for row in cursor_rtn:
+        progress += 1
         variation = str(row[0])
         study_instance_uid = str(row[1])
         physician = cnx.query('plans', 'physician', "study_instance_uid = '" + study_instance_uid + "'")[0][0]
@@ -709,7 +730,9 @@ def remap_all_rois_in_db():
             condition_str = "roi_name = '" + variation + "' and study_instance_uid = '" + study_instance_uid + "'"
             cnx.update('dvhs', 'physician_roi', new_physician_roi, condition_str)
             cnx.update('dvhs', 'institutional_roi', new_institutional_roi, condition_str)
-    print('ROI remap complete')
+        percent = int(float(100) * (float(progress) / float(complete)))
+        remap_all_rois_button.label = "Remap progress: " + str(percent) + "%"
+    remap_all_rois_button.label = initial_label
     cnx.close()
     db.write_to_file()
     update_uncategorized_variation_select()
