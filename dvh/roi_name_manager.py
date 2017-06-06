@@ -97,6 +97,8 @@ class DatabaseROIs:
         physician = clean_name(physician).upper()
         if physician not in self.get_physicians():
             self.physicians[physician] = Physician(physician)
+        for institutional_roi in self.institutional_rois:
+            self.add_physician_roi(physician, institutional_roi, institutional_roi)
 
     def delete_physician(self, physician):
         physician = clean_name(physician).upper()

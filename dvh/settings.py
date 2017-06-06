@@ -579,6 +579,7 @@ function_map = {'Add Institutional ROI': add_institutional_roi,
 def execute_button_click():
     function_map[input_text.title.strip(':')]()
     update_column_source_data()
+    update_uncategorized_variation_select()
 
 
 def unlinked_institutional_roi_change(attr, old, new):
@@ -626,13 +627,16 @@ def get_uncategorized_variations(physician):
     if validate_sql_connection(config, verbose=False):
         physician = clean_name(physician).upper()
         condition = "physician_roi = 'uncategorized'"
-        cursor_rtn = DVH_SQL().query('dvhs', 'roi_name', condition)
-        variations = db.get_all_variations_of_physician(physician)
+        cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', condition)
         uncategorized_variations = []
+        cnx = DVH_SQL()
         for row in cursor_rtn:
             variation = str(row[0])
-            if clean_name(variation) not in variations:
+            study_instance_uid = str(row[1])
+            physician_db = cnx.query('plans', 'physician', "study_instance_uid = '" + study_instance_uid + "'")[0][0]
+            if physician == physician_db:
                 uncategorized_variations.append(variation)
+
         return uncategorized_variations
     else:
         return ['Could not connect to SQL']
@@ -708,7 +712,6 @@ def remap_all_rois_in_db():
     update_ignored_variations_select()
 
 
-
 ######################################################
 # Layout objects
 ######################################################
@@ -763,7 +766,10 @@ select_uncategorized_variation = Select(value=options[0],
                                         width=300,
                                         title='Uncategorized Variations')
 options = get_ignored_variations(select_physician.value)
-options.sort()
+if not options:
+    options = ['']
+else:
+    options.sort()
 select_ignored_variations = Select(value=options[0],
                                    options=options,
                                    width=300,
