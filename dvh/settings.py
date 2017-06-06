@@ -371,6 +371,8 @@ def select_physician_change(attr, old, new):
     update_physician_roi_select()
     update_input_text()
     update_select_unlinked_institutional_roi()
+    update_uncategorized_variation_select()
+    update_ignored_variations_select()
 
 
 def rename_physician():
@@ -558,7 +560,7 @@ def update_column_source_data():
 
 
 def clean_input(text):
-    new = clean_name(re.sub(r'\W+', '', text.replace(' ', '_'))).lower()
+    new = clean_name(text)
     return new
 
 
@@ -636,8 +638,10 @@ def get_uncategorized_variations(physician):
             physician_db = cnx.query('plans', 'physician', "study_instance_uid = '" + study_instance_uid + "'")[0][0]
             if physician == physician_db:
                 uncategorized_variations.append(variation)
-
-        return uncategorized_variations
+        if uncategorized_variations:
+            return uncategorized_variations
+        else:
+            return ['']
     else:
         return ['Could not connect to SQL']
 
