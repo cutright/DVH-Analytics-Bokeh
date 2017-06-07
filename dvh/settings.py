@@ -10,7 +10,6 @@ from __future__ import print_function
 from utilities import is_import_settings_defined, is_sql_connection_defined,\
     write_import_settings, write_sql_connection_settings, validate_sql_connection
 import os
-import sys
 import time
 from roi_name_manager import DatabaseROIs, clean_name
 from sql_connector import DVH_SQL
@@ -19,7 +18,6 @@ from bokeh.layouts import layout
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.models import ColumnDataSource, LabelSet, Range1d
-import re
 
 
 ##################################
@@ -30,6 +28,7 @@ directories = {}
 config = {}
 categories = ["Institutional ROI", "Physician", "Physician ROI", "Variation"]
 operators = ["Add", "Delete", "Rename"]
+uncategorized_variations = {}
 
 data = {'name': [],
         'x': [],
@@ -602,7 +601,9 @@ def update_uncategorized_variation_change(attr, old, new):
 
 
 def update_uncategorized_variation_select():
-    new_options = get_uncategorized_variations(select_physician.value)
+    global uncategorized_variations
+    uncategorized_variations = get_uncategorized_variations(select_physician.value)
+    new_options = uncategorized_variations.keys()
     new_options.sort()
     old_value_index = select_uncategorized_variation.options.index(select_uncategorized_variation.value)
     select_uncategorized_variation.options = new_options
@@ -629,14 +630,14 @@ def get_uncategorized_variations(physician):
         physician = clean_name(physician).upper()
         condition = "physician_roi = 'uncategorized'"
         cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', condition)
-        uncategorized_variations = []
+        uncategorized_variations = {}
         cnx = DVH_SQL()
         for row in cursor_rtn:
             variation = clean_name(str(row[0]))
             study_instance_uid = str(row[1])
             physician_db = cnx.query('plans', 'physician', "study_instance_uid = '" + study_instance_uid + "'")[0][0]
             if physician == physician_db and variation not in uncategorized_variations:
-                uncategorized_variations.append(variation)
+                uncategorized_variations[variation] = {'roi_name': str(row[0]), 'study_instance_uid': str(row[1])}
         if uncategorized_variations:
             return uncategorized_variations
         else:
@@ -654,8 +655,8 @@ def get_ignored_variations(physician):
         variations = db.get_all_variations_of_physician(physician)
         uncategorized_variations = []
         for row in cursor_rtn:
-            variation = str(row[0])
-            if clean_name(variation) not in variations:
+            variation = clean_name(str(row[0]))
+            if variation not in variations:
                 uncategorized_variations.append(variation)
         if uncategorized_variations:
             return uncategorized_variations
@@ -666,7 +667,8 @@ def get_ignored_variations(physician):
 
 
 def delete_dvh():
-    DVH_SQL().delete_dvh(select_uncategorized_variation.value)
+    roi_info = uncategorized_variations[select_uncategorized_variation.value]
+    DVH_SQL().delete_dvh(roi_info['roi_name'], roi_info['study_instance_uid'])
     update_uncategorized_variation_select()
     update_ignored_variations_select()
 
@@ -684,8 +686,10 @@ def ignore_dvh():
                 cnx.update('dvhs', 'physician_roi', 'ignored', "roi_name = '" + variation +
                            "' and study_instance_uid = '" + study_instance_uid + "'")
     cnx.close()
+    to_be_ignored = select_uncategorized_variation.value
     update_uncategorized_variation_select()
     update_ignored_variations_select()
+    select_ignored_variations.value = to_be_ignored
 
 
 def update_uncategorized_rois_in_db():
@@ -797,7 +801,8 @@ select_unlinked_institutional_roi = Select(value=value,
                                            options=options,
                                            width=300,
                                            title='Linked Institutional ROI')
-options = get_uncategorized_variations(select_physician.value)
+uncategorized_variations = get_uncategorized_variations(select_physician.value)
+options = uncategorized_variations.keys()
 options.sort()
 select_uncategorized_variation = Select(value=options[0],
                                         options=options,

@@ -243,8 +243,9 @@ class DVH_SQL:
         self.cursor.execute('DELETE FROM Beams WHERE ' + condition_str + ';')
         self.cnx.commit()
 
-    def delete_dvh(self, roi_name):
-        self.cursor.execute("DELETE FROM DVHs WHERE roi_name = '" + roi_name + "';")
+    def delete_dvh(self, roi_name, study_instance_uid):
+        self.cursor.execute("DELETE FROM DVHs WHERE roi_name = '" + roi_name +
+                            "' and study_instance_uid = '" + study_instance_uid + "';")
         self.cnx.commit()
 
     def reinitialize_database(self):
