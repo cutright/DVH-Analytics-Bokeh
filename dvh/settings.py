@@ -6,6 +6,7 @@ Created on Fri Mar 24 13:43:28 2017
 @author: nightowl
 """
 
+from __future__ import print_function
 from utilities import is_import_settings_defined, is_sql_connection_defined,\
     write_import_settings, write_sql_connection_settings, validate_sql_connection
 import os
@@ -724,14 +725,24 @@ def remap_all_rois_in_db():
         variation = str(row[0])
         study_instance_uid = str(row[1])
         physician = cnx.query('plans', 'physician', "study_instance_uid = '" + study_instance_uid + "'")[0][0]
-        if physician in db.get_physicians():
-            new_physician_roi = db.get_physician_roi(physician, variation)
+
+        new_physician_roi = db.get_physician_roi(physician, variation)
+
+        if new_physician_roi == 'uncategorized':
+            if clean_name(variation) in db.get_institutional_rois():
+                new_institutional_roi = clean_name(variation)
+            else:
+                new_institutional_roi = 'uncategorized'
+        else:
             new_institutional_roi = db.get_institutional_roi(physician, new_physician_roi)
-            condition_str = "roi_name = '" + variation + "' and study_instance_uid = '" + study_instance_uid + "'"
-            cnx.update('dvhs', 'physician_roi', new_physician_roi, condition_str)
-            cnx.update('dvhs', 'institutional_roi', new_institutional_roi, condition_str)
+
+        condition_str = "roi_name = '" + variation + "' and study_instance_uid = '" + study_instance_uid + "'"
+        cnx.update('dvhs', 'physician_roi', new_physician_roi, condition_str)
+        cnx.update('dvhs', 'institutional_roi', new_institutional_roi, condition_str)
+
         percent = int(float(100) * (float(progress) / float(complete)))
         remap_all_rois_button.label = "Remap progress: " + str(percent) + "%"
+
     remap_all_rois_button.label = initial_label
     cnx.close()
     db.write_to_file()
