@@ -28,6 +28,7 @@ directories = {}
 config = {}
 categories = ["Institutional ROI", "Physician", "Physician ROI", "Variation"]
 operators = ["Add", "Delete", "Rename"]
+save_needed = False
 
 data = {'name': [],
         'x': [],
@@ -555,6 +556,8 @@ def reload_db():
 
 def save_db():
     db.write_to_file()
+    save_button_roi.button_type = 'success'
+    save_button_roi.label = 'Map Saved'
 
 
 def update_column_source_data():
@@ -579,6 +582,7 @@ def execute_button_click():
     function_map[input_text.title.strip(':')]()
     update_column_source_data()
     update_uncategorized_variation_select()
+    update_save_button_status()
 
 
 def unlinked_institutional_roi_change(attr, old, new):
@@ -622,8 +626,8 @@ def update_uncategorized_variation_select():
 def update_ignored_variations_select():
     new_options = get_ignored_variations(select_physician.value).keys()
     new_options.sort()
-    select_ignored_variations.options = new_options
-    select_ignored_variations.value = new_options[0]
+    select_ignored_variation.options = new_options
+    select_ignored_variation.value = new_options[0]
 
 
 def get_uncategorized_variations(physician):
@@ -671,53 +675,81 @@ def get_ignored_variations(physician):
 
 
 def delete_uncategorized_dvh():
-    roi_info = uncategorized_variations[select_uncategorized_variation.value]
-    DVH_SQL().delete_dvh(roi_info['roi_name'], roi_info['study_instance_uid'])
-    update_uncategorized_variation_select()
+    if delete_uncategorized_button_roi.button_type == 'warning':
+        delete_uncategorized_button_roi.button_type = 'danger'
+        delete_uncategorized_button_roi.label = 'Are you sure?'
+        ignore_button_roi.button_type = 'success'
+        ignore_button_roi.label = 'Cancel Delete DVH'
+    else:
+        roi_info = uncategorized_variations[select_uncategorized_variation.value]
+        DVH_SQL().delete_dvh(roi_info['roi_name'], roi_info['study_instance_uid'])
+        update_uncategorized_variation_select()
+        delete_uncategorized_button_roi.button_type = 'warning'
+        delete_uncategorized_button_roi.label = 'Delete DVH'
 
 
 def delete_ignored_dvh():
-    roi_info = ignored_variations[select_ignored_variations.value]
-    DVH_SQL().delete_dvh(roi_info['roi_name'], roi_info['study_instance_uid'])
-    update_ignored_variations_select()
+    if delete_ignored_button_roi.button_type == 'warning':
+        delete_ignored_button_roi.button_type = 'danger'
+        delete_ignored_button_roi.label = 'Are you sure?'
+        unignore_button_roi.button_type = 'success'
+        unignore_button_roi.label = 'Cancel Delete DVH'
+    else:
+        roi_info = ignored_variations[select_ignored_variation.value]
+        DVH_SQL().delete_dvh(roi_info['roi_name'], roi_info['study_instance_uid'])
+        update_ignored_variations_select()
+        delete_ignored_button_roi.button_type = 'warning'
+        delete_ignored_button_roi.label = 'Delete DVH?'
 
 
 def ignore_dvh():
     global config
-    cnx = DVH_SQL()
-    if validate_sql_connection(config, verbose=False):
-        condition = "physician_roi = 'uncategorized'"
-        cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', condition)
-        for row in cursor_rtn:
-            variation = str(row[0])
-            study_instance_uid = str(row[1])
-            if clean_name(variation) == select_uncategorized_variation.value:
-                cnx.update('dvhs', 'physician_roi', 'ignored', "roi_name = '" + variation +
-                           "' and study_instance_uid = '" + study_instance_uid + "'")
-    cnx.close()
-    to_be_ignored = select_uncategorized_variation.value
-    update_uncategorized_variation_select()
-    update_ignored_variations_select()
-    select_ignored_variations.value = to_be_ignored
+    if ignore_button_roi.label == 'Cancel Delete DVH':
+        ignore_button_roi.button_type = 'primary'
+        ignore_button_roi.label = 'Ignore'
+        delete_uncategorized_button_roi.button_type = 'warning'
+        delete_uncategorized_button_roi.label = 'Delete DVH'
+    else:
+        cnx = DVH_SQL()
+        if validate_sql_connection(config, verbose=False):
+            condition = "physician_roi = 'uncategorized'"
+            cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', condition)
+            for row in cursor_rtn:
+                variation = str(row[0])
+                study_instance_uid = str(row[1])
+                if clean_name(variation) == select_uncategorized_variation.value:
+                    cnx.update('dvhs', 'physician_roi', 'ignored', "roi_name = '" + variation +
+                               "' and study_instance_uid = '" + study_instance_uid + "'")
+        cnx.close()
+        to_be_ignored = select_uncategorized_variation.value
+        update_uncategorized_variation_select()
+        update_ignored_variations_select()
+        select_ignored_variation.value = to_be_ignored
 
 
 def unignore_dvh():
     global config
-    cnx = DVH_SQL()
-    if validate_sql_connection(config, verbose=False):
-        condition = "physician_roi = 'ignored'"
-        cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', condition)
-        for row in cursor_rtn:
-            variation = str(row[0])
-            study_instance_uid = str(row[1])
-            if clean_name(variation) == select_uncategorized_variation.value:
-                cnx.update('dvhs', 'physician_roi', 'uncategorized', "roi_name = '" + variation +
-                           "' and study_instance_uid = '" + study_instance_uid + "'")
-    cnx.close()
-    to_be_unignored = select_ignored_variations.value
-    update_uncategorized_variation_select()
-    update_ignored_variations_select()
-    select_uncategorized_variation.value = to_be_unignored
+    if ignore_button_roi.label == 'Cancel Delete DVH':
+        unignore_button_roi.button_type = 'primary'
+        unignore_button_roi.label = 'Ignore'
+        delete_ignored_button_roi.button_type = 'warning'
+        delete_ignored_button_roi.label = 'Delete DVH'
+    else:
+        cnx = DVH_SQL()
+        if validate_sql_connection(config, verbose=False):
+            condition = "physician_roi = 'ignored'"
+            cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', condition)
+            for row in cursor_rtn:
+                variation = str(row[0])
+                study_instance_uid = str(row[1])
+                if clean_name(variation) == select_ignored_variation.value:
+                    cnx.update('dvhs', 'physician_roi', 'uncategorized', "roi_name = '" + variation +
+                               "' and study_instance_uid = '" + study_instance_uid + "'")
+        cnx.close()
+        to_be_unignored = select_ignored_variation.value
+        update_uncategorized_variation_select()
+        update_ignored_variations_select()
+        select_uncategorized_variation.value = to_be_unignored
 
 
 def update_uncategorized_rois_in_db():
@@ -794,6 +826,11 @@ def remap_all_rois_in_db():
     update_ignored_variations_select()
 
 
+def update_save_button_status():
+    save_button_roi.button_type = 'primary'
+    save_button_roi.label = 'Map Save Needed'
+
+
 ######################################################
 # Layout objects
 ######################################################
@@ -854,10 +891,10 @@ if not options:
     options = ['']
 else:
     options.sort()
-select_ignored_variations = Select(value=options[0],
-                                   options=options,
-                                   width=300,
-                                   title='Ignored Variations')
+select_ignored_variation = Select(value=options[0],
+                                  options=options,
+                                  width=300,
+                                  title='Ignored Variations')
 
 div_horizontal_bar1 = Div(text="<hr>", width=900)
 div_horizontal_bar2 = Div(text="<hr>", width=900)
@@ -889,15 +926,16 @@ select_uncategorized_variation.on_change('value', update_uncategorized_variation
 
 # Button objects
 action_button = Button(label='Add Institutional ROI', button_type='primary', width=200)
-reload_button_roi = Button(label='Reload Map', button_type='primary', width=100)
-save_button_roi = Button(label='Save Map', button_type='success', width=100)
+reload_button_roi = Button(label='Reload Map', button_type='primary', width=300)
+save_button_roi = Button(label='Save Map', button_type='success', width=300)
 ignore_button_roi = Button(label='Ignore', button_type='primary', width=150)
-delete_uncategorized_button_roi = Button(label='Delete DVH', button_type='danger', width=150)
+delete_uncategorized_button_roi = Button(label='Delete DVH', button_type='warning', width=150)
 unignore_button_roi = Button(label='UnIgnore', button_type='primary', width=150)
-delete_ignored_button_roi = Button(label='Delete DVH', button_type='danger', width=150)
+delete_ignored_button_roi = Button(label='Delete DVH', button_type='warning', width=150)
 update_uncategorized_rois_button = Button(label='Update Uncategorized ROIs in DB', button_type='warning', width=300)
 remap_all_rois_button = Button(label='Remap all ROIs in DB', button_type='warning', width=300)
 
+# Button calls
 action_button.on_click(execute_button_click)
 reload_button_roi.on_click(reload_db)
 save_button_roi.on_click(save_db)
@@ -941,15 +979,16 @@ roi_layout = layout([[select_institutional_roi],
                      [div_horizontal_bar1],
                      [select_physician],
                      [select_physician_roi, select_variation, select_unlinked_institutional_roi],
-                     [select_uncategorized_variation, select_ignored_variations],
+                     [select_uncategorized_variation, select_ignored_variation],
                      [ignore_button_roi, delete_uncategorized_button_roi, unignore_button_roi,
                       delete_ignored_button_roi],
+                     [reload_button_roi, save_button_roi],
                      [update_uncategorized_rois_button, remap_all_rois_button],
                      [div_warning],
                      [div_horizontal_bar2],
                      [input_text, operator, category],
                      [div_action],
-                     [action_button, reload_button_roi, save_button_roi],
+                     [action_button],
                      [p]])
 
 # !!!!!!!!!!!!!!!!!!!!!!!
