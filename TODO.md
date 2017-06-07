@@ -31,7 +31,11 @@
 
 - [ ] Incorporate BED, TCP, NTCP calculations
 
-- [ ] Track wedge info on 3D beams  
+
+- [ ] Track additional info from RTPLan
+  - [ ] Wedge
+  - [ ] Support for rotating couch
+
 
 - [ ] Clean text representation in date fields  
 
