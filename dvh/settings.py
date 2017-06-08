@@ -556,7 +556,7 @@ def reload_db():
 
 def save_db():
     db.write_to_file()
-    save_button_roi.button_type = 'success'
+    save_button_roi.button_type = 'primary'
     save_button_roi.label = 'Map Saved'
 
 
@@ -658,20 +658,20 @@ def get_ignored_variations(physician):
         physician = clean_name(physician).upper()
         condition = "physician_roi = 'ignored'"
         cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', condition)
-        variations = db.get_all_variations_of_physician(physician)
         new_ignored_variations = {}
+        cnx = DVH_SQL()
         for row in cursor_rtn:
             variation = clean_name(str(row[0]))
             study_instance_uid = str(row[1])
-            if variation not in variations and variation not in new_ignored_variations.keys():
-                new_ignored_variations[variation] = {'roi_name': str(row[0]),
-                                                     'study_instance_uid': study_instance_uid}
+            physician_db = cnx.query('plans', 'physician', "study_instance_uid = '" + study_instance_uid + "'")[0][0]
+            if physician == physician_db and variation not in new_ignored_variations.keys():
+                new_ignored_variations[variation] = {'roi_name': str(row[0]), 'study_instance_uid': str(row[1])}
         if new_ignored_variations:
             return new_ignored_variations
         else:
             return {' ': ''}
     else:
-        return {'Could not connect to SQL': ''}
+        return ['Could not connect to SQL']
 
 
 def delete_uncategorized_dvh():
@@ -827,7 +827,7 @@ def remap_all_rois_in_db():
 
 
 def update_save_button_status():
-    save_button_roi.button_type = 'primary'
+    save_button_roi.button_type = 'success'
     save_button_roi.label = 'Map Save Needed'
 
 
@@ -927,7 +927,7 @@ select_uncategorized_variation.on_change('value', update_uncategorized_variation
 # Button objects
 action_button = Button(label='Add Institutional ROI', button_type='primary', width=200)
 reload_button_roi = Button(label='Reload Map', button_type='primary', width=300)
-save_button_roi = Button(label='Save Map', button_type='success', width=300)
+save_button_roi = Button(label='Map Saved', button_type='primary', width=300)
 ignore_button_roi = Button(label='Ignore', button_type='primary', width=150)
 delete_uncategorized_button_roi = Button(label='Delete DVH', button_type='warning', width=150)
 unignore_button_roi = Button(label='UnIgnore', button_type='primary', width=150)
