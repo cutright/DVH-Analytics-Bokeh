@@ -19,7 +19,7 @@ This code is built upon these core libraries:
 For installation instructions, see our [installation notes](https://github.com/cutright/DVH-Analytics/blob/master/install_notes.md).
 
 ## Dependencies
-* [Python](https://www.python.org) 2.7 tested
+* [Python](https://www.python.org) 2.7 tested (Python 3 not currently supported)
 * [PostgreSQL](https://www.postgresql.org/) and [psycopg2](http://initd.org/psycopg/)
 * [numpy](https://pypi.python.org/pypi/numpy) 1.12.1 tested
 * [pydicom](https://github.com/darcymason/pydicom) 0.9.9
