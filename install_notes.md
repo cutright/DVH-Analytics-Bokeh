@@ -19,8 +19,8 @@ If you're on Mac or Linux, you may need:
 $ sudo pip install dvh-analytics
 ~~~~
 
-## Define directories and connection settings
-Type in the following to define the dicom directories and SQL connection settings:
+## Define directories, connection settings, and ROI Names
+Type in the following to access the Settings and ROI Name Manager modules:
 ~~~~
 $ dvh setup
 ~~~~
