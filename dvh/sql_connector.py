@@ -109,8 +109,7 @@ class DVH_SQL:
                          str(round(dvh_table.min_dose[x], 2)),
                          str(round(dvh_table.mean_dose[x], 2)),
                          str(round(dvh_table.max_dose[x], 2)),
-                         dvh_table.dvh_str[x],
-                         'False']
+                         dvh_table.dvh_str[x]]
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'
             prepend = 'INSERT INTO DVHs VALUES (\''
@@ -180,14 +179,18 @@ class DVH_SQL:
                          str(round(beams.beam_dose[x], 3)),
                          str(beams.beam_mu[x]),
                          beams.radiation_type[x],
-                         str(beams.beam_energy[x]),
+                         str(round(beams.beam_energy[x], 1)),
                          beams.beam_type[x],
                          str(beams.control_point_count[x]),
                          str(beams.gantry_start[x]),
                          str(beams.gantry_end[x]),
                          beams.gantry_rot_dir[x],
-                         str(beams.collimator_angle[x]),
-                         str(beams.couch_angle[x]),
+                         str(beams.collimator_start[x]),
+                         str(beams.collimator_end[x]),
+                         beams.collimator_rot_dir[x],
+                         str(beams.couch_start[x]),
+                         str(beams.couch_end[x]),
+                         beams.couch_rot_dir[x],
                          beams.isocenter[x],
                          str(round(beams.ssd[x], 2)),
                          beams.treatment_machine[x]]
@@ -219,7 +222,7 @@ class DVH_SQL:
                          str(round(rx_table.rx_dose[x], 2)),
                          str(round(rx_table.rx_percent[x], 1)),
                          str(rx_table.normalization_method[x]),
-                         str(rx_table.normalization_object[x])]
+                         str(rx_table.normalization_object[x]).replace("'", "`")]
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'
             prepend = 'INSERT INTO Rxs VALUES (\''
