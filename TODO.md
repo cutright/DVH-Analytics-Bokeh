@@ -37,7 +37,7 @@
 
 - [ ] Track additional info from RTPLan
   - [ ] Wedge
-  - [ ] Support for rotating couch
+  - [X] Support for rotating couch and collimator
 
 
 - [ ] Clean text representation in date fields  
