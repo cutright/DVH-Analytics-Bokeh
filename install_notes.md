@@ -56,7 +56,7 @@ If you'd like to import from a directory other than the one in your settings:
 ~~~~
 $ dvh import --start-path /someabsolute/directory/name
 ~~~~
-## Web view
+## Main DVH Analytics view
 Type the following to start the Bokeh server:  
 ~~~~
 $ dvh run
