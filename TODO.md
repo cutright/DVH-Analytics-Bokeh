@@ -13,6 +13,7 @@
    - [ ] iPlan
    - [X] Raystation Protons
      - [ ] Add proton specific beam parameters
+     - [ ] How to import site name?
    - [ ] Oncentra Brachytherapy
    - [ ] Outside validation
    - [ ] Create separate import functions for each TPS  
