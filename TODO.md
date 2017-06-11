@@ -9,7 +9,10 @@
      - [ ] Add proton specific beam parameters
    - [ ] Oncentra Brachytherapy
    - [ ] Outside validation
-   - [ ] Create separate import functions for each TPS
+   - [ ] Create separate import functions for each TPS  
+
+
+- [ ] Add ability to plot two separate populations simultaneously
 
 ### Lower Priorities
 - [ ] Add an import log
