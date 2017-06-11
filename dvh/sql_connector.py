@@ -18,7 +18,7 @@ class DVH_SQL:
             config = config[0]
         else:
             # Read SQL configuration file
-            script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
+            script_dir = os.path.dirname(__file__)
             rel_path = "preferences/sql_connection.cnf"
             abs_file_path = os.path.join(script_dir, rel_path)
             with open(abs_file_path, 'r') as document:

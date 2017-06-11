@@ -47,17 +47,17 @@ def dicom_to_sql(**kwargs):
     force_update = False
     if 'force_update' in kwargs and kwargs['force_update']:
         force_update = True
-    f = get_file_paths(import_settings['inbox'], force_update=force_update)
+    file_paths = get_file_paths(import_settings['inbox'], force_update=force_update)
 
-    for n in range(0, len(f)):
-        print(f[n].structure)
-        print(f[n].plan)
-        print(f[n].dose)
+    for f in file_paths.itervalues():
+        print(f.structure)
+        print(f.plan)
+        print(f.dose)
 
-        plan = PlanRow(f[n].plan, f[n].structure, f[n].dose)
-        beams = BeamTable(f[n].plan)
-        dvhs = DVHTable(f[n].structure, f[n].dose)
-        rxs = RxTable(f[n].plan, f[n].structure)
+        plan = PlanRow(f.plan, f.structure, f.dose)
+        beams = BeamTable(f.plan)
+        dvhs = DVHTable(f.structure, f.dose)
+        rxs = RxTable(f.plan, f.structure)
 
         setattr(dvhs, 'ptv_number', rank_ptvs_by_D95(dvhs))
 
@@ -69,9 +69,9 @@ def dicom_to_sql(**kwargs):
         # Default behavior is to move files from inbox to imported
         # Only way to prevent moving files is to set move_files = False in kwargs
         if 'move_files' not in kwargs:
-            move_files_to_imported_path(f[n], import_settings['imported'])
+            move_files_to_imported_path(f, import_settings['imported'])
         elif kwargs['move_files']:
-            move_files_to_imported_path(f[n], import_settings['imported'])
+            move_files_to_imported_path(f, import_settings['imported'])
 
         # Default behavior is to organize files in the imported folder
         # Only way to prevent organizing files is to set organize_files = False in kwargs
@@ -80,6 +80,8 @@ def dicom_to_sql(**kwargs):
         elif kwargs['organize_files']:
             organize_dicom_files(import_settings['imported'])
 
+    move_all_files(import_settings['imported'], import_settings['inbox'])
+    remove_empty_folders(import_settings['inbox'])
     sqlcnx.cnx.close()
 
 
@@ -244,16 +246,54 @@ def organize_dicom_files(path):
     for i in range(0, len(files)):
         try:
             name = dicom.read_file(files[i]).PatientName.replace(' ', '_').replace('^', '_')
-            os.mkdir(name)
+            if not os.path.isdir(name):
+                os.mkdir(name)
+            file_name = files[i].split('/')[-1]
+
+            old = files[i]
+            new = '/'.join([path, name, file_name])
+            print(old, new, sep=' ')
+            os.rename(old, new)
         except:
             pass
 
-        file_name = files[i].split('/')[-1]
+    os.chdir(initial_path)
 
-        old = files[i]
-        new = '/'.join([path, name, file_name])
-        print(old, new, sep= ' ')
-        os.rename(old, new)
+
+def remove_empty_folders(start_path):
+    if start_path[0:2] == './':
+        script_dir = os.path.dirname(__file__)
+        rel_path = start_path[2:]
+        start_path = os.path.join(script_dir, rel_path)
+
+    for (path, dirs, files) in os.walk(start_path, topdown=False):
+        if files:
+            continue
+        try:
+            if path != start_path:
+                os.rmdir(path)
+        except OSError:
+            pass
+
+
+def move_all_files(new_dir, old_dir):
+    initial_path = os.path.dirname(os.path.realpath(__file__))
+
+    os.chdir(old_dir)
+
+    file_paths = []
+    for path, subdirs, files in os.walk(old_dir):
+        for name in files:
+            file_paths.append(os.path.join(path, name))
+
+    misc_path = '/'.join([new_dir, 'misc'])
+    if not os.path.isdir(misc_path):
+        os.mkdir(misc_path)
+
+    for f in file_paths:
+        file_name = f.split('/')[-1]
+        new = '/'.join([misc_path, file_name])
+        os.rename(f, new)
 
     os.chdir(initial_path)
 
