@@ -1,6 +1,12 @@
 ## To Do List
 ### Higher Priorities
 
+
+- [ ] Add ability to plot two separate populations simultaneously
+
+- [ ] Allow user to input list of MRNs to restrict population
+
+
 - [ ] Adapt code and validate for other treatment planning systems
    - [X] Pinnacle >=9.0
    - [ ] Monaco
@@ -11,8 +17,6 @@
    - [ ] Outside validation
    - [ ] Create separate import functions for each TPS  
 
-
-- [ ] Add ability to plot two separate populations simultaneously
 
 ### Lower Priorities
 - [ ] Add an import log
@@ -52,5 +56,4 @@
   - [X] print functions updated 
 
 
-- [ ] Allow user to input list of MRNs to restrict population
 
