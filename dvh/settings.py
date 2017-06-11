@@ -676,10 +676,11 @@ def get_ignored_variations(physician):
 
 def delete_uncategorized_dvh():
     if delete_uncategorized_button_roi.button_type == 'warning':
-        delete_uncategorized_button_roi.button_type = 'danger'
-        delete_uncategorized_button_roi.label = 'Are you sure?'
-        ignore_button_roi.button_type = 'success'
-        ignore_button_roi.label = 'Cancel Delete DVH'
+        if select_uncategorized_variation.value != ' ':
+            delete_uncategorized_button_roi.button_type = 'danger'
+            delete_uncategorized_button_roi.label = 'Are you sure?'
+            ignore_button_roi.button_type = 'success'
+            ignore_button_roi.label = 'Cancel Delete DVH'
     else:
         roi_info = uncategorized_variations[select_uncategorized_variation.value]
         DVH_SQL().delete_dvh(roi_info['roi_name'], roi_info['study_instance_uid'])
@@ -690,10 +691,11 @@ def delete_uncategorized_dvh():
 
 def delete_ignored_dvh():
     if delete_ignored_button_roi.button_type == 'warning':
-        delete_ignored_button_roi.button_type = 'danger'
-        delete_ignored_button_roi.label = 'Are you sure?'
-        unignore_button_roi.button_type = 'success'
-        unignore_button_roi.label = 'Cancel Delete DVH'
+        if select_ignored_variation.value != ' ':
+            delete_ignored_button_roi.button_type = 'danger'
+            delete_ignored_button_roi.label = 'Are you sure?'
+            unignore_button_roi.button_type = 'success'
+            unignore_button_roi.label = 'Cancel Delete DVH'
     else:
         roi_info = ignored_variations[select_ignored_variation.value]
         DVH_SQL().delete_dvh(roi_info['roi_name'], roi_info['study_instance_uid'])
@@ -729,7 +731,7 @@ def ignore_dvh():
 
 def unignore_dvh():
     global config
-    if ignore_button_roi.label == 'Cancel Delete DVH':
+    if unignore_button_roi.label == 'Cancel Delete DVH':
         unignore_button_roi.button_type = 'primary'
         unignore_button_roi.label = 'Ignore'
         delete_ignored_button_roi.button_type = 'warning'
