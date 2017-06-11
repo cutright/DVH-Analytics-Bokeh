@@ -11,7 +11,7 @@ Alternatively, you can manually create POIs in the same format.
 
 A POI in the format:
 "tx: <site>"
-will allow DVH-Analytics to add this site name to the database up on import.
+will allow DVH-Analytics to add this site name to the database upon import.
 
 A POI in the format:
 "rx#: <rx name>: <rx dose in cGy> cGy x <fxs> to <normalization %>%: <normalization method>: <normalization object>"
