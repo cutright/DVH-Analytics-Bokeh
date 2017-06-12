@@ -59,6 +59,7 @@ class PlanRow:
         rt_structure = dicom.read_file(structure_file)
         rt_dose = dicom.read_file(dose_file)
 
+        # Heterogeneity
         if hasattr(rt_dose, 'TissueHeterogeneityCorrection'):
             if isinstance(rt_dose.TissueHeterogeneityCorrection, basestring):
                 heterogeneity_correction = rt_dose.TissueHeterogeneityCorrection
@@ -100,6 +101,8 @@ class PlanRow:
                 age = '(NULL)'
             else:
                 age = relativedelta(sim_study_date_obj, birth_date_obj).years
+                if age <= 0:
+                    age = '(NULL)'
 
         # Record physician initials
         # In Pinnacle, PhysiciansOfRecord refers to the Radiation Oncologist field
@@ -114,10 +117,10 @@ class PlanRow:
         fx_grp_seq = rt_plan.FractionGroupSequence  # just to limit characters for later reference
         # Count number of fxs and total MUs
         # Note these are total fxs, not treatment days
-        for fxgrp in range(0, len(fx_grp_seq)):
-            fxs += fx_grp_seq[fxgrp].NumberOfFractionsPlanned
-            for Beam in range(0, fx_grp_seq[fxgrp].NumberOfBeams):
-                total_mu += fx_grp_seq[fxgrp].ReferencedBeamSequence[Beam].BeamMeterset
+        for fx_grp in fx_grp_seq:
+            fxs += fx_grp.NumberOfFractionsPlanned
+            for Beam in range(0, fx_grp.NumberOfBeams):
+                total_mu += fx_grp.ReferencedBeamSequence[Beam].BeamMeterset
         total_mu = round(total_mu, 1)
 
         # This UID must be in all DICOM files associated with this sim study
@@ -174,8 +177,12 @@ class PlanRow:
         tx_modality = ''
         tx_energies = ' '
         temp = ''
+
+        # Brachytherapy
         if rt_plan_obj['brachy']:
             tx_modality = 'Brachy '
+
+        # Protons
         elif hasattr(rt_plan, 'IonBeamSequence'):
             beam_seq = rt_plan.IonBeamSequence
             for beam in beam_seq:
@@ -187,24 +194,13 @@ class PlanRow:
                     temp += '3D '
                 energy_str = str(round(float(first_cp.NominalBeamEnergy))).split('.')[0]
                 energy_temp = ' ' + energy_str + 'MeV '
-                if tx_energies.find(energy_temp) < 0:
+                if energy_temp not in tx_energies:
                     tx_energies += energy_temp
 
             tx_energies = tx_energies[1:-1]
-            temp = temp.lower()
-            if temp.find('photon') > -1:
-                if temp.find('photon arc') > -1:
-                    tx_modality += 'Photon Arc '
-                else:
-                    tx_modality += 'Photon 3D '
-            if temp.find('electron') > -1:
-                if temp.find('electron arc') > -1:
-                    tx_modality += 'Electron Arc '
-                else:
-                    tx_modality += 'Electron 3D '
-            elif temp.find('proton') > -1:
-                tx_modality += 'Proton '
+            tx_modality += 'Proton '
 
+        # Photons and electrons
         elif hasattr(rt_plan, 'BeamSequence'):
             beam_seq = rt_plan.BeamSequence
             for beam in beam_seq:
@@ -217,8 +213,6 @@ class PlanRow:
                 energy_temp = ' ' + str(first_cp.NominalBeamEnergy)
                 if beam.RadiationType.lower() == 'photon':
                     energy_temp += 'MV '
-                elif beam.RadiationType.lower() == 'proton':
-                    energy_temp += 'MeV '
                 elif beam.RadiationType.lower() == 'electron':
                     energy_temp += 'MeV '
                 if tx_energies.find(energy_temp) < 0:
@@ -226,18 +220,16 @@ class PlanRow:
 
             tx_energies = tx_energies.strip()
             temp = temp.lower()
-            if temp.find('photon') > -1:
-                if temp.find('photon arc') > -1:
+            if 'photon' in temp:
+                if 'photon arc' in temp:
                     tx_modality += 'Photon Arc '
                 else:
                     tx_modality += 'Photon 3D '
-            if temp.find('electron') > -1:
-                if temp.find('electron arc') > -1:
+            if 'electron' in temp:
+                if 'electron arc' in temp:
                     tx_modality += 'Electron Arc '
                 else:
                     tx_modality += 'Electron 3D '
-            elif temp.find('proton') > -1:
-                tx_modality += 'Proton '
 
         tx_modality = tx_modality.strip()
 
@@ -370,14 +362,17 @@ class BeamTable:
 
             for fx_grp_beam in range(0, fx_grp_beam_count):
                 if hasattr(rt_plan, 'BeamSequence'):
-                    beam_seq = rt_plan.BeamSequence[beam_num]
+                    beam_seq = rt_plan.BeamSequence[beam_num]  # Photons and electrons
                 else:
-                    beam_seq = rt_plan.IonBeamSequence[beam_num]
+                    beam_seq = rt_plan.IonBeamSequence[beam_num]  # Protons
+
                 if 'BeamDescription' in beam_seq:
                     beam_name = beam_seq.BeamDescription
                 else:
                     beam_name = beam_seq.BeamName
+
                 ref_beam_seq = fx_grp_seq.ReferencedBeamSequence[fx_grp_beam]
+
                 treatment_machine = beam_seq.TreatmentMachineName
 
                 beam_dose = float(ref_beam_seq.BeamDose)
@@ -428,8 +423,8 @@ class BeamTable:
                 if hasattr(first_cp, 'SourceToSurfaceDistance'):
                     if gantry_rot_dir in {'CW', 'CC'}:
                         ssd = 0
-                        for CP in range(0, control_point_count):
-                            ssd += round(float(beam_seq.ControlPointSequence[CP].SourceToSurfaceDistance) / 10, 2)
+                        for cp in beam_seq.ControlPointSequence:
+                            ssd += round(float(cp.SourceToSurfaceDistance) / 10, 2)
                         ssd /= control_point_count
 
                     else:

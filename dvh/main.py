@@ -21,7 +21,7 @@ from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
 from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, \
-    NumberFormatter, RadioButtonGroup, TextInput, RadioGroup, Div
+    NumberFormatter, RadioButtonGroup, TextInput, RadioGroup
 
 # Declare variables
 colors = itertools.cycle(palette)
@@ -475,18 +475,18 @@ def update_dvh_data(dvh):
     update_button.label = 'Getting DVH data...'
     print(str(datetime.now()), 'updating dvh data', sep=' ')
     line_colors = []
-    for i, color in itertools.izip(range(0, dvh.count), colors):
+    for j, color in itertools.izip(range(0, dvh.count), colors):
         line_colors.append(color)
 
-    x_axis = np.add(np.linspace(0, dvh.bin_count, dvh.bin_count) / float(100), 0.005)
+    x_axis = np.add(np.linspace(0.005, dvh.bin_count, dvh.bin_count) / float(100), 0.005)
 
     x_data = []
     y_data = []
-    endpoint_columns = []
+    new_endpoint_columns = []
     x_scale = []
     y_scale = []
     for i in range(0, dvh.count):
-        endpoint_columns.append('')
+        new_endpoint_columns.append('')
         if radio_group_dose.active == 0:
             x_data.append(x_axis.tolist())
             x_scale.append('Gy')
@@ -516,14 +516,14 @@ def update_dvh_data(dvh):
                    'x': x_data,
                    'y': y_data,
                    'color': line_colors,
-                   'ep1': endpoint_columns,
-                   'ep2': endpoint_columns,
-                   'ep3': endpoint_columns,
-                   'ep4': endpoint_columns,
-                   'ep5': endpoint_columns,
-                   'ep6': endpoint_columns,
-                   'ep7': endpoint_columns,
-                   'ep8': endpoint_columns,
+                   'ep1': new_endpoint_columns,
+                   'ep2': new_endpoint_columns,
+                   'ep3': new_endpoint_columns,
+                   'ep4': new_endpoint_columns,
+                   'ep5': new_endpoint_columns,
+                   'ep6': new_endpoint_columns,
+                   'ep7': new_endpoint_columns,
+                   'ep8': new_endpoint_columns,
                    'x_scale': x_scale,
                    'y_scale': y_scale}
     print(str(datetime.now()), ' source.data set', sep=' ')

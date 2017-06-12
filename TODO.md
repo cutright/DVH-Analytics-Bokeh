@@ -20,11 +20,6 @@
 
 
 ### Lower Priorities
-- [ ] Add an import log
-
-- [ ] Include a column in Plans for staging and a way to update it post-import
-
-
 - [X] Add ability to plot a temporary plan not in the SQL DB
     - [ ] Design new app for plan review  
     
@@ -46,6 +41,7 @@
 - [ ] Track additional info from RTPLan
   - [ ] Wedge
   - [X] Support for rotating couch and collimator
+  - [ ] Proton specific parameters
 
 
 - [ ] Clean text representation in date fields  
