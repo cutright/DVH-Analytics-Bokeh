@@ -12,21 +12,11 @@
    - [X] Raystation Protons
    - [ ] Oncentra Brachytherapy
    - [ ] Outside validation
-   - [ ] Create separate import functions for each TPS  
-
-
-### Lower Priorities
-- [ ] Allow user to input list of MRNs to restrict population
-   
-
+   - [ ] Create separate import functions for each TPS
+     
 - [ ] Validate dicompyler-core DVH calculations
 
 - [ ] Validate EUD calculations  
-  
-  
-- [ ] Write DICOM pre-import validation function
-    - [X] include similarity check with fuzzy wuzzy
-
 
 - [ ] Add thorough comments throughout all code
 
@@ -38,6 +28,15 @@
   - [X] Support for rotating couch and collimator
   - [ ] Proton specific parameters
   - [ ] Electrons?
+
+
+### Lower Priorities
+- [ ] Allow user to input list of MRNs to restrict population
+
+  
+  
+- [ ] Write DICOM pre-import validation function
+    - [X] include similarity check with fuzzy wuzzy
 
 
 - [ ] Clean text representation in date fields  
