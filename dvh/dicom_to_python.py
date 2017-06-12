@@ -306,8 +306,8 @@ class DVHTable:
 
                     if database_rois.is_roi(current_roi_name):
                         if database_rois.is_physician(physician):
-                            institutional_roi = database_rois.get_institutional_roi(physician, current_roi_name)
                             physician_roi = database_rois.get_physician_roi(physician, current_roi_name)
+                            institutional_roi = database_rois.get_institutional_roi(physician, physician_roi)
                         else:
                             if current_roi_name in database_rois.institutional_rois:
                                 institutional_roi = current_roi_name
@@ -408,14 +408,24 @@ class BeamTable:
                                                               max_angle)
 
                 collimator_rot_dir = first_cp.BeamLimitingDeviceRotationDirection
-                collimator_start, collimator_end = change_angle_range(float(first_cp.BeamLimitingDeviceAngle),
-                                                                      float(final_cp.BeamLimitingDeviceAngle),
+                collimator_start = float(first_cp.BeamLimitingDeviceAngle)
+                try:
+                    collimator_end = float(final_cp.BeamLimitingDeviceAngle)
+                except:
+                    collimator_end = collimator_start
+                collimator_start, collimator_end = change_angle_range(collimator_start,
+                                                                      collimator_end,
                                                                       collimator_rot_dir,
                                                                       max_angle)
 
                 couch_rot_dir = first_cp.PatientSupportRotationDirection
-                couch_start, couch_end = change_angle_range(float(first_cp.PatientSupportAngle),
-                                                            float(final_cp.PatientSupportAngle),
+                couch_start = float(first_cp.PatientSupportAngle)
+                try:
+                    couch_end = float(final_cp.PatientSupportAngle)
+                except:
+                    couch_end = couch_start
+                couch_start, couch_end = change_angle_range(couch_start,
+                                                            couch_end,
                                                             couch_rot_dir,
                                                             max_angle)
 
