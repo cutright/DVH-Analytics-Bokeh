@@ -40,8 +40,10 @@ for i in range(0, 10):
 
 temp_dvh_info = Temp_DICOM_FileSet()
 dvh_review_mrns = temp_dvh_info.mrn
+dvh_review_mrns.insert(0, '')
 if dvh_review_mrns[0] != '':
     dvh_review_rois = temp_dvh_info.get_roi_names(dvh_review_mrns[0]).values()
+
 else:
     dvh_review_rois = ['']
 
@@ -555,11 +557,11 @@ def update_dvh_data(dvh):
         y_data.append(current)
 
     # Adjust dvh object to include stats data
-    dvh.mrn.extend(['Stats'] * 6)
+    dvh.mrn.extend(y_names)
     dvh.study_instance_uid.extend(['N/A'] * 6)
     dvh.institutional_roi.extend(['N/A'] * 6)
     dvh.physician_roi.extend(['N/A'] * 6)
-    dvh.roi_name.extend(y_names)
+    dvh.roi_name.extend([''] * 6)
     dvh.roi_type.extend(['N/A'] * 6)
     dvh.rx_dose.extend(calc_stats(dvh.rx_dose))
     dvh.volume.extend(calc_stats(dvh.volume))
@@ -575,7 +577,7 @@ def update_dvh_data(dvh):
     dvh.institutional_roi.insert(0, '')
     dvh.physician_roi.insert(0, '')
     dvh.roi_name.insert(0, select_reviewed_dvh.value)
-    dvh.roi_type.insert(0, '')
+    dvh.roi_type.insert(0, 'Review')
     dvh.rx_dose.insert(0, '')
     dvh.volume.insert(0, '')
     dvh.min_dose.insert(0, '')

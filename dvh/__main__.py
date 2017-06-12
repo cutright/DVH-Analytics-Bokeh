@@ -273,18 +273,6 @@ def main():
 
             call(command)
 
-        elif args.command[0] == 'review':
-
-            command = ["bokeh", "serve", "--show", "--port", "5008"]
-
-            script_dir = os.path.dirname(__file__)
-            file_name = 'plan_review.py'
-            abs_file_path = os.path.join(script_dir, file_name)
-
-            command.append(abs_file_path)
-
-            call(command)
-
 
 if __name__ == '__main__':
     main()

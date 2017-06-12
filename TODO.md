@@ -17,11 +17,7 @@
 
 ### Lower Priorities
 - [ ] Allow user to input list of MRNs to restrict population
-
-
-- [X] Add ability to plot a temporary plan not in the SQL DB
-    - [ ] Design new app for plan review  
-    
+   
 
 - [ ] Validate dicompyler-core DVH calculations
 
@@ -41,16 +37,13 @@
   - [ ] Wedge
   - [X] Support for rotating couch and collimator
   - [ ] Proton specific parameters
+  - [ ] Electrons?
 
 
 - [ ] Clean text representation in date fields  
 
 
-- [X] Combine data and stats into one ColumnDataSource so endpoints are calculated for stats
-  - [ ] Calculate mean dose of mean DVH
-
-
-- [ ] Adapt for python3
+- [ ] Adapt for Python 3
   - [X] print functions updated 
 
 
