@@ -208,7 +208,6 @@ class DVH:
             dvhs = self.dvh
 
         if 'volume' in kwargs and kwargs['volume'] == 'absolute':
-            print('converting dvh to abs volume')
             dvhs = self.dvhs_to_abs_vol(dvhs)
 
         dvh_min = np.zeros(bin_count)

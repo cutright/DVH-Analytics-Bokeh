@@ -374,11 +374,11 @@ class RangeRow:
 
     def check_for_start_date_ticker(self, attrname, old, new):
         if self.select_category.value.lower().find("date") > -1:
-            self.text_min.value = date_str_to_SQL_format(new, type='start')
+            self.text_min.value = date_str_to_sql_format(new, type='start')
 
     def check_for_end_date_ticker(self, attrname, old, new):
         if self.select_category.value.lower().find("date") > -1:
-            self.text_max.value = date_str_to_SQL_format(new, type='end')
+            self.text_max.value = date_str_to_sql_format(new, type='end')
 
     def update_range_values_ticker(self, attrname, old, new):
         self.update_range_values(new)
@@ -538,33 +538,26 @@ def update_dvh_data(dvh):
             y_data.append(dvh.dvh[:, n].tolist())
 
     y_names = ['Max', 'Q3', 'Median', 'Mean', 'Q1', 'Min']
-    max_dose = []
-    min_dose = []
     for n in range(0, 6):
         x_data.append(x_axis.tolist())
 
-        current = stat_dvhs[y_names[n].lower()]
-        y_data.append(current.tolist())
-
-        min_dose.append(x_axis[np.argmax([current < float(1)])])
-
-        rev = np.array(current.tolist()[::-1])
-        max_dose.append(x_axis[dvh.bin_count - 1 - np.argmax([rev > float(0)])])
+        current = stat_dvhs[y_names[n].lower()].tolist()
+        y_data.append(current)
 
     # Adjust dvh object to include stats data
     dvh.mrn.extend(y_names)
-    dvh.study_instance_uid.extend([''] * 6)
-    dvh.institutional_roi.extend([''] * 6)
-    dvh.physician_roi.extend([''] * 6)
-    dvh.roi_name.extend([''] * 6)
-    dvh.roi_type.extend([''] * 6)
-    dvh.rx_dose.extend([''] * 6)
-    dvh.volume.extend([''] * 6)
-    dvh.min_dose.extend(min_dose)
-    dvh.mean_dose.extend([''] * 6)
-    dvh.max_dose.extend(max_dose)
-    dvh.eud.extend([''] * 6)
-    dvh.eud_a_value.extend([''] * 6)
+    dvh.study_instance_uid.extend(['N/A'] * 6)
+    dvh.institutional_roi.extend(['N/A'] * 6)
+    dvh.physician_roi.extend(['N/A'] * 6)
+    dvh.roi_name.extend(['N/A'] * 6)
+    dvh.roi_type.extend(['N/A'] * 6)
+    dvh.rx_dose.extend(calc_stats(dvh.rx_dose))
+    dvh.volume.extend(calc_stats(dvh.volume))
+    dvh.min_dose.extend(calc_stats(dvh.min_dose))
+    dvh.mean_dose.extend(calc_stats(dvh.mean_dose))
+    dvh.max_dose.extend(calc_stats(dvh.max_dose))
+    dvh.eud.extend(calc_stats(dvh.eud))
+    dvh.eud_a_value.extend([0] * 6)
 
     print(str(datetime.now()), 'writing source.data', sep=' ')
     source.data = {'mrn': dvh.mrn,
@@ -702,16 +695,17 @@ def update_endpoint_data(dvh):
             else:
                 endpoint_columns[counter] = 'V_' + str(x_for_text) + units + ' (' + output_unit[1] + ')'
                 endpoints_map[counter] = dvh.get_volume_of_dose(x, input=endpoint_input, output=endpoint_output)
+            endpoints_map[counter].extend(calc_stats(endpoints_map[counter][0:dvh.count]))
             counter += 1
     for i in range(counter, 8):
         endpoints_map[i] = []
-        for j in range(0, dvh.count):
+        for j in range(0, dvh.count + 6):
             endpoints_map[i].append('')
 
     tuple_list = {}
     for i in range(0, 8):
         current_tuple_list = []
-        for j in range(0, dvh.count):
+        for j in range(0, dvh.count + 6):
             current_tuple_list.append(tuple([j, endpoints_map[i][j]]))
         tuple_list[i] = current_tuple_list
 
@@ -743,7 +737,7 @@ def update_endpoint_data(dvh):
                                                         formatter=NumberFormatter(format="0.00"))
 
 
-def date_str_to_SQL_format(date, **kwargs):
+def date_str_to_sql_format(date, **kwargs):
 
     if kwargs['type'] == 'start':
         append_month = '-01-01'
@@ -769,18 +763,24 @@ def date_str_to_SQL_format(date, **kwargs):
     return date
 
 
+def calc_stats(data):
+    data_np = np.array(data)
+    rtn_data = [np.max(data_np),
+                np.percentile(data_np, 75),
+                np.median(data_np),
+                np.mean(data_np),
+                np.percentile(data_np, 25),
+                np.min(data_np)]
+    return rtn_data
+
+
 # set up layout
 
-hover = HoverTool(
-        tooltips=[
-            ("(x,y)", "($x, $y)"),
-        ]
-    )
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
 dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
 dvh_plots.add_tools(HoverTool(show_arrow=False,
                               line_policy='next',
-                              tooltips=[('Label', '@mrn'),
+                              tooltips=[('Label', '@mrn @roi_name'),
                                         ('Dose', '$x'),
                                         ('Volume', '$y')]))
 
