@@ -9,6 +9,7 @@ Created on Sun Apr 21 2017
 
 from __future__ import print_function
 from analysis_tools import DVH, get_study_instance_uids
+from utilities import Temp_DICOM_FileSet
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL
 import numpy as np
@@ -22,6 +23,7 @@ from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
 from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, \
     NumberFormatter, RadioButtonGroup, TextInput, RadioGroup
+from dicompylercore import dicomparser, dvhcalc
 
 # Declare variables
 colors = itertools.cycle(palette)
@@ -30,10 +32,18 @@ update_warning = True
 query_row = []
 query_row_type = []
 endpoint_columns = {}
+x = []
+y = []
 
 for i in range(0, 10):
     endpoint_columns[i] = ''
 
+temp_dvh_info = Temp_DICOM_FileSet()
+dvh_review_mrns = temp_dvh_info.mrn
+if dvh_review_mrns[0] != '':
+    dvh_review_rois = temp_dvh_info.get_roi_names(dvh_review_mrns[0]).values()
+else:
+    dvh_review_rois = ['']
 
 # Initialize ColumnDataSource variables
 source = ColumnDataSource(data=dict(color=[], x=[], y=[], mrn=[],
@@ -511,19 +521,19 @@ def update_dvh_data(dvh):
     print(str(datetime.now()), ' stats set', sep=' ')
 
     if radio_group_dose.active == 0:
-        x_scale = ['Gy'] * (dvh.count + 6)
+        x_scale = ['Gy'] * (dvh.count + 7)
         dvh_plots.xaxis.axis_label = "Dose (Gy)"
     else:
-        x_scale = ['%RxDose'] * (dvh.count + 6)
+        x_scale = ['%RxDose'] * (dvh.count + 7)
         dvh_plots.xaxis.axis_label = "Relative Dose (to Rx)"
     if radio_group_volume.active == 0:
-        y_scale = ['cm^3'] * (dvh.count + 6)
+        y_scale = ['cm^3'] * (dvh.count + 7)
         dvh_plots.yaxis.axis_label = "Absolute Volume (cc)"
     else:
-        y_scale = ['%Vol'] * (dvh.count + 6)
+        y_scale = ['%Vol'] * (dvh.count + 7)
         dvh_plots.yaxis.axis_label = "Relative Volume"
 
-    new_endpoint_columns = [''] * (dvh.count + 6)
+    new_endpoint_columns = [''] * (dvh.count + 7)
 
     x_data = []
     y_data = []
@@ -558,6 +568,24 @@ def update_dvh_data(dvh):
     dvh.max_dose.extend(calc_stats(dvh.max_dose))
     dvh.eud.extend(calc_stats(dvh.eud))
     dvh.eud_a_value.extend([0] * 6)
+
+    # Adjust dvh object for review dvh
+    dvh.mrn.insert(0, select_reviewed_mrn.value)
+    dvh.study_instance_uid.insert(0, '')
+    dvh.institutional_roi.insert(0, '')
+    dvh.physician_roi.insert(0, '')
+    dvh.roi_name.insert(0, select_reviewed_dvh.value)
+    dvh.roi_type.insert(0, '')
+    dvh.rx_dose.insert(0, '')
+    dvh.volume.insert(0, '')
+    dvh.min_dose.insert(0, '')
+    dvh.mean_dose.insert(0, '')
+    dvh.max_dose.insert(0, '')
+    dvh.eud.insert(0, '')
+    dvh.eud_a_value.insert(0, '')
+    line_colors.insert(0, 'red')
+    x_data.insert(0, [0])
+    y_data.insert(0, [0])
 
     print(str(datetime.now()), 'writing source.data', sep=' ')
     source.data = {'mrn': dvh.mrn,
@@ -774,6 +802,68 @@ def calc_stats(data):
     return rtn_data
 
 
+def update_dvh_review_rois(attr, old, new):
+    global temp_dvh_info, dvh_review_rois
+    initial_button_type = calculate_review_dvh_button.button_type
+    calculate_review_dvh_button.button_type = "warning"
+    initial_label = calculate_review_dvh_button.label
+    calculate_review_dvh_button.label = "Updating..."
+    if new != '':
+        dvh_review_rois = temp_dvh_info.get_roi_names(new).values()
+        select_reviewed_dvh.options = dvh_review_rois
+        select_reviewed_dvh.value = dvh_review_rois[0]
+    else:
+        select_reviewed_dvh.options = ['']
+        select_reviewed_dvh.value = ['']
+
+    calculate_review_dvh_button.button_type = initial_button_type
+    calculate_review_dvh_button.label = initial_label
+
+
+def calculate_review_dvh():
+    global temp_dvh_info, dvh_review_rois, x, y
+
+    initial_button_type = calculate_review_dvh_button.button_type
+    initial_button_label = calculate_review_dvh_button.label
+    calculate_review_dvh_button.button_type = 'warning'
+    calculate_review_dvh_button.label = 'Calculating...'
+
+    file_index = temp_dvh_info.mrn.index(select_reviewed_mrn.value)
+    roi_index = dvh_review_rois.index(select_reviewed_dvh.value)
+    structure_file = temp_dvh_info.structure[file_index]
+    dose_file = temp_dvh_info.dose[file_index]
+    key = temp_dvh_info.get_roi_names(select_reviewed_mrn.value).keys()[roi_index]
+
+    rt_st = dicomparser.DicomParser(structure_file)
+    rt_structures = rt_st.GetStructures()
+    review_dvh = dvhcalc.get_dvh(structure_file, dose_file, key)
+
+    roi_name = rt_structures[key]['name']
+    volume = review_dvh.volume
+    min_dose = review_dvh.min
+    mean_dose = review_dvh.mean
+    max_dose = review_dvh.max
+    eud = 0
+    eud_a_value = 0
+    x = review_dvh.bincenters
+    y = np.divide(review_dvh.counts, max(review_dvh.counts)).tolist()
+
+    patches = {'x': [(0, x)],
+               'y': [(0, y)],
+               'roi_name': [(0, roi_name)],
+               'volume': [(0, volume)],
+               'min_dose': [(0, min_dose)],
+               'mean_dose': [(0, mean_dose)],
+               'max_dose': [(0, max_dose)],
+               'eud': [(0, eud)],
+               'eud_a_value': [(0, eud_a_value)]}
+
+    source.patch(patches)
+
+    calculate_review_dvh_button.button_type = initial_button_type
+    calculate_review_dvh_button.label = initial_button_label
+
+
 # set up layout
 
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
@@ -937,19 +1027,36 @@ columns = [TableColumn(field="mrn", title="MRN"),
 data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1000)
 
 # Setup axis normalization radio buttons
-radio_group_dose = RadioGroup(labels=["Absolute Dose", "Relative Dose (Rx)"], active=0)
+radio_group_dose = RadioGroup(labels=["Absolute Dose", "Relative Dose (Rx)"], active=0, width=200)
 radio_group_dose.on_change('active', radio_group_dose_ticker)
-radio_group_volume = RadioGroup(labels=["Absolute Volume", "Relative Volume"], active=1)
+radio_group_volume = RadioGroup(labels=["Absolute Volume", "Relative Volume"], active=1, width=200)
 radio_group_volume.on_change('active', radio_group_volume_ticker)
+
+# Setup selectors for dvh review
+select_reviewed_mrn = Select(title='MRN to review',
+                             value=dvh_review_mrns[0],
+                             options=dvh_review_mrns,
+                             width=200)
+select_reviewed_mrn.on_change('value', update_dvh_review_rois)
+
+select_reviewed_dvh = Select(title='ROI',
+                             value=dvh_review_rois[0],
+                             options=dvh_review_rois,
+                             width=400)
+
+calculate_review_dvh_button = Button(label="Calculate Review DVH",
+                                     button_type="success",
+                                     width=180)
+calculate_review_dvh_button.on_click(calculate_review_dvh)
 
 # Begin defining main row of widgets below figure
 
 # define Update button
-update_button = Button(label="Update", button_type="success", width=200)
+update_button = Button(label="Update", button_type="success", width=180)
 update_button.on_click(update_data)
 
 # define Download button and call download.js on click
-download_button = Button(label="Download", button_type="default", width=200)
+download_button = Button(label="Download", button_type="default", width=100)
 download_button.callback = CustomJS(args=dict(source=source,
                                               source_rxs=source_rxs,
                                               source_plans=source_plans,
@@ -958,15 +1065,15 @@ download_button.callback = CustomJS(args=dict(source=source,
                                     code=open(join(dirname(__file__), "download.js")).read())
 
 # define button to widget row for discrete data filtering
-main_add_selector_button = Button(label="Add Selection Filter", button_type="primary", width=200)
+main_add_selector_button = Button(label="Add Selection Filter", button_type="primary", width=180)
 main_add_selector_button.on_click(button_add_selector_row)
 
 # define button to widget row for continuous data filtering
-main_add_range_button = Button(label="Add Range Filter", button_type="primary", width=200)
+main_add_range_button = Button(label="Add Range Filter", button_type="primary", width=180)
 main_add_range_button.on_click(button_add_range_row)
 
 # define button to widget row for adding DVH endpoints
-main_add_endpoint_button = Button(label="Add Endpoint", button_type="primary", width=200)
+main_add_endpoint_button = Button(label="Add Endpoint", button_type="primary", width=180)
 main_add_endpoint_button.on_click(button_add_endpoint_row)
 
 # not for display, but add these buttons to query_row
@@ -976,12 +1083,13 @@ query_row.append(row(update_button, main_add_selector_button, main_add_range_but
 query_row_type.append('main')
 
 # define main layout to pass to curdoc()
-layout = column(row(radio_group_dose, radio_group_volume),
+layout = column(row(radio_group_dose, radio_group_volume, select_reviewed_mrn, select_reviewed_dvh),
                 dvh_plots,
                 row(main_add_selector_button,
                     main_add_range_button,
                     main_add_endpoint_button,
                     update_button,
+                    calculate_review_dvh_button,
                     download_button),
                 data_table_title,
                 data_table,

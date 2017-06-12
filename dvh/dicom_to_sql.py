@@ -75,13 +75,13 @@ def dicom_to_sql(**kwargs):
 
         # Default behavior is to organize files in the imported folder
         # Only way to prevent organizing files is to set organize_files = False in kwargs
-        if 'organize_files' not in kwargs:
-            organize_dicom_files(import_settings['imported'])
-        elif kwargs['organize_files']:
+        if 'organize_files' not in kwargs or kwargs['organize_files']:
             organize_dicom_files(import_settings['imported'])
 
     move_all_files(import_settings['imported'], import_settings['inbox'])
     remove_empty_folders(import_settings['inbox'])
+    if 'organize_files' not in kwargs or kwargs['organize_files']:
+        organize_dicom_files(os.path.join(import_settings['imported'], 'misc'))
     sqlcnx.cnx.close()
 
 
@@ -134,6 +134,7 @@ def get_file_paths(start_path, **kwargs):
                 else:
                     if not db_entry_found:
                         print("The following files are already imported. Must delete from database before reimporting.")
+                        print("These files have been moved into the 'misc' folder within your 'imported' folder.")
                         db_entry_found = True
                     print(f[x])
             except Exception:
