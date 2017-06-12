@@ -545,11 +545,11 @@ def update_dvh_data(dvh):
         y_data.append(current)
 
     # Adjust dvh object to include stats data
-    dvh.mrn.extend(y_names)
+    dvh.mrn.extend(['Stats'] * 6)
     dvh.study_instance_uid.extend(['N/A'] * 6)
     dvh.institutional_roi.extend(['N/A'] * 6)
     dvh.physician_roi.extend(['N/A'] * 6)
-    dvh.roi_name.extend(['N/A'] * 6)
+    dvh.roi_name.extend(y_names)
     dvh.roi_type.extend(['N/A'] * 6)
     dvh.rx_dose.extend(calc_stats(dvh.rx_dose))
     dvh.volume.extend(calc_stats(dvh.volume))
@@ -869,7 +869,7 @@ data_table = DataTable(source=source, columns=columns, width=1000, selectable=Tr
 
 # Set up EndPoint DataTable
 endpoint_table_title = Div(text="<b>DVH Endpoints</b>", width=1000)
-columns = [TableColumn(field="mrn", title="MRN / Stat", width=160),
+columns = [TableColumn(field="mrn", title="MRN", width=160),
            TableColumn(field="ep1", title=endpoint_columns[0], width=120),
            TableColumn(field="ep2", title=endpoint_columns[1], width=120),
            TableColumn(field="ep3", title=endpoint_columns[2], width=120),
