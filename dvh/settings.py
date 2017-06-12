@@ -429,13 +429,6 @@ def select_variation_change(attr, old, new):
     update_input_text()
 
 
-def rename_physician_roi():
-    new = clean_name(input_text.value)
-    db.set_physician_roi(new, select_physician.value, select_physician_roi.value)
-    update_physician_roi_select()
-    select_physician_roi.value = new
-
-
 ################
 # Misc functions
 ################
@@ -1048,7 +1041,7 @@ tabs = Tabs(tabs=[settings_tab, roi_tab])
 
 # Create the document Bokeh server will use to generate the webpage
 curdoc().add_root(tabs)
-curdoc().title = "DVH Analytics: Settings"
+curdoc().title = "DVH Analytics"
 
 
 if __name__ == '__main__':

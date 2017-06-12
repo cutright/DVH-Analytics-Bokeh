@@ -472,63 +472,15 @@ class EndPointRow:
 # the functions to update beam, rx, and plans ColumnSourceData variables
 def update_dvh_data(dvh):
 
-    update_button.label = 'Getting DVH data...'
     print(str(datetime.now()), 'updating dvh data', sep=' ')
     line_colors = []
-    for j, color in itertools.izip(range(0, dvh.count), colors):
+    for j, color in itertools.izip(range(0, dvh.count + 6), colors):
         line_colors.append(color)
 
-    x_axis = np.add(np.linspace(0.005, dvh.bin_count, dvh.bin_count) / float(100), 0.005)
+    x_axis = np.add(np.linspace(0, dvh.bin_count, dvh.bin_count) / float(100), 0.005)
 
-    x_data = []
-    y_data = []
-    new_endpoint_columns = []
-    x_scale = []
-    y_scale = []
-    for i in range(0, dvh.count):
-        new_endpoint_columns.append('')
-        if radio_group_dose.active == 0:
-            x_data.append(x_axis.tolist())
-            x_scale.append('Gy')
-        else:
-            x_data.append(np.divide(x_axis, dvh.rx_dose[i]).tolist())
-            x_scale.append('%RxDose')
-        if radio_group_volume.active == 0:
-            y_data.append(np.multiply(dvh.dvh[:, i], dvh.volume[i]).tolist())
-            y_scale.append('cm^3')
-        else:
-            y_data.append(dvh.dvh[:, i].tolist())
-            y_scale.append('%Vol')
-    print(str(datetime.now()), 'writing source.data', sep=' ')
-    source.data = {'mrn': dvh.mrn,
-                   'uid': dvh.study_instance_uid,
-                   'roi_institutional': dvh.institutional_roi,
-                   'roi_physician': dvh.physician_roi,
-                   'roi_name': dvh.roi_name,
-                   'roi_type': dvh.roi_type,
-                   'rx_dose': dvh.rx_dose,
-                   'volume': dvh.volume,
-                   'min_dose': dvh.min_dose,
-                   'mean_dose': dvh.mean_dose,
-                   'max_dose': dvh.max_dose,
-                   'eud': dvh.eud,
-                   'eud_a_value': dvh.eud_a_value,
-                   'x': x_data,
-                   'y': y_data,
-                   'color': line_colors,
-                   'ep1': new_endpoint_columns,
-                   'ep2': new_endpoint_columns,
-                   'ep3': new_endpoint_columns,
-                   'ep4': new_endpoint_columns,
-                   'ep5': new_endpoint_columns,
-                   'ep6': new_endpoint_columns,
-                   'ep7': new_endpoint_columns,
-                   'ep8': new_endpoint_columns,
-                   'x_scale': x_scale,
-                   'y_scale': y_scale}
     print(str(datetime.now()), ' source.data set', sep=' ')
     print(str(datetime.now()), ' beginning stat calcs', sep=' ')
-    update_button.label = 'Calculating stats...'
 
     if radio_group_dose.active == 1:
         stat_dose_scale = 'relative'
@@ -559,13 +511,88 @@ def update_dvh_data(dvh):
     print(str(datetime.now()), ' stats set', sep=' ')
 
     if radio_group_dose.active == 0:
+        x_scale = ['Gy'] * (dvh.count + 6)
         dvh_plots.xaxis.axis_label = "Dose (Gy)"
     else:
+        x_scale = ['%RxDose'] * (dvh.count + 6)
         dvh_plots.xaxis.axis_label = "Relative Dose (to Rx)"
     if radio_group_volume.active == 0:
+        y_scale = ['cm^3'] * (dvh.count + 6)
         dvh_plots.yaxis.axis_label = "Absolute Volume (cc)"
     else:
+        y_scale = ['%Vol'] * (dvh.count + 6)
         dvh_plots.yaxis.axis_label = "Relative Volume"
+
+    new_endpoint_columns = [''] * (dvh.count + 6)
+
+    x_data = []
+    y_data = []
+    for n in range(0, dvh.count):
+        if radio_group_dose.active == 0:
+            x_data.append(x_axis.tolist())
+        else:
+            x_data.append(np.divide(x_axis, dvh.rx_dose[n]).tolist())
+        if radio_group_volume.active == 0:
+            y_data.append(np.multiply(dvh.dvh[:, n], dvh.volume[n]).tolist())
+        else:
+            y_data.append(dvh.dvh[:, n].tolist())
+
+    y_names = ['Max', 'Q3', 'Median', 'Mean', 'Q1', 'Min']
+    max_dose = []
+    min_dose = []
+    for n in range(0, 6):
+        x_data.append(x_axis.tolist())
+
+        current = stat_dvhs[y_names[n].lower()]
+        y_data.append(current.tolist())
+
+        min_dose.append(x_axis[np.argmax([current < float(1)])])
+
+        rev = np.array(current.tolist()[::-1])
+        max_dose.append(x_axis[dvh.bin_count - 1 - np.argmax([rev > float(0)])])
+
+    # Adjust dvh object to include stats data
+    dvh.mrn.extend(y_names)
+    dvh.study_instance_uid.extend([''] * 6)
+    dvh.institutional_roi.extend([''] * 6)
+    dvh.physician_roi.extend([''] * 6)
+    dvh.roi_name.extend([''] * 6)
+    dvh.roi_type.extend([''] * 6)
+    dvh.rx_dose.extend([''] * 6)
+    dvh.volume.extend([''] * 6)
+    dvh.min_dose.extend(min_dose)
+    dvh.mean_dose.extend([''] * 6)
+    dvh.max_dose.extend(max_dose)
+    dvh.eud.extend([''] * 6)
+    dvh.eud_a_value.extend([''] * 6)
+
+    print(str(datetime.now()), 'writing source.data', sep=' ')
+    source.data = {'mrn': dvh.mrn,
+                   'uid': dvh.study_instance_uid,
+                   'roi_institutional': dvh.institutional_roi,
+                   'roi_physician': dvh.physician_roi,
+                   'roi_name': dvh.roi_name,
+                   'roi_type': dvh.roi_type,
+                   'rx_dose': dvh.rx_dose,
+                   'volume': dvh.volume,
+                   'min_dose': dvh.min_dose,
+                   'mean_dose': dvh.mean_dose,
+                   'max_dose': dvh.max_dose,
+                   'eud': dvh.eud,
+                   'eud_a_value': dvh.eud_a_value,
+                   'x': x_data,
+                   'y': y_data,
+                   'color': line_colors,
+                   'ep1': new_endpoint_columns,
+                   'ep2': new_endpoint_columns,
+                   'ep3': new_endpoint_columns,
+                   'ep4': new_endpoint_columns,
+                   'ep5': new_endpoint_columns,
+                   'ep6': new_endpoint_columns,
+                   'ep7': new_endpoint_columns,
+                   'ep8': new_endpoint_columns,
+                   'x_scale': x_scale,
+                   'y_scale': y_scale}
 
     update_beam_data(dvh.study_instance_uid)
     update_plan_data(dvh.study_instance_uid)
@@ -751,6 +778,11 @@ hover = HoverTool(
     )
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
 dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
+dvh_plots.add_tools(HoverTool(show_arrow=False,
+                              line_policy='next',
+                              tooltips=[('Label', '@mrn'),
+                                        ('Dose', '$x'),
+                                        ('Volume', '$y')]))
 
 # Add statistical plots to figure
 stats_min = dvh_plots.line('x', 'min',
@@ -797,10 +829,6 @@ dvh_plots.multi_line('x', 'y',
                      nonselection_alpha=0,
                      selection_alpha=1)
 
-dvh_plots.add_tools(HoverTool(show_arrow=False,
-                              line_policy='next',
-                              tooltips=[('Dose', '$x'),
-                                        ('Volume', '$y')]))
 
 # Shaded region between Q1 and Q3
 dvh_plots.patch('x_patch', 'y_patch',
@@ -827,7 +855,7 @@ dvh_plots.legend.click_policy = "hide"
 
 # Set up DataTable for dvhs
 data_table_title = Div(text="<b>DVHs</b>", width=1000)
-columns = [TableColumn(field="mrn", title="MRN", width=175),
+columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="roi_name", title="ROI Name"),
            TableColumn(field="roi_type", title="ROI Type", width=80),
            TableColumn(field="rx_dose", title="Rx Dose", width=100, formatter=NumberFormatter(format="0.00")),
@@ -841,7 +869,7 @@ data_table = DataTable(source=source, columns=columns, width=1000, selectable=Tr
 
 # Set up EndPoint DataTable
 endpoint_table_title = Div(text="<b>DVH Endpoints</b>", width=1000)
-columns = [TableColumn(field="mrn", title="MRN", width=160),
+columns = [TableColumn(field="mrn", title="MRN / Stat", width=160),
            TableColumn(field="ep1", title=endpoint_columns[0], width=120),
            TableColumn(field="ep2", title=endpoint_columns[1], width=120),
            TableColumn(field="ep3", title=endpoint_columns[2], width=120),

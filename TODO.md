@@ -4,22 +4,21 @@
 
 - [ ] Add ability to plot two separate populations simultaneously
 
-- [ ] Allow user to input list of MRNs to restrict population
-
 
 - [ ] Adapt code and validate for other treatment planning systems
    - [X] Pinnacle >=9.0
    - [ ] Monaco
    - [ ] iPlan
    - [X] Raystation Protons
-     - [ ] Add proton specific beam parameters
-     - [ ] How to import site name?
    - [ ] Oncentra Brachytherapy
    - [ ] Outside validation
    - [ ] Create separate import functions for each TPS  
 
 
 ### Lower Priorities
+- [ ] Allow user to input list of MRNs to restrict population
+
+
 - [X] Add ability to plot a temporary plan not in the SQL DB
     - [ ] Design new app for plan review  
     
@@ -46,7 +45,9 @@
 
 - [ ] Clean text representation in date fields  
 
-- [ ] Combine data and stats into one ColumnDataSource so endpoints are calculated for stats
+
+- [X] Combine data and stats into one ColumnDataSource so endpoints are calculated for stats
+  - [ ] Calculate mean dose of mean DVH
 
 
 - [ ] Adapt for python3
