@@ -50,7 +50,7 @@ class DVH:
             if not key.startswith("__"):
                 setattr(self, key, value)
 
-        # Add this properties to dvh_data since they aren't in teh DVHs SQL table
+        # Add this properties to dvh_data since they aren't in the DVHs SQL table
         self.count = len(self.mrn)
         setattr(self, 'rx_dose', [])
         setattr(self, 'eud', [])
@@ -65,14 +65,7 @@ class DVH:
         setattr(self, 'dvh', np.zeros([self.bin_count, self.count]))
 
         # get EUD a values from a preference file
-        eud_a_values = {}
-        script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
-        rel_path = "preferences/eud_a-values.txt"
-        abs_file_path = os.path.join(script_dir, rel_path)
-        with open(abs_file_path, 'r') as document:
-            for line in document:
-                line = line.strip().split(',')
-                eud_a_values[line[0]] = float(line[1])
+        eud_a_values = get_eud_a_values()
 
         # Get needed values not in DVHs table
         for i in range(0, self.count):
@@ -319,6 +312,19 @@ def is_uid_in_all_keys(uid, uid_kwlist):
         if key not in 'unique':
             final_answer *= value
     return final_answer
+
+
+def get_eud_a_values():
+    eud_a_values = {}
+    script_dir = os.path.dirname(__file__)
+    rel_path = "preferences/eud_a-values.txt"
+    abs_file_path = os.path.join(script_dir, rel_path)
+    with open(abs_file_path, 'r') as document:
+        for line in document:
+            line = line.strip().split(',')
+            eud_a_values[line[0]] = float(line[1])
+
+    return eud_a_values
 
 
 if __name__ == '__main__':

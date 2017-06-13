@@ -8,7 +8,7 @@ Created on Sun Apr 21 2017
 
 
 from __future__ import print_function
-from analysis_tools import DVH, get_study_instance_uids
+from analysis_tools import DVH, get_study_instance_uids, calc_eud, get_eud_a_values
 from utilities import Temp_DICOM_FileSet
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL
@@ -22,7 +22,7 @@ from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
 from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, \
-    NumberFormatter, RadioButtonGroup, TextInput, RadioGroup
+    NumberFormatter, RadioButtonGroup, TextInput, RadioGroup, CheckboxButtonGroup
 from dicompylercore import dicomparser, dvhcalc
 
 # Declare variables
@@ -34,13 +34,13 @@ query_row_type = []
 endpoint_columns = {}
 x = []
 y = []
+eud_a_values = get_eud_a_values()
 
 for i in range(0, 10):
     endpoint_columns[i] = ''
 
 temp_dvh_info = Temp_DICOM_FileSet()
 dvh_review_mrns = temp_dvh_info.mrn
-dvh_review_mrns.insert(0, '')
 if dvh_review_mrns[0] != '':
     dvh_review_rois = temp_dvh_info.get_roi_names(dvh_review_mrns[0]).values()
 
@@ -50,8 +50,10 @@ else:
 # Initialize ColumnDataSource variables
 source = ColumnDataSource(data=dict(color=[], x=[], y=[], mrn=[],
                                     ep1=[], ep2=[], ep3=[], ep4=[], ep5=[], ep6=[], ep7=[], ep8=[]))
-source_patch = ColumnDataSource(data=dict(x_patch=[], y_patch=[]))
-source_stats = ColumnDataSource(data=dict(x=[], min=[], q1=[], mean=[], median=[], q3=[], max=[]))
+source_patch_1 = ColumnDataSource(data=dict(x_patch=[], y_patch=[]))
+source_patch_2 = ColumnDataSource(data=dict(x_patch=[], y_patch=[]))
+source_stats_1 = ColumnDataSource(data=dict(x=[], min=[], q1=[], mean=[], median=[], q3=[], max=[]))
+source_stats_2 = ColumnDataSource(data=dict(x=[], min=[], q1=[], mean=[], median=[], q3=[], max=[]))
 source_beams = ColumnDataSource(data=dict())
 source_plans = ColumnDataSource(data=dict())
 source_rxs = ColumnDataSource(data=dict())
@@ -224,14 +226,24 @@ def radio_group_volume_ticker(attr, old, new):
 
 # This function retuns the list of information needed to execute QuerySQL from
 # SQL_to_Python.py (i.e., uids and dvh_condition
-def get_query():
+def get_query(**kwargs):
     global query_row_type, query_row, current_dvh
+
+    if kwargs and 'group' in kwargs:
+        if kwargs['group'] == 1:
+            active_group = 0
+        elif kwargs['group'] == 2:
+            active_group = 1
+    else:
+        active_group = 2
+
     plan_query_map = {}
     rx_query_map = {}
     beam_query_map = {}
     dvh_query_map = {}
     for i in range(1, len(query_row)):
-        if query_row_type[i] in {'selector', 'range'}:
+        if query_row_type[i] in {'selector', 'range'} and \
+                (active_group in query_row[i].pop_grp.active or active_group == 2):
             if query_row_type[i] == 'selector':
                 var_name = selector_categories[query_row[i].select_category.value]['var_name']
                 table = selector_categories[query_row[i].select_category.value]['table']
@@ -322,20 +334,23 @@ class SelectorRow:
         self.id = len(query_row)
         self.category_options = selector_categories.keys()
         self.category_options.sort()
-        self.select_category = Select(value="ROI Institutional Category", options=self.category_options, width=450)
+        self.select_category = Select(value="ROI Institutional Category", options=self.category_options, width=300)
         self.select_category.on_change('value', self.update_selector_values)
 
         self.sql_table = selector_categories[self.select_category.value]['table']
         self.var_name = selector_categories[self.select_category.value]['var_name']
         self.values = DVH_SQL().get_unique_values(self.sql_table, self.var_name)
-        self.select_value = Select(value=self.values[0], options=self.values, width=450)
+        self.select_value = Select(value=self.values[0], options=self.values, width=420)
         self.select_value.on_change('value', self.selector_values_ticker)
+
+        self.pop_grp = CheckboxButtonGroup(labels=["Blue Group", "Red Group"], active=[0], width=180)
 
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
         self.delete_last_row.on_click(self.delete_row)
 
         self.row = row(self.select_category,
                        self.select_value,
+                       self.pop_grp,
                        self.delete_last_row)
 
     def update_selector_values(self, attrname, old, new):
@@ -363,18 +378,20 @@ class RangeRow:
         self.id = len(query_row)
         self.category_options = range_categories.keys()
         self.category_options.sort()
-        self.select_category = Select(value=self.category_options[-1], options=self.category_options, width=450)
+        self.select_category = Select(value=self.category_options[-1], options=self.category_options, width=300)
         self.select_category.on_change('value', self.update_range_values_ticker)
 
         self.sql_table = range_categories[self.select_category.value]['table']
         self.var_name = range_categories[self.select_category.value]['var_name']
         self.min_value = []
         self.max_value = []
-        self.text_min = TextInput(value='', title='', width=225)
+        self.text_min = TextInput(value='', title='', width=210)
         self.text_min.on_change('value', self.check_for_start_date_ticker)
-        self.text_max = TextInput(value='', title='', width=225)
+        self.text_max = TextInput(value='', title='', width=210)
         self.text_max.on_change('value', self.check_for_end_date_ticker)
         self.update_range_values(self.select_category.value)
+
+        self.pop_grp = CheckboxButtonGroup(labels=["Blue Group", "Red Group"], active=[0], width=180)
 
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
         self.delete_last_row.on_click(self.delete_row)
@@ -382,6 +399,7 @@ class RangeRow:
         self.row = row([self.select_category,
                         self.text_min,
                         self.text_max,
+                        self.pop_grp,
                         self.delete_last_row])
 
     def check_for_start_date_ticker(self, attrname, old, new):
@@ -422,18 +440,18 @@ class EndPointRow:
 
         self.id = len(query_row)
         self.options = ["Dose to Vol", "Vol of Dose"]
-        self.select_category = RadioButtonGroup(labels=self.options, active=0, width=225)
+        self.select_category = RadioButtonGroup(labels=self.options, active=0, width=200)
         self.select_category.on_change('active', self.endpoint_category_ticker)
 
         self.unit_labels = [["%", "cc"], ["%", "Gy"]]
 
-        self.units_out = RadioButtonGroup(labels=self.unit_labels[1], active=1, width=225)
+        self.units_out = RadioButtonGroup(labels=self.unit_labels[1], active=1, width=100)
         self.units_out.on_change('active', self.endpoint_units_out_ticker)
 
-        self.text_input = TextInput(value='', title="Volume (%):", width=225)
+        self.text_input = TextInput(value='', title="Volume (%):", width=210)
         self.text_input.on_change('value', self.endpoint_calc_ticker)
 
-        self.units = RadioButtonGroup(labels=self.unit_labels[0], active=0, width=225)
+        self.units = RadioButtonGroup(labels=self.unit_labels[0], active=0, width=390)
         self.units.on_change('active', self.endpoint_units_ticker)
 
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
@@ -486,13 +504,13 @@ def update_dvh_data(dvh):
 
     print(str(datetime.now()), 'updating dvh data', sep=' ')
     line_colors = []
-    for j, color in itertools.izip(range(0, dvh.count + 6), colors):
+    for j, color in itertools.izip(range(0, dvh.count + 12), colors):
         line_colors.append(color)
 
     x_axis = np.add(np.linspace(0, dvh.bin_count, dvh.bin_count) / float(100), 0.005)
 
-    print(str(datetime.now()), ' source.data set', sep=' ')
-    print(str(datetime.now()), ' beginning stat calcs', sep=' ')
+    print(str(datetime.now()), 'source.data set', sep=' ')
+    print(str(datetime.now()), 'beginning stat calcs', sep=' ')
 
     if radio_group_dose.active == 1:
         stat_dose_scale = 'relative'
@@ -505,37 +523,87 @@ def update_dvh_data(dvh):
         stat_volume_scale = 'relative'
 
     print(str(datetime.now()), 'calculating patches', sep=' ')
-    stat_dvhs = dvh.get_standard_stat_dvh(dose=stat_dose_scale, volume=stat_volume_scale)
+
+    # stat_dvhs = dvh.get_standard_stat_dvh(dose=stat_dose_scale, volume=stat_volume_scale)
+
+    group_1_count, group_2_count = group_count()
+
+    if group_1_count == 0:
+        source_patch_1.data = {'x_patch': [],
+                               'y_patch': []}
+        source_stats_1.data = {'x': [],
+                               'min': [],
+                               'q1': [],
+                               'mean': [],
+                               'median': [],
+                               'q3': [],
+                               'max': []}
+    else:
+        uids, dvh_query_str = get_query(group=1)
+        dvh_group_1 = DVH(uid=uids, dvh_condition=dvh_query_str)
+        stat_dvhs_1 = dvh_group_1.get_standard_stat_dvh(dose=stat_dose_scale, volume=stat_volume_scale)
+
+        if radio_group_dose.active == 1:
+            x_axis_1 = dvh_group_1.get_stat_dvh(type=False, dose=stat_dose_scale)
+        else:
+            x_axis_1 = np.add(np.linspace(0, dvh_group_1.bin_count, dvh_group_1.bin_count) / float(100), 0.005)
+
+        source_patch_1.data = {'x_patch': np.append(x_axis_1, x_axis_1[::-1]).tolist(),
+                               'y_patch': np.append(stat_dvhs_1['q3'], stat_dvhs_1['q1'][::-1]).tolist()}
+        source_stats_1.data = {'x': x_axis_1.tolist(),
+                               'min': stat_dvhs_1['min'].tolist(),
+                               'q1': stat_dvhs_1['q1'].tolist(),
+                               'mean': stat_dvhs_1['mean'].tolist(),
+                               'median': stat_dvhs_1['median'].tolist(),
+                               'q3': stat_dvhs_1['q3'].tolist(),
+                               'max': stat_dvhs_1['max'].tolist()}
+    if group_2_count == 0:
+        source_patch_2.data = {'x_patch': [],
+                               'y_patch': []}
+        source_stats_2.data = {'x': [],
+                               'min': [],
+                               'q1': [],
+                               'mean': [],
+                               'median': [],
+                               'q3': [],
+                               'max': []}
+    else:
+        uids, dvh_query_str = get_query(group=2)
+        dvh_group_2 = DVH(uid=uids, dvh_condition=dvh_query_str)
+
+        stat_dvhs_2 = dvh_group_2.get_standard_stat_dvh(dose=stat_dose_scale, volume=stat_volume_scale)
+
+        if radio_group_dose.active == 1:
+            x_axis_2 = dvh_group_2.get_stat_dvh(type=False, dose=stat_dose_scale)
+        else:
+            x_axis_2 = np.add(np.linspace(0, dvh_group_2.bin_count, dvh_group_2.bin_count) / float(100), 0.005)
+
+        source_patch_2.data = {'x_patch': np.append(x_axis_2, x_axis_2[::-1]).tolist(),
+                               'y_patch': np.append(stat_dvhs_2['q3'], stat_dvhs_2['q1'][::-1]).tolist()}
+        source_stats_2.data = {'x': x_axis_2.tolist(),
+                               'min': stat_dvhs_2['min'].tolist(),
+                               'q1': stat_dvhs_2['q1'].tolist(),
+                               'mean': stat_dvhs_2['mean'].tolist(),
+                               'median': stat_dvhs_2['median'].tolist(),
+                               'q3': stat_dvhs_2['q3'].tolist(),
+                               'max': stat_dvhs_2['max'].tolist()}
 
     print(str(datetime.now()), 'patches calculated', sep=' ')
 
-    source_patch.data = {'x_patch': np.append(x_axis, x_axis[::-1]).tolist(),
-                         'y_patch': np.append(stat_dvhs['q3'], stat_dvhs['q1'][::-1]).tolist()}
-    print(str(datetime.now()), 'patches set', sep=' ')
-    source_stats.data = {'x': x_axis.tolist(),
-                         'min': stat_dvhs['min'].tolist(),
-                         'q1': stat_dvhs['q1'].tolist(),
-                         'mean': stat_dvhs['mean'].tolist(),
-                         'median': stat_dvhs['median'].tolist(),
-                         'q3': stat_dvhs['q3'].tolist(),
-                         'max': stat_dvhs['max'].tolist()}
-
-    print(str(datetime.now()), ' stats set', sep=' ')
-
     if radio_group_dose.active == 0:
-        x_scale = ['Gy'] * (dvh.count + 7)
+        x_scale = ['Gy'] * (dvh.count + 13)
         dvh_plots.xaxis.axis_label = "Dose (Gy)"
     else:
-        x_scale = ['%RxDose'] * (dvh.count + 7)
+        x_scale = ['%RxDose'] * (dvh.count + 13)
         dvh_plots.xaxis.axis_label = "Relative Dose (to Rx)"
     if radio_group_volume.active == 0:
-        y_scale = ['cm^3'] * (dvh.count + 7)
+        y_scale = ['cm^3'] * (dvh.count + 13)
         dvh_plots.yaxis.axis_label = "Absolute Volume (cc)"
     else:
-        y_scale = ['%Vol'] * (dvh.count + 7)
+        y_scale = ['%Vol'] * (dvh.count + 13)
         dvh_plots.yaxis.axis_label = "Relative Volume"
 
-    new_endpoint_columns = [''] * (dvh.count + 7)
+    new_endpoint_columns = [''] * (dvh.count + 13)
 
     x_data = []
     y_data = []
@@ -551,25 +619,36 @@ def update_dvh_data(dvh):
 
     y_names = ['Max', 'Q3', 'Median', 'Mean', 'Q1', 'Min']
     for n in range(0, 6):
+        dvh.mrn.append(y_names[n])
+        dvh.roi_name.append('Blue Group')
         x_data.append(x_axis.tolist())
+        current = stat_dvhs_1[y_names[n].lower()].tolist()
+        y_data.append(current)
 
-        current = stat_dvhs[y_names[n].lower()].tolist()
+        dvh.mrn.append(y_names[n])
+        dvh.roi_name.append('Red Group')
+        x_data.append(x_axis.tolist())
+        current = stat_dvhs_2[y_names[n].lower()].tolist()
         y_data.append(current)
 
     # Adjust dvh object to include stats data
-    dvh.mrn.extend(y_names)
-    dvh.study_instance_uid.extend(['N/A'] * 6)
-    dvh.institutional_roi.extend(['N/A'] * 6)
-    dvh.physician_roi.extend(['N/A'] * 6)
-    dvh.roi_name.extend([''] * 6)
-    dvh.roi_type.extend(['N/A'] * 6)
-    dvh.rx_dose.extend(calc_stats(dvh.rx_dose))
-    dvh.volume.extend(calc_stats(dvh.volume))
-    dvh.min_dose.extend(calc_stats(dvh.min_dose))
-    dvh.mean_dose.extend(calc_stats(dvh.mean_dose))
-    dvh.max_dose.extend(calc_stats(dvh.max_dose))
-    dvh.eud.extend(calc_stats(dvh.eud))
-    dvh.eud_a_value.extend([0] * 6)
+    dvh.study_instance_uid.extend(['N/A'] * 12)
+    dvh.institutional_roi.extend(['N/A'] * 12)
+    dvh.physician_roi.extend(['N/A'] * 12)
+    dvh.roi_type.extend(['N/A'] * 12)
+    dvh.rx_dose.extend(calc_stats(dvh_group_1.rx_dose))
+    dvh.volume.extend(calc_stats(dvh_group_1.volume))
+    dvh.min_dose.extend(calc_stats(dvh_group_1.min_dose))
+    dvh.mean_dose.extend(calc_stats(dvh_group_1.mean_dose))
+    dvh.max_dose.extend(calc_stats(dvh_group_1.max_dose))
+    dvh.eud.extend(calc_stats(dvh_group_1.eud))
+    dvh.rx_dose.extend(calc_stats(dvh_group_2.rx_dose))
+    dvh.volume.extend(calc_stats(dvh_group_2.volume))
+    dvh.min_dose.extend(calc_stats(dvh_group_2.min_dose))
+    dvh.mean_dose.extend(calc_stats(dvh_group_2.mean_dose))
+    dvh.max_dose.extend(calc_stats(dvh_group_2.max_dose))
+    dvh.eud.extend(calc_stats(dvh_group_2.eud))
+    dvh.eud_a_value.extend([0] * 12)
 
     # Adjust dvh object for review dvh
     dvh.mrn.insert(0, select_reviewed_mrn.value)
@@ -578,14 +657,14 @@ def update_dvh_data(dvh):
     dvh.physician_roi.insert(0, '')
     dvh.roi_name.insert(0, select_reviewed_dvh.value)
     dvh.roi_type.insert(0, 'Review')
-    dvh.rx_dose.insert(0, '')
+    dvh.rx_dose.insert(0, 'N/A')
     dvh.volume.insert(0, '')
     dvh.min_dose.insert(0, '')
     dvh.mean_dose.insert(0, '')
     dvh.max_dose.insert(0, '')
-    dvh.eud.insert(0, '')
-    dvh.eud_a_value.insert(0, '')
-    line_colors.insert(0, 'red')
+    dvh.eud.insert(0, 'N/A')
+    dvh.eud_a_value.insert(0, 'N/A')
+    line_colors.insert(0, 'green')
     x_data.insert(0, [0])
     y_data.insert(0, [0])
 
@@ -729,7 +808,7 @@ def update_endpoint_data(dvh):
             counter += 1
     for i in range(counter, 8):
         endpoints_map[i] = []
-        for j in range(0, dvh.count + 6):
+        for j in range(0, dvh.count + 12):
             endpoints_map[i].append('')
 
     tuple_list = {}
@@ -769,7 +848,7 @@ def update_endpoint_data(dvh):
 
 def date_str_to_sql_format(date, **kwargs):
 
-    if kwargs['type'] == 'start':
+    if kwargs and 'type' in kwargs and kwargs['type'] == 'start':
         append_month = '-01-01'
         append_day = '-01'
     else:
@@ -845,8 +924,6 @@ def calculate_review_dvh():
     min_dose = review_dvh.min
     mean_dose = review_dvh.mean
     max_dose = review_dvh.max
-    eud = 0
-    eud_a_value = 0
     x = review_dvh.bincenters
     y = np.divide(review_dvh.counts, max(review_dvh.counts)).tolist()
 
@@ -857,13 +934,25 @@ def calculate_review_dvh():
                'min_dose': [(0, min_dose)],
                'mean_dose': [(0, mean_dose)],
                'max_dose': [(0, max_dose)],
-               'eud': [(0, eud)],
-               'eud_a_value': [(0, eud_a_value)]}
+               'mrn': [(0, select_reviewed_mrn.value)]}
 
     source.patch(patches)
 
     calculate_review_dvh_button.button_type = initial_button_type
     calculate_review_dvh_button.label = initial_button_label
+
+
+def group_count():
+    global query_row, query_row_type
+    group_1 = 0
+    group_2 = 0
+    for i in range(0, len(query_row)):
+        if query_row_type[i] in {'selector', 'range'}:
+            if 0 in query_row[i].pop_grp.active:
+                group_1 += 1
+            if 1 in query_row[i].pop_grp.active:
+                group_2 += 1
+    return group_1, group_2
 
 
 # set up layout
@@ -877,40 +966,52 @@ dvh_plots.add_tools(HoverTool(show_arrow=False,
                                         ('Volume', '$y')]))
 
 # Add statistical plots to figure
-stats_min = dvh_plots.line('x', 'min',
-                           source=source_stats,
-                           line_width=2,
-                           color='black',
-                           line_dash='dotted',
-                           alpha=0.2)
-stats_q1 = dvh_plots.line('x', 'q1',
-                          source=source_stats,
-                          line_width=0.5,
-                          color='black',
-                          alpha=0.2)
-stats_median = dvh_plots.line('x', 'median',
-                              source=source_stats,
+# stats_min = dvh_plots.line('x', 'min',
+#                            source=source_stats_1,
+#                            line_width=2,
+#                            color='black',
+#                            line_dash='dotted',
+#                            alpha=0.2)
+# stats_q1 = dvh_plots.line('x', 'q1',
+#                           source=source_stats_1,
+#                           line_width=0.5,
+#                           color='black',
+#                           alpha=0.2)
+stats_median_1 = dvh_plots.line('x', 'median',
+                                source=source_stats_1,
+                                line_width=1,
+                                color='blue',
+                                line_dash='solid',
+                                alpha=0.6)
+stats_mean_1 = dvh_plots.line('x', 'mean',
+                              source=source_stats_1,
                               line_width=2,
-                              color='lightpink',
+                              color='blue',
                               line_dash='dashed',
-                              alpha=0.75)
-stats_mean = dvh_plots.line('x', 'mean',
-                            source=source_stats,
-                            line_width=2,
-                            color='lightseagreen',
-                            line_dash='dashed',
-                            alpha=0.5)
-stats_q3 = dvh_plots.line('x', 'q3',
-                          source=source_stats,
-                          line_width=0.5,
-                          color='black',
-                          alpha=0.2)
-stats_max = dvh_plots.line('x', 'max',
-                           source=source_stats,
-                           line_width=2,
-                           color='black',
-                           line_dash='dotted',
-                           alpha=0.2)
+                              alpha=0.5)
+# stats_q3 = dvh_plots.line('x', 'q3',
+#                           source=source_stats_1,
+#                           line_width=0.5,
+#                           color='black',
+#                           alpha=0.2)
+# stats_max = dvh_plots.line('x', 'max',
+#                            source=source_stats_1,
+#                            line_width=2,
+#                            color='black',
+#                            line_dash='dotted',
+#                            alpha=0.2)
+stats_median_2 = dvh_plots.line('x', 'median',
+                                source=source_stats_2,
+                                line_width=1,
+                                color='red',
+                                line_dash='solid',
+                                alpha=0.6)
+stats_mean_2 = dvh_plots.line('x', 'mean',
+                              source=source_stats_2,
+                              line_width=2,
+                              color='red',
+                              line_dash='dashed',
+                              alpha=0.5)
 
 # Add all DVHs, but hide them until selected
 dvh_plots.multi_line('x', 'y',
@@ -924,8 +1025,12 @@ dvh_plots.multi_line('x', 'y',
 
 # Shaded region between Q1 and Q3
 dvh_plots.patch('x_patch', 'y_patch',
-                source=source_patch,
+                source=source_patch_1,
                 alpha=0.15)
+dvh_plots.patch('x_patch', 'y_patch',
+                source=source_patch_2,
+                alpha=0.075,
+                color='red')
 
 # Set x and y axis labels
 dvh_plots.xaxis.axis_label = "Dose (Gy)"
@@ -933,12 +1038,14 @@ dvh_plots.yaxis.axis_label = "Normalized Volume"
 
 # Set the legend (for stat dvhs only)
 legend_stats = Legend(items=[
-        ("Max", [stats_max]),
-        ("Q3", [stats_q3]),
-        ("Median", [stats_median]),
-        ("Mean", [stats_mean]),
-        ("Q1", [stats_q1]),
-        ("Min", [stats_min])
+        # ("Max", [stats_max]),
+        # ("Q3", [stats_q3]),
+        ("Median", [stats_median_1]),
+        ("Mean", [stats_mean_1]),
+        # ("Q1", [stats_q1]),
+        # ("Min", [stats_min])
+        ("Median", [stats_median_2]),
+        ("Mean", [stats_mean_2]),
     ], location=(0, 30))
 
 # Add the layout outside the plot, clicking legend item hides the line
@@ -984,9 +1091,9 @@ columns = [TableColumn(field="mrn", title="MRN", width=105),
            TableColumn(field="beam_energy", title="Energy", width=80),
            TableColumn(field="beam_mu", title="MU", width=100, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="beam_type", title="Type", width=100),
-           TableColumn(field="collimator_angle", title="Col Ang", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="collimator_start", title="Col Ang", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="control_point_count", title="CPs", width=80),
-           TableColumn(field="couch_angle", title="Couch Ang", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="couch_start", title="Couch Ang", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="gantry_start", title="Gant Start", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="gantry_rot_dir", title="Gant Dir", width=80),
            TableColumn(field="gantry_end", title="Gant End", width=80, formatter=NumberFormatter(format="0.0")),
@@ -1109,4 +1216,4 @@ button_add_selector_row()
 
 # Create the document Bokeh server will use to generate the webpage
 curdoc().add_root(layout)
-curdoc().title = "DVH Analytics: Study"
+curdoc().title = "DVH Analytics"
