@@ -2,17 +2,13 @@
 ### Higher Priorities
 
 
-- [X] Add ability to plot two separate populations simultaneously
-
-
 - [ ] Adapt code and validate for other treatment planning systems
-   - [X] Pinnacle >=9.0
+   - [X] Pinnacle
    - [ ] Monaco
-   - [ ] iPlan
+   - [X] iPlan
    - [X] Raystation Protons
    - [ ] Oncentra Brachytherapy
-   - [ ] Outside validation
-   - [ ] Create separate import functions for each TPS
+   
      
 - [ ] Validate dicompyler-core DVH calculations
 

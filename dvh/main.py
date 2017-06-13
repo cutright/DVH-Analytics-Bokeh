@@ -618,37 +618,62 @@ def update_dvh_data(dvh):
             y_data.append(dvh.dvh[:, n].tolist())
 
     y_names = ['Max', 'Q3', 'Median', 'Mean', 'Q1', 'Min']
+
     for n in range(0, 6):
         dvh.mrn.append(y_names[n])
         dvh.roi_name.append('Blue Group')
-        x_data.append(x_axis.tolist())
-        current = stat_dvhs_1[y_names[n].lower()].tolist()
-        y_data.append(current)
+        if group_1_count > 0:
+            x_data.append(x_axis.tolist())
+            current = stat_dvhs_1[y_names[n].lower()].tolist()
+            y_data.append(current)
+        else:
+            x_data.append([''])
+            y_data.append([''])
 
         dvh.mrn.append(y_names[n])
         dvh.roi_name.append('Red Group')
-        x_data.append(x_axis.tolist())
-        current = stat_dvhs_2[y_names[n].lower()].tolist()
-        y_data.append(current)
+        if group_2_count > 0:
+            x_data.append(x_axis.tolist())
+            current = stat_dvhs_2[y_names[n].lower()].tolist()
+            y_data.append(current)
+        else:
+            x_data.append([''])
+            y_data.append([''])
 
     # Adjust dvh object to include stats data
     dvh.study_instance_uid.extend(['N/A'] * 12)
     dvh.institutional_roi.extend(['N/A'] * 12)
     dvh.physician_roi.extend(['N/A'] * 12)
     dvh.roi_type.extend(['N/A'] * 12)
-    dvh.rx_dose.extend(calc_stats(dvh_group_1.rx_dose))
-    dvh.volume.extend(calc_stats(dvh_group_1.volume))
-    dvh.min_dose.extend(calc_stats(dvh_group_1.min_dose))
-    dvh.mean_dose.extend(calc_stats(dvh_group_1.mean_dose))
-    dvh.max_dose.extend(calc_stats(dvh_group_1.max_dose))
-    dvh.eud.extend(calc_stats(dvh_group_1.eud))
-    dvh.rx_dose.extend(calc_stats(dvh_group_2.rx_dose))
-    dvh.volume.extend(calc_stats(dvh_group_2.volume))
-    dvh.min_dose.extend(calc_stats(dvh_group_2.min_dose))
-    dvh.mean_dose.extend(calc_stats(dvh_group_2.mean_dose))
-    dvh.max_dose.extend(calc_stats(dvh_group_2.max_dose))
-    dvh.eud.extend(calc_stats(dvh_group_2.eud))
-    dvh.eud_a_value.extend([0] * 12)
+    dvh.eud_a_value.extend(['N/A'] * 12)
+    if group_1_count > 0:
+        dvh.rx_dose.extend(calc_stats(dvh_group_1.rx_dose))
+        dvh.volume.extend(calc_stats(dvh_group_1.volume))
+        dvh.min_dose.extend(calc_stats(dvh_group_1.min_dose))
+        dvh.mean_dose.extend(calc_stats(dvh_group_1.mean_dose))
+        dvh.max_dose.extend(calc_stats(dvh_group_1.max_dose))
+        dvh.eud.extend(calc_stats(dvh_group_1.eud))
+    else:
+        dvh.rx_dose.extend(['N/A'] * 6)
+        dvh.volume.extend(['N/A'] * 6)
+        dvh.min_dose.extend(['N/A'] * 6)
+        dvh.mean_dose.extend(['N/A'] * 6)
+        dvh.max_dose.extend(['N/A'] * 6)
+        dvh.eud.extend(['N/A'] * 6)
+    if group_2_count > 0:
+        dvh.rx_dose.extend(calc_stats(dvh_group_2.rx_dose))
+        dvh.volume.extend(calc_stats(dvh_group_2.volume))
+        dvh.min_dose.extend(calc_stats(dvh_group_2.min_dose))
+        dvh.mean_dose.extend(calc_stats(dvh_group_2.mean_dose))
+        dvh.max_dose.extend(calc_stats(dvh_group_2.max_dose))
+        dvh.eud.extend(calc_stats(dvh_group_2.eud))
+    else:
+        dvh.rx_dose.extend(['N/A'] * 6)
+        dvh.volume.extend(['N/A'] * 6)
+        dvh.min_dose.extend(['N/A'] * 6)
+        dvh.mean_dose.extend(['N/A'] * 6)
+        dvh.max_dose.extend(['N/A'] * 6)
+        dvh.eud.extend(['N/A'] * 6)
 
     # Adjust dvh object for review dvh
     dvh.mrn.insert(0, select_reviewed_mrn.value)
