@@ -2,7 +2,7 @@
 ### Higher Priorities
 
 
-- [ ] Add ability to plot two separate populations simultaneously
+- [X] Add ability to plot two separate populations simultaneously
 
 
 - [ ] Adapt code and validate for other treatment planning systems
