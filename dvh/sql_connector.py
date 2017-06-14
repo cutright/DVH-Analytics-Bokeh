@@ -259,6 +259,10 @@ class DVH_SQL:
         self.cursor.execute('DROP TABLE IF EXISTS Beams;')
         self.cursor.execute('DROP TABLE IF EXISTS Rxs;')
         self.cnx.commit()
+        self.initialize_database()
+
+    def initialize_database(self):
+
         print('Loading create_tables.sql')
         script_dir = os.path.dirname(__file__)
         rel_path = "preferences/create_tables.sql"

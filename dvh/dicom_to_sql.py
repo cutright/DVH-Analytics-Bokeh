@@ -55,14 +55,16 @@ def dicom_to_sql(**kwargs):
         print(f.dose)
 
         plan = PlanRow(f.plan, f.structure, f.dose)
-        beams = BeamTable(f.plan)
+        if not hasattr(dicom.read_file(f.plan), 'BrachyTreatmentType'):
+            beams = BeamTable(f.plan)
         dvhs = DVHTable(f.structure, f.dose)
         rxs = RxTable(f.plan, f.structure)
 
         setattr(dvhs, 'ptv_number', rank_ptvs_by_D95(dvhs))
 
         sqlcnx.insert_plan(plan)
-        sqlcnx.insert_beams(beams)
+        if not hasattr(dicom.read_file(f.plan), 'BrachyTreatmentType'):
+            sqlcnx.insert_beams(beams)
         sqlcnx.insert_dvhs(dvhs)
         sqlcnx.insert_rxs(rxs)
 

@@ -7,7 +7,7 @@
    - [ ] Monaco
    - [X] iPlan
    - [X] Raystation Protons
-   - [ ] Oncentra Brachytherapy
+   - [X] Oncentra Brachytherapy
    
      
 - [ ] Validate dicompyler-core DVH calculations
@@ -39,7 +39,10 @@
 
 
 - [ ] Adapt for Python 3
-  - [X] print functions updated 
+  - [X] print functions updated  
+  
+  
+- [ ] Create ProtonBeam Table and BrachyTable
 
 
 

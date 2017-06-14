@@ -24,6 +24,7 @@ Type in the following to access the Settings and ROI Name Manager modules:
 ~~~~
 $ dvh setup
 ~~~~
+After filling in proper SQL login credentials, be sure to click 'Create Tables'.
 
 ## Processing test files
 To verify all of your settings are valid and installation was successful, type:

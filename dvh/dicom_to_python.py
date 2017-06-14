@@ -54,8 +54,7 @@ class PlanRow:
     def __init__(self, plan_file, structure_file, dose_file):
         # Read DICOM files
         rt_plan = dicom.read_file(plan_file)
-        rt_plan_dicompyler = dicomparser.DicomParser(plan_file)
-        rt_plan_obj = rt_plan_dicompyler.GetPlan()
+        dicompyler_plan = dicomparser.DicomParser(plan_file).GetPlan()
         rt_structure = dicom.read_file(structure_file)
         rt_dose = dicom.read_file(dose_file)
 
@@ -127,7 +126,10 @@ class PlanRow:
         study_instance_uid = rt_plan.StudyInstanceUID
 
         # Record patient position (e.g., HFS, HFP, FFS, or FFP)
-        patient_orientation = rt_plan.PatientSetupSequence[0].PatientPosition
+        if hasattr(rt_plan, 'PatientSetupSequence'):
+            patient_orientation = rt_plan.PatientSetupSequence[0].PatientPosition
+        else:
+            patient_orientation = 'UKN'
 
         # Context self-evident, their utility is not (yet)
         plan_time_stamp = datetime_str_to_obj(rt_plan.RTPlanDate + rt_plan.RTPlanTime)
@@ -170,7 +172,7 @@ class PlanRow:
 
         # if rx_dose point not found, use dose in DICOM file
         if rx_dose == 0:
-            rx_dose = float(rt_plan_obj['rxdose']) / 100
+            rx_dose = float(dicompyler_plan['rxdose']) / 100
 
         # This assumes that Plans are either 100% Arc plans or 100% Static Angle
         # Note that the beams class will have this information on a per beam basis
@@ -179,8 +181,11 @@ class PlanRow:
         temp = ''
 
         # Brachytherapy
-        if rt_plan_obj['brachy']:
-            tx_modality = 'Brachy '
+        if dicompyler_plan['brachy']:
+            if hasattr(rt_plan, 'BrachyTreatmentType'):
+                tx_modality = rt_plan.BrachyTreatmentType + ' '
+            else:
+                tx_modality = 'Brachy '
 
         # Protons
         elif hasattr(rt_plan, 'IonBeamSequence'):
@@ -236,6 +241,14 @@ class PlanRow:
         # Will require a yet to be named function to determine this
         # Applicable for brachy and Gamma Knife, not yet supported
         tx_time = '00:00:00'
+        if hasattr(rt_plan, 'BrachyTreatmentType'):
+            seconds = 0
+            for app_seq in rt_plan.ApplicationSetupSequence:
+                for chan_seq in app_seq.ChannelSequence:
+                    seconds += chan_seq.ChannelTotalTime
+            m, s = divmod(seconds, 60)
+            h, m = divmod(m, 60)
+            tx_time = "%02d:%02d:%02d" % (h, m, s)
 
         # Record resolution of dose grid
         dose_grid_resolution = [str(round(float(rt_dose.PixelSpacing[0]), 1)),
@@ -495,9 +508,13 @@ class RxTable:
             if hasattr(rt_plan, 'DoseReferenceSequence'):
                 rx_dose = rt_plan.DoseReferenceSequence[i].TargetPrescriptionDose
                 normalization_method = rt_plan.DoseReferenceSequence[i].DoseReferenceStructureType
-                ref_roi_num = rt_plan.DoseReferenceSequence[i].ReferencedROINumber
-                normalization_object_found = False
-                j = 0
+                if normalization_method.lower() == 'coordinates':
+                    normalization_object_found = True
+                    normalization_object = 'COORDINATE'
+                else:
+                    ref_roi_num = rt_plan.DoseReferenceSequence[i].ReferencedROINumber
+                    normalization_object_found = False
+                    j = 0
                 while not normalization_object_found:
                     if rt_structure.ROIContourSequence[j].ReferencedROINumber == ref_roi_num:
                             normalization_object = rt_structure.StructureSetROISequence[j].ROIName
@@ -506,8 +523,12 @@ class RxTable:
 
                 rx_pt_found = True
 
-            for RefBeamSeq in fx_grp_seq[i].ReferencedBeamSequence:
-                fx_dose += RefBeamSeq.BeamDose
+            if hasattr(fx_grp_seq, 'ReferencedBeamSequence'):
+                for ref_beam_seq in fx_grp_seq[i].ReferencedBeamSequence:
+                    fx_dose += ref_beam_seq.BeamDose
+            elif hasattr(fx_grp_seq, 'ReferencedBrachyApplicationSetupSequence'):
+                for ref_app_seq in fx_grp_seq[i].ReferencedBrachyApplicationSetupSequence:
+                    fx_dose += ref_app_seq.BrachyApplicationSetupDose
 
             fxs = fx_grp_seq[i].NumberOfFractionsPlanned
 

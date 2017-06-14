@@ -126,6 +126,8 @@ def save_sql_settings():
     update_sql_settings()
     write_sql_connection_settings(config)
     reload_sql_settings()
+    save_sql_settings_button.button_type = 'success'
+    save_sql_settings_button.label = 'Save'
 
 
 def update_direcories():
@@ -226,18 +228,18 @@ def update_dir_save_status():
 def echo():
     global config
     update_sql_settings()
+    initial_button_type = echo_button.button_type
+    initial_label = echo_button.label
     if validate_sql_connection(config):
         echo_button.button_type = 'success'
         echo_button.label = 'Success'
-        time.sleep(1.5)
-        echo_button.button_type = 'primary'
-        echo_button.label = 'Echo'
     else:
         echo_button.button_type = 'warning'
         echo_button.label = 'Fail'
-        time.sleep(1.5)
-        echo_button.button_type = 'primary'
-        echo_button.label = 'Echo'
+
+    time.sleep(1.5)
+    echo_button.button_type = initial_button_type
+    echo_button.label = initial_label
 
 
 # Load Settings
@@ -826,6 +828,80 @@ def update_save_button_status():
     save_button_roi.label = 'Map Save Needed'
 
 
+def check_tables():
+
+    initial_label = check_tables_button.label
+    initial_button_type = check_tables_button.button_type
+
+    try:
+        tables = ['dvhs', 'plans', 'beams', 'rxs']
+        table_result = {}
+        for table in tables:
+            table_result[table] = DVH_SQL().check_table_exists(table)
+
+        if all(table_result.itervalues()):
+            check_tables_button.button_type = 'success'
+            check_tables_button.label = 'Success'
+        else:
+            check_tables_button.button_type = 'warning'
+            check_tables_button.label = 'Fail'
+
+        time.sleep(1.5)
+        check_tables_button.button_type = initial_button_type
+        check_tables_button.label = initial_label
+    except:
+        check_tables_button.button_type = 'warning'
+        check_tables_button.label = 'No Connection'
+        time.sleep(1.5)
+        check_tables_button.button_type = initial_button_type
+        check_tables_button.label = initial_label
+
+
+def create_tables():
+    initial_label = create_tables_button.label
+    initial_button_type = create_tables_button.button_type
+    if initial_label == 'Cancel':
+        create_tables_button.button_type = 'primary'
+        create_tables_button.label = 'Create Tables'
+        clear_tables_button.button_type = 'primary'
+        clear_tables_button.label = 'Clear Tables'
+    else:
+        try:
+            DVH_SQL().initialize_database()
+        except:
+            create_tables_button.button_type = 'warning'
+            create_tables_button.label = 'No Connection'
+            time.sleep(1.5)
+            create_tables_button.button_type = initial_button_type
+            create_tables_button.label = initial_label
+
+
+def clear_tables():
+
+    if clear_tables_button.button_type == 'danger':
+        try:
+            DVH_SQL().reinitialize_database()
+        except:
+            clear_tables_button.button_type = 'warning'
+            clear_tables_button.label = 'No Connection'
+            time.sleep(1.5)
+            clear_tables_button.button_type = 'primary'
+            clear_tables_button.label = 'Clear Tables'
+        create_tables_button.button_type = 'primary'
+        create_tables_button.label = 'Create Tables'
+        clear_tables_button.button_type = 'primary'
+        clear_tables_button.label = 'Clear Tables'
+    elif clear_tables_button.button_type == 'primary':
+        clear_tables_button.button_type = 'danger'
+        clear_tables_button.label = 'Are you sure?'
+        create_tables_button.button_type = 'success'
+        create_tables_button.label = 'Cancel'
+
+
+def save_needed_sql(attr, old, new):
+    save_sql_settings_button.label = 'Save Needed'
+    save_sql_settings_button.button_type = 'warning'
+
 ######################################################
 # Layout objects
 ######################################################
@@ -833,7 +909,7 @@ def update_save_button_status():
 # !!!!!!!!!!!!!!!!!!!!!!!
 # ROI Name Manger objects
 # !!!!!!!!!!!!!!!!!!!!!!!
-div_warning = Div(text="<b>WARNING:</b> Buttons in red or orange cannot be easily undone.", width=600)
+div_warning = Div(text="<b>WARNING:</b> Buttons in orange cannot be easily undone.", width=600)
 
 # Selectors
 options = db.get_institutional_rois()
@@ -874,14 +950,20 @@ select_unlinked_institutional_roi = Select(value=value,
                                            width=300,
                                            title='Linked Institutional ROI')
 uncategorized_variations = get_uncategorized_variations(select_physician.value)
-options = uncategorized_variations.keys()
+try:
+    options = uncategorized_variations.keys()
+except:
+    options = ['']
 options.sort()
 select_uncategorized_variation = Select(value=options[0],
                                         options=options,
                                         width=300,
                                         title='Uncategorized Variations')
 ignored_variations = get_ignored_variations(select_physician.value)
-options = ignored_variations.keys()
+try:
+    options = ignored_variations.keys()
+except:
+    options = ['']
 if not options:
     options = ['']
 else:
@@ -1004,6 +1086,11 @@ input_port = TextInput(value=config['port'], title="Port", width=300)
 input_dbname = TextInput(value=config['dbname'], title="Database Name", width=300)
 input_user = TextInput(value=config['user'], title="User (Leave blank for OS authentication)", width=300)
 input_password = TextInput(value=config['password'], title="Password (Leave blank for OS authentication)", width=300)
+input_host.on_change('value', save_needed_sql)
+input_port.on_change('value', save_needed_sql)
+input_dbname.on_change('value', save_needed_sql)
+input_user.on_change('value', save_needed_sql)
+input_password.on_change('value', save_needed_sql)
 
 # Reload and Save objects
 reload_dir_button = Button(label='Reload', button_type='primary', width=100)
@@ -1011,6 +1098,14 @@ reload_dir_button.on_click(reload_directories)
 save_dir_button = Button(label='Save', button_type='success', width=100)
 save_dir_button.on_click(save_directories)
 update_dir_save_status()
+
+# SQL Table check/create/reinitialize objects
+check_tables_button = Button(label='Check Tables', button_type='primary', width=100)
+check_tables_button.on_click(check_tables)
+create_tables_button = Button(label='Create Tables', button_type='primary', width=100)
+create_tables_button.on_click(create_tables)
+clear_tables_button = Button(label='Clear Tables', button_type='primary', width=100)
+clear_tables_button.on_click(clear_tables)
 
 reload_sql_settings_button = Button(label='Reload', button_type='primary', width=100)
 reload_sql_settings_button.on_click(reload_sql_settings)
@@ -1029,7 +1124,8 @@ settings_layout = layout([[div_import],
                           [input_host, input_port],
                           [input_user, input_password],
                           [input_dbname],
-                          [reload_sql_settings_button, echo_button, save_sql_settings_button]])
+                          [reload_sql_settings_button, echo_button, save_sql_settings_button],
+                          [check_tables_button, create_tables_button, clear_tables_button]])
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Tabs and document
