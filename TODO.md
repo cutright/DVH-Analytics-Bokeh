@@ -4,32 +4,32 @@
 
 - [ ] Adapt code and validate for other treatment planning systems
    - [X] Pinnacle
-   - [ ] Monaco
    - [X] iPlan
    - [X] Raystation Protons
    - [X] Oncentra Brachytherapy
+   - [ ] VariSeed
+   - [ ] GammaPlan
+   - [ ] Monaco
    
      
 - [ ] Validate dicompyler-core DVH calculations
 
-- [ ] Validate EUD calculations  
-
-- [ ] Add thorough comments throughout all code
-
-- [ ] Incorporate BED, TCP, NTCP calculations
+- [ ] Flag QUANTEC/ICRU Compliant DVHs
 
 
-- [ ] Track additional info from RTPLan
-  - [ ] Wedge
-  - [X] Support for rotating couch and collimator
-  - [ ] Proton specific parameters
-  - [ ] Electrons?
+- [ ] Incorporate:  
+  - [ ] BED
+  - [ ] TCP
+  - [ ] NTCP
+  - [X] EUD
+
 
 
 ### Lower Priorities
 - [ ] Allow user to input list of MRNs to restrict population
 
-  
+- [ ] Add thorough comments throughout all code
+
   
 - [ ] Write DICOM pre-import validation function
     - [X] include similarity check with fuzzy wuzzy
@@ -39,10 +39,14 @@
 
 
 - [ ] Adapt for Python 3
-  - [X] print functions updated  
+  - [X] print functions updated
+  - [ ] dictionary iterators
   
   
-- [ ] Create ProtonBeam Table and BrachyTable
+- [ ] Additional Beam data:
+  - [ ] Proton Beam Table
+  - [ ] Brachy Table
+  - [ ] Wedge info in photon beams
 
 
 
