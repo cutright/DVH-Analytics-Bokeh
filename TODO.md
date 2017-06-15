@@ -7,7 +7,6 @@
    - [X] iPlan
    - [X] Raystation Protons
    - [X] Oncentra Brachytherapy
-   - [ ] VariSeed
    - [ ] GammaPlan
    - [ ] Monaco
    
@@ -23,6 +22,11 @@
   - [ ] NTCP
   - [X] EUD
 
+
+- [ ] Additional Beam data:
+  - [ ] Proton Beam Table
+  - [ ] Brachy Table
+  - [ ] Wedge info in photon beams
 
 
 ### Lower Priorities
@@ -41,12 +45,4 @@
 - [ ] Adapt for Python 3
   - [X] print functions updated
   - [ ] dictionary iterators
-  
-  
-- [ ] Additional Beam data:
-  - [ ] Proton Beam Table
-  - [ ] Brachy Table
-  - [ ] Wedge info in photon beams
-
-
 
