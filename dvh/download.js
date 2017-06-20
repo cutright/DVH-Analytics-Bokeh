@@ -41,7 +41,7 @@ for (i=0; i < data['mrn'].length; i++) {
 }
 
 var data = source_rxs.data;
-filetext = filetext.concat('\n\nRx Data\nmrn,uid,plan_name,fx_dose,rx_percent,rx_dose,fx_grp_count,fx_grp_name,');
+filetext = filetext.concat('\n\nRx Data\nmrn,uid,plan_name,fx_dose,rx_percent,fxs,rx_dose,fx_grp_count,fx_grp_name,');
 filetext = filetext.concat('fx_grp_number,normalization_method,normalization_object\n');
 for (i=0; i < data['mrn'].length; i++) {
     var currRow = [data['mrn'][i].toString(),
@@ -49,6 +49,7 @@ for (i=0; i < data['mrn'].length; i++) {
                    data['plan_name'][i].toString(),
                    data['fx_dose'][i].toString(),
                    data['rx_percent'][i].toString(),
+                   data['fxs'][i].toString(),
                    data['rx_dose'][i].toString(),
                    data['fx_grp_count'][i].toString(),
                    data['fx_grp_name'][i].toString(),
@@ -62,7 +63,7 @@ for (i=0; i < data['mrn'].length; i++) {
 
 var data = source_plans.data;
 filetext = filetext.concat('\n\nPlan Data\nmrn,uid,age,birth_date,fxs,heterogeneity_correction,patient_orientation,');
-filetext = filetext.concat('patient_sex,physician,rx_dose,sim_study_date,total_mu,tx_energies,tx_modality,tx_site\n');
+filetext = filetext.concat('patient_sex,physician,rx_dose,sim_study_date,total_mu,tx_modality,tx_site\n');
 for (i=0; i < data['mrn'].length; i++) {
     var currRow = [data['mrn'][i].toString(),
                    data['uid'][i].toString(),
@@ -76,7 +77,6 @@ for (i=0; i < data['mrn'].length; i++) {
                    data['rx_dose'][i].toString(),
                    data['sim_study_date'][i].toString(),
                    data['total_mu'][i].toString(),
-                   data['tx_energies'][i].toString(),
                    data['tx_modality'][i].toString(),
                    data['tx_site'][i].toString().concat('\n')];
 
@@ -85,9 +85,12 @@ for (i=0; i < data['mrn'].length; i++) {
 }
 
 var data = source_beams.data;
-filetext = filetext.concat('\n\nBeam Data\nmrn,uid,beam_number,fx_count,fx_grp_beam_count,fx_grp_number,beam_name,beam_dose,');
-filetext = filetext.concat('beam_energy,beam_mu,beam_type,collimator_angle,couch_angle,gantry_start,gantry_rot_dir,');
-filetext = filetext.concat('gantry_end,radiation_type,ssd,treatment_machine\n');
+filetext = filetext.concat('\n\nBeam Data\nmrn,uid,beam_number,fxs,fx_grp_beam_count,fx_grp_number,');
+filetext = filetext.concat('beam_name,beam_dose,beam_energy_min,beam_energy_max,beam_mu,beam_type,scan_mode,');
+filetext = filetext.concat('scan_spot_count,control_point_count,radiation_type,ssd,treatment_machine,');
+filetext = filetext.concat('gantry_start,gantry_end,gantry_rot_dir,gantry_rot_dir,gantry_min,gantry_max,');
+filetext = filetext.concat('collimator_start,collimator_end,collimator_rot_dir,collimator_rot_dir,collimator_min,');
+filetext = filetext.concat('collimator_max,couch_start,couch_end,couch_rot_dir,couch_rot_dir,couch_min,couch_max\n');
 for (i=0; i < data['mrn'].length; i++) {
     var currRow = [data['mrn'][i].toString(),
                    data['uid'][i].toString(),
@@ -97,17 +100,34 @@ for (i=0; i < data['mrn'].length; i++) {
                    data['fx_grp_number'][i].toString(),
                    data['beam_name'][i].toString(),
                    data['beam_dose'][i].toString(),
-                   data['beam_energy'][i].toString(),
+                   data['beam_energy_min'][i].toString(),
+                   data['beam_energy_max'][i].toString(),
                    data['beam_mu'][i].toString(),
                    data['beam_type'][i].toString(),
-                   data['collimator_start'][i].toString(),
-                   data['couch_start'][i].toString(),
-                   data['gantry_start'][i].toString(),
-                   data['gantry_rot_dir'][i].toString(),
-                   data['gantry_end'][i].toString(),
+                   data['scan_mode'][i].toString(),
+                   data['scan_spot_count'][i].toString(),
+                   data['control_point_count'][i].toString(),
                    data['radiation_type'][i].toString(),
                    data['ssd'][i].toString(),
-                   data['treatment_machine'][i].toString().concat('\n')];
+                   data['treatment_machine'][i].toString(),
+                   data['gantry_start'][i].toString(),
+                   data['gantry_end'][i].toString(),
+                   data['gantry_rot_dir'][i].toString(),
+                   data['gantry_range'][i].toString(),
+                   data['gantry_min'][i].toString(),
+                   data['gantry_max'][i].toString(),
+                   data['collimator_start'][i].toString(),
+                   data['collimator_end'][i].toString(),
+                   data['collimator_rot_dir'][i].toString(),
+                   data['collimator_range'][i].toString(),
+                   data['collimator_min'][i].toString(),
+                   data['collimator_max'][i].toString(),
+                   data['couch_start'][i].toString(),
+                   data['couch_end'][i].toString(),
+                   data['couch_rot_dir'][i].toString(),
+                   data['couch_range'][i].toString(),
+                   data['couch_min'][i].toString(),
+                   data['couch_max'][i].toString().concat('\n')];
 
     var joined = currRow.join();
     filetext = filetext.concat(joined);

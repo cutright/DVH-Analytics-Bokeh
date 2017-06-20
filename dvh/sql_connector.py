@@ -13,7 +13,6 @@ import os
 
 class DVH_SQL:
     def __init__(self, *config):
-
         if config:
             config = config[0]
         else:
@@ -88,7 +87,6 @@ class DVH_SQL:
             return False
 
     def insert_dvhs(self, dvh_table):
-
         file_path = 'insert_values_DVHs.sql'
 
         # Import each ROI from ROI_PyTable, append to output text file
@@ -112,6 +110,7 @@ class DVH_SQL:
                          dvh_table.dvh_str[x]]
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'
+            sql_input = sql_input.replace("'(NULL)'", "(NULL)")
             prepend = 'INSERT INTO DVHs VALUES (\''
             sql_input = prepend + str(sql_input)
             sql_input += '\n'
@@ -123,7 +122,6 @@ class DVH_SQL:
         print('DVHs imported')
 
     def insert_plan(self, plan):
-
         file_path = 'insert_plan_' + plan.mrn + '.sql'
 
         # Import each ROI from ROI_PyTable, append to output text file
@@ -136,7 +134,6 @@ class DVH_SQL:
                      plan.tx_site,
                      str(plan.rx_dose),
                      str(plan.fxs),
-                     plan.tx_energies,
                      plan.study_instance_uid,
                      plan.patient_orientation,
                      str(plan.plan_time_stamp),
@@ -169,38 +166,53 @@ class DVH_SQL:
 
         # Import each ROI from ROI_PyTable, append to output text file
         for x in range(0, beams.count):
-            sql_input = [str(beams.mrn[x]),
-                         str(beams.study_instance_uid[x]),
-                         str(beams.beam_number[x]),
-                         beams.beam_name[x].replace("'", "`"),
-                         str(beams.fx_group[x]),
-                         str(beams.fxs[x]),
-                         str(beams.fx_grp_beam_count[x]),
-                         str(round(beams.beam_dose[x], 3)),
-                         str(beams.beam_mu[x]),
-                         beams.radiation_type[x],
-                         str(round(beams.beam_energy[x], 1)),
-                         beams.beam_type[x],
-                         str(beams.control_point_count[x]),
-                         str(beams.gantry_start[x]),
-                         str(beams.gantry_end[x]),
-                         beams.gantry_rot_dir[x],
-                         str(beams.collimator_start[x]),
-                         str(beams.collimator_end[x]),
-                         beams.collimator_rot_dir[x],
-                         str(beams.couch_start[x]),
-                         str(beams.couch_end[x]),
-                         beams.couch_rot_dir[x],
-                         beams.isocenter[x],
-                         str(round(beams.ssd[x], 2)),
-                         beams.treatment_machine[x]]
-            sql_input = '\',\''.join(sql_input)
-            sql_input += '\');'
-            prepend = 'INSERT INTO Beams VALUES (\''
-            sql_input = prepend + str(sql_input)
-            sql_input += '\n'
-            with open(file_path, "a") as text_file:
-                text_file.write(sql_input)
+
+            if beams.beam_mu[x] > 0:
+                sql_input = [str(beams.mrn[x]),
+                             str(beams.study_instance_uid[x]),
+                             str(beams.beam_number[x]),
+                             beams.beam_name[x].replace("'", "`"),
+                             str(beams.fx_group[x]),
+                             str(beams.fxs[x]),
+                             str(beams.fx_grp_beam_count[x]),
+                             str(round(beams.beam_dose[x], 3)),
+                             str(beams.beam_mu[x]),
+                             beams.radiation_type[x],
+                             str(round(beams.beam_energy_min[x], 2)),
+                             str(round(beams.beam_energy_max[x], 2)),
+                             beams.beam_type[x],
+                             str(beams.control_point_count[x]),
+                             str(beams.gantry_start[x]),
+                             str(beams.gantry_end[x]),
+                             beams.gantry_rot_dir[x],
+                             str(beams.gantry_range[x]),
+                             str(beams.gantry_min[x]),
+                             str(beams.gantry_max[x]),
+                             str(beams.collimator_start[x]),
+                             str(beams.collimator_end[x]),
+                             beams.collimator_rot_dir[x],
+                             str(beams.collimator_range[x]),
+                             str(beams.collimator_min[x]),
+                             str(beams.collimator_max[x]),
+                             str(beams.couch_start[x]),
+                             str(beams.couch_end[x]),
+                             beams.couch_rot_dir[x],
+                             str(beams.couch_range[x]),
+                             str(beams.couch_min[x]),
+                             str(beams.couch_max[x]),
+                             beams.beam_dose_pt[x],
+                             str(beams.ssd[x]),
+                             beams.treatment_machine[x],
+                             beams.scan_mode[x],
+                             str(beams.scan_spot_count[x])]
+                sql_input = '\',\''.join(sql_input)
+                sql_input += '\');'
+                sql_input = sql_input.replace("'(NULL)'", "(NULL)")
+                prepend = 'INSERT INTO Beams VALUES (\''
+                sql_input = prepend + str(sql_input)
+                sql_input += '\n'
+                with open(file_path, "a") as text_file:
+                    text_file.write(sql_input)
 
         self.execute_file(file_path)
         os.remove(file_path)
@@ -252,7 +264,6 @@ class DVH_SQL:
         self.cnx.commit()
 
     def reinitialize_database(self):
-
         print('Dropping tables')
         self.cursor.execute('DROP TABLE IF EXISTS Plans;')
         self.cursor.execute('DROP TABLE IF EXISTS DVHs;')
@@ -262,7 +273,6 @@ class DVH_SQL:
         self.initialize_database()
 
     def initialize_database(self):
-
         print('Loading create_tables.sql')
         script_dir = os.path.dirname(__file__)
         rel_path = "preferences/create_tables.sql"

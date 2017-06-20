@@ -14,6 +14,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta  # python-dateutil
 from roi_name_manager import DatabaseROIs, clean_name
 from utilities import datetime_str_to_obj
+import numpy as np
 
 
 class DVHRow:
@@ -28,11 +29,14 @@ class DVHRow:
 class BeamRow:
     def __init__(self, mrn, study_instance_uid, beam_number, beam_name,
                  fx_group, fxs, fx_grp_beam_count, beam_dose,
-                 beam_mu, radiation_type, beam_energy, beam_type, control_point_count,
+                 beam_mu, radiation_type, beam_energy_min, beam_energy_max, beam_type, control_point_count,
                  gantry_start, gantry_end, gantry_rot_dir,
+                 gantry_range, gantry_min, gantry_max,
                  collimator_start, collimator_end, collimator_rot_dir,
+                 collimator_range, collimator_min, collimator_max,
                  couch_start, couch_end, couch_rot_dir,
-                 beam_dose_pt, ssd, treatment_machine):
+                 couch_range, couch_min, couch_max,
+                 beam_dose_pt, ssd, treatment_machine, scan_mode, scan_spot_count):
 
         for key, value in locals().iteritems():
             if key != 'self':
@@ -144,7 +148,10 @@ class PlanRow:
         # Record treatment planning system vendor, name, and version
         tps_manufacturer = rt_plan.Manufacturer
         tps_software_name = rt_plan.ManufacturerModelName
-        tps_software_version = rt_plan.SoftwareVersions[0]
+        if hasattr(rt_plan, 'SoftwareVersions'):
+            tps_software_version = rt_plan.SoftwareVersions[0]
+        else:
+            tps_software_version = '(NULL)'
 
         # Because DICOM does not contain Rx's explicitly, the user must create
         # a point in the RT Structure file called 'rx: '
@@ -206,7 +213,6 @@ class PlanRow:
                 if energy_temp not in tx_energies:
                     tx_energies += energy_temp
 
-            tx_energies = tx_energies[1:-1]
             tx_modality += 'Proton '
 
         # Photons and electrons
@@ -227,7 +233,6 @@ class PlanRow:
                 if tx_energies.find(energy_temp) < 0:
                     tx_energies += energy_temp
 
-            tx_energies = tx_energies.strip()
             temp = temp.lower()
             if 'photon' in temp:
                 if 'photon arc' in temp:
@@ -256,8 +261,9 @@ class PlanRow:
 
         # Record resolution of dose grid
         dose_grid_resolution = [str(round(float(rt_dose.PixelSpacing[0]), 1)),
-                                str(round(float(rt_dose.PixelSpacing[1]), 1)),
-                                str(round(float(rt_dose.SliceThickness), 1))]
+                                str(round(float(rt_dose.PixelSpacing[1]), 1))]
+        if rt_dose.SliceThickness:
+            dose_grid_resolution.append(str(round(float(rt_dose.SliceThickness), 1)))
         dose_grid_resolution = ', '.join(dose_grid_resolution)
 
         # Set object values
@@ -270,7 +276,6 @@ class PlanRow:
         self.tx_site = tx_site
         self.rx_dose = rx_dose
         self.fxs = fxs
-        self.tx_energies = tx_energies
         self.study_instance_uid = study_instance_uid
         self.patient_orientation = patient_orientation
         self.plan_time_stamp = plan_time_stamp
@@ -390,89 +395,151 @@ class BeamTable:
 
                 ref_beam_seq = fx_grp_seq.ReferencedBeamSequence[fx_grp_beam]
 
-                # Ignore setup beams
-                if hasattr(ref_beam_seq, 'BeamMeterset') and ref_beam_seq.BeamMeterset > 0:
+                treatment_machine = beam_seq.TreatmentMachineName
 
-                    treatment_machine = beam_seq.TreatmentMachineName
-
-                    beam_dose = float(ref_beam_seq.BeamDose)
+                beam_dose = float(ref_beam_seq.BeamDose)
+                if hasattr(ref_beam_seq, 'BeamMeterset'):
                     beam_mu = float(ref_beam_seq.BeamMeterset)
+                else:
+                    beam_mu = 0
 
-                    beam_dose_pt = [str(round(ref_beam_seq.BeamDoseSpecificationPoint[0], 4)),
-                                    str(round(ref_beam_seq.BeamDoseSpecificationPoint[1], 4)),
-                                    str(round(ref_beam_seq.BeamDoseSpecificationPoint[2], 4))]
-                    beam_dose_pt = ','.join(beam_dose_pt)
+                beam_dose_pt = [str(round(ref_beam_seq.BeamDoseSpecificationPoint[0], 4)),
+                                str(round(ref_beam_seq.BeamDoseSpecificationPoint[1], 4)),
+                                str(round(ref_beam_seq.BeamDoseSpecificationPoint[2], 4))]
+                beam_dose_pt = ','.join(beam_dose_pt)
 
-                    radiation_type = beam_seq.RadiationType
-                    if hasattr(beam_seq, 'ControlPointSequence'):
-                        cp_seq = beam_seq.ControlPointSequence
+                radiation_type = beam_seq.RadiationType
+                if hasattr(beam_seq, 'ControlPointSequence'):
+                    cp_seq = beam_seq.ControlPointSequence
+                else:
+                    cp_seq = beam_seq.IonControlPointSequence
+
+                beam_type = beam_seq.BeamType
+
+                if hasattr(beam_seq, 'ScanMode'):
+                    scan_mode = beam_seq.ScanMode
+                else:
+                    scan_mode = '(NULL)'
+
+                scan_spot_count = 0
+                if hasattr(cp_seq[0], 'NumberOfScanSpotPositions'):
+                    for cp in cp_seq:
+                        scan_spot_count += cp.NumberOfScanSpotPositions
+                    scan_spot_count /= 2
+
+                energies = []
+                gantry_angles = []
+                collimator_angles = []
+                couch_angles = []
+                gantry_rot_dir = []
+                collimator_rot_dir = []
+                couch_rot_dir = []
+                for cp in cp_seq:
+                    if hasattr(cp, 'NominalBeamEnergy'):
+                        energies.append(cp.NominalBeamEnergy)
+                    if hasattr(cp, 'GantryAngle'):
+                        gantry_angles.append(cp.GantryAngle)
+                    if hasattr(cp, 'BeamLimitingDeviceAngle'):
+                        collimator_angles.append(cp.BeamLimitingDeviceAngle)
+                    if hasattr(cp, 'PatientSupportAngle'):
+                        couch_angles.append(cp.PatientSupportAngle)
+                    if hasattr(cp, 'GantryRotationDirection'):
+                        if cp.GantryRotationDirection.upper() in {'CC', 'CW'}:
+                            gantry_rot_dir.append(cp.GantryRotationDirection.upper())
+                    if hasattr(cp, 'BeamLimitingDeviceRotationDirection'):
+                        if cp.BeamLimitingDeviceRotationDirection.upper() in {'CC', 'CW'}:
+                            collimator_rot_dir.append(cp.BeamLimitingDeviceRotationDirection.upper())
+                    if hasattr(cp, 'PatientSupportRotationDirection'):
+                        if cp.PatientSupportRotationDirection.upper() in {'CC', 'CW'}:
+                            couch_rot_dir.append(cp.PatientSupportRotationDirection.upper())
+                if not collimator_angles:
+                    collimator_angles = [0]
+                if not couch_angles:
+                    couch_angles = [0]
+                if not gantry_rot_dir:
+                    gantry_rot_dir = ['-']
+                if not collimator_rot_dir:
+                    collimator_rot_dir = ['-']
+                if not couch_rot_dir:
+                    couch_rot_dir = ['-']
+
+                max_angle = 180
+                gantry_angles = change_angle_origin(gantry_angles, max_angle)
+                collimator_angles = change_angle_origin(collimator_angles, max_angle)
+                couch_angles = change_angle_origin(couch_angles, max_angle)
+
+                if len(set(gantry_rot_dir)) == 1:
+                    gantry_rot_dir = gantry_rot_dir[0]
+                else:
+                    if gantry_rot_dir[0] == 'CC':
+                        gantry_rot_dir = 'CC/CW'
                     else:
-                        cp_seq = beam_seq.IonControlPointSequence
-
-                    beam_energy = cp_seq[0].NominalBeamEnergy
-                    beam_type = beam_seq.BeamType
-
-                    control_point_count = beam_seq.NumberOfControlPoints
-                    first_cp = cp_seq[0]
-                    if beam_seq.BeamType == 'STATIC':
-                        final_cp = first_cp
+                        gantry_rot_dir = 'CW/CC'
+                if len(set(collimator_rot_dir)) == 1:
+                    collimator_rot_dir = collimator_rot_dir[0]
+                else:
+                    if collimator_rot_dir[0] == 'CC':
+                        collimator_rot_dir = 'CC/CW'
                     else:
-                        final_cp = cp_seq[-1]
-
-                    max_angle = 180
-
-                    gantry_rot_dir = first_cp.GantryRotationDirection
-                    gantry_start, gantry_end = change_angle_range(float(first_cp.GantryAngle),
-                                                                  float(final_cp.GantryAngle),
-                                                                  gantry_rot_dir,
-                                                                  max_angle)
-
-                    collimator_rot_dir = first_cp.BeamLimitingDeviceRotationDirection
-                    collimator_start = float(first_cp.BeamLimitingDeviceAngle)
-                    try:
-                        collimator_end = float(final_cp.BeamLimitingDeviceAngle)
-                    except:
-                        collimator_end = collimator_start
-                    collimator_start, collimator_end = change_angle_range(collimator_start,
-                                                                          collimator_end,
-                                                                          collimator_rot_dir,
-                                                                          max_angle)
-
-                    couch_rot_dir = first_cp.PatientSupportRotationDirection
-                    couch_start = float(first_cp.PatientSupportAngle)
-                    try:
-                        couch_end = float(final_cp.PatientSupportAngle)
-                    except:
-                        couch_end = couch_start
-                    couch_start, couch_end = change_angle_range(couch_start,
-                                                                couch_end,
-                                                                couch_rot_dir,
-                                                                max_angle)
-
-                    # If beam is an arc, return average SSD, otherwise
-                    if hasattr(first_cp, 'SourceToSurfaceDistance'):
-                        if gantry_rot_dir in {'CW', 'CC'}:
-                            ssd = 0
-                            for cp in beam_seq.ControlPointSequence:
-                                ssd += round(float(cp.SourceToSurfaceDistance) / 10, 2)
-                            ssd /= control_point_count
-
-                        else:
-                            ssd = float(first_cp.SourceToSurfaceDistance) / 10
+                        collimator_rot_dir = 'CW/CC'
+                if len(set(couch_rot_dir)) == 1:
+                    couch_rot_dir = couch_rot_dir[0]
+                else:
+                    if couch_rot_dir[0] == 'CC':
+                        couch_rot_dir = 'CC/CW'
                     else:
-                        ssd = float(0)
+                        couch_rot_dir = 'CW/CC'
 
-                    current_beam = BeamRow(mrn, study_instance_uid, beam_num + 1,
-                                           beam_name, fx_grp + 1, fxs,
-                                           fx_grp_beam_count, beam_dose, beam_mu, radiation_type,
-                                           beam_energy, beam_type, control_point_count,
-                                           gantry_start, gantry_end, gantry_rot_dir,
-                                           collimator_start, collimator_end, collimator_rot_dir,
-                                           couch_start, couch_end, couch_rot_dir,
-                                           beam_dose_pt, ssd, treatment_machine)
+                gantry = {'start': gantry_angles[0],
+                          'end': gantry_angles[-1],
+                          'rot_dir': gantry_rot_dir,
+                          'range': round(float(np.sum(np.abs(np.diff(gantry_angles)))), 1),
+                          'min': min(gantry_angles),
+                          'max': max(gantry_angles)}
 
-                    values[beam_num] = current_beam
-                    beam_num += 1
+                collimator = {'start': collimator_angles[0],
+                              'end': collimator_angles[-1],
+                              'rot_dir': collimator_rot_dir,
+                              'range': round(float(np.sum(np.abs(np.diff(collimator_angles)))), 1),
+                              'min': min(collimator_angles),
+                              'max': max(collimator_angles)}
+
+                couch = {'start': couch_angles[0],
+                         'end': couch_angles[-1],
+                         'rot_dir': couch_rot_dir,
+                         'range': round(float(np.sum(np.abs(np.diff(couch_angles)))), 1),
+                         'min': min(couch_angles),
+                         'max': max(couch_angles)}
+
+                control_point_count = beam_seq.NumberOfControlPoints
+                # If beam is an arc, return average SSD, otherwise
+                if hasattr(cp_seq[0], 'SourceToSurfaceDistance'):
+                    if gantry_rot_dir != '-':
+                        ssd = []
+                        for cp in cp_seq:
+                            if hasattr(cp, 'SourceToSurfaceDistance'):
+                                ssd.append(round(float(cp.SourceToSurfaceDistance) / 10, 2))
+                        ssd = round(float(np.average(ssd)), 2)
+
+                    else:
+                        ssd = round(float(cp_seq[0].SourceToSurfaceDistance) / 10, 2)
+                else:
+                    ssd = '(NULL)'
+
+                current_beam = BeamRow(mrn, study_instance_uid, beam_num + 1,
+                                       beam_name, fx_grp + 1, fxs,
+                                       fx_grp_beam_count, beam_dose, beam_mu, radiation_type,
+                                       round(min(energies), 2), round(min(energies), 2), beam_type, control_point_count,
+                                       gantry['start'], gantry['end'], gantry['rot_dir'],
+                                       gantry['range'], gantry['min'], gantry['max'],
+                                       collimator['start'], collimator['end'], collimator['rot_dir'],
+                                       collimator['range'], collimator['min'], collimator['max'],
+                                       couch['start'], couch['end'], couch['rot_dir'],
+                                       couch['range'], couch['min'], couch['max'],
+                                       beam_dose_pt, ssd, treatment_machine, scan_mode, scan_spot_count)
+
+                values[beam_num] = current_beam
+                beam_num += 1
 
         self.count = beam_num
         beam_range = range(0, self.count)
@@ -518,6 +585,9 @@ class RxTable:
                 if normalization_method.lower() == 'coordinates':
                     normalization_object_found = True
                     normalization_object = 'COORDINATE'
+                elif normalization_method.lower() == 'site':
+                    normalization_object_found = True
+                    normalization_object = rt_plan.ManufacturerModelName
                 else:
                     ref_roi_num = rt_plan.DoseReferenceSequence[i].ReferencedROINumber
                     normalization_object_found = False
@@ -538,6 +608,9 @@ class RxTable:
                     fx_dose += ref_app_seq.BrachyApplicationSetupDose
 
             fxs = fx_grp_seq[i].NumberOfFractionsPlanned
+
+            if fx_dose == 0:
+                fx_dose = round(float(rx_dose) / float(fxs), 2)
 
             # Because DICOM does not contain Rx's explicitly, the user must create
             # a point in the RT Structure file called 'rx [#]: ' per rx
@@ -587,16 +660,26 @@ class RxTable:
                 setattr(self, attr, new_list)
 
 
-# Used to edit angle range from 0 to 360 to -180 to 180 (for example)
-def change_angle_range(start, end, direction, max_positive_angle):
-    if start >= max_positive_angle or \
-            (start == float(max_positive_angle) and direction == 'CW'):
-        start -= float(360)
-    if end >= max_positive_angle or \
-            (end == float(max_positive_angle) and direction == 'CC'):
-        end -= float(360)
-
-    return start, end
+def change_angle_origin(angles, max_positive_angle):
+    if len(angles) == 1:
+        if angles[0] > max_positive_angle:
+            return [angles[0] - 360]
+        else:
+            return angles
+    new_angles = []
+    for angle in angles:
+        if angle > max_positive_angle:
+            new_angles.append(angle - 360)
+        elif angle == max_positive_angle:
+            if angle == angles[0] and angles[1] > max_positive_angle:
+                new_angles.append(angle - 360)
+            elif angle == angles[-1] and angles[-2] > max_positive_angle:
+                new_angles.append(angle - 360)
+            else:
+                new_angles.append(angle)
+        else:
+            new_angles.append(angle)
+    return new_angles
 
 
 if __name__ == '__main__':

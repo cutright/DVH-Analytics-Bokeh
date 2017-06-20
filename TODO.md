@@ -16,17 +16,12 @@
 - [ ] Flag QUANTEC/ICRU Compliant DVHs
 
 
-- [ ] Incorporate:  
+- [ ] Incorporate: 
+  - [X] EUD
   - [ ] BED
   - [ ] TCP
   - [ ] NTCP
-  - [X] EUD
 
-
-- [ ] Additional Beam data:
-  - [ ] Proton Beam Table
-  - [ ] Brachy Table
-  - [ ] Wedge info in photon beams
 
 
 ### Lower Priorities
@@ -46,3 +41,8 @@
   - [X] print functions updated
   - [ ] dictionary iterators
 
+
+- [ ] Additional Beam data:
+  - [ ] Brachy Table
+  - [ ] Wedge info in photon beams
+  
