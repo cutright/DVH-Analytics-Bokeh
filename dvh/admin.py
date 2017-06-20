@@ -13,11 +13,12 @@ import os
 import time
 from roi_name_manager import DatabaseROIs, clean_name
 from sql_connector import DVH_SQL
-from bokeh.models.widgets import Select, Button, Tabs, Panel, TextInput, RadioButtonGroup, Div, MultiSelect
+from dicom_to_sql import dicom_to_sql
+from bokeh.models.widgets import Select, Button, Tabs, Panel, TextInput, RadioButtonGroup, Div, MultiSelect, TableColumn, DataTable
 from bokeh.layouts import layout
 from bokeh.plotting import figure
 from bokeh.io import curdoc
-from bokeh.models import ColumnDataSource, LabelSet, Range1d
+from bokeh.models import ColumnDataSource, LabelSet, Range1d, Slider
 
 
 query_source = ColumnDataSource(data=dict())
@@ -905,27 +906,86 @@ def save_needed_sql(attr, old, new):
     save_sql_settings_button.button_type = 'warning'
 
 
-def update_query_columns(attr, old, new):
+def update_query_columns_ticker(attr, old, new):
+    update_query_columns()
+
+
+def update_query_columns():
     new_options = DVH_SQL().get_column_names(query_table.value.lower())
+    new_options.pop(new_options.index('mrn'))
+    new_options.pop(new_options.index('study_instance_uid'))
+    if query_table.value.lower() == 'dvhs':
+        new_options.pop(new_options.index('dvh_string'))
     options_tuples = []
     for option in new_options:
         options_tuples.append(tuple([option, option]))
     query_columns.options = options_tuples
+    query_columns.value = ['']
+
+
+def update_update_db_columns_ticker(attr, old, new):
+    update_update_db_column()
+
+
+def update_update_db_column():
+    if update_db_table.value.lower() == 'dvhs':
+        new_options = ['institutional_roi', 'physician_roi', 'roi_name', 'roi_type']
+    elif update_db_table.value.lower() == 'plans':
+        new_options = ['age', 'birth_date', 'patient_sex', 'physician', 'rx_dose', 'tx_modality', 'tx_site']
+    elif update_db_table.value.lower() == 'rxs':
+        new_options = ['plan_name', 'rx_dose', 'rx_percent']
+    else:
+        new_options = ['']
+
+    update_db_column.options = new_options
+    update_db_column.value = new_options[0]
 
 
 def update_query_source():
+    db_editor_layout.children.pop()
     columns = query_columns.value
+    if 'mrn' not in columns:
+        columns.insert(0, 'mrn')
+    if 'study_instance_uid' not in columns:
+        columns.insert(1, 'study_instance_uid')
     new_data = {}
+    table_columns = []
+    if not columns[-1]:
+        columns.pop()
     for column in columns:
         new_data[column] = []
-    columns_str = ','.join(columns)
+        table_columns.append(TableColumn(field=column, title=column))
+    columns_str = ','.join(columns).strip()
     query_cursor = DVH_SQL().query(query_table.value, columns_str, query_condition.value)
 
     for row in query_cursor:
         for i in range(0, len(columns)):
-            new_data[columns[i]].append(row[i])
+            new_data[columns[i]].append(str(row[i]))
 
-    query_source = ColumnDataSource(data=data)
+    query_source.data = new_data
+
+    data_table_rxs_new = DataTable(source=query_source, columns=table_columns, width=table_slider.value, editable=True)
+    db_editor_layout.children.append(data_table_rxs_new)
+
+
+def update_db():
+    DVH_SQL().update(update_db_table.value, update_db_column.value, update_db_value.value, update_db_condition.value)
+    update_query_source()
+
+
+def delete_from_db():
+    condition = delete_from_db_column.value + " = '" + delete_from_db_value.value + "'"
+    DVH_SQL().delete_rows(condition)
+    update_query_source()
+
+
+def import_inbox():
+    import_inbox_button.button_type = 'warning'
+    import_inbox_button.label = 'Importing...'
+    dicom_to_sql()
+    import_inbox_button.button_type = 'success'
+    import_inbox_button.label = 'Import all from inbox'
+
 
 ######################################################
 # Layout objects
@@ -1155,35 +1215,49 @@ settings_layout = layout([[div_import],
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Database Editor Objects
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+import_inbox_button = Button(label='Import all from inbox', button_type='success', width=200)
+import_inbox_button.on_click(import_inbox)
+
 query_title = Div(text="<b>Query Database</b>", width=1000)
-query_table = Select(value='DVHs', options=['DVHs', 'Plans', 'Rxs', 'Beams'], width=200, title='Table')
-query_column_options = DVH_SQL().get_column_names(query_table.value.lower())
-options_tuples = []
-for option in query_column_options:
-    options_tuples.append(tuple([option, option]))
-query_columns = MultiSelect(title="Columns:", value=options_tuples[0], width=200,
-                            options=options_tuples)
+query_table = Select(value='DVHs', options=['DVHs', 'Plans', 'Rxs', 'Beams'], width=200, height=100, title='Table')
+query_columns = MultiSelect(title="Columns:", width=200, options=[tuple(['', ''])])
 query_condition = TextInput(value='', title="Condition", width=300)
 query_button = Button(label='Query', button_type='primary', width=100)
+table_slider = Slider(start=300, end=2000, value=1000, step=10, title="Table Width")
 
-query_table.on_change('value', update_query_columns)
+query_table.on_change('value', update_query_columns_ticker)
 query_button.on_click(update_query_source)
 
-query_command = Div(text="sql command here", width=1000)
-
 update_db_title = Div(text="<b>Update Database</b>", width=1000)
-update_db_table = Select(value='', options=[''], width=200, title='Table')
+update_db_table = Select(value='DVHs', options=['DVHs', 'Plans', 'Rxs'], width=200, height=100, title='Table')
 update_db_column = Select(value='', options=[''], width=200, title='Column')
 update_db_value = TextInput(value='', title="Value", width=300)
 update_db_condition = TextInput(value='', title="Condition", width=300)
-update_db_command = Div(text="sql command here", width=1000)
+update_db_button = Button(label='Update', button_type='warning', width=100)
 
-db_editor_layout = layout([[query_title],
-                           [query_table, query_columns, query_condition, query_button],
-                           [query_command],
+update_db_table.on_change('value', update_update_db_columns_ticker)
+update_db_button.on_click(update_db)
+
+update_query_columns()
+update_update_db_column()
+
+data_table_rxs = DataTable(source=query_source, columns=[], width=1000)
+
+delete_from_db_title = Div(text="<b>Delete all data with mrn or study_instance_uid</b>", width=1000)
+delete_from_db_column = Select(value='mrn', options=['mrn', 'study_instance_uid'], width=200, height=100,
+                               title='Patient Identifier')
+delete_from_db_value = TextInput(value='', title="Value", width=300)
+delete_from_db_button = Button(label='Delete', button_type='warning', width=100)
+delete_from_db_button.on_click(delete_from_db)
+
+db_editor_layout = layout([[import_inbox_button],
+                           [query_title],
+                           [query_table, query_columns, query_condition, table_slider, query_button],
                            [update_db_title],
-                           [update_db_table, update_db_column, update_db_value, update_db_condition],
-                           [update_db_command]])
+                           [update_db_table, update_db_column, update_db_condition, update_db_value, update_db_button],
+                           [delete_from_db_title],
+                           [delete_from_db_column, delete_from_db_value, delete_from_db_button],
+                           [data_table_rxs]])
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Tabs and document
