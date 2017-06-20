@@ -1152,7 +1152,7 @@ legend_stats = Legend(items=[
         # ("Min", [stats_min])
         ("Median", [stats_median_2]),
         ("Mean", [stats_mean_2]),
-    ], location=(0, 30))
+    ], location=(0, -250))
 
 # Add the layout outside the plot, clicking legend item hides the line
 dvh_plots.add_layout(legend_stats, 'right')

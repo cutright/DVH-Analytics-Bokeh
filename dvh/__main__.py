@@ -242,7 +242,7 @@ def main():
                          organize_files=organize_files,
                          move_files=move_files,
                          force_update=force_update)
-        elif args.command[0] == 'run' or args.command[0] == 'study':
+        elif args.command[0] == 'run':
 
             command = ["bokeh", "serve"]
 
@@ -261,12 +261,12 @@ def main():
 
             call(command)
 
-        elif args.command[0] == 'setup':
+        elif args.command[0] == 'admin':
 
             command = ["bokeh", "serve", "--show", "--port", "5007"]
 
             script_dir = os.path.dirname(__file__)
-            file_name = 'settings.py'
+            file_name = 'admin.py'
             abs_file_path = os.path.join(script_dir, file_name)
 
             command.append(abs_file_path)

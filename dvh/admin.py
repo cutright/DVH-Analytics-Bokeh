@@ -13,12 +13,14 @@ import os
 import time
 from roi_name_manager import DatabaseROIs, clean_name
 from sql_connector import DVH_SQL
-from bokeh.models.widgets import Select, Button, Tabs, Panel, TextInput, RadioButtonGroup, Div
+from bokeh.models.widgets import Select, Button, Tabs, Panel, TextInput, RadioButtonGroup, Div, MultiSelect
 from bokeh.layouts import layout
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.models import ColumnDataSource, LabelSet, Range1d
 
+
+query_source = ColumnDataSource(data=dict())
 
 ##################################
 # Import settings and SQL settings
@@ -902,6 +904,29 @@ def save_needed_sql(attr, old, new):
     save_sql_settings_button.label = 'Save Needed'
     save_sql_settings_button.button_type = 'warning'
 
+
+def update_query_columns(attr, old, new):
+    new_options = DVH_SQL().get_column_names(query_table.value.lower())
+    options_tuples = []
+    for option in new_options:
+        options_tuples.append(tuple([option, option]))
+    query_columns.options = options_tuples
+
+
+def update_query_source():
+    columns = query_columns.value
+    new_data = {}
+    for column in columns:
+        new_data[column] = []
+    columns_str = ','.join(columns)
+    query_cursor = DVH_SQL().query(query_table.value, columns_str, query_condition.value)
+
+    for row in query_cursor:
+        for i in range(0, len(columns)):
+            new_data[columns[i]].append(row[i])
+
+    query_source = ColumnDataSource(data=data)
+
 ######################################################
 # Layout objects
 ######################################################
@@ -1127,13 +1152,47 @@ settings_layout = layout([[div_import],
                           [reload_sql_settings_button, echo_button, save_sql_settings_button],
                           [check_tables_button, create_tables_button, clear_tables_button]])
 
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Database Editor Objects
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+query_title = Div(text="<b>Query Database</b>", width=1000)
+query_table = Select(value='DVHs', options=['DVHs', 'Plans', 'Rxs', 'Beams'], width=200, title='Table')
+query_column_options = DVH_SQL().get_column_names(query_table.value.lower())
+options_tuples = []
+for option in query_column_options:
+    options_tuples.append(tuple([option, option]))
+query_columns = MultiSelect(title="Columns:", value=options_tuples[0], width=200,
+                            options=options_tuples)
+query_condition = TextInput(value='', title="Condition", width=300)
+query_button = Button(label='Query', button_type='primary', width=100)
+
+query_table.on_change('value', update_query_columns)
+query_button.on_click(update_query_source)
+
+query_command = Div(text="sql command here", width=1000)
+
+update_db_title = Div(text="<b>Update Database</b>", width=1000)
+update_db_table = Select(value='', options=[''], width=200, title='Table')
+update_db_column = Select(value='', options=[''], width=200, title='Column')
+update_db_value = TextInput(value='', title="Value", width=300)
+update_db_condition = TextInput(value='', title="Condition", width=300)
+update_db_command = Div(text="sql command here", width=1000)
+
+db_editor_layout = layout([[query_title],
+                           [query_table, query_columns, query_condition, query_button],
+                           [query_command],
+                           [update_db_title],
+                           [update_db_table, update_db_column, update_db_value, update_db_condition],
+                           [update_db_command]])
+
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Tabs and document
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 settings_tab = Panel(child=settings_layout, title='Directories & SQL Settings')
 roi_tab = Panel(child=roi_layout, title='ROI Name Manager')
+db_tab = Panel(child=db_editor_layout, title='Database Editor')
 
-tabs = Tabs(tabs=[settings_tab, roi_tab])
+tabs = Tabs(tabs=[settings_tab, roi_tab, db_tab])
 
 # Create the document Bokeh server will use to generate the webpage
 curdoc().add_root(tabs)
