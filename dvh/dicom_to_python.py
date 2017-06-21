@@ -157,12 +157,12 @@ class PlanRow:
         # a point in the RT Structure file called 'rx: '
         # If multiple Rx found, sum will be reported
         # Record tx site from 'tx:' point or RTPlanLabel if no point
-        tx_site = rt_plan.RTPlanLabel  # tx_site defaults to plan name if tx in a tx point
+        tx_site = rt_plan.RTPlanLabel  # tx_site defaults to plan name if not tx in a tx point
         tx_found = False
         rx_dose = 0
         roi_counter = 0
-        roi_count = len(rt_structure.StructureSetROISequence)
         roi_seq = rt_structure.StructureSetROISequence  # just limit num characters in code
+        roi_count = len(roi_seq)
         fx_reset = False
         while (not tx_found) and (roi_counter < roi_count):
             roi_name = roi_seq[roi_counter].ROIName.lower()

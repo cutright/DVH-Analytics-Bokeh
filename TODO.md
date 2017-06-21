@@ -8,7 +8,7 @@
    - [X] Raystation Protons
    - [X] Oncentra Brachytherapy
    - [ ] GammaPlan
-   - [ ] Monaco
+   - [X] Monaco
    
      
 - [ ] Validate dicompyler-core DVH calculations
@@ -45,4 +45,6 @@
 - [ ] Additional Beam data:
   - [ ] Brachy Table
   - [ ] Wedge info in photon beams
-  
+ 
+ 
+- [ ] Add DB backup and restore to admin.py
