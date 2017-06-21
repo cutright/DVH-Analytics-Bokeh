@@ -975,11 +975,20 @@ def update_dvh_review_rois(attr, old, new):
 def calculate_review_dvh():
     global temp_dvh_info, dvh_review_rois, x, y
 
-    initial_button_type = calculate_review_dvh_button.button_type
-    initial_button_label = calculate_review_dvh_button.label
-
     if not select_reviewed_mrn.value:
         roi_name = ''
+
+    patches = {'x': [(0, [])],
+               'y': [(0, [])],
+               'roi_name': [(0, '')],
+               'volume': [(0, '')],
+               'min_dose': [(0, '')],
+               'mean_dose': [(0, '')],
+               'max_dose': [(0, '')],
+               'mrn': [(0, '')],
+               'rx_dose': [(0, '')],
+               'eud_a_value': [(0, '')],
+               'eud': [(0, '')]}
 
     try:
         if not source.data['x']:
@@ -1050,22 +1059,12 @@ def calculate_review_dvh():
                        'eud': [(0, eud)]}
 
     except:
-        patches = {'x': [(0, [])],
-                   'y': [(0, [])],
-                   'roi_name': [(0, roi_name)],
-                   'volume': [(0, '')],
-                   'min_dose': [(0, '')],
-                   'mean_dose': [(0, '')],
-                   'max_dose': [(0, '')],
-                   'mrn': [(0, select_reviewed_mrn.value)],
-                   'rx_dose': [(0, '')],
-                   'eud_a_value': [(0, '')],
-                   'eud': [(0, '')]}
+        pass
 
     source.patch(patches)
 
-    calculate_review_dvh_button.button_type = initial_button_type
-    calculate_review_dvh_button.label = initial_button_label
+    calculate_review_dvh_button.button_type = 'success'
+    calculate_review_dvh_button.label = 'Calculate Review DVH'
 
 
 def group_count():

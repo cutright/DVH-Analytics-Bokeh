@@ -7,7 +7,7 @@ Jinja2
 Requests
 Tornado == 4.4.2
 PyYaml
-bokeh == 0.12.5
+bokeh == 0.12.6
 python-dateutil
 psycopg2
 fuzzywuzzy[speedup]
