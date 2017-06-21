@@ -13,7 +13,7 @@ import os
 import time
 from roi_name_manager import DatabaseROIs, clean_name
 from sql_connector import DVH_SQL
-from dicom_to_sql import dicom_to_sql
+from dicom_to_sql import dicom_to_sql, rebuild_database
 from bokeh.models.widgets import Select, Button, Tabs, Panel, TextInput, RadioButtonGroup, Div, MultiSelect, TableColumn, DataTable
 from bokeh.layouts import layout
 from bokeh.plotting import figure
@@ -987,6 +987,14 @@ def import_inbox():
     import_inbox_button.label = 'Import all from inbox'
 
 
+def rebuild_db_button_click():
+    rebuild_db_button.button_type = 'warning'
+    rebuild_db_button.label = 'Rebuilding...'
+    DVH_SQL().reinitialize_database()
+    rebuild_database(directories['imported'])
+    rebuild_db_button.button_type = 'success'
+    rebuild_db_button.label = 'Rebuild database'
+
 ######################################################
 # Layout objects
 ######################################################
@@ -1217,6 +1225,8 @@ settings_layout = layout([[div_import],
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 import_inbox_button = Button(label='Import all from inbox', button_type='success', width=200)
 import_inbox_button.on_click(import_inbox)
+rebuild_db_button = Button(label='Rebuild database', button_type='warning', width=200)
+rebuild_db_button.on_click(rebuild_db_button_click)
 
 query_title = Div(text="<b>Query Database</b>", width=1000)
 query_table = Select(value='DVHs', options=['DVHs', 'Plans', 'Rxs', 'Beams'], width=200, height=100, title='Table')
@@ -1250,7 +1260,7 @@ delete_from_db_value = TextInput(value='', title="Value", width=300)
 delete_from_db_button = Button(label='Delete', button_type='warning', width=100)
 delete_from_db_button.on_click(delete_from_db)
 
-db_editor_layout = layout([[import_inbox_button],
+db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [query_title],
                            [query_table, query_columns, query_condition, table_slider, query_button],
                            [update_db_title],

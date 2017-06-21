@@ -107,14 +107,15 @@ class DVH_SQL:
                          str(round(dvh_table.min_dose[x], 2)),
                          str(round(dvh_table.mean_dose[x], 2)),
                          str(round(dvh_table.max_dose[x], 2)),
-                         dvh_table.dvh_str[x]]
+                         dvh_table.dvh_str[x],
+                         'NOW()']
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'
             sql_input = sql_input.replace("'(NULL)'", "(NULL)")
             prepend = 'INSERT INTO DVHs VALUES (\''
             sql_input = prepend + str(sql_input)
             sql_input += '\n'
-            with open(file_path, "a") as text_file:
+            with open(file_path, "w") as text_file:
                 text_file.write(sql_input)
 
         self.execute_file(file_path)
@@ -146,14 +147,15 @@ class DVH_SQL:
                      str(plan.tx_time),
                      str(plan.total_mu),
                      plan.dose_grid_resolution,
-                     plan.heterogeneity_correction]
+                     plan.heterogeneity_correction,
+                     'NOW()']
         sql_input = '\',\''.join(sql_input)
         sql_input += '\');'
         sql_input = sql_input.replace("'(NULL)'", "(NULL)")
         prepend = 'INSERT INTO Plans VALUES (\''
         sql_input = prepend + str(sql_input)
         sql_input += '\n'
-        with open(file_path, "a") as text_file:
+        with open(file_path, "w") as text_file:
             text_file.write(sql_input)
 
         self.execute_file(file_path)
@@ -204,14 +206,15 @@ class DVH_SQL:
                              str(beams.ssd[x]),
                              beams.treatment_machine[x],
                              beams.scan_mode[x],
-                             str(beams.scan_spot_count[x])]
+                             str(beams.scan_spot_count[x]),
+                             'NOW()']
                 sql_input = '\',\''.join(sql_input)
                 sql_input += '\');'
                 sql_input = sql_input.replace("'(NULL)'", "(NULL)")
                 prepend = 'INSERT INTO Beams VALUES (\''
                 sql_input = prepend + str(sql_input)
                 sql_input += '\n'
-                with open(file_path, "a") as text_file:
+                with open(file_path, "w") as text_file:
                     text_file.write(sql_input)
 
         self.execute_file(file_path)
@@ -234,13 +237,14 @@ class DVH_SQL:
                          str(round(rx_table.rx_dose[x], 2)),
                          str(round(rx_table.rx_percent[x], 1)),
                          str(rx_table.normalization_method[x]),
-                         str(rx_table.normalization_object[x]).replace("'", "`")]
+                         str(rx_table.normalization_object[x]).replace("'", "`"),
+                         'NOW()']
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'
             prepend = 'INSERT INTO Rxs VALUES (\''
             sql_input = prepend + str(sql_input)
             sql_input += '\n'
-            with open(file_path, "a") as text_file:
+            with open(file_path, "w") as text_file:
                 text_file.write(sql_input)
 
         self.execute_file(file_path)
