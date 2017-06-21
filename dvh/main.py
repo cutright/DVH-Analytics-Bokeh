@@ -975,9 +975,6 @@ def update_dvh_review_rois(attr, old, new):
 def calculate_review_dvh():
     global temp_dvh_info, dvh_review_rois, x, y
 
-    if not select_reviewed_mrn.value:
-        roi_name = ''
-
     patches = {'x': [(0, [])],
                'y': [(0, [])],
                'roi_name': [(0, '')],
