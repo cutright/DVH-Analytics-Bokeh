@@ -47,49 +47,58 @@ def dicom_to_sql(**kwargs):
     force_update = False
     if 'force_update' in kwargs and kwargs['force_update']:
         force_update = True
-    file_paths = get_file_paths(import_settings['inbox'], force_update=force_update)
+    file_paths, warning = get_file_paths(import_settings['inbox'], force_update=force_update)
 
-    for f in file_paths.itervalues():
-        print(f.structure)
-        print(f.plan)
-        print(f.dose)
+    if not warning['mrn']:
+        for f in file_paths.itervalues():
+            print(f.structure)
+            print(f.plan)
+            print(f.dose)
 
-        plan = PlanRow(f.plan, f.structure, f.dose)
-        if not hasattr(dicom.read_file(f.plan), 'BrachyTreatmentType'):
-            beams = BeamTable(f.plan)
-        dvhs = DVHTable(f.structure, f.dose)
-        rxs = RxTable(f.plan, f.structure)
+            plan = PlanRow(f.plan, f.structure, f.dose)
+            if not hasattr(dicom.read_file(f.plan), 'BrachyTreatmentType'):
+                beams = BeamTable(f.plan)
+            dvhs = DVHTable(f.structure, f.dose)
+            rxs = RxTable(f.plan, f.structure)
 
-        setattr(dvhs, 'ptv_number', rank_ptvs_by_D95(dvhs))
+            setattr(dvhs, 'ptv_number', rank_ptvs_by_D95(dvhs))
 
-        sqlcnx.insert_plan(plan)
-        if not hasattr(dicom.read_file(f.plan), 'BrachyTreatmentType'):
-            sqlcnx.insert_beams(beams)
-        sqlcnx.insert_dvhs(dvhs)
-        sqlcnx.insert_rxs(rxs)
+            sqlcnx.insert_plan(plan)
+            if not hasattr(dicom.read_file(f.plan), 'BrachyTreatmentType'):
+                sqlcnx.insert_beams(beams)
+            sqlcnx.insert_dvhs(dvhs)
+            sqlcnx.insert_rxs(rxs)
 
-        # Default behavior is to move files from inbox to imported
-        # Only way to prevent moving files is to set move_files = False in kwargs
+            # Default behavior is to move files from inbox to imported
+            # Only way to prevent moving files is to set move_files = False in kwargs
+            if 'move_files' not in kwargs:
+                move_files_to_imported_path(f, import_settings['imported'])
+            elif kwargs['move_files']:
+                move_files_to_imported_path(f, import_settings['imported'])
+
+            # Default behavior is to organize files in the imported folder
+            # Only way to prevent organizing files is to set organize_files = False in kwargs
+            if 'organize_files' not in kwargs or kwargs['organize_files']:
+                organize_dicom_files(import_settings['imported'])
+
+        # Move remaining files, if any
         if 'move_files' not in kwargs:
-            move_files_to_imported_path(f, import_settings['imported'])
+            move_all_files(import_settings['imported'], import_settings['inbox'])
+            remove_empty_folders(import_settings['inbox'])
         elif kwargs['move_files']:
-            move_files_to_imported_path(f, import_settings['imported'])
+            move_all_files(import_settings['imported'], import_settings['inbox'])
+            remove_empty_folders(import_settings['inbox'])
 
-        # Default behavior is to organize files in the imported folder
-        # Only way to prevent organizing files is to set organize_files = False in kwargs
         if 'organize_files' not in kwargs or kwargs['organize_files']:
-            organize_dicom_files(import_settings['imported'])
+            organize_dicom_files(os.path.join(import_settings['imported'], 'misc'))
 
-    # Move remaining files, if any
-    if 'move_files' not in kwargs:
-        move_all_files(import_settings['imported'], import_settings['inbox'])
-        remove_empty_folders(import_settings['inbox'])
-    elif kwargs['move_files']:
-        move_all_files(import_settings['imported'], import_settings['inbox'])
-        remove_empty_folders(import_settings['inbox'])
+    else:
+        print("FAILURE: Multiple instances of a file type found for the same Study Instance UID")
+        print("You may only import one RT Dose, RT Structure, and RT Plan file each for a given UID")
+        for i in range(0, len(warning['mrn'])):
+            print(warning['mrn'][i], warning['file_type'][i], warning['uid'][i], sep=' ')
+        print("Please remove these files from the inbox")
 
-    if 'organize_files' not in kwargs or kwargs['organize_files']:
-        organize_dicom_files(os.path.join(import_settings['imported'], 'misc'))
     sqlcnx.cnx.close()
 
 
@@ -106,6 +115,7 @@ def get_file_paths(start_path, **kwargs):
     study_uid_structure = []
     dose_files = []
     study_uid_dose = []
+    warning = {'mrn': [], 'uid': [], 'file_type': []}
 
     if 'force_update' in kwargs and kwargs['force_update']:
         print('WARNING: Forcing all dicom to be imported (i.e., not checking DB for potential duplicates)')
@@ -116,14 +126,29 @@ def get_file_paths(start_path, **kwargs):
             try:
                 dicom_file = dicom.read_file(f[x])
                 if dicom_file.Modality.lower() == 'rtplan':
-                    plan_files.append(f[x])
-                    study_uid_plan.append(dicom_file.StudyInstanceUID)
+                    if dicom_file.StudyInstanceUID in study_uid_plan:
+                        warning['mrn'].append = dicom_file.PatientID
+                        warning['uid'].append = dicom_file.StudyInstanceUID
+                        warning['file_type'].append = 'rtplan'
+                    else:
+                        plan_files.append(f[x])
+                        study_uid_plan.append(dicom_file.StudyInstanceUID)
                 elif dicom_file.Modality.lower() == 'rtstruct':
-                    structure_files.append(f[x])
-                    study_uid_structure.append(dicom_file.StudyInstanceUID)
+                    if dicom_file.StudyInstanceUID in structure_files:
+                        warning['mrn'].append = dicom_file.PatientID
+                        warning['uid'].append = dicom_file.StudyInstanceUID
+                        warning['file_type'].append = 'rtstruct'
+                    else:
+                        structure_files.append(f[x])
+                        study_uid_structure.append(dicom_file.StudyInstanceUID)
                 elif dicom_file.Modality.lower() == 'rtdose':
-                    dose_files.append(f[x])
-                    study_uid_dose.append(dicom_file.StudyInstanceUID)
+                    if dicom_file.StudyInstanceUID in dose_files:
+                        warning['mrn'].append = dicom_file.PatientID
+                        warning['uid'].append = dicom_file.StudyInstanceUID
+                        warning['file_type'].append = 'rtdose'
+                    else:
+                        dose_files.append(f[x])
+                        study_uid_dose.append(dicom_file.StudyInstanceUID)
             except Exception:
                 pass
         else:
@@ -131,14 +156,29 @@ def get_file_paths(start_path, **kwargs):
                 if not is_file_imported(f[x]):
                     dicom_file = dicom.read_file(f[x])
                     if dicom_file.Modality.lower() == 'rtplan':
-                        plan_files.append(f[x])
-                        study_uid_plan.append(dicom_file.StudyInstanceUID)
+                        if dicom_file.StudyInstanceUID in study_uid_plan:
+                            warning['mrn'].append = dicom_file.PatientID
+                            warning['uid'].append = dicom_file.StudyInstanceUID
+                            warning['file_type'].append = 'rtplan'
+                        else:
+                            plan_files.append(f[x])
+                            study_uid_plan.append(dicom_file.StudyInstanceUID)
                     elif dicom_file.Modality.lower() == 'rtstruct':
-                        structure_files.append(f[x])
-                        study_uid_structure.append(dicom_file.StudyInstanceUID)
+                        if dicom_file.StudyInstanceUID in structure_files:
+                            warning['mrn'].append = dicom_file.PatientID
+                            warning['uid'].append = dicom_file.StudyInstanceUID
+                            warning['file_type'].append = 'rtstruct'
+                        else:
+                            structure_files.append(f[x])
+                            study_uid_structure.append(dicom_file.StudyInstanceUID)
                     elif dicom_file.Modality.lower() == 'rtdose':
-                        dose_files.append(f[x])
-                        study_uid_dose.append(dicom_file.StudyInstanceUID)
+                        if dicom_file.StudyInstanceUID in dose_files:
+                            warning['mrn'].append = dicom_file.PatientID
+                            warning['uid'].append = dicom_file.StudyInstanceUID
+                            warning['file_type'].append = 'rtdose'
+                        else:
+                            dose_files.append(f[x])
+                            study_uid_dose.append(dicom_file.StudyInstanceUID)
                 else:
                     if not db_entry_found:
                         print("The following files are already imported. Must delete from database before reimporting.")
@@ -159,7 +199,7 @@ def get_file_paths(start_path, **kwargs):
                 rt_dose = dose_files[c]
         dicom_files[a] = DICOM_FileSet(rt_plan, rt_structure, rt_dose)
 
-    return dicom_files
+    return dicom_files, warning
 
 
 def rebuild_database(start_path):
