@@ -988,11 +988,8 @@ def import_inbox():
 
 
 def rebuild_db_button_click():
-    rebuild_db_button.button_type = 'warning'
     rebuild_db_button.label = 'Rebuilding...'
-    DVH_SQL().reinitialize_database()
     rebuild_database(directories['imported'])
-    rebuild_db_button.button_type = 'success'
     rebuild_db_button.label = 'Rebuild database'
 
 ######################################################

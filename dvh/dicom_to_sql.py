@@ -80,8 +80,14 @@ def dicom_to_sql(**kwargs):
         if 'organize_files' not in kwargs or kwargs['organize_files']:
             organize_dicom_files(import_settings['imported'])
 
-    move_all_files(import_settings['imported'], import_settings['inbox'])
-    remove_empty_folders(import_settings['inbox'])
+    # Move remaining files, if any
+    if 'move_files' not in kwargs:
+        move_all_files(import_settings['imported'], import_settings['inbox'])
+        remove_empty_folders(import_settings['inbox'])
+    elif kwargs['move_files']:
+        move_all_files(import_settings['imported'], import_settings['inbox'])
+        remove_empty_folders(import_settings['inbox'])
+
     if 'organize_files' not in kwargs or kwargs['organize_files']:
         organize_dicom_files(os.path.join(import_settings['imported'], 'misc'))
     sqlcnx.cnx.close()

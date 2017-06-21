@@ -44,6 +44,7 @@ temp_dvh_info = Temp_DICOM_FileSet()
 dvh_review_mrns = temp_dvh_info.mrn
 if dvh_review_mrns[0] != '':
     dvh_review_rois = temp_dvh_info.get_roi_names(dvh_review_mrns[0]).values()
+    dvh_review_mrns.append('')
 
 else:
     dvh_review_rois = ['']
@@ -938,20 +939,37 @@ def calc_stats(data):
 
 def update_dvh_review_rois(attr, old, new):
     global temp_dvh_info, dvh_review_rois
-    initial_button_type = calculate_review_dvh_button.button_type
-    calculate_review_dvh_button.button_type = "warning"
-    initial_label = calculate_review_dvh_button.label
-    calculate_review_dvh_button.label = "Updating..."
-    if new != '':
-        dvh_review_rois = temp_dvh_info.get_roi_names(new).values()
-        select_reviewed_dvh.options = dvh_review_rois
-        select_reviewed_dvh.value = dvh_review_rois[0]
+    if select_reviewed_mrn.value:
+        initial_button_type = calculate_review_dvh_button.button_type
+        calculate_review_dvh_button.button_type = "warning"
+
+        initial_label = calculate_review_dvh_button.label
+        calculate_review_dvh_button.label = "Updating..."
+        if new != '':
+            dvh_review_rois = temp_dvh_info.get_roi_names(new).values()
+            select_reviewed_dvh.options = dvh_review_rois
+            select_reviewed_dvh.value = dvh_review_rois[0]
+        else:
+            select_reviewed_dvh.options = ['']
+            select_reviewed_dvh.value = ['']
+
+        calculate_review_dvh_button.button_type = initial_button_type
+        calculate_review_dvh_button.label = initial_label
     else:
         select_reviewed_dvh.options = ['']
-        select_reviewed_dvh.value = ['']
-
-    calculate_review_dvh_button.button_type = initial_button_type
-    calculate_review_dvh_button.label = initial_label
+        select_reviewed_dvh.value = ''
+        patches = {'x': [(0, [])],
+                   'y': [(0, [])],
+                   'roi_name': [(0, '')],
+                   'volume': [(0, '')],
+                   'min_dose': [(0, '')],
+                   'mean_dose': [(0, '')],
+                   'max_dose': [(0, '')],
+                   'mrn': [(0, '')],
+                   'rx_dose': [(0, '')],
+                   'eud_a_value': [(0, '')],
+                   'eud': [(0, '')]}
+        source.patch(patches)
 
 
 def calculate_review_dvh():
@@ -960,74 +978,91 @@ def calculate_review_dvh():
     initial_button_type = calculate_review_dvh_button.button_type
     initial_button_label = calculate_review_dvh_button.label
 
-    if not source.data['x']:
-        calculate_review_dvh_button.button_type = 'warning'
-        calculate_review_dvh_button.label = 'Waiting...'
-        update_data()
+    if not select_reviewed_mrn.value:
+        roi_name = ''
 
-    else:
-        calculate_review_dvh_button.button_type = 'warning'
-        calculate_review_dvh_button.label = 'Calculating...'
+    try:
+        if not source.data['x']:
+            calculate_review_dvh_button.button_type = 'warning'
+            calculate_review_dvh_button.label = 'Waiting...'
+            update_data()
 
-        file_index = temp_dvh_info.mrn.index(select_reviewed_mrn.value)
-        roi_index = dvh_review_rois.index(select_reviewed_dvh.value)
-        structure_file = temp_dvh_info.structure[file_index]
-        plan_file = temp_dvh_info.plan[file_index]
-        dose_file = temp_dvh_info.dose[file_index]
-        key = temp_dvh_info.get_roi_names(select_reviewed_mrn.value).keys()[roi_index]
-
-        rt_st = dicomparser.DicomParser(structure_file)
-        rt_structures = rt_st.GetStructures()
-        review_dvh = dvhcalc.get_dvh(structure_file, dose_file, key)
-        dicompyler_plan = dicomparser.DicomParser(plan_file).GetPlan()
-
-        roi_name = rt_structures[key]['name']
-        volume = review_dvh.volume
-        min_dose = review_dvh.min
-        mean_dose = review_dvh.mean
-        max_dose = review_dvh.max
-        if not review_rx.value:
-            rx_dose = float(dicompyler_plan['rxdose']) / 100
-            review_rx.value = str(round(rx_dose, 2))
         else:
-            rx_dose = round(float(review_rx.value), 2)
-        if not review_eud_a_value.value:
-            eud_a_value = float(1)
-        else:
-            eud_a_value = float(review_eud_a_value.value)
+            calculate_review_dvh_button.button_type = 'warning'
+            calculate_review_dvh_button.label = 'Calculating...'
 
-        x = review_dvh.bincenters
-        y = np.divide(review_dvh.counts, max(review_dvh.counts))
+            file_index = temp_dvh_info.mrn.index(select_reviewed_mrn.value)
+            roi_index = dvh_review_rois.index(select_reviewed_dvh.value)
+            structure_file = temp_dvh_info.structure[file_index]
+            plan_file = temp_dvh_info.plan[file_index]
+            dose_file = temp_dvh_info.dose[file_index]
+            key = temp_dvh_info.get_roi_names(select_reviewed_mrn.value).keys()[roi_index]
 
-        eud = calc_eud(y, eud_a_value)
+            rt_st = dicomparser.DicomParser(structure_file)
+            rt_structures = rt_st.GetStructures()
+            review_dvh = dvhcalc.get_dvh(structure_file, dose_file, key)
+            dicompyler_plan = dicomparser.DicomParser(plan_file).GetPlan()
 
-        if radio_group_dose.active == 1:
-            f = 5000
-            bin_count = len(x)
-            new_bin_count = int(bin_count * f / (rx_dose * 100))
+            roi_name = rt_structures[key]['name']
+            volume = review_dvh.volume
+            min_dose = review_dvh.min
+            mean_dose = review_dvh.mean
+            max_dose = review_dvh.max
+            if not review_rx.value:
+                rx_dose = float(dicompyler_plan['rxdose']) / 100
+                review_rx.value = str(round(rx_dose, 2))
+            else:
+                rx_dose = round(float(review_rx.value), 2)
+            if not review_eud_a_value.value:
+                eud_a_value = float(1)
+            else:
+                eud_a_value = float(review_eud_a_value.value)
 
-            x1 = np.linspace(0, bin_count, bin_count)
-            x2 = np.multiply(np.linspace(0, new_bin_count, new_bin_count), rx_dose * float(100) / f)
-            y = np.interp(x2, x1, review_dvh.counts)
-            y = np.divide(y, np.max(y))
-            x = np.divide(np.linspace(0, new_bin_count, new_bin_count), f)
+            x = review_dvh.bincenters
+            y = np.divide(review_dvh.counts, max(review_dvh.counts))
 
-        if radio_group_volume.active == 0:
-            y = np.multiply(y, volume)
+            eud = calc_eud(y, eud_a_value)
 
-        patches = {'x': [(0, x)],
-                   'y': [(0, y)],
+            if radio_group_dose.active == 1:
+                f = 5000
+                bin_count = len(x)
+                new_bin_count = int(bin_count * f / (rx_dose * 100))
+
+                x1 = np.linspace(0, bin_count, bin_count)
+                x2 = np.multiply(np.linspace(0, new_bin_count, new_bin_count), rx_dose * float(100) / f)
+                y = np.interp(x2, x1, review_dvh.counts)
+                y = np.divide(y, np.max(y))
+                x = np.divide(np.linspace(0, new_bin_count, new_bin_count), f)
+
+            if radio_group_volume.active == 0:
+                y = np.multiply(y, volume)
+
+            patches = {'x': [(0, x)],
+                       'y': [(0, y)],
+                       'roi_name': [(0, roi_name)],
+                       'volume': [(0, volume)],
+                       'min_dose': [(0, min_dose)],
+                       'mean_dose': [(0, mean_dose)],
+                       'max_dose': [(0, max_dose)],
+                       'mrn': [(0, select_reviewed_mrn.value)],
+                       'rx_dose': [(0, rx_dose)],
+                       'eud_a_value': [(0, eud_a_value)],
+                       'eud': [(0, eud)]}
+
+    except:
+        patches = {'x': [(0, [])],
+                   'y': [(0, [])],
                    'roi_name': [(0, roi_name)],
-                   'volume': [(0, volume)],
-                   'min_dose': [(0, min_dose)],
-                   'mean_dose': [(0, mean_dose)],
-                   'max_dose': [(0, max_dose)],
+                   'volume': [(0, '')],
+                   'min_dose': [(0, '')],
+                   'mean_dose': [(0, '')],
+                   'max_dose': [(0, '')],
                    'mrn': [(0, select_reviewed_mrn.value)],
-                   'rx_dose': [(0, rx_dose)],
-                   'eud_a_value': [(0, eud_a_value)],
-                   'eud': [(0, eud)]}
+                   'rx_dose': [(0, '')],
+                   'eud_a_value': [(0, '')],
+                   'eud': [(0, '')]}
 
-        source.patch(patches)
+    source.patch(patches)
 
     calculate_review_dvh_button.button_type = initial_button_type
     calculate_review_dvh_button.label = initial_button_label
@@ -1269,14 +1304,14 @@ radio_group_volume.on_change('active', radio_group_volume_ticker)
 
 # Setup selectors for dvh review
 select_reviewed_mrn = Select(title='MRN to review',
-                             value=dvh_review_mrns[0],
+                             value='',
                              options=dvh_review_mrns,
                              width=300)
 select_reviewed_mrn.on_change('value', update_dvh_review_rois)
 
 select_reviewed_dvh = Select(title='ROI to review',
-                             value=dvh_review_rois[0],
-                             options=dvh_review_rois,
+                             value='',
+                             options=[''],
                              width=360)
 select_reviewed_dvh.on_change('value', select_reviewed_dvh_ticker)
 
