@@ -89,6 +89,9 @@ class DVH_SQL:
     def insert_dvhs(self, dvh_table):
         file_path = 'insert_values_DVHs.sql'
 
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+
         # Import each ROI from ROI_PyTable, append to output text file
         if max(dvh_table.ptv_number) > 1:
             multi_ptv = True
@@ -115,7 +118,7 @@ class DVH_SQL:
             prepend = 'INSERT INTO DVHs VALUES (\''
             sql_input = prepend + str(sql_input)
             sql_input += '\n'
-            with open(file_path, "w") as text_file:
+            with open(file_path, "a") as text_file:
                 text_file.write(sql_input)
 
         self.execute_file(file_path)
@@ -124,6 +127,9 @@ class DVH_SQL:
 
     def insert_plan(self, plan):
         file_path = 'insert_plan_' + plan.mrn + '.sql'
+
+        if os.path.isfile(file_path):
+            os.remove(file_path)
 
         # Import each ROI from ROI_PyTable, append to output text file
         sql_input = [str(plan.mrn),
@@ -155,7 +161,7 @@ class DVH_SQL:
         prepend = 'INSERT INTO Plans VALUES (\''
         sql_input = prepend + str(sql_input)
         sql_input += '\n'
-        with open(file_path, "w") as text_file:
+        with open(file_path, "a") as text_file:
             text_file.write(sql_input)
 
         self.execute_file(file_path)
@@ -165,6 +171,9 @@ class DVH_SQL:
     def insert_beams(self, beams):
 
         file_path = 'insert_values_beams.sql'
+
+        if os.path.isfile(file_path):
+            os.remove(file_path)
 
         # Import each ROI from ROI_PyTable, append to output text file
         for x in range(0, beams.count):
@@ -214,7 +223,7 @@ class DVH_SQL:
                 prepend = 'INSERT INTO Beams VALUES (\''
                 sql_input = prepend + str(sql_input)
                 sql_input += '\n'
-                with open(file_path, "w") as text_file:
+                with open(file_path, "a") as text_file:
                     text_file.write(sql_input)
 
         self.execute_file(file_path)
@@ -224,6 +233,9 @@ class DVH_SQL:
     def insert_rxs(self, rx_table):
 
         file_path = 'insert_values_rxs.sql'
+
+        if os.path.isfile(file_path):
+            os.remove(file_path)
 
         for x in range(0, rx_table.count):
             sql_input = [str(rx_table.mrn[x]),
@@ -244,7 +256,7 @@ class DVH_SQL:
             prepend = 'INSERT INTO Rxs VALUES (\''
             sql_input = prepend + str(sql_input)
             sql_input += '\n'
-            with open(file_path, "w") as text_file:
+            with open(file_path, "a") as text_file:
                 text_file.write(sql_input)
 
         self.execute_file(file_path)
