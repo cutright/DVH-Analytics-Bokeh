@@ -279,14 +279,13 @@ class DVH_SQL:
                             "' and study_instance_uid = '" + study_instance_uid + "';")
         self.cnx.commit()
 
-    def reinitialize_database(self):
+    def drop_tables(self):
         print('Dropping tables')
         self.cursor.execute('DROP TABLE IF EXISTS Plans;')
         self.cursor.execute('DROP TABLE IF EXISTS DVHs;')
         self.cursor.execute('DROP TABLE IF EXISTS Beams;')
         self.cursor.execute('DROP TABLE IF EXISTS Rxs;')
         self.cnx.commit()
-        self.initialize_database()
 
     def initialize_database(self):
         print('Loading create_tables.sql')
@@ -296,6 +295,10 @@ class DVH_SQL:
         print('Executing create_tables.sql')
         self.execute_file(abs_file_path)
         print('Tables created')
+
+    def reinitialize_database(self):
+        self.drop_tables()
+        self.initialize_database()
 
     def does_db_exist(self):
         # Check if database exists

@@ -10,6 +10,7 @@ from __future__ import print_function
 from utilities import is_import_settings_defined, is_sql_connection_defined,\
     write_import_settings, write_sql_connection_settings, validate_sql_connection
 import os
+import datetime
 import time
 from roi_name_manager import DatabaseROIs, clean_name
 from sql_connector import DVH_SQL
@@ -992,6 +993,82 @@ def rebuild_db_button_click():
     rebuild_database(directories['imported'])
     rebuild_db_button.label = 'Rebuild database'
 
+
+def backup_db():
+    backup_db_button.button_type = 'warning'
+    backup_db_button.label = 'Backing up...'
+
+    script_dir = os.path.dirname(__file__)
+    abs_path = os.path.join(script_dir, "backups")
+    if not os.path.isdir(abs_path):
+        os.mkdir(abs_path)
+
+    new_file = str(datetime.datetime.now()).split('.')[0].replace(':','-').replace(' ', '_')
+    abs_file_path = os.path.join(abs_path, new_file)
+
+    os.system("pg_dumpall >" + abs_file_path)
+
+    update_backup_select()
+
+    backup_db_button.button_type = 'success'
+    backup_db_button.label = 'Backup'
+
+
+def restore_db():
+    restore_db_button.label = 'Restoring...'
+    restore_db_button.button_type = 'warning'
+
+    DVH_SQL().drop_tables()
+
+    script_dir = os.path.dirname(__file__)
+    rel_path = os.path.join("backups", backup_select.value)
+    abs_file_path = os.path.join(script_dir, rel_path)
+
+    back_up_command = "psql " + config['dbname'] + " < " + abs_file_path
+    if su_pw.value:
+        back_up_command = 'sudo ' + back_up_command + ' | ' + su_pw.value
+    os.system(back_up_command)
+
+    restore_db_button.label = 'Restore'
+    restore_db_button.button_type = 'primary'
+
+
+def update_backup_select(*new_index):
+    script_dir = os.path.dirname(__file__)
+    abs_path = os.path.join(script_dir, 'backups')
+
+    if not os.path.isdir(abs_path):
+        os.mkdir(abs_path)
+
+    backups = [f for f in os.listdir(abs_path) if os.path.isfile(os.path.join(abs_path, f))]
+    if not backups:
+        backups = ['']
+    backups.sort(reverse=True)
+    backup_select.options = backups
+    if new_index:
+        backup_select.value = backups[new_index[0]]
+    else:
+        backup_select.value = backups[0]
+
+
+def delete_backup():
+    old_index = backup_select.options.index(backup_select.value)
+
+    script_dir = os.path.dirname(__file__)
+    abs_path = os.path.join(script_dir, 'backups')
+    abs_file = os.path.join(abs_path, backup_select.value)
+
+    if os.path.isfile(abs_file):
+        os.remove(abs_file)
+        if old_index < len(backup_select.options) - 1:
+            new_index = old_index
+        else:
+            new_index = len(backup_select.options) - 2
+        update_backup_select(new_index)
+
+
+
+
 ######################################################
 # Layout objects
 ######################################################
@@ -1267,13 +1344,31 @@ db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [data_table_rxs]])
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Backup utitily
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+backup_select = Select(value=options[0], options=options, title="Available Backups", width=200)
+delete_backup_button = Button(label='Delete', button_type='warning', width=100)
+restore_db_button = Button(label='Restore', button_type='primary', width=100)
+backup_db_button = Button(label='Backup', button_type='success', width=100)
+su_pw = TextInput(value='', title="Root Password needed for restore (leave blank if OS authentication used)", width=500)
+update_backup_select()
+
+delete_backup_button.on_click(delete_backup)
+backup_db_button.on_click(backup_db)
+restore_db_button.on_click(restore_db)
+
+backup_layout = layout([[backup_select, delete_backup_button, restore_db_button, backup_db_button],
+                        [su_pw]])
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Tabs and document
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 settings_tab = Panel(child=settings_layout, title='Directories & SQL Settings')
 roi_tab = Panel(child=roi_layout, title='ROI Name Manager')
 db_tab = Panel(child=db_editor_layout, title='Database Editor')
+backup_tab = Panel(child=backup_layout, title='Backup & Restore')
 
-tabs = Tabs(tabs=[settings_tab, roi_tab, db_tab])
+tabs = Tabs(tabs=[settings_tab, roi_tab, db_tab, backup_tab])
 
 # Create the document Bokeh server will use to generate the webpage
 curdoc().add_root(tabs)
