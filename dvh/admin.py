@@ -20,9 +20,6 @@ from bokeh.io import curdoc
 from bokeh.models import ColumnDataSource, LabelSet, Range1d, Slider
 
 
-DVH_SQL().initialize_database()
-
-
 query_source = ColumnDataSource(data=dict())
 
 directories = {}
@@ -780,7 +777,9 @@ def backup_db():
     if not os.path.isdir(abs_path):
         os.mkdir(abs_path)
 
-    new_file = str(datetime.datetime.now()).split('.')[0].replace(':','-').replace(' ', '_') + '.sql'
+    new_file = config['dbname'] +\
+               '_' + str(datetime.datetime.now()).split('.')[0].replace(':', '-').replace(' ', '_') +\
+               '.sql'
     abs_file_path = os.path.join(abs_path, new_file)
 
     os.system("pg_dumpall >" + abs_file_path)
@@ -1065,12 +1064,12 @@ delete_backup_button = Button(label='Delete', button_type='warning', width=100)
 restore_db_button = Button(label='Restore', button_type='primary', width=100)
 backup_db_button = Button(label='Backup', button_type='success', width=100)
 warning_div = Div(text="<b>WARNING:</b> Restore requires your OS user name to be both a"
-                       " PostgresSQL super user and have ALL PRIVILEGES WITH GRANT OPTIONS.  Do NOT attempt otherwise."
-                       " It's possible you have multiple PostgresSQL servers installed, so be sure your backup"
+                       " PostgreSQL super user and have ALL PRIVILEGES WITH GRANT OPTIONS.  Do NOT attempt otherwise."
+                       " It's possible you have multiple PostgreSQL servers installed, so be sure your backup"
                        " file isn't empty.  Validate by typing 'psql' in a terminal/command prompt, then"
                        " <i>SELECT * FROM pg_settings WHERE name = 'port';</i> "
                        " The resulting port should be the same as the port used in the Directories and "
-                       " SQL Settings tab (i.e., make sure you're backing up the correct database).", width=800)
+                       " SQL Settings tab (i.e., make sure you're backing up the correct database).", width=550)
 update_backup_select()
 
 delete_backup_button.on_click(delete_backup)
