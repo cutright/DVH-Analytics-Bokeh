@@ -68,7 +68,7 @@ Using the 'settings' command will start a Bokeh server and open your default bro
 Manager, DB Editor, and Backup & Restore modules.  Be sure to stop the server when you're done by press ctrl + c 
 in the command line window.
 ~~~~
-$ dvh settings
+$ dvh admin
 ~~~~
 ## Main DVH Analytics view
 Type the following to start the Bokeh server:  
@@ -87,7 +87,7 @@ $ dvh run --allow-websocket-origin <new IP:port>
 ~~~~
 $ dvh run --port <some other port number>
 ~~~~
-These two features work with the 'settings' command as well.
+These two features work with any of the commands that start web-based UI.
 
 ----------------------------------------------------------------------------------------------
 ## Additional Notes
@@ -113,9 +113,10 @@ typing exit() and pressing enter.
 
 ### Xcode Command Line Tools (Mac Only)
 Make sure Xcode command line tools are installed
-If the full Xcode package is installed (from the Mac App Store), entire the following into a terminal window:
-xcode-select --install
-
+If the full Xcode package is installed (from the Mac App Store), enter the following into a terminal window:
+~~~~
+$ xcode-select --install
+~~~~
 
 ### PostgreSQL
 If you are familiar with PostgreSQL and have access to a PostgreSQL DB, you simply need to fill in the
