@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Fri Mar 24 13:43:28 2017
-
 @author: nightowl
 """
 
@@ -1057,7 +1056,7 @@ db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [data_table_rxs]])
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# Backup utitily  
+# Backup utility
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 backup_select = Select(value=options[0], options=options, title="Available Backups", width=250)
 delete_backup_button = Button(label='Delete', button_type='warning', width=100)

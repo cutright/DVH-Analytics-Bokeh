@@ -199,7 +199,7 @@ def main():
 
         script_dir = os.path.dirname(__file__)
 
-        if args.command[0] == 'setup_simple':
+        if args.command[0] == 'settings_simple':
             if not args.sql and not args.dir:
                 settings()
             else:
@@ -272,7 +272,7 @@ def main():
 
             call(command)
 
-        elif args.command[0] == 'setup':
+        elif args.command[0] == 'settings':
 
             command = ["bokeh", "serve", "--show", "--port", "5008"]
 

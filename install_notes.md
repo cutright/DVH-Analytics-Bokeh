@@ -145,7 +145,7 @@ NOTE: You may replace dvh with any database name you wish, but you must update d
 database name you chose.  
 
 *Ubuntu*  
-Type the following in a terminal:
+You probably already have PostgreSQL installed, but if you don't, type the following in a terminal:
 ~~~~
 $ sudo apt-get install postgresql postgresql-client postgresql-contrib libpq-dev
 $ sudo apt-get install pgadmin3
