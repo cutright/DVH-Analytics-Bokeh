@@ -19,12 +19,15 @@ If you're on Mac or Linux, you may need:
 $ sudo pip install dvh-analytics
 ~~~~
 
-## Define directories, connection settings, and ROI Names
-Type in the following to access the Settings and ROI Name Manager modules:
+## Define directories and connection settings
+For a web-based UI, type in the following to access the Settings:
 ~~~~
 $ dvh setup
 ~~~~
-After filling in proper SQL login credentials, be sure to click 'Create Tables'.
+or the following for a command-line based setup:
+~~~~
+$ dvh setup_simple
+~~~~
 
 ## Processing test files
 To verify all of your settings are valid and installation was successful, type:
@@ -36,7 +39,10 @@ successfully installed (e.g., PostgreSQL, Python libraries), import directories 
 SQL DB has been established.
 
 ## Importing your own data
-To import your own data:
+To import your own data, you can click "Import all from inbox" in the Database Editor tab of the 
+[settings GUI](#ROI-Name-Manager,-DB Editor,-and-Backup-&-Restore)
+
+Alternatively, to import your own data via command line for more options:
 ~~~~
 $ dvh import
 ~~~~
@@ -57,6 +63,13 @@ If you'd like to import from a directory other than the one in your settings:
 ~~~~
 $ dvh import --start-path /someabsolute/directory/name
 ~~~~
+## ROI Name Manager, DB Editor, and Backup & Restore
+Using the 'settings' command will start a Bokeh server and open your default browser to access the ROI Name 
+Manager, DB Editor, and Backup & Restore modules.  Be sure to stop the server when you're done by press ctrl + c 
+in the command line window.
+~~~~
+$ dvh settings
+~~~~
 ## Main DVH Analytics view
 Type the following to start the Bokeh server:  
 ~~~~
@@ -66,14 +79,15 @@ If Chrome or Firefox is not your default browswer, you'll need to copy and paste
 From within the active terminal, press ctrl + c to stop the Bokeh server.
 
 If you would like to specify an IP or port other than the default 127.0.0.1:5006, use the following when starting
-the bokeh server.  You may be interested in this if you are running from a computer with a static IP and would like
-to access this bokeh server from across your network.
+the Bokeh server.  You may be interested in this if you are running from a computer with a static IP and would like
+to access this Bokeh server from across your network.
 ~~~~
 $ dvh run --allow-websocket-origin <new IP:port>
 ~~~~
 ~~~~
 $ dvh run --port <some other port number>
 ~~~~
+These two features work with the 'settings' command as well.
 
 ----------------------------------------------------------------------------------------------
 ## Additional Notes

@@ -7,11 +7,9 @@ Created on Fri Mar 24 13:43:28 2017
 """
 
 from __future__ import print_function
-from utilities import is_import_settings_defined, is_sql_connection_defined,\
-    write_import_settings, write_sql_connection_settings, validate_sql_connection
+from utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection
 import os
 import datetime
-import time
 from roi_name_manager import DatabaseROIs, clean_name
 from sql_connector import DVH_SQL
 from dicom_to_sql import dicom_to_sql, rebuild_database
@@ -22,17 +20,15 @@ from bokeh.io import curdoc
 from bokeh.models import ColumnDataSource, LabelSet, Range1d, Slider
 
 
-query_source = ColumnDataSource(data=dict())
+DVH_SQL().initialize_database()
 
-##################################
-# Import settings and SQL settings
-##################################
+
+query_source = ColumnDataSource(data=dict())
 
 directories = {}
 config = {}
 categories = ["Institutional ROI", "Physician", "Physician ROI", "Variation"]
 operators = ["Add", "Delete", "Rename"]
-save_needed = False
 
 data = {'name': [],
         'x': [],
@@ -100,150 +96,6 @@ def load_sql_settings():
                   'port': '5432',
                   'user': '',
                   'password': ''}
-
-
-def reload_directories():
-    load_directories()
-    input_inbox.value = directories['inbox']
-    input_imported.value = directories['imported']
-    input_review.value = directories['review']
-
-
-def reload_sql_settings():
-    load_sql_settings()
-    input_host.value = config['host']
-    input_port.value = config['port']
-    input_dbname.value = config['dbname']
-    input_user.value = config['user']
-    input_password.value = config['password']
-
-
-def save_directories():
-    global directories
-    update_direcories()
-    write_import_settings(directories)
-    reload_directories()
-
-
-def save_sql_settings():
-    global config
-    update_sql_settings()
-    write_sql_connection_settings(config)
-    reload_sql_settings()
-    save_sql_settings_button.button_type = 'success'
-    save_sql_settings_button.label = 'Save'
-
-
-def update_direcories():
-    global directories
-    directories['inbox'] = input_inbox.value
-    directories['imported'] = input_imported.value
-    directories['review'] = input_review.value
-
-
-def update_sql_settings():
-    global config
-    config['host'] = input_host.value
-    config['port'] = input_port.value
-    config['dbname'] = input_dbname.value
-    config['user'] = input_user.value
-    config['password'] = input_password.value
-
-
-def update_inbox_status(attr, old, new):
-    directories['inbox'] = new
-
-    script_dir = os.path.dirname(__file__)
-    rel_path = new[2:len(new)]
-    abs_dir_path = os.path.join(script_dir, rel_path)
-
-    if os.path.isdir(new) or (os.path.isdir(abs_dir_path) and new[0:2] == './'):
-        input_inbox.title = "Inbox"
-        save_dir_button.button_type = 'success'
-    elif not new:
-        input_inbox.title = "Inbox --- Path Needed ---"
-        save_dir_button.button_type = 'warning'
-    else:
-        input_inbox.title = "Inbox --- Invalid Path ---"
-        save_dir_button.button_type = 'warning'
-
-    update_dir_save_status()
-
-
-def update_imported_status(attr, old, new):
-    directories['imported'] = new
-
-    script_dir = os.path.dirname(__file__)
-    rel_path = new[2:len(new)]
-    abs_dir_path = os.path.join(script_dir, rel_path)
-
-    if os.path.isdir(new) or (os.path.isdir(abs_dir_path) and new[0:2] == './'):
-        input_imported.title = "Imported"
-        save_dir_button.button_type = 'success'
-    elif not new:
-        input_imported.title = "Imported --- Path Needed ---"
-        save_dir_button.button_type = 'warning'
-    else:
-        input_imported.title = "Imported --- Invalid Path ---"
-        save_dir_button.button_type = 'warning'
-
-    update_dir_save_status()
-
-
-def update_review_status(attr, old, new):
-
-    directories['review'] = new
-
-    script_dir = os.path.dirname(__file__)
-    rel_path = new[2:len(new)]
-    abs_dir_path = os.path.join(script_dir, rel_path)
-
-    if os.path.isdir(new) or (os.path.isdir(abs_dir_path) and new[0:2] == './'):
-        input_review.title = "Review"
-        save_dir_button.button_type = 'success'
-    elif not new:
-        input_review.title = "Review --- Path Needed ---"
-        save_dir_button.button_type = 'warning'
-    else:
-        input_review.title = "Review --- Invalid Path ---"
-        save_dir_button.button_type = 'warning'
-
-    update_dir_save_status()
-
-
-def update_dir_save_status():
-
-    dir_save_status = True
-
-    script_dir = os.path.dirname(__file__)
-
-    for path in directories.itervalues():
-        rel_path = path[2:len(path)]
-        abs_dir_path = os.path.join(script_dir, rel_path)
-        if not(os.path.isdir(path) or (os.path.isdir(abs_dir_path) and path[0:2] == './')):
-            dir_save_status = False
-
-    if dir_save_status:
-        save_dir_button.button_type = 'success'
-    else:
-        save_dir_button.button_type = 'warning'
-
-
-def echo():
-    global config
-    update_sql_settings()
-    initial_button_type = echo_button.button_type
-    initial_label = echo_button.label
-    if validate_sql_connection(config):
-        echo_button.button_type = 'success'
-        echo_button.label = 'Success'
-    else:
-        echo_button.button_type = 'warning'
-        echo_button.label = 'Fail'
-
-    time.sleep(1.5)
-    echo_button.button_type = initial_button_type
-    echo_button.label = initial_label
 
 
 # Load Settings
@@ -342,10 +194,10 @@ def rename_physician_roi():
 # Physician functions
 ##############################
 def update_physician_select():
-    options = db.get_physicians()
-    options.sort()
-    select_physician.options = options
-    select_physician.value = options[0]
+    new_options = db.get_physicians()
+    new_options.sort()
+    select_physician.options = new_options
+    select_physician.value = new_options[0]
     update_input_text()
     update_column_source_data()
 
@@ -832,81 +684,6 @@ def update_save_button_status():
     save_button_roi.label = 'Map Save Needed'
 
 
-def check_tables():
-
-    initial_label = check_tables_button.label
-    initial_button_type = check_tables_button.button_type
-
-    try:
-        tables = ['dvhs', 'plans', 'beams', 'rxs']
-        table_result = {}
-        for table in tables:
-            table_result[table] = DVH_SQL().check_table_exists(table)
-
-        if all(table_result.itervalues()):
-            check_tables_button.button_type = 'success'
-            check_tables_button.label = 'Success'
-        else:
-            check_tables_button.button_type = 'warning'
-            check_tables_button.label = 'Fail'
-
-        time.sleep(1.5)
-        check_tables_button.button_type = initial_button_type
-        check_tables_button.label = initial_label
-    except:
-        check_tables_button.button_type = 'warning'
-        check_tables_button.label = 'No Connection'
-        time.sleep(1.5)
-        check_tables_button.button_type = initial_button_type
-        check_tables_button.label = initial_label
-
-
-def create_tables():
-    initial_label = create_tables_button.label
-    initial_button_type = create_tables_button.button_type
-    if initial_label == 'Cancel':
-        create_tables_button.button_type = 'primary'
-        create_tables_button.label = 'Create Tables'
-        clear_tables_button.button_type = 'primary'
-        clear_tables_button.label = 'Clear Tables'
-    else:
-        try:
-            DVH_SQL().initialize_database()
-        except:
-            create_tables_button.button_type = 'warning'
-            create_tables_button.label = 'No Connection'
-            time.sleep(1.5)
-            create_tables_button.button_type = initial_button_type
-            create_tables_button.label = initial_label
-
-
-def clear_tables():
-
-    if clear_tables_button.button_type == 'danger':
-        try:
-            DVH_SQL().reinitialize_database()
-        except:
-            clear_tables_button.button_type = 'warning'
-            clear_tables_button.label = 'No Connection'
-            time.sleep(1.5)
-            clear_tables_button.button_type = 'primary'
-            clear_tables_button.label = 'Clear Tables'
-        create_tables_button.button_type = 'primary'
-        create_tables_button.label = 'Create Tables'
-        clear_tables_button.button_type = 'primary'
-        clear_tables_button.label = 'Clear Tables'
-    elif clear_tables_button.button_type == 'primary':
-        clear_tables_button.button_type = 'danger'
-        clear_tables_button.label = 'Are you sure?'
-        create_tables_button.button_type = 'success'
-        create_tables_button.label = 'Cancel'
-
-
-def save_needed_sql(attr, old, new):
-    save_sql_settings_button.label = 'Save Needed'
-    save_sql_settings_button.button_type = 'warning'
-
-
 def update_query_columns_ticker(attr, old, new):
     update_query_columns()
 
@@ -1003,7 +780,7 @@ def backup_db():
     if not os.path.isdir(abs_path):
         os.mkdir(abs_path)
 
-    new_file = str(datetime.datetime.now()).split('.')[0].replace(':','-').replace(' ', '_')
+    new_file = str(datetime.datetime.now()).split('.')[0].replace(':','-').replace(' ', '_') + '.sql'
     abs_file_path = os.path.join(abs_path, new_file)
 
     os.system("pg_dumpall >" + abs_file_path)
@@ -1025,8 +802,6 @@ def restore_db():
     abs_file_path = os.path.join(script_dir, rel_path)
 
     back_up_command = "psql " + config['dbname'] + " < " + abs_file_path
-    if su_pw.value:
-        back_up_command = 'sudo ' + back_up_command + ' | ' + su_pw.value
     os.system(back_up_command)
 
     restore_db_button.label = 'Restore'
@@ -1065,8 +840,6 @@ def delete_backup():
         else:
             new_index = len(backup_select.options) - 2
         update_backup_select(new_index)
-
-
 
 
 ######################################################
@@ -1235,65 +1008,6 @@ roi_layout = layout([[select_institutional_roi],
                      [action_button],
                      [p]])
 
-# !!!!!!!!!!!!!!!!!!!!!!!
-# Import and SQL objects
-# !!!!!!!!!!!!!!!!!!!!!!!
-div_import = Div(text="<b>DICOM Directories</b>")
-div_horizontal_bar_settings = Div(text="<hr>", width=900)
-input_inbox = TextInput(value=directories['inbox'], title="Inbox", width=300)
-input_inbox.on_change('value', update_inbox_status)
-input_imported = TextInput(value=directories['imported'], title="Imported", width=300)
-input_imported.on_change('value', update_imported_status)
-input_review = TextInput(value=directories['review'], title="Review", width=300)
-input_review.on_change('value', update_review_status)
-
-div_sql = Div(text="<b>SQL Settings</b>")
-input_host = TextInput(value=config['host'], title="Host", width=300)
-input_port = TextInput(value=config['port'], title="Port", width=300)
-input_dbname = TextInput(value=config['dbname'], title="Database Name", width=300)
-input_user = TextInput(value=config['user'], title="User (Leave blank for OS authentication)", width=300)
-input_password = TextInput(value=config['password'], title="Password (Leave blank for OS authentication)", width=300)
-input_host.on_change('value', save_needed_sql)
-input_port.on_change('value', save_needed_sql)
-input_dbname.on_change('value', save_needed_sql)
-input_user.on_change('value', save_needed_sql)
-input_password.on_change('value', save_needed_sql)
-
-# Reload and Save objects
-reload_dir_button = Button(label='Reload', button_type='primary', width=100)
-reload_dir_button.on_click(reload_directories)
-save_dir_button = Button(label='Save', button_type='success', width=100)
-save_dir_button.on_click(save_directories)
-update_dir_save_status()
-
-# SQL Table check/create/reinitialize objects
-check_tables_button = Button(label='Check Tables', button_type='primary', width=100)
-check_tables_button.on_click(check_tables)
-create_tables_button = Button(label='Create Tables', button_type='primary', width=100)
-create_tables_button.on_click(create_tables)
-clear_tables_button = Button(label='Clear Tables', button_type='primary', width=100)
-clear_tables_button.on_click(clear_tables)
-
-reload_sql_settings_button = Button(label='Reload', button_type='primary', width=100)
-reload_sql_settings_button.on_click(reload_sql_settings)
-save_sql_settings_button = Button(label='Save', button_type='success', width=100)
-save_sql_settings_button.on_click(save_sql_settings)
-echo_button = Button(label="Echo", button_type='primary', width=100)
-echo_button.on_click(echo)
-
-settings_layout = layout([[div_import],
-                          [input_inbox],
-                          [input_imported],
-                          [input_review],
-                          [reload_dir_button, save_dir_button],
-                          [div_horizontal_bar_settings],
-                          [div_sql],
-                          [input_host, input_port],
-                          [input_user, input_password],
-                          [input_dbname],
-                          [reload_sql_settings_button, echo_button, save_sql_settings_button],
-                          [check_tables_button, create_tables_button, clear_tables_button]])
-
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Database Editor Objects
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1304,7 +1018,7 @@ rebuild_db_button.on_click(rebuild_db_button_click)
 
 query_title = Div(text="<b>Query Database</b>", width=1000)
 query_table = Select(value='DVHs', options=['DVHs', 'Plans', 'Rxs', 'Beams'], width=200, height=100, title='Table')
-query_columns = MultiSelect(title="Columns:", width=200, options=[tuple(['', ''])])
+query_columns = MultiSelect(title="Columns (Ctrl or Shift Click enabled)", width=250, options=[tuple(['', ''])])
 query_condition = TextInput(value='', title="Condition", width=300)
 query_button = Button(label='Query', button_type='primary', width=100)
 table_slider = Slider(start=300, end=2000, value=1000, step=10, title="Table Width")
@@ -1314,7 +1028,7 @@ query_button.on_click(update_query_source)
 
 update_db_title = Div(text="<b>Update Database</b>", width=1000)
 update_db_table = Select(value='DVHs', options=['DVHs', 'Plans', 'Rxs'], width=200, height=100, title='Table')
-update_db_column = Select(value='', options=[''], width=200, title='Column')
+update_db_column = Select(value='', options=[''], width=250, title='Column')
 update_db_value = TextInput(value='', title="Value", width=300)
 update_db_condition = TextInput(value='', title="Condition", width=300)
 update_db_button = Button(label='Update', button_type='warning', width=100)
@@ -1346,11 +1060,17 @@ db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Backup utitily  
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-backup_select = Select(value=options[0], options=options, title="Available Backups", width=200)
+backup_select = Select(value=options[0], options=options, title="Available Backups", width=250)
 delete_backup_button = Button(label='Delete', button_type='warning', width=100)
 restore_db_button = Button(label='Restore', button_type='primary', width=100)
 backup_db_button = Button(label='Backup', button_type='success', width=100)
-su_pw = TextInput(value='', title="Root Password needed for restore (leave blank if OS authentication used)", width=500)
+warning_div = Div(text="<b>WARNING:</b> Restore requires your OS user name to be both a"
+                       " PostgresSQL super user and have ALL PRIVILEGES WITH GRANT OPTIONS.  Do NOT attempt otherwise."
+                       " It's possible you have multiple PostgresSQL servers installed, so be sure your backup"
+                       " file isn't empty.  Validate by typing 'psql' in a terminal/command prompt, then"
+                       " <i>SELECT * FROM pg_settings WHERE name = 'port';</i> "
+                       " The resulting port should be the same as the port used in the Directories and "
+                       " SQL Settings tab (i.e., make sure you're backing up the correct database).", width=800)
 update_backup_select()
 
 delete_backup_button.on_click(delete_backup)
@@ -1358,17 +1078,16 @@ backup_db_button.on_click(backup_db)
 restore_db_button.on_click(restore_db)
 
 backup_layout = layout([[backup_select, delete_backup_button, restore_db_button, backup_db_button],
-                        [su_pw]])
+                        [warning_div]])
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Tabs and document
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-settings_tab = Panel(child=settings_layout, title='Directories & SQL Settings')
 roi_tab = Panel(child=roi_layout, title='ROI Name Manager')
 db_tab = Panel(child=db_editor_layout, title='Database Editor')
 backup_tab = Panel(child=backup_layout, title='Backup & Restore')
 
-tabs = Tabs(tabs=[settings_tab, roi_tab, db_tab, backup_tab])
+tabs = Tabs(tabs=[roi_tab, db_tab, backup_tab])
 
 # Create the document Bokeh server will use to generate the webpage
 curdoc().add_root(tabs)

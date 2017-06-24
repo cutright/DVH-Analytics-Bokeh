@@ -197,7 +197,9 @@ def main():
 
     if args.command:
 
-        if args.command[0] == 'settings':
+        script_dir = os.path.dirname(__file__)
+
+        if args.command[0] == 'setup_simple':
             if not args.sql and not args.dir:
                 settings()
             else:
@@ -246,13 +248,11 @@ def main():
 
             command = ["bokeh", "serve"]
 
-            script_dir = os.path.dirname(__file__)
-
             if args.allow_websocket_origin:
                 command.append("--allow-websocket-origin")
                 command.append(args.allow_websocket_origin)
             if args.port:
-                command.append("--port")
+                command.append("--port")  # Defaults to 5006
                 command.append(args.port)
             if not args.allow_websocket_origin and not args.port:
                 command.append("--show")
@@ -265,8 +265,18 @@ def main():
 
             command = ["bokeh", "serve", "--show", "--port", "5007"]
 
-            script_dir = os.path.dirname(__file__)
             file_name = 'admin.py'
+            abs_file_path = os.path.join(script_dir, file_name)
+
+            command.append(abs_file_path)
+
+            call(command)
+
+        elif args.command[0] == 'setup':
+
+            command = ["bokeh", "serve", "--show", "--port", "5008"]
+
+            file_name = 'settings.py'
             abs_file_path = os.path.join(script_dir, file_name)
 
             command.append(abs_file_path)
