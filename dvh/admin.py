@@ -1067,8 +1067,12 @@ warning_div = Div(text="<b>WARNING:</b> Restore requires your OS user name to be
                        " It's possible you have multiple PostgreSQL servers installed, so be sure your backup"
                        " file isn't empty.  Validate by typing 'psql' in a terminal/command prompt, then"
                        " <i>SELECT * FROM pg_settings WHERE name = 'port';</i> "
-                       " The resulting port should be the same as the port used in the Directories and "
-                       " SQL Settings tab (i.e., make sure you're backing up the correct database).", width=550)
+                       " The resulting port should match the port below"
+                       " (i.e., make sure you're backing up the correct database).", width=550)
+host_div = Div(text="<b>Host</b>: %s" % config['host'])
+port_div = Div(text="<b>Port</b>: %s" % config['port'])
+db_div = Div(text="<b>Database</b>: %s" % config['dbname'])
+
 update_backup_select()
 
 delete_backup_button.on_click(delete_backup)
@@ -1076,7 +1080,10 @@ backup_db_button.on_click(backup_db)
 restore_db_button.on_click(restore_db)
 
 backup_layout = layout([[backup_select, delete_backup_button, restore_db_button, backup_db_button],
-                        [warning_div]])
+                        [warning_div],
+                        [host_div],
+                        [port_div],
+                        [db_div]])
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Tabs and document
