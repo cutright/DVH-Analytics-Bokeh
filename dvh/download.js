@@ -157,7 +157,7 @@ for (i=0; i < data['mrn'].length; i++) {
 }
 filetext = filetext.concat('\n');
 
-for (i=0; i < data['x'][0].length; i++) {
+for (i=0; i < data['x'][1].length; i++) {
     for (j=0; j < data['mrn'].length; j++) {
         filetext = filetext.concat(data['x'][j][i]);
         filetext = filetext.concat(',');
