@@ -79,7 +79,9 @@ selector_categories = {'ROI Institutional Category': {'var_name': 'institutional
                        'Normalization': {'var_name': 'normalization_method', 'table': 'Rxs'},
                        'Treatment Machine': {'var_name': 'treatment_machine', 'table': 'Beams'},
                        'Heterogeneity Correction': {'var_name': 'heterogeneity_correction', 'table': 'Plans'},
-                       'Scan Mode': {'var_name': 'scan_mode', 'table': 'Beams'}}
+                       'Scan Mode': {'var_name': 'scan_mode', 'table': 'Beams'},
+                       'MRN': {'var_name': 'mrn', 'table': 'Plans'},
+                       'UID': {'var_name': 'study_instance_uid', 'table': 'Plans'}}
 range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 'source': source_plans},
                     'Beam Energy Min': {'var_name': 'beam_energy_min', 'table': 'Beams', 'units': '', 'source': source_beams},
                     'Beam Energy Max': {'var_name': 'beam_energy_max', 'table': 'Beams', 'units': '', 'source': source_beams},
@@ -533,7 +535,7 @@ def update_dvh_data(dvh):
     for j, color in itertools.izip(range(0, dvh.count + extra_rows), colors):
         line_colors.append(color)
 
-    x_axis = np.add(np.linspace(0, dvh.bin_count, dvh.bin_count) / float(100), 0.005)
+    x_axis = np.round(np.add(np.linspace(0, dvh.bin_count, dvh.bin_count) / float(100), 0.005), 3)
 
     print(str(datetime.now()), 'source.data set', sep=' ')
     print(str(datetime.now()), 'beginning stat calcs', sep=' ')
