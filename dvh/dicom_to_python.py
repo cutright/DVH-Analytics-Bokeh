@@ -19,7 +19,7 @@ import numpy as np
 
 class DVHRow:
     def __init__(self, mrn, study_instance_uid, institutional_roi, physician_roi,
-                 roi_name, roi_type, volume, min_dose, mean_dose, max_dose, dvh_str):
+                 roi_name, roi_type, volume, min_dose, mean_dose, max_dose, dvh_str, roi_coord):
 
         for key, value in locals().iteritems():
             if key != 'self':
@@ -340,6 +340,16 @@ class DVHTable:
                         institutional_roi = 'uncategorized'
                         physician_roi = 'uncategorized'
 
+                    roi_coord = []
+                    try:
+                        coord = rt_structure.GetStructureCoordinates(key)
+                        for z in coord:
+                            for points in coord[z][0]['data']:
+                                for point in points:
+                                    roi_coord.extend(str(point))
+                    except:
+                        roi_coord = ['(NULL)']
+
                     current_dvh_row = DVHRow(mrn,
                                              study_instance_uid,
                                              institutional_roi,
@@ -350,7 +360,8 @@ class DVHTable:
                                              current_dvh_calc.min,
                                              current_dvh_calc.mean,
                                              current_dvh_calc.max,
-                                             ','.join(['%.2f' % num for num in current_dvh_calc.counts]))
+                                             ','.join(['%.2f' % num for num in current_dvh_calc.counts]),
+                                             ','.join(roi_coord))
                     values[row_counter] = current_dvh_row
                     row_counter += 1
 

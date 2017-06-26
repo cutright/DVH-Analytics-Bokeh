@@ -111,6 +111,7 @@ class DVH_SQL:
                          str(round(dvh_table.mean_dose[x], 2)),
                          str(round(dvh_table.max_dose[x], 2)),
                          dvh_table.dvh_str[x],
+                         dvh_table.roi_coord[x],
                          'NOW()']
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'
