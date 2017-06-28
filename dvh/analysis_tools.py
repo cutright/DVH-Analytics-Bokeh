@@ -10,6 +10,7 @@ import numpy as np
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL, get_unique_list
 import os
+from scipy.spatial.distance import cdist
 
 
 class DVH:
@@ -88,9 +89,9 @@ class DVH:
             if self.physician_roi[i] in eud_a_values:
                 current_a = eud_a_values[self.physician_roi[i]]
             elif self.roi_type[i].lower()[0:3] in {'gtv', 'ctv', 'ptv'}:
-                current_a = float(-10)
+                current_a = -10.
             else:
-                current_a = float(1)
+                current_a = 1.
             self.eud.append(calc_eud(current_dvh, current_a))
             self.eud_a_value.append(current_a)
 
@@ -234,13 +235,13 @@ class DVH:
         return new_dvhs
 
     def resample_dvh(self, f):
-        min_rx_dose = np.min(self.rx_dose) * float(100)
+        min_rx_dose = np.min(self.rx_dose) * 100.
         new_bin_count = int(np.divide(float(self.bin_count), min_rx_dose) * f)
 
         x1 = np.linspace(0, self.bin_count, self.bin_count)
         y2 = np.zeros([new_bin_count, self.count])
         for i in range(0, self.count):
-            x2 = np.multiply(np.linspace(0, new_bin_count, new_bin_count), self.rx_dose[i] * float(100) / f)
+            x2 = np.multiply(np.linspace(0, new_bin_count, new_bin_count), self.rx_dose[i] * 100. / f)
             y2[:, i] = np.interp(x2, x1, self.dvh[:, i])
         x2 = np.divide(np.linspace(0, new_bin_count, new_bin_count), f)
         return x2, y2
@@ -326,6 +327,68 @@ def get_eud_a_values():
 
     return eud_a_values
 
+
+def get_roi_coordinates_from_string(roi_coord_string):
+    roi_coordinates = []
+    roi_coord_string = roi_coord_string.split(',')
+
+    for i in range(0, len(roi_coord_string)/3):
+        index = 3 * i
+        roi_coordinates.append(np.array((float(roi_coord_string[index]),
+                                         float(roi_coord_string[index + 1]),
+                                         float(roi_coord_string[index + 2]))))
+    return roi_coordinates
+
+
+def get_min_distances_to_target(oar_coordinates, target_coordinates):
+    min_distances = []
+    all_distances = cdist(oar_coordinates, target_coordinates, 'euclidean')
+    for oar_point in all_distances:
+        min_distances.append(float(np.min(oar_point)))
+
+    return min_distances
+
+
+def update_min_distances_in_db(study_instance_uid, roi_name):
+
+    oar_coordinates_string = DVH_SQL().query('dvhs',
+                                             'roi_coord_string',
+                                             "study_instance_uid = '%s' and roi_name = '%s'"
+                                             % (study_instance_uid, roi_name))
+    ptv_coordinates_string = DVH_SQL().query('dvhs',
+                                             'roi_coord_string',
+                                             "study_instance_uid = '%s' and roi_type = 'PTV'"
+                                             % study_instance_uid)
+    if not ptv_coordinates_string:
+        ptv_coordinates_string = DVH_SQL().query('dvhs',
+                                                 'roi_coord_string',
+                                                 "study_instance_uid = '%s' and roi_type = 'PTV1'"
+                                                 % study_instance_uid)
+    if ptv_coordinates_string:
+        print(roi_name)
+
+        oar_coordinates = get_roi_coordinates_from_string(oar_coordinates_string[0][0])
+        ptv_coordinates = get_roi_coordinates_from_string(ptv_coordinates_string[0][0])
+
+        min_distances = get_min_distances_to_target(oar_coordinates, ptv_coordinates)
+
+        DVH_SQL().update('dvhs',
+                         'min_dist_to_ptv',
+                         min(min_distances),
+                         "study_instance_uid = '%s' and roi_name = '%s'"
+                         % (study_instance_uid, roi_name))
+
+        DVH_SQL().update('dvhs',
+                         'distances_to_ptv',
+                         ','.join(str(x) for x in min_distances),
+                         "study_instance_uid = '%s' and roi_name = '%s'"
+                         % (study_instance_uid, roi_name))
+
+
+def update_all_min_distances_in_db():
+    rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, roi_type, physician_roi')
+    for roi in rois:
+        update_min_distances_in_db(roi[0], roi[1])
 
 if __name__ == '__main__':
     pass

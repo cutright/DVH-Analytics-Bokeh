@@ -114,7 +114,8 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
                     'ROI Min Dose': {'var_name': 'min_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
                     'ROI Mean Dose': {'var_name': 'mean_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
                     'ROI Max Dose': {'var_name': 'max_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
-                    'ROI Volume': {'var_name': 'volume', 'table': 'DVHs', 'units': 'cc', 'source': source}}
+                    'ROI Volume': {'var_name': 'volume', 'table': 'DVHs', 'units': 'cc', 'source': source},
+                    'Min Distance to PTV': {'var_name': 'min_dist_to_ptv', 'table': 'DVHs', 'units': 'mm', 'source': source}}
 
 
 # Functions that add widget rows
@@ -535,7 +536,7 @@ def update_dvh_data(dvh):
     for j, color in itertools.izip(range(0, dvh.count + extra_rows), colors):
         line_colors.append(color)
 
-    x_axis = np.round(np.add(np.linspace(0, dvh.bin_count, dvh.bin_count) / float(100), 0.005), 3)
+    x_axis = np.round(np.add(np.linspace(0, dvh.bin_count, dvh.bin_count) / 100., 0.005), 3)
 
     print(str(datetime.now()), 'source.data set', sep=' ')
     print(str(datetime.now()), 'beginning stat calcs', sep=' ')
@@ -572,7 +573,7 @@ def update_dvh_data(dvh):
         if radio_group_dose.active == 1:
             x_axis_1 = dvh_group_1.get_stat_dvh(type=False, dose=stat_dose_scale)
         else:
-            x_axis_1 = np.add(np.linspace(0, dvh_group_1.bin_count, dvh_group_1.bin_count) / float(100), 0.005)
+            x_axis_1 = np.add(np.linspace(0, dvh_group_1.bin_count, dvh_group_1.bin_count) / 100., 0.005)
 
         source_patch_1.data = {'x_patch': np.append(x_axis_1, x_axis_1[::-1]).tolist(),
                                'y_patch': np.append(stat_dvhs_1['q3'], stat_dvhs_1['q1'][::-1]).tolist()}
@@ -602,7 +603,7 @@ def update_dvh_data(dvh):
         if radio_group_dose.active == 1:
             x_axis_2 = dvh_group_2.get_stat_dvh(type=False, dose=stat_dose_scale)
         else:
-            x_axis_2 = np.add(np.linspace(0, dvh_group_2.bin_count, dvh_group_2.bin_count) / float(100), 0.005)
+            x_axis_2 = np.add(np.linspace(0, dvh_group_2.bin_count, dvh_group_2.bin_count) / 100., 0.005)
 
         source_patch_2.data = {'x_patch': np.append(x_axis_2, x_axis_2[::-1]).tolist(),
                                'y_patch': np.append(stat_dvhs_2['q3'], stat_dvhs_2['q1'][::-1]).tolist()}
@@ -666,6 +667,7 @@ def update_dvh_data(dvh):
         dvh.physician_roi.extend(['N/A'] * extra_rows)
         dvh.roi_type.extend(['Stat'] * extra_rows)
         dvh.eud_a_value.extend(['N/A'] * extra_rows)
+        dvh.min_dist_to_ptv.extend(['N/A'] * extra_rows)
     if group_1_count > 0:
         dvh.rx_dose.extend(calc_stats(dvh_group_1.rx_dose))
         dvh.volume.extend(calc_stats(dvh_group_1.volume))
@@ -695,6 +697,7 @@ def update_dvh_data(dvh):
     dvh.max_dose.insert(0, '')
     dvh.eud.insert(0, 'N/A')
     dvh.eud_a_value.insert(0, 'N/A')
+    dvh.min_dist_to_ptv.insert(0, 'N/A')
     line_colors.insert(0, 'green')
     x_data.insert(0, [0])
     y_data.insert(0, [0])
@@ -713,6 +716,7 @@ def update_dvh_data(dvh):
                    'max_dose': dvh.max_dose,
                    'eud': dvh.eud,
                    'eud_a_value': dvh.eud_a_value,
+                   'min_dist_to_ptv': dvh.min_dist_to_ptv,
                    'x': x_data,
                    'y': y_data,
                    'color': line_colors,
@@ -1017,12 +1021,12 @@ def calculate_review_dvh():
             mean_dose = review_dvh.mean
             max_dose = review_dvh.max
             if not review_rx.value:
-                rx_dose = float(dicompyler_plan['rxdose']) / 100
+                rx_dose = float(dicompyler_plan['rxdose']) / 100.
                 review_rx.value = str(round(rx_dose, 2))
             else:
                 rx_dose = round(float(review_rx.value), 2)
             if not review_eud_a_value.value:
-                eud_a_value = float(1)
+                eud_a_value = 1.
             else:
                 eud_a_value = float(review_eud_a_value.value)
 
@@ -1034,10 +1038,10 @@ def calculate_review_dvh():
             if radio_group_dose.active == 1:
                 f = 5000
                 bin_count = len(x)
-                new_bin_count = int(bin_count * f / (rx_dose * 100))
+                new_bin_count = int(bin_count * f / (rx_dose * 100.))
 
                 x1 = np.linspace(0, bin_count, bin_count)
-                x2 = np.multiply(np.linspace(0, new_bin_count, new_bin_count), rx_dose * float(100) / f)
+                x2 = np.multiply(np.linspace(0, new_bin_count, new_bin_count), rx_dose * 100. / f)
                 y = np.interp(x2, x1, review_dvh.counts)
                 y = np.divide(y, np.max(y))
                 x = np.divide(np.linspace(0, new_bin_count, new_bin_count), f)
@@ -1202,7 +1206,8 @@ columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="mean_dose", title="Mean Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="max_dose", title="Max Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="eud", title="EUD", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="eud_a_value", title="a", width=80)]
+           TableColumn(field="eud_a_value", title="a", width=80),
+           TableColumn(field="min_dist_to_ptv", title="Dist to PTV", width=80, formatter=NumberFormatter(format="0.00"))]
 data_table = DataTable(source=source, columns=columns, width=1000)
 
 # Set up EndPoint DataTable

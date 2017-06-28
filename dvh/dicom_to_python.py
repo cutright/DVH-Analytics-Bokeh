@@ -172,7 +172,7 @@ class PlanRow:
                     if not fx_reset:
                         fxs = 0
                         fx_reset = True
-                    fx_dose = float(temp[temp.index('cgy')-1]) / 100
+                    fx_dose = float(temp[temp.index('cgy')-1]) / 100.
                     fxs += int(temp[temp.index('x') + 1])
                     rx_dose += fx_dose * float((temp[temp.index('x') + 1]))
                 elif temp[0] == 'tx:':
@@ -183,7 +183,7 @@ class PlanRow:
 
         # if rx_dose point not found, use dose in DICOM file
         if rx_dose == 0:
-            rx_dose = float(dicompyler_plan['rxdose']) / 100
+            rx_dose = float(dicompyler_plan['rxdose']) / 100.
 
         # This assumes that Plans are either 100% Arc plans or 100% Static Angle
         # Note that the beams class will have this information on a per beam basis
@@ -346,7 +346,7 @@ class DVHTable:
                         for z in coord:
                             for points in coord[z][0]['data']:
                                 for point in points:
-                                    roi_coord.extend(str(point))
+                                    roi_coord.append(str(point))
                     except:
                         roi_coord = ['(NULL)']
 
@@ -529,11 +529,11 @@ class BeamTable:
                         ssd = []
                         for cp in cp_seq:
                             if hasattr(cp, 'SourceToSurfaceDistance'):
-                                ssd.append(round(float(cp.SourceToSurfaceDistance) / 10, 2))
+                                ssd.append(round(float(cp.SourceToSurfaceDistance) / 10., 2))
                         ssd = round(float(np.average(ssd)), 2)
 
                     else:
-                        ssd = round(float(cp_seq[0].SourceToSurfaceDistance) / 10, 2)
+                        ssd = round(float(cp_seq[0].SourceToSurfaceDistance) / 10., 2)
                 else:
                     ssd = '(NULL)'
 
@@ -584,7 +584,7 @@ class RxTable:
             rx_pt_found = False
             normalization_method = 'default'
             normalization_object = 'unknown'
-            rx_percent = float(100)
+            rx_percent = 100.
             fx_grp_number = i + 1
             fx_dose = 0
             fx_grp_name = "FxGrp " + str(i + 1)
@@ -621,7 +621,7 @@ class RxTable:
             fxs = fx_grp_seq[i].NumberOfFractionsPlanned
 
             if fx_dose == 0:
-                fx_dose = round(float(rx_dose) / float(fxs), 2)
+                fx_dose = round(rx_dose / float(fxs), 2)
 
             # Because DICOM does not contain Rx's explicitly, the user must create
             # a point in the RT Structure file called 'rx [#]: ' per rx
@@ -640,7 +640,7 @@ class RxTable:
 
                         fx_grp_name = temp[1].strip()
 
-                        fx_dose = float(temp[2].split('cgy')[0]) / float(100)
+                        fx_dose = float(temp[2].split('cgy')[0]) / 100.
                         fxs = int(temp[2].split('x ')[1].split(' to')[0])
                         rx_dose = fx_dose * float(fxs)
 
