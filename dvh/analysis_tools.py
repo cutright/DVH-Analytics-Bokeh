@@ -365,16 +365,16 @@ def update_min_distances_in_db(study_instance_uid, roi_name):
                                                  "study_instance_uid = '%s' and roi_type = 'PTV1'"
                                                  % study_instance_uid)
     if ptv_coordinates_string:
-        print(roi_name)
 
         oar_coordinates = get_roi_coordinates_from_string(oar_coordinates_string[0][0])
         ptv_coordinates = get_roi_coordinates_from_string(ptv_coordinates_string[0][0])
 
         min_distances = get_min_distances_to_target(oar_coordinates, ptv_coordinates)
+        print(roi_name, len(min_distances), sep=' ')
 
         DVH_SQL().update('dvhs',
                          'min_dist_to_ptv',
-                         min(min_distances),
+                         round(min(min_distances), 1),
                          "study_instance_uid = '%s' and roi_name = '%s'"
                          % (study_instance_uid, roi_name))
 
@@ -388,7 +388,10 @@ def update_min_distances_in_db(study_instance_uid, roi_name):
 def update_all_min_distances_in_db():
     rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, roi_type, physician_roi')
     for roi in rois:
-        update_min_distances_in_db(roi[0], roi[1])
+        if roi[2].lower() == 'organ' and \
+           (roi[3].lower() not in {'uncategorized', 'ignored', 'external', 'skin'} or
+           (roi[1].lower() not in {'external', 'skin'})):
+            update_min_distances_in_db(roi[0], roi[1])
 
 if __name__ == '__main__':
     pass

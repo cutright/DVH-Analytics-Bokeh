@@ -1207,7 +1207,7 @@ columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="max_dose", title="Max Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="eud", title="EUD", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="eud_a_value", title="a", width=80),
-           TableColumn(field="min_dist_to_ptv", title="Dist to PTV", width=80, formatter=NumberFormatter(format="0.00"))]
+           TableColumn(field="min_dist_to_ptv", title="Dist to PTV", width=80, formatter=NumberFormatter(format="0.0"))]
 data_table = DataTable(source=source, columns=columns, width=1000)
 
 # Set up EndPoint DataTable
