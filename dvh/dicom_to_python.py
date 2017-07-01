@@ -344,9 +344,11 @@ class DVHTable:
                     try:
                         coord = rt_structure.GetStructureCoordinates(key)
                         for z in coord:
-                            for points in coord[z][0]['data']:
-                                for point in points:
-                                    roi_coord.append(str(point))
+                            for set_of_points in coord[z]:
+                                for points in set_of_points['data']:
+                                    for point in points:
+                                        roi_coord.append(str(point))
+
                     except:
                         roi_coord = ['(NULL)']
 

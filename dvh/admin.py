@@ -691,6 +691,7 @@ def update_query_columns():
     if query_table.value.lower() == 'dvhs':
         new_options.pop(new_options.index('dvh_string'))
         new_options.pop(new_options.index('roi_coord_string'))
+        new_options.pop(new_options.index('distances_to_ptv'))
     options_tuples = []
     for option in new_options:
         options_tuples.append(tuple([option, option]))
@@ -1093,7 +1094,7 @@ roi_tab = Panel(child=roi_layout, title='ROI Name Manager')
 db_tab = Panel(child=db_editor_layout, title='Database Editor')
 backup_tab = Panel(child=backup_layout, title='Backup & Restore')
 
-tabs = Tabs(tabs=[roi_tab, db_tab, backup_tab])
+tabs = Tabs(tabs=[db_tab, roi_tab, backup_tab])
 
 # Create the document Bokeh server will use to generate the webpage
 curdoc().add_root(tabs)

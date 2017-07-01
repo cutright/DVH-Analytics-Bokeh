@@ -344,7 +344,7 @@ def get_min_distances_to_target(oar_coordinates, target_coordinates):
     min_distances = []
     all_distances = cdist(oar_coordinates, target_coordinates, 'euclidean')
     for oar_point in all_distances:
-        min_distances.append(float(np.min(oar_point)))
+        min_distances.append(float(np.min(oar_point)/10.))
 
     return min_distances
 
@@ -370,7 +370,6 @@ def update_min_distances_in_db(study_instance_uid, roi_name):
         ptv_coordinates = get_roi_coordinates_from_string(ptv_coordinates_string[0][0])
 
         min_distances = get_min_distances_to_target(oar_coordinates, ptv_coordinates)
-        print(roi_name, len(min_distances), sep=' ')
 
         DVH_SQL().update('dvhs',
                          'min_dist_to_ptv',
@@ -386,12 +385,12 @@ def update_min_distances_in_db(study_instance_uid, roi_name):
 
 
 def update_all_min_distances_in_db():
-    rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, roi_type, physician_roi')
+    condition = "LOWER(roi_type) = 'organ' AND (" \
+                "LOWER(roi_name) NOT IN ('external', 'skin') OR " \
+                "LOWER(roi_type) NOT IN ('uncategorized', 'ignored', 'external', 'skin'))"
+    rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name', condition)
     for roi in rois:
-        if roi[2].lower() == 'organ' and \
-           (roi[3].lower() not in {'uncategorized', 'ignored', 'external', 'skin'} or
-           (roi[1].lower() not in {'external', 'skin'})):
-            update_min_distances_in_db(roi[0], roi[1])
+        update_min_distances_in_db(roi[0], roi[1])
 
 if __name__ == '__main__':
     pass
