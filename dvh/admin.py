@@ -690,8 +690,8 @@ def update_query_columns():
     new_options.pop(new_options.index('study_instance_uid'))
     if query_table.value.lower() == 'dvhs':
         new_options.pop(new_options.index('dvh_string'))
-        new_options.pop(new_options.index('roi_coord_string'))
-        new_options.pop(new_options.index('distances_to_ptv'))
+        # new_options.pop(new_options.index('roi_coord_string'))
+        # new_options.pop(new_options.index('distances_to_ptv'))
     options_tuples = []
     for option in new_options:
         options_tuples.append(tuple([option, option]))

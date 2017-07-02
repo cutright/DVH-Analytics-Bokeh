@@ -13,7 +13,7 @@ from dicompylercore import dicomparser, dvhcalc
 from datetime import datetime
 from dateutil.relativedelta import relativedelta  # python-dateutil
 from roi_name_manager import DatabaseROIs, clean_name
-from utilities import datetime_str_to_obj
+from utilities import datetime_str_to_obj, dicompyler_roi_coord_to_db_string, change_angle_origin
 import numpy as np
 
 
@@ -340,17 +340,7 @@ class DVHTable:
                         institutional_roi = 'uncategorized'
                         physician_roi = 'uncategorized'
 
-                    roi_coord = []
-                    try:
-                        coord = rt_structure.GetStructureCoordinates(key)
-                        for z in coord:
-                            for set_of_points in coord[z]:
-                                for points in set_of_points['data']:
-                                    for point in points:
-                                        roi_coord.append(str(point))
-
-                    except:
-                        roi_coord = ['(NULL)']
+                    roi_coord = dicompyler_roi_coord_to_db_string(rt_structure.GetStructureCoordinates(key))
 
                     current_dvh_row = DVHRow(mrn,
                                              study_instance_uid,
@@ -363,7 +353,7 @@ class DVHTable:
                                              current_dvh_calc.mean,
                                              current_dvh_calc.max,
                                              ','.join(['%.2f' % num for num in current_dvh_calc.counts]),
-                                             ','.join(roi_coord))
+                                             roi_coord)
                     values[row_counter] = current_dvh_row
                     row_counter += 1
 
@@ -671,28 +661,6 @@ class RxTable:
                 for x in fx_group_range:
                     new_list.append(getattr(values[x], attr))
                 setattr(self, attr, new_list)
-
-
-def change_angle_origin(angles, max_positive_angle):
-    if len(angles) == 1:
-        if angles[0] > max_positive_angle:
-            return [angles[0] - 360]
-        else:
-            return angles
-    new_angles = []
-    for angle in angles:
-        if angle > max_positive_angle:
-            new_angles.append(angle - 360)
-        elif angle == max_positive_angle:
-            if angle == angles[0] and angles[1] > max_positive_angle:
-                new_angles.append(angle - 360)
-            elif angle == angles[-1] and angles[-2] > max_positive_angle:
-                new_angles.append(angle - 360)
-            else:
-                new_angles.append(angle)
-        else:
-            new_angles.append(angle)
-    return new_angles
 
 
 if __name__ == '__main__':

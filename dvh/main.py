@@ -115,7 +115,10 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
                     'ROI Mean Dose': {'var_name': 'mean_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
                     'ROI Max Dose': {'var_name': 'max_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
                     'ROI Volume': {'var_name': 'volume', 'table': 'DVHs', 'units': 'cc', 'source': source},
-                    'Min Distance to PTV': {'var_name': 'min_dist_to_ptv', 'table': 'DVHs', 'units': 'mm', 'source': source}}
+                    'Distance to PTV Min': {'var_name': 'dist_to_ptv_min', 'table': 'DVHs', 'units': 'cm', 'source': source},
+                    'Distance to PTV Mean': {'var_name': 'dist_to_ptv_mean', 'table': 'DVHs', 'units': 'cm', 'source': source},
+                    'Distance to PTV Median': {'var_name': 'dist_to_ptv_median', 'table': 'DVHs', 'units': 'cm', 'source': source},
+                    'Distance to PTV Max': {'var_name': 'dist_to_ptv_max', 'table': 'DVHs', 'units': 'cm', 'source': source}}
 
 
 # Functions that add widget rows
@@ -667,7 +670,7 @@ def update_dvh_data(dvh):
         dvh.physician_roi.extend(['N/A'] * extra_rows)
         dvh.roi_type.extend(['Stat'] * extra_rows)
         dvh.eud_a_value.extend(['N/A'] * extra_rows)
-        dvh.min_dist_to_ptv.extend(['N/A'] * extra_rows)
+        dvh.dist_to_ptv_min.extend(['N/A'] * extra_rows)
     if group_1_count > 0:
         dvh.rx_dose.extend(calc_stats(dvh_group_1.rx_dose))
         dvh.volume.extend(calc_stats(dvh_group_1.volume))
@@ -697,7 +700,7 @@ def update_dvh_data(dvh):
     dvh.max_dose.insert(0, '')
     dvh.eud.insert(0, 'N/A')
     dvh.eud_a_value.insert(0, 'N/A')
-    dvh.min_dist_to_ptv.insert(0, 'N/A')
+    dvh.dist_to_ptv_min.insert(0, 'N/A')
     line_colors.insert(0, 'green')
     x_data.insert(0, [0])
     y_data.insert(0, [0])
@@ -716,7 +719,7 @@ def update_dvh_data(dvh):
                    'max_dose': dvh.max_dose,
                    'eud': dvh.eud,
                    'eud_a_value': dvh.eud_a_value,
-                   'min_dist_to_ptv': dvh.min_dist_to_ptv,
+                   'dist_to_ptv_min': dvh.dist_to_ptv_min,
                    'x': x_data,
                    'y': y_data,
                    'color': line_colors,
@@ -1207,7 +1210,7 @@ columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="max_dose", title="Max Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="eud", title="EUD", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="eud_a_value", title="a", width=80),
-           TableColumn(field="min_dist_to_ptv", title="Dist to PTV", width=80, formatter=NumberFormatter(format="0.0"))]
+           TableColumn(field="dist_to_ptv_min", title="Dist to PTV", width=80, formatter=NumberFormatter(format="0.0"))]
 data_table = DataTable(source=source, columns=columns, width=1000)
 
 # Set up EndPoint DataTable

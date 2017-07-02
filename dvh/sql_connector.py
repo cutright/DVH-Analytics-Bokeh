@@ -114,6 +114,8 @@ class DVH_SQL:
                          dvh_table.roi_coord[x],
                          '(NULL)',
                          '(NULL)',
+                         '(NULL)',
+                         '(NULL)',
                          'NOW()']
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'

@@ -330,13 +330,17 @@ def get_eud_a_values():
 
 def get_roi_coordinates_from_string(roi_coord_string):
     roi_coordinates = []
-    roi_coord_string = roi_coord_string.split(',')
+    contours = roi_coord_string.split(':')
 
-    for i in range(0, len(roi_coord_string)/3):
-        index = 3 * i
-        roi_coordinates.append(np.array((float(roi_coord_string[index]),
-                                         float(roi_coord_string[index + 1]),
-                                         float(roi_coord_string[index + 2]))))
+    for contour in contours:
+        contour = contour.split(',')
+        z = contour.pop(0)
+        z = float(z)
+        i = 0
+        while i < len(contour):
+            roi_coordinates.append(np.array((float(contour[i]), float(contour[i + 1]), z)))
+            i += 2
+
     return roi_coordinates
 
 
@@ -355,6 +359,7 @@ def update_min_distances_in_db(study_instance_uid, roi_name):
                                              'roi_coord_string',
                                              "study_instance_uid = '%s' and roi_name = '%s'"
                                              % (study_instance_uid, roi_name))
+
     ptv_coordinates_string = DVH_SQL().query('dvhs',
                                              'roi_coord_string',
                                              "study_instance_uid = '%s' and roi_type = 'PTV'"
@@ -372,24 +377,37 @@ def update_min_distances_in_db(study_instance_uid, roi_name):
         min_distances = get_min_distances_to_target(oar_coordinates, ptv_coordinates)
 
         DVH_SQL().update('dvhs',
-                         'min_dist_to_ptv',
+                         'dist_to_ptv_min',
                          round(min(min_distances), 1),
                          "study_instance_uid = '%s' and roi_name = '%s'"
                          % (study_instance_uid, roi_name))
 
         DVH_SQL().update('dvhs',
-                         'distances_to_ptv',
-                         ','.join(str(x) for x in min_distances),
+                         'dist_to_ptv_mean',
+                         round(float(np.mean(min_distances)), 1),
+                         "study_instance_uid = '%s' and roi_name = '%s'"
+                         % (study_instance_uid, roi_name))
+
+        DVH_SQL().update('dvhs',
+                         'dist_to_ptv_median',
+                         round(float(np.median(min_distances)), 1),
+                         "study_instance_uid = '%s' and roi_name = '%s'"
+                         % (study_instance_uid, roi_name))
+
+        DVH_SQL().update('dvhs',
+                         'dist_to_ptv_max',
+                         round(max(min_distances), 1),
                          "study_instance_uid = '%s' and roi_name = '%s'"
                          % (study_instance_uid, roi_name))
 
 
 def update_all_min_distances_in_db():
-    condition = "LOWER(roi_type) = 'organ' AND (" \
+    condition = "LOWER(roi_type) IN ('organ', 'ctv', 'gtv') AND (" \
                 "LOWER(roi_name) NOT IN ('external', 'skin') OR " \
                 "LOWER(roi_type) NOT IN ('uncategorized', 'ignored', 'external', 'skin'))"
     rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name', condition)
     for roi in rois:
+        print('updating', roi[1], sep=' ')
         update_min_distances_in_db(roi[0], roi[1])
 
 if __name__ == '__main__':

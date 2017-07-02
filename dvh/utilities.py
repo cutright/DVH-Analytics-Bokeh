@@ -272,3 +272,36 @@ def validate_sql_connection(*config, **kwargs):
 
     return valid
 
+
+def change_angle_origin(angles, max_positive_angle):
+    if len(angles) == 1:
+        if angles[0] > max_positive_angle:
+            return [angles[0] - 360]
+        else:
+            return angles
+    new_angles = []
+    for angle in angles:
+        if angle > max_positive_angle:
+            new_angles.append(angle - 360)
+        elif angle == max_positive_angle:
+            if angle == angles[0] and angles[1] > max_positive_angle:
+                new_angles.append(angle - 360)
+            elif angle == angles[-1] and angles[-2] > max_positive_angle:
+                new_angles.append(angle - 360)
+            else:
+                new_angles.append(angle)
+        else:
+            new_angles.append(angle)
+    return new_angles
+
+
+def dicompyler_roi_coord_to_db_string(coord):
+    contours = []
+    for z in coord:
+        for plane in coord[z]:
+            points = [z]
+            for point in plane['data']:
+                points.append(str(point[0]))
+                points.append(str(point[1]))
+            contours.append(','.join(points))
+    return ':'.join(contours)
