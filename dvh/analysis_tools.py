@@ -345,6 +345,14 @@ def get_roi_coordinates_from_string(roi_coord_string):
 
 
 def get_min_distances_to_target(oar_coordinates, target_coordinates):
+    # type: ([np.array], [np.array]) -> [float]
+    """
+
+    :param oar_coordinates: list of numpy arrays of 3D points defining the surface of the OAR
+    :param target_coordinates: list of numpy arrays of 3D points defining the surface of the PTV
+    :return: min_distances: list of numpy arrays of 3D points defining the surface of the OAR
+    :rtype: [float]
+    """
     min_distances = []
     all_distances = cdist(oar_coordinates, target_coordinates, 'euclidean')
     for oar_point in all_distances:
@@ -378,7 +386,7 @@ def update_min_distances_in_db(study_instance_uid, roi_name):
 
         DVH_SQL().update('dvhs',
                          'dist_to_ptv_min',
-                         round(min(min_distances), 1),
+                         round(float(np.min(min_distances)), 1),
                          "study_instance_uid = '%s' and roi_name = '%s'"
                          % (study_instance_uid, roi_name))
 
@@ -396,7 +404,7 @@ def update_min_distances_in_db(study_instance_uid, roi_name):
 
         DVH_SQL().update('dvhs',
                          'dist_to_ptv_max',
-                         round(max(min_distances), 1),
+                         round(float(np.max(min_distances)), 1),
                          "study_instance_uid = '%s' and roi_name = '%s'"
                          % (study_instance_uid, roi_name))
 

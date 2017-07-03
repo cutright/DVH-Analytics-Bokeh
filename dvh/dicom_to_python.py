@@ -13,13 +13,13 @@ from dicompylercore import dicomparser, dvhcalc
 from datetime import datetime
 from dateutil.relativedelta import relativedelta  # python-dateutil
 from roi_name_manager import DatabaseROIs, clean_name
-from utilities import datetime_str_to_obj, dicompyler_roi_coord_to_db_string, change_angle_origin
+from utilities import datetime_str_to_obj, dicompyler_roi_coord_to_db_string, change_angle_origin, surface_area_of_roi
 import numpy as np
 
 
 class DVHRow:
     def __init__(self, mrn, study_instance_uid, institutional_roi, physician_roi,
-                 roi_name, roi_type, volume, min_dose, mean_dose, max_dose, dvh_str, roi_coord):
+                 roi_name, roi_type, volume, min_dose, mean_dose, max_dose, dvh_str, roi_coord, surface_area):
 
         for key, value in locals().iteritems():
             if key != 'self':
@@ -36,7 +36,7 @@ class BeamRow:
                  collimator_range, collimator_min, collimator_max,
                  couch_start, couch_end, couch_rot_dir,
                  couch_range, couch_min, couch_max,
-                 beam_dose_pt, ssd, treatment_machine, scan_mode, scan_spot_count):
+                 beam_dose_pt, isocenter, ssd, treatment_machine, scan_mode, scan_spot_count):
 
         for key, value in locals().iteritems():
             if key != 'self':
@@ -340,7 +340,9 @@ class DVHTable:
                         institutional_roi = 'uncategorized'
                         physician_roi = 'uncategorized'
 
-                    roi_coord = dicompyler_roi_coord_to_db_string(rt_structure.GetStructureCoordinates(key))
+                    coord = rt_structure.GetStructureCoordinates(key)
+                    roi_coord_str = dicompyler_roi_coord_to_db_string(rt_structure.GetStructureCoordinates(key))
+                    surface_area = surface_area_of_roi(coord)
 
                     current_dvh_row = DVHRow(mrn,
                                              study_instance_uid,
@@ -353,7 +355,8 @@ class DVHTable:
                                              current_dvh_calc.mean,
                                              current_dvh_calc.max,
                                              ','.join(['%.2f' % num for num in current_dvh_calc.counts]),
-                                             roi_coord)
+                                             roi_coord_str,
+                                             surface_area)
                     values[row_counter] = current_dvh_row
                     row_counter += 1
 
@@ -406,9 +409,9 @@ class BeamTable:
                 else:
                     beam_mu = 0
 
-                beam_dose_pt = [str(round(ref_beam_seq.BeamDoseSpecificationPoint[0], 4)),
-                                str(round(ref_beam_seq.BeamDoseSpecificationPoint[1], 4)),
-                                str(round(ref_beam_seq.BeamDoseSpecificationPoint[2], 4))]
+                beam_dose_pt = [str(round(ref_beam_seq.BeamDoseSpecificationPoint[0], 2)),
+                                str(round(ref_beam_seq.BeamDoseSpecificationPoint[1], 2)),
+                                str(round(ref_beam_seq.BeamDoseSpecificationPoint[2], 2))]
                 beam_dose_pt = ','.join(beam_dose_pt)
 
                 radiation_type = beam_seq.RadiationType
@@ -416,6 +419,14 @@ class BeamTable:
                     cp_seq = beam_seq.ControlPointSequence
                 else:
                     cp_seq = beam_seq.IonControlPointSequence
+
+                if hasattr(cp_seq[0], 'IsocenterPosition'):
+                    isocenter = [str(round(cp_seq[0].IsocenterPosition[0], 2)),
+                                 str(round(cp_seq[0].IsocenterPosition[1], 2)),
+                                 str(round(cp_seq[0].IsocenterPosition[2], 2))]
+                    isocenter = ','.join(isocenter)
+                else:
+                    isocenter = '(NULL)'
 
                 beam_type = beam_seq.BeamType
 
@@ -539,7 +550,7 @@ class BeamTable:
                                        collimator['range'], collimator['min'], collimator['max'],
                                        couch['start'], couch['end'], couch['rot_dir'],
                                        couch['range'], couch['min'], couch['max'],
-                                       beam_dose_pt, ssd, treatment_machine, scan_mode, scan_spot_count)
+                                       beam_dose_pt, isocenter, ssd, treatment_machine, scan_mode, scan_spot_count)
 
                 values[beam_num] = current_beam
                 beam_num += 1

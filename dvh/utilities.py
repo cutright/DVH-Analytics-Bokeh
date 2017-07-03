@@ -10,6 +10,8 @@ from dicompylercore import dicomparser
 import os
 import dicom
 import sys
+from shapely.geometry import Polygon, Point
+import numpy as np
 
 
 class Temp_DICOM_FileSet:
@@ -305,3 +307,64 @@ def dicompyler_roi_coord_to_db_string(coord):
                 points.append(str(point[1]))
             contours.append(','.join(points))
     return ':'.join(contours)
+
+
+def surface_area_of_roi(coord):
+
+    """
+
+    :param coord: dicompyler structure coordinates from GetStructureCoordinates()
+    :return: surface_area in cm^2
+    :rtype: float
+    """
+    surface_area = 0.
+    all_z_values = [round(float(z), 1) for z in coord.keys()]
+    all_z_values = np.sort(all_z_values)
+    thicknesses = np.abs(np.diff(all_z_values))
+    thicknesses = np.append(thicknesses, np.min(thicknesses))
+    first_slice = min(all_z_values)
+    final_slice = max(all_z_values)
+    all_z_values = all_z_values.tolist()
+
+    z_index = 0
+    c = 0
+    for z in coord:
+        # z in coord will not necessarily go in order of z, convert z to float to lookup thickness
+        # also used to check for top and bottom slices, to add area of those contours
+        z_value = round(float(z), 1)
+        thickness = thicknesses[all_z_values.index(round(float(z), 1))]
+
+        previous_contour = []
+        plane_count = 0
+        for plane in coord[z]:
+
+            points = [(point[0], point[1]) for point in plane['data']]
+
+            # if structure is a point or contains only 2 points, assume zero surface area
+            if points and len(points) > 2:
+
+                # Explicitly connect the final point to the first
+                points.append(points[0])
+
+                contour = Polygon(points)
+                perimeter = contour.length
+                surface_area += perimeter * thickness
+
+                # Account for top and bottom surfaces
+                if z_value in {first_slice, final_slice}:
+                    c += 1
+                    # if current contour is contained within the previous contour, then current contour is a subtraction
+                    # this is how DICOM handles ring structures
+                    if previous_contour and not Point((points[0][0], points[0][1])).disjoint(previous_contour):
+                        surface_area -= contour.area
+                        previous_contour = []
+                    else:
+                        surface_area += contour.area
+                        previous_contour = contour
+            else:
+                previous_contour = []
+            plane_count += 1
+
+        z_index += 1
+
+    return round(surface_area / 100., 2)

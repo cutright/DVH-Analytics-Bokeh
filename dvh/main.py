@@ -115,6 +115,7 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
                     'ROI Mean Dose': {'var_name': 'mean_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
                     'ROI Max Dose': {'var_name': 'max_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
                     'ROI Volume': {'var_name': 'volume', 'table': 'DVHs', 'units': 'cc', 'source': source},
+                    'ROI Surface Area': {'var_name': 'surface_area', 'table': 'DVHs', 'units': 'cm^2', 'source': source},
                     'Distance to PTV Min': {'var_name': 'dist_to_ptv_min', 'table': 'DVHs', 'units': 'cm', 'source': source},
                     'Distance to PTV Mean': {'var_name': 'dist_to_ptv_mean', 'table': 'DVHs', 'units': 'cm', 'source': source},
                     'Distance to PTV Median': {'var_name': 'dist_to_ptv_median', 'table': 'DVHs', 'units': 'cm', 'source': source},
@@ -441,8 +442,13 @@ class RangeRow:
         table_new = range_categories[new]['table']
         var_name_new = range_categories[new]['var_name']
         if source.data['mrn']:
-            self.min_value = min(range_categories[new]['source'].data[var_name_new])
-            self.max_value = max(range_categories[new]['source'].data[var_name_new])
+            values = range_categories[new]['source'].data[var_name_new]
+            if 'date' not in var_name_new:
+                values = [v for v in values if type(v) in {float, int}]
+            else:
+                values = [v for v in values if 'None' not in v]
+            self.min_value = min(values)
+            self.max_value = max(values)
         else:
             self.min_value = DVH_SQL().get_min_value(table_new, var_name_new)
             self.max_value = DVH_SQL().get_max_value(table_new, var_name_new)
@@ -671,9 +677,13 @@ def update_dvh_data(dvh):
         dvh.roi_type.extend(['Stat'] * extra_rows)
         dvh.eud_a_value.extend(['N/A'] * extra_rows)
         dvh.dist_to_ptv_min.extend(['N/A'] * extra_rows)
+        dvh.dist_to_ptv_median.extend(['N/A'] * extra_rows)
+        dvh.dist_to_ptv_mean.extend(['N/A'] * extra_rows)
+        dvh.dist_to_ptv_max.extend(['N/A'] * extra_rows)
     if group_1_count > 0:
         dvh.rx_dose.extend(calc_stats(dvh_group_1.rx_dose))
         dvh.volume.extend(calc_stats(dvh_group_1.volume))
+        dvh.surface_area.extend(calc_stats(dvh_group_1.surface_area))
         dvh.min_dose.extend(calc_stats(dvh_group_1.min_dose))
         dvh.mean_dose.extend(calc_stats(dvh_group_1.mean_dose))
         dvh.max_dose.extend(calc_stats(dvh_group_1.max_dose))
@@ -681,6 +691,7 @@ def update_dvh_data(dvh):
     if group_2_count > 0:
         dvh.rx_dose.extend(calc_stats(dvh_group_2.rx_dose))
         dvh.volume.extend(calc_stats(dvh_group_2.volume))
+        dvh.surface_area.extend(calc_stats(dvh_group_2.surface_area))
         dvh.min_dose.extend(calc_stats(dvh_group_2.min_dose))
         dvh.mean_dose.extend(calc_stats(dvh_group_2.mean_dose))
         dvh.max_dose.extend(calc_stats(dvh_group_2.max_dose))
@@ -695,12 +706,16 @@ def update_dvh_data(dvh):
     dvh.roi_type.insert(0, 'Review')
     dvh.rx_dose.insert(0, 'N/A')
     dvh.volume.insert(0, '')
+    dvh.surface_area.insert(0, '')
     dvh.min_dose.insert(0, '')
     dvh.mean_dose.insert(0, '')
     dvh.max_dose.insert(0, '')
     dvh.eud.insert(0, 'N/A')
     dvh.eud_a_value.insert(0, 'N/A')
     dvh.dist_to_ptv_min.insert(0, 'N/A')
+    dvh.dist_to_ptv_mean.insert(0, 'N/A')
+    dvh.dist_to_ptv_median.insert(0, 'N/A')
+    dvh.dist_to_ptv_max.insert(0, 'N/A')
     line_colors.insert(0, 'green')
     x_data.insert(0, [0])
     y_data.insert(0, [0])
@@ -714,12 +729,16 @@ def update_dvh_data(dvh):
                    'roi_type': dvh.roi_type,
                    'rx_dose': dvh.rx_dose,
                    'volume': dvh.volume,
+                   'surface_area': dvh.surface_area,
                    'min_dose': dvh.min_dose,
                    'mean_dose': dvh.mean_dose,
                    'max_dose': dvh.max_dose,
                    'eud': dvh.eud,
                    'eud_a_value': dvh.eud_a_value,
                    'dist_to_ptv_min': dvh.dist_to_ptv_min,
+                   'dist_to_ptv_mean': dvh.dist_to_ptv_mean,
+                   'dist_to_ptv_median': dvh.dist_to_ptv_median,
+                   'dist_to_ptv_max': dvh.dist_to_ptv_max,
                    'x': x_data,
                    'y': y_data,
                    'color': line_colors,
@@ -1205,6 +1224,7 @@ columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="roi_type", title="ROI Type", width=80),
            TableColumn(field="rx_dose", title="Rx Dose", width=100, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="volume", title="Volume", width=80, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="surface_area", title="S Area", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="min_dose", title="Min Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="mean_dose", title="Mean Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="max_dose", title="Max Dose", width=80, formatter=NumberFormatter(format="0.00")),

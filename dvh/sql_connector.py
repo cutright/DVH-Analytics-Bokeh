@@ -116,6 +116,7 @@ class DVH_SQL:
                          '(NULL)',
                          '(NULL)',
                          '(NULL)',
+                         str(round(dvh_table.surface_area[x], 2)),
                          'NOW()']
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'
@@ -217,6 +218,7 @@ class DVH_SQL:
                              str(beams.couch_min[x]),
                              str(beams.couch_max[x]),
                              beams.beam_dose_pt[x],
+                             beams.isocenter[x],
                              str(beams.ssd[x]),
                              beams.treatment_machine[x],
                              beams.scan_mode[x],

@@ -3,7 +3,7 @@
 
 var data = source.data;
 var ep_names = source_endpoint_names.data;
-var filetext = 'DVH Data\nmrn,uid,roi_name,roi_type,rx_dose,volume,min_dose,mean_dose,max_dose,eud,a,';
+var filetext = 'DVH Data\nmrn,uid,roi_name,roi_type,rx_dose,volume,surface_area,min_dose,mean_dose,max_dose,eud,a,dist_to_ptv_min,dist_to_ptv_mean,dist_to_ptv_median,dist_to_ptv_max';
 ep_names_string = [ep_names['ep1'][0].toString(),
                    ep_names['ep2'][0].toString(),
                    ep_names['ep3'][0].toString(),
@@ -22,11 +22,16 @@ for (i=0; i < data['mrn'].length; i++) {
                    data['roi_type'][i].toString(),
                    data['rx_dose'][i].toString(),
                    data['volume'][i].toString(),
+                   data['surface_area'][i].toString(),
                    data['min_dose'][i].toString(),
                    data['mean_dose'][i].toString(),
                    data['max_dose'][i].toString(),
                    data['eud'][i].toString(),
                    data['eud_a_value'][i].toString(),
+                   data['dist_to_ptv_min'][i].toString(),
+                   data['dist_to_ptv_mean'][i].toString(),
+                   data['dist_to_ptv_median'][i].toString(),
+                   data['dist_to_ptv_max'][i].toString(),
                    data['ep1'][i].toString(),
                    data['ep2'][i].toString(),
                    data['ep3'][i].toString(),
