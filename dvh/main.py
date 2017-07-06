@@ -256,100 +256,131 @@ def get_query(**kwargs):
 
     if kwargs and 'group' in kwargs:
         if kwargs['group'] == 1:
-            active_group = 0
+            active_groups = [0]
         elif kwargs['group'] == 2:
-            active_group = 1
+            active_groups = [1]
     else:
-        active_group = 2
+        active_groups = [0, 1]
 
-    plan_query_map = {}
-    rx_query_map = {}
-    beam_query_map = {}
-    dvh_query_map = {}
-    for i in range(1, len(query_row)):
-        if query_row_type[i] in {'selector', 'range'} and \
-                (active_group in query_row[i].pop_grp.active or active_group == 2):
-            if query_row_type[i] == 'selector':
-                var_name = selector_categories[query_row[i].select_category.value]['var_name']
-                table = selector_categories[query_row[i].select_category.value]['table']
-                value = query_row[i].select_value.value
-                query_str = var_name + " = '" + value + "'"
-            elif query_row_type[i] == 'range':
-                query_row[i].select_category.value
-                var_name = range_categories[query_row[i].select_category.value]['var_name']
-                table = range_categories[query_row[i].select_category.value]['table']
-                if query_row[i].text_min.value != '':
-                    value_low = query_row[i].text_min.value
-                else:
-                    value_low = query_row[i].min_value
-                if query_row[i].text_max.value != '':
-                    value_high = query_row[i].text_max.value
-                else:
-                    value_high = query_row[i].max_value
-                if var_name in {'sim_study_date', 'birth_date'}:
-                    value_low = "'" + value_low + "'::date"
-                    value_high = "'" + value_high + "'::date"
-                query_str = var_name + " between " + str(value_low) + " and " + str(value_high)
+    plan_query = []
+    rx_query = []
+    beam_query = []
+    dvh_query = []
 
-            if table == 'Plans':
-                if var_name not in plan_query_map:
-                    plan_query_map[var_name] = []
-                plan_query_map[var_name].append(query_str)
-            elif table == 'Rxs':
-                if var_name not in rx_query_map:
-                    rx_query_map[var_name] = []
-                rx_query_map[var_name].append(query_str)
-            elif table == 'Beams':
-                if var_name not in beam_query_map:
-                    beam_query_map[var_name] = []
-                beam_query_map[var_name].append(query_str)
-            elif table == 'DVHs':
-                if var_name not in dvh_query_map:
-                    dvh_query_map[var_name] = []
-                dvh_query_map[var_name].append(query_str)
+    for active_group in active_groups:
+        plan_query_map = {}
+        rx_query_map = {}
+        beam_query_map = {}
+        dvh_query_map = {}
 
-    # The multiple entries of the same variable are found, assume an 'or' condition
-    plan_query_str = []
-    for key in plan_query_map.iterkeys():
-        plan_query_str.append('(' + ' or '.join(plan_query_map[key]) + ')')
+        for i in range(1, len(query_row)):
+            if query_row_type[i] in {'selector', 'range'} and \
+                    (active_group in query_row[i].pop_grp.active or active_group == 2):
+                if query_row_type[i] == 'selector':
+                    var_name = selector_categories[query_row[i].select_category.value]['var_name']
+                    table = selector_categories[query_row[i].select_category.value]['table']
+                    value = query_row[i].select_value.value
+                    query_str = var_name + " = '" + value + "'"
+                elif query_row_type[i] == 'range':
+                    query_row[i].select_category.value
+                    var_name = range_categories[query_row[i].select_category.value]['var_name']
+                    table = range_categories[query_row[i].select_category.value]['table']
+                    if query_row[i].text_min.value != '':
+                        value_low = query_row[i].text_min.value
+                    else:
+                        value_low = query_row[i].min_value
+                    if query_row[i].text_max.value != '':
+                        value_high = query_row[i].text_max.value
+                    else:
+                        value_high = query_row[i].max_value
+                    if var_name in {'sim_study_date', 'birth_date'}:
+                        value_low = "'" + value_low + "'::date"
+                        value_high = "'" + value_high + "'::date"
+                    query_str = var_name + " between " + str(value_low) + " and " + str(value_high)
 
-    rx_query_str = []
-    for key in rx_query_map.iterkeys():
-        rx_query_str.append('(' + ' or '.join(rx_query_map[key]) + ')')
+                if table == 'Plans':
+                    if var_name not in plan_query_map:
+                        plan_query_map[var_name] = []
+                    plan_query_map[var_name].append(query_str)
+                elif table == 'Rxs':
+                    if var_name not in rx_query_map:
+                        rx_query_map[var_name] = []
+                    rx_query_map[var_name].append(query_str)
+                elif table == 'Beams':
+                    if var_name not in beam_query_map:
+                        beam_query_map[var_name] = []
+                    beam_query_map[var_name].append(query_str)
+                elif table == 'DVHs':
+                    if var_name not in dvh_query_map:
+                        dvh_query_map[var_name] = []
+                    dvh_query_map[var_name].append(query_str)
 
-    beam_query_str = []
-    for key in beam_query_map.iterkeys():
-        beam_query_str.append('(' + ' or '.join(beam_query_map[key]) + ')')
+        # The multiple entries of the same variable are found, assume an 'or' condition
+        plan_query_str = []
+        for key in plan_query_map.iterkeys():
+            plan_query_str.append('(' + ' or '.join(plan_query_map[key]) + ')')
 
-    dvh_query_str = []
-    skip_roi_names = False
-    roi_categories = {'physician_roi',
-                      'institutional_roi'}
-    if 'physician_roi' in dvh_query_map.keys():
-        if 'institutional_roi' in dvh_query_map.keys():
-            roi_name_query = dvh_query_map['physician_roi'] + \
-                             dvh_query_map['institutional_roi']
-            dvh_query_str.append('(' + ' or '.join(roi_name_query) + ')')
-            skip_roi_names = True
-    for key in dvh_query_map.iterkeys():
-        if skip_roi_names and key in roi_categories:
-            pass
-        else:
-            dvh_query_str.append('(' + ' or '.join(dvh_query_map[key]) + ')')
+        rx_query_str = []
+        for key in rx_query_map.iterkeys():
+            rx_query_str.append('(' + ' or '.join(rx_query_map[key]) + ')')
 
-    # assumes an 'and' condition between variable types
-    plan_query_str = ' and '.join(plan_query_str)
-    rx_query_str = ' and '.join(rx_query_str)
-    beam_query_str = ' and '.join(beam_query_str)
-    dvh_query_str = ' and '.join(dvh_query_str)
+        beam_query_str = []
+        for key in beam_query_map.iterkeys():
+            beam_query_str.append('(' + ' or '.join(beam_query_map[key]) + ')')
+
+        dvh_query_str = []
+        skip_roi_names = False
+        roi_categories = {'physician_roi',
+                          'institutional_roi'}
+        if 'physician_roi' in dvh_query_map.keys():
+            if 'institutional_roi' in dvh_query_map.keys():
+                roi_name_query = dvh_query_map['physician_roi'] + \
+                                 dvh_query_map['institutional_roi']
+                dvh_query_str.append('(' + ' or '.join(roi_name_query) + ')')
+                skip_roi_names = True
+        for key in dvh_query_map.iterkeys():
+            if skip_roi_names and key in roi_categories:
+                pass
+            else:
+                dvh_query_str.append('(' + ' or '.join(dvh_query_map[key]) + ')')
+
+        # assumes an 'and' condition between variable types
+        plan_query.append(' and '.join(plan_query_str))
+        rx_query.append(' and '.join(rx_query_str))
+        beam_query.append(' and '.join(beam_query_str))
+        dvh_query.append(' and '.join(dvh_query_str))
+
+    if len(active_groups) == 2:
+        plan_query = combine_query(plan_query)
+        rx_query = combine_query(rx_query)
+        beam_query = combine_query(beam_query)
+        dvh_query = combine_query(dvh_query)
+
+    else:
+        plan_query = plan_query[0]
+        rx_query = rx_query[0]
+        beam_query = beam_query[0]
+        dvh_query = dvh_query[0]
 
     print(str(datetime.now()), 'getting uids', sep=' ')
-    print(str(datetime.now()), 'Plans =', plan_query_str, sep=' ')
-    print(str(datetime.now()), 'Rxs =', rx_query_str, sep=' ')
-    print(str(datetime.now()), 'Beams =', beam_query_str, sep=' ')
-    uids = get_study_instance_uids(Plans=plan_query_str, Rxs=rx_query_str, Beams=beam_query_str)['union']
+    print(str(datetime.now()), 'Plans =', plan_query, sep=' ')
+    print(str(datetime.now()), 'Rxs =', rx_query, sep=' ')
+    print(str(datetime.now()), 'Beams =', beam_query, sep=' ')
+    uids = get_study_instance_uids(Plans=plan_query, Rxs=rx_query, Beams=beam_query)['union']
 
-    return uids, dvh_query_str
+    return uids, dvh_query
+
+
+def combine_query(query):
+    if query[0] and query[1]:
+        query = '(' + ') or ('.join(query) + ')'
+    elif query[0]:
+        query = query[0]
+    elif query[1]:
+        query = query[1]
+    else:
+        query = []
+    return query
 
 
 # This class adds a row suitable to filter discrete data from the SQL database

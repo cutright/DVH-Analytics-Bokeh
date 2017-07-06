@@ -534,6 +534,8 @@ def delete_uncategorized_dvh():
         update_uncategorized_variation_select()
         delete_uncategorized_button_roi.button_type = 'warning'
         delete_uncategorized_button_roi.label = 'Delete DVH'
+        ignore_button_roi.button_type = 'primary'
+        ignore_button_roi.label = 'Ignore'
 
 
 def delete_ignored_dvh():
