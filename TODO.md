@@ -11,7 +11,7 @@
    - [X] Monaco
    
      
-- [ ] Validate dicompyler-core DVH calculations
+- [X] Validate dicompyler-core DVH calculations
 
 - [ ] Flag QUANTEC/ICRU Compliant DVHs
 
@@ -26,6 +26,8 @@
 
 ### Lower Priorities
 - [ ] Allow user to input list of MRNs to restrict population
+  - [X] Added ability to select one at a time from a drop down list
+
 
 - [ ] Add thorough comments throughout all code
 
@@ -47,4 +49,4 @@
   - [ ] Wedge info in photon beams
  
  
-- [ ] Add DB backup and restore to admin.py
+- [X] Add DB backup and restore to admin.py
