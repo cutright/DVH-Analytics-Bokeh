@@ -729,14 +729,16 @@ def update_dvh_data(dvh):
         dvh.eud.extend(calc_stats(dvh_group_2.eud))
 
     # Adjust dvh object for review dvh
+    dvh.dvh = np.insert(dvh.dvh, 0, 0, 1)
+    dvh.count += 1
     dvh.mrn.insert(0, select_reviewed_mrn.value)
     dvh.study_instance_uid.insert(0, '')
     dvh.institutional_roi.insert(0, '')
     dvh.physician_roi.insert(0, '')
     dvh.roi_name.insert(0, select_reviewed_dvh.value)
     dvh.roi_type.insert(0, 'Review')
-    dvh.rx_dose.insert(0, 'N/A')
-    dvh.volume.insert(0, '')
+    dvh.rx_dose.insert(0, 0)
+    dvh.volume.insert(0, 0)
     dvh.surface_area.insert(0, '')
     dvh.min_dose.insert(0, '')
     dvh.mean_dose.insert(0, '')
@@ -902,7 +904,7 @@ def update_endpoint_data(dvh):
             if query_row[i].units.active == 0:
                 endpoint_input = 'relative'
                 units = query_row[i].units.labels[0]
-                x /= 100
+                x /= 100.
             else:
                 endpoint_input = 'absolute'
                 units = query_row[i].units.labels[1]
@@ -917,8 +919,9 @@ def update_endpoint_data(dvh):
             else:
                 endpoint_columns[counter] = 'V_' + str(x_for_text) + units + ' (' + output_unit[1] + ')'
                 endpoints_map[counter] = dvh.get_volume_of_dose(x, input=endpoint_input, output=endpoint_output)
-            endpoints_map[counter].extend(calc_stats(endpoints_map[counter][0:dvh.count]))
+            endpoints_map[counter].extend(calc_stats(endpoints_map[counter][1:dvh.count]))
             counter += 1
+
     for i in range(counter, 8):
         endpoints_map[i] = []
         for j in range(0, dvh.count + extra_rows):
@@ -927,8 +930,8 @@ def update_endpoint_data(dvh):
     tuple_list = {}
     for i in range(0, 8):
         current_tuple_list = []
-        for j in range(1, dvh.count + extra_rows + 1):
-            current_tuple_list.append(tuple([j, endpoints_map[i][j-1]]))
+        for j in range(0, dvh.count + extra_rows):
+            current_tuple_list.append(tuple([j, endpoints_map[i][j]]))
         tuple_list[i] = current_tuple_list
 
     patches = {'ep1': tuple_list[0],
@@ -1037,12 +1040,12 @@ def calculate_review_dvh():
     patches = {'x': [(0, [])],
                'y': [(0, [])],
                'roi_name': [(0, '')],
-               'volume': [(0, '')],
+               'volume': [(0, 1)],
                'min_dose': [(0, '')],
                'mean_dose': [(0, '')],
                'max_dose': [(0, '')],
                'mrn': [(0, '')],
-               'rx_dose': [(0, '')],
+               'rx_dose': [(0, 1)],
                'eud_a_value': [(0, '')],
                'eud': [(0, '')]}
 

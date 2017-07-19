@@ -102,37 +102,41 @@ class DVH:
         return dvh
 
     def get_dose_to_volume(self, volume, **kwargs):
-        # if no kwargs, input and output assumed to be in Gy and cm^3
         doses = np.zeros(self.count)
         for x in range(0, self.count):
             dvh = np.zeros(len(self.dvh))
             for y in range(0, len(self.dvh)):
                 dvh[y] = self.dvh[y][x]
-                if 'input' in kwargs and kwargs['input'] == 'relative':
-                    doses[x] = dose_to_volume(dvh, volume)
-                else:
-                    doses[x] = dose_to_volume(dvh, volume, self.volume[x])
+            if 'input' in kwargs and kwargs['input'] == 'relative':
+                doses[x] = dose_to_volume(dvh, volume)
+            else:
+                doses[x] = dose_to_volume(dvh, volume, self.volume[x])
         if 'output' in kwargs and kwargs['output'] == 'relative':
-            doses = np.divide(doses, self.rx_dose)
+            doses = np.divide(doses * 100, self.rx_dose[0:self.count])
 
         return doses.tolist()
 
     def get_volume_of_dose(self, dose, **kwargs):
-        # dose input is assumed to be in Gy
-        # output will be either fractional (relative) or in cc's
-        roi_volume = []
-        dose = np.ones(self.count) * dose
-        if 'input' in kwargs and kwargs['input'] == 'relative':
-            dose = np.multiply(dose, self.rx_dose)
-        for i in range(0, self.count):
-            x = [int(np.floor(dose[i] * 100)), int(np.ceil(dose[i] * 100))]
-            y = [self.dvh[x[0], i], self.dvh[x[1], i]]
-            if 'output' in kwargs and kwargs['output'] == 'relative':
-                roi_volume.append(np.interp(float(dose[i]), x, y))
-            else:
-                roi_volume.append(np.interp(float(dose[i]), x, y) * self.volume[i])
+        volumes = np.zeros(self.count)
+        for x in range(0, self.count):
 
-        return roi_volume
+            dvh = np.zeros(len(self.dvh))
+            for y in range(0, len(self.dvh)):
+                dvh[y] = self.dvh[y][x]
+            if 'input' in kwargs and kwargs['input'] == 'relative':
+                if isinstance(self.rx_dose[x], basestring):
+                    volumes[x] = 0
+                else:
+                    volumes[x] = volume_of_dose(dvh, dose * self.rx_dose[x])
+            else:
+                volumes[x] = volume_of_dose(dvh, dose)
+
+        if 'output' in kwargs and kwargs['output'] == 'absolute':
+            volumes = np.multiply(volumes, self.volume[0:self.count])
+        else:
+            volumes = np.multiply(volumes, 100.)
+
+        return volumes.tolist()
 
     def coverage(self, rx_dose_fraction):
 
@@ -249,8 +253,11 @@ class DVH:
 
 # Returns the isodose level outlining the given volume
 def dose_to_volume(dvh, volume, *roi_volume):
+
     # if an roi_volume is not given, volume is assumed to be fractional
     if roi_volume:
+        if isinstance(roi_volume[0], basestring):
+            return 0
         roi_volume = roi_volume[0]
     else:
         roi_volume = 1
@@ -262,6 +269,15 @@ def dose_to_volume(dvh, volume, *roi_volume):
     dose = np.interp(y, y_range, x_range) * 0.01
 
     return dose
+
+
+def volume_of_dose(dvh, dose):
+
+    x = [int(np.floor(dose * 100)), int(np.ceil(dose * 100))]
+    y = [dvh[x[0]], dvh[x[1]]]
+    roi_volume = np.interp(float(dose), x, y)
+
+    return roi_volume
 
 
 # EUD = sum[ v(i) * D(i)^a ] ^ [1/a]

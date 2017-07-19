@@ -368,3 +368,47 @@ def surface_area_of_roi(coord):
         z_index += 1
 
     return round(surface_area / 100., 2)
+
+
+# def percent_overlap(oar, ptv):
+#
+#     ptv_volume = 0.
+#     intersection_volume = 0.
+#     all_z_values = [round(float(z), 1) for z in ptv.keys()]
+#     all_z_values = np.sort(all_z_values)
+#     thicknesses = np.abs(np.diff(all_z_values))
+#     thicknesses = np.append(thicknesses, np.min(thicknesses))
+#     first_slice = min(all_z_values)
+#     final_slice = max(all_z_values)
+#     all_z_values = all_z_values.tolist()
+#
+#     z_index = 0
+#     c = 0
+#     for z in ptv:
+#         # z in coord will not necessarily go in order of z, convert z to float to lookup thickness
+#         # also used to check for top and bottom slices, to add area of those contours
+#         z_value = round(float(z), 1)
+#         thickness = thicknesses[all_z_values.index(round(float(z), 1))]
+#
+#         previous_contour = []
+#         plane_count = 0
+#         for plane in ptv[z]:
+#
+#             points = [(point[0], point[1]) for point in plane['data']]
+#
+#             # if structure is a point or contains only 2 points, assume zero surface area
+#             if points and len(points) > 2:
+#
+#                 # Explicitly connect the final point to the first
+#                 points.append(points[0])
+#
+#                 contour = Polygon(points)
+#                 perimeter = contour.length
+#
+#             else:
+#                 previous_contour = []
+#             plane_count += 1
+#
+#         z_index += 1
+#
+#     return round(surface_area / 100., 2)
