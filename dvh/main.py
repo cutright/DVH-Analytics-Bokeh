@@ -412,7 +412,20 @@ class SelectorRow:
     def update_selector_values(self, attrname, old, new):
         table_new = selector_categories[self.select_category.value]['table']
         var_name_new = selector_categories[new]['var_name']
-        new_options = DVH_SQL().get_unique_values(table_new, var_name_new)
+        if var_name_new == 'physician_roi':
+            physicians = []
+            for i in range(1, len(query_row)):
+                if query_row_type[i] in {'selector'} and query_row[i].select_category.value in {'Physician'}:
+                    physicians.append("'" + query_row[i].select_value.value + "'")
+            if physicians:
+                get_uid_condition = 'physician in (' + ','.join(physicians) + ')'
+                uids = DVH_SQL().get_unique_values('Plans', 'study_instance_uid', get_uid_condition)
+                condition = "study_instance_uid in ('" + "','".join(uids) + "')"
+                new_options = DVH_SQL().get_unique_values(table_new, var_name_new, condition)
+            else:
+                new_options = DVH_SQL().get_unique_values(table_new, var_name_new)
+        else:
+            new_options = DVH_SQL().get_unique_values(table_new, var_name_new)
         self.select_value.options = new_options
         self.select_value.value = new_options[0]
         update_update_button_status()

@@ -318,8 +318,11 @@ class DVH_SQL:
         else:
             return False
 
-    def get_unique_values(self, table, column):
-        query = "select distinct " + column + " from " + table + ";"
+    def get_unique_values(self, table, column, *condition):
+        if condition:
+            query = "select distinct " + column + " from " + table + " where " + str(condition[0]) + ";"
+        else:
+            query = "select distinct " + column + " from " + table + ";"
         self.cursor.execute(query)
         cursor_return = self.cursor.fetchall()
         unique_values = []

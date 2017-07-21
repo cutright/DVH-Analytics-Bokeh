@@ -688,8 +688,8 @@ def update_query_columns_ticker(attr, old, new):
 
 def update_query_columns():
     new_options = DVH_SQL().get_column_names(query_table.value.lower())
-    new_options.pop(new_options.index('mrn'))
-    new_options.pop(new_options.index('study_instance_uid'))
+    # new_options.pop(new_options.index('mrn'))
+    # new_options.pop(new_options.index('study_instance_uid'))
     if query_table.value.lower() == 'dvhs':
         new_options.pop(new_options.index('dvh_string'))
         # new_options.pop(new_options.index('roi_coord_string'))
@@ -707,11 +707,13 @@ def update_update_db_columns_ticker(attr, old, new):
 
 def update_update_db_column():
     if update_db_table.value.lower() == 'dvhs':
-        new_options = ['institutional_roi', 'physician_roi', 'roi_name', 'roi_type']
+        new_options = ['mrn', 'study_instance_uid', 'institutional_roi', 'physician_roi', 'roi_name', 'roi_type']
     elif update_db_table.value.lower() == 'plans':
-        new_options = ['age', 'birth_date', 'patient_sex', 'physician', 'rx_dose', 'tx_modality', 'tx_site']
+        new_options = ['mrn', 'study_instance_uid', 'age', 'birth_date', 'patient_sex', 'physician', 'rx_dose', 'tx_modality', 'tx_site']
     elif update_db_table.value.lower() == 'rxs':
-        new_options = ['plan_name', 'rx_dose', 'rx_percent']
+        new_options = ['mrn', 'study_instance_uid', 'plan_name', 'rx_dose', 'rx_percent']
+    elif update_db_table.value.lower() == 'beams':
+        new_options = ['mrn', 'study_instance_uid']
     else:
         new_options = ['']
 
@@ -1029,7 +1031,7 @@ query_table.on_change('value', update_query_columns_ticker)
 query_button.on_click(update_query_source)
 
 update_db_title = Div(text="<b>Update Database</b>", width=1000)
-update_db_table = Select(value='DVHs', options=['DVHs', 'Plans', 'Rxs'], width=200, height=100, title='Table')
+update_db_table = Select(value='DVHs', options=['DVHs', 'Plans', 'Rxs', 'Beams'], width=200, height=100, title='Table')
 update_db_column = Select(value='', options=[''], width=250, title='Column')
 update_db_value = TextInput(value='', title="Value", width=300)
 update_db_condition = TextInput(value='', title="Condition", width=300)
