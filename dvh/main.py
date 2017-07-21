@@ -28,6 +28,8 @@ from dicompylercore import dicomparser, dvhcalc
 # Declare variables
 colors = itertools.cycle(palette)
 current_dvh = []
+current_dvh_group_1 = []
+current_dvh_group_2 = []
 update_warning = True
 query_row = []
 query_row_type = []
@@ -204,7 +206,7 @@ def get_physician():
 
 # main update function
 def update_data():
-    global query_row_type, query_row, current_dvh
+    global query_row_type, query_row, current_dvh, current_dvh_group_1, current_dvh_group_2
     old_update_button_label = update_button.label
     old_update_button_type = update_button.button_type
     update_button.label = 'Updating...'
@@ -213,10 +215,10 @@ def update_data():
     print(str(datetime.now()), 'getting dvh data', sep=' ')
     current_dvh = DVH(uid=uids, dvh_condition=dvh_query_str)
     print(str(datetime.now()), 'initializing source data ', current_dvh.query, sep=' ')
-    update_dvh_data(current_dvh)
+    current_dvh_group_1, current_dvh_group_2 = update_dvh_data(current_dvh)
     calculate_review_dvh()
     update_all_range_endpoints()
-    update_endpoint_data(current_dvh)
+    update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
     update_button.label = old_update_button_label
     update_button.button_type = old_update_button_type
 
@@ -542,27 +544,27 @@ class EndPointRow:
         self.units.labels = self.unit_labels[new]
         self.units_out.labels = self.unit_labels[old]
         if self.text_input.value != '':
-            update_endpoint_data(current_dvh)
+            update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
 
     def endpoint_calc_ticker(self, attrname, old, new):
         if self.text_input.value != '':
-            update_endpoint_data(current_dvh)
+            update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
 
     def endpoint_units_ticker(self, attrname, old, new):
         self.update_text_input_title()
         if self.text_input.value != '':
-            update_endpoint_data(current_dvh)
+            update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
 
     def endpoint_units_out_ticker(self, attrname, old, new):
         if self.text_input.value != '':
-            update_endpoint_data(current_dvh)
+            update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
 
     def delete_row(self):
         del (layout.children[widget_row_start + self.id])
         query_row_type.pop(self.id)
         query_row.pop(self.id)
         update_query_row_ids()
-        update_endpoint_data(current_dvh)
+        update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
 
     def update_text_input_title(self):
         if self.select_category.active == 0:
@@ -575,6 +577,9 @@ class EndPointRow:
 # This function creates a new ColumnSourceData and calls
 # the functions to update beam, rx, and plans ColumnSourceData variables
 def update_dvh_data(dvh):
+
+    dvh_group_1 = []
+    dvh_group_2 = []
 
     group_1_count, group_2_count = group_count()
     if group_1_count > 0 and group_2_count > 0:
@@ -802,6 +807,8 @@ def update_dvh_data(dvh):
     update_plan_data(dvh.study_instance_uid)
     update_rx_data(dvh.study_instance_uid)
 
+    return dvh_group_1, dvh_group_2
+
 
 # updates beam ColumnSourceData for a given list of uids
 def update_beam_data(uids):
@@ -893,8 +900,7 @@ def update_rx_data(uids):
 # updates endpoint ColumnSourceData for a given DVH class from Analysis_Tools.py
 # note that endpoint ColumnSourceData exits in dvh data ColumnSourceData (i.e.,
 # the main ColumnSourceData variable, or 'source')
-def update_endpoint_data(dvh):
-    print('updating endpoint data')
+def update_endpoint_data(dvh, dvh_group_1, dvh_group_2):
     group_1_count, group_2_count = group_count()
     if group_1_count > 0 and group_2_count > 0:
         extra_rows = 12
@@ -907,6 +913,8 @@ def update_endpoint_data(dvh):
     for i in range(0, 8):
         endpoint_columns[i] = ''
     endpoints_map = {}
+    endpoints_map_1 = {}
+    endpoints_map_2 = {}
 
     counter = 0
     for i in range(0, len(query_row)):
@@ -929,10 +937,36 @@ def update_endpoint_data(dvh):
             if query_row[i].select_category.active == 0:
                 endpoint_columns[counter] = 'D_' + str(x_for_text) + units + ' (' + output_unit[0] + ')'
                 endpoints_map[counter] = dvh.get_dose_to_volume(x, input=endpoint_input, output=endpoint_output)
+                if group_1_count > 0:
+                    endpoints_map_1[counter] = dvh_group_1.get_dose_to_volume(x,
+                                                                              input=endpoint_input,
+                                                                              output=endpoint_output)
+                if group_2_count > 0:
+                    endpoints_map_2[counter] = dvh_group_2.get_dose_to_volume(x,
+                                                                              input=endpoint_input,
+                                                                              output=endpoint_output)
             else:
                 endpoint_columns[counter] = 'V_' + str(x_for_text) + units + ' (' + output_unit[1] + ')'
                 endpoints_map[counter] = dvh.get_volume_of_dose(x, input=endpoint_input, output=endpoint_output)
-            endpoints_map[counter].extend(calc_stats(endpoints_map[counter][1:dvh.count]))
+                if group_1_count > 0:
+                    endpoints_map_1[counter] = dvh_group_1.get_volume_of_dose(x,
+                                                                              input=endpoint_input,
+                                                                              output=endpoint_output)
+                if group_2_count > 0:
+                    endpoints_map_2[counter] = dvh_group_2.get_volume_of_dose(x,
+                                                                              input=endpoint_input,
+                                                                              output=endpoint_output)
+            if extra_rows == 6:
+                endpoints_map[counter].extend(calc_stats(endpoints_map[counter][1:dvh.count]))
+            elif extra_rows == 12:
+                group_1_stats = calc_stats(endpoints_map_1[counter])
+                group_2_stats = calc_stats(endpoints_map_2[counter])
+                stats = []
+                for q in range(0, 6):
+                    stats.append(group_1_stats[q])
+                    stats.append(group_2_stats[q])
+                endpoints_map[counter].extend(stats)
+
             counter += 1
 
     for i in range(counter, 8):
@@ -940,20 +974,13 @@ def update_endpoint_data(dvh):
         for j in range(0, dvh.count + extra_rows):
             endpoints_map[i].append('')
 
-    print(1)
-    print('dvh.count = ', dvh.count, '  extra_rows = ', extra_rows, sep='')
-    print('endpoints_map size:', len(endpoints_map), len(endpoints_map[0]), sep=' ')
     tuple_list = {}
     for i in range(0, 8):
-        print('i = ', i, sep='')
         current_tuple_list = []
         for j in range(0, dvh.count + extra_rows):
-            print('j = ', j, sep='')
             current_tuple_list.append(tuple([j, endpoints_map[i][j]]))
-        print('setting tuple_list')
         tuple_list[i] = current_tuple_list
 
-    print(2)
     patches = {'ep1': tuple_list[0],
                'ep2': tuple_list[1],
                'ep3': tuple_list[2],
