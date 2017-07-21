@@ -6,6 +6,8 @@ brachial plexus: brachial plexus: brachial plexus
 brachial plexus: brachplex cb: brachial plexus, brachial plexus combined, brachial plexus total, brachialplexus, brachplex cb, combined bp, combined brachial plexus, study brachial plexus cb, study brachial plexus combined
 brain: brain: brain, study brain, whole brain
 brainstem: brainstem: brain stem, brainstem, study brain stem
+breast left: breast left: breast left
+breast right: breast right: breast right
 bronchus large: bronchus large: bronchus large
 bronchus smaller airways: bronchus smaller airways: bronchus smaller airways
 cauda equina: cauda equina: cauda equina
@@ -27,6 +29,7 @@ femoral head: femoral head: femoral head
 great vessels: great vessels: great vessels
 gtv: gtv: gtv
 heart: heart: heart
+im nodes: im nodes: im nodes
 itv: itv: itv
 kidney both: kidney both: kidney both
 kidney left: kidney left: kidney left

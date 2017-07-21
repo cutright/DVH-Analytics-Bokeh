@@ -591,7 +591,6 @@ def update_dvh_data(dvh):
 
     x_axis = np.round(np.add(np.linspace(0, dvh.bin_count, dvh.bin_count) / 100., 0.005), 3)
 
-    print(str(datetime.now()), 'source.data set', sep=' ')
     print(str(datetime.now()), 'beginning stat calcs', sep=' ')
 
     if radio_group_dose.active == 1:
@@ -650,7 +649,6 @@ def update_dvh_data(dvh):
     else:
         uids, dvh_query_str = get_query(group=2)
         dvh_group_2 = DVH(uid=uids, dvh_condition=dvh_query_str)
-
         stat_dvhs_2 = dvh_group_2.get_standard_stat_dvh(dose=stat_dose_scale, volume=stat_volume_scale)
 
         if radio_group_dose.active == 1:
@@ -798,6 +796,7 @@ def update_dvh_data(dvh):
                    'ep8': new_endpoint_columns,
                    'x_scale': x_scale,
                    'y_scale': y_scale}
+    print(str(datetime.now()), 'source.data set', sep=' ')
 
     update_beam_data(dvh.study_instance_uid)
     update_plan_data(dvh.study_instance_uid)
