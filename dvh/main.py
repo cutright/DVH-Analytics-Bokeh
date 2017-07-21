@@ -522,10 +522,10 @@ class EndPointRow:
         self.units_out = RadioButtonGroup(labels=self.unit_labels[1], active=1, width=100)
         self.units_out.on_change('active', self.endpoint_units_out_ticker)
 
-        self.text_input = TextInput(value='', title="Volume (%):", width=210)
+        self.text_input = TextInput(value='', title="Volume (%):", width=260)
         self.text_input.on_change('value', self.endpoint_calc_ticker)
 
-        self.units = RadioButtonGroup(labels=self.unit_labels[0], active=0, width=390)
+        self.units = RadioButtonGroup(labels=self.unit_labels[0], active=0, width=340)
         self.units.on_change('active', self.endpoint_units_ticker)
 
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
@@ -894,7 +894,7 @@ def update_rx_data(uids):
 # note that endpoint ColumnSourceData exits in dvh data ColumnSourceData (i.e.,
 # the main ColumnSourceData variable, or 'source')
 def update_endpoint_data(dvh):
-
+    print('updating endpoint data')
     group_1_count, group_2_count = group_count()
     if group_1_count > 0 and group_2_count > 0:
         extra_rows = 12
@@ -907,6 +907,7 @@ def update_endpoint_data(dvh):
     for i in range(0, 8):
         endpoint_columns[i] = ''
     endpoints_map = {}
+
     counter = 0
     for i in range(0, len(query_row)):
         if query_row_type[i] == 'endpoint' and counter < 8:
@@ -939,13 +940,20 @@ def update_endpoint_data(dvh):
         for j in range(0, dvh.count + extra_rows):
             endpoints_map[i].append('')
 
+    print(1)
+    print('dvh.count = ', dvh.count, '  extra_rows = ', extra_rows, sep='')
+    print('endpoints_map size:', len(endpoints_map), len(endpoints_map[0]), sep=' ')
     tuple_list = {}
     for i in range(0, 8):
+        print('i = ', i, sep='')
         current_tuple_list = []
         for j in range(0, dvh.count + extra_rows):
+            print('j = ', j, sep='')
             current_tuple_list.append(tuple([j, endpoints_map[i][j]]))
+        print('setting tuple_list')
         tuple_list[i] = current_tuple_list
 
+    print(2)
     patches = {'ep1': tuple_list[0],
                'ep2': tuple_list[1],
                'ep3': tuple_list[2],

@@ -235,7 +235,7 @@ class DatabaseROIs:
             self.physicians[physician].physician_rois[new_physician_roi] = \
                 self.physicians[physician].physician_rois.pop(physician_roi, None)
         self.add_variation(physician, new_physician_roi, new_physician_roi)
-        self.delete_variation(physician, new_physician_roi, physician_roi)
+        # self.delete_variation(physician, new_physician_roi, physician_roi)
 
     def delete_physician_roi(self, physician, physician_roi):
         physician = clean_name(physician).upper()
