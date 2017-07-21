@@ -30,7 +30,7 @@ class DVH:
             uid_constraints_str = ''
 
         if 'dvh_condition' in kwargs and kwargs['dvh_condition']:
-            uid_constraints_str = kwargs['dvh_condition'] + uid_constraints_str
+            uid_constraints_str = '(' + kwargs['dvh_condition'] + ')' + uid_constraints_str
             self.query = kwargs['dvh_condition']
         else:
             self.query = ''
