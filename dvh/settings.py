@@ -12,12 +12,13 @@ from utilities import is_import_settings_defined, is_sql_connection_defined,\
 import os
 import time
 from sql_connector import DVH_SQL
-from bokeh.models.widgets import Button, Tabs, Panel, TextInput, Div
+from bokeh.models.widgets import Button, TextInput, Div
 from bokeh.layouts import layout
 from bokeh.io import curdoc
 
 
-DVH_SQL().initialize_database()
+if is_sql_connection_defined():
+    DVH_SQL().initialize_database()
 
 directories = {}
 config = {}
