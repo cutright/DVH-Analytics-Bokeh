@@ -428,11 +428,15 @@ def update_min_distances_in_db(study_instance_uid, roi_name):
 def update_all_min_distances_in_db():
     condition = "LOWER(roi_type) IN ('organ', 'ctv', 'gtv') AND (" \
                 "LOWER(roi_name) NOT IN ('external', 'skin') OR " \
-                "LOWER(roi_type) NOT IN ('uncategorized', 'ignored', 'external', 'skin'))"
-    rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name', condition)
+                "LOWER(physician_roi) NOT IN ('uncategorized', 'ignored', 'external', 'skin'))"
+    rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition)
     for roi in rois:
-        print('updating', roi[1], sep=' ')
-        update_min_distances_in_db(roi[0], roi[1])
+        if roi[1].lower() not in {'external', 'skin'} and \
+                        roi[2].lower() not in {'uncategorized', 'ignored', 'external', 'skin'}:
+            print('updating', roi[1], sep=' ')
+            update_min_distances_in_db(roi[0], roi[1])
+        else:
+            print('skipping', roi[1], sep=' ')
 
 if __name__ == '__main__':
     pass
