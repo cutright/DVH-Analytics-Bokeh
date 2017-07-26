@@ -1537,7 +1537,7 @@ control_chart.add_tools(HoverTool(show_arrow=False,
                                   line_policy='next',
                                   tooltips=[('MRN', '@mrn'),
                                             ('Date', '@x{%F}'),
-                                            ('Value', '@y{i}')],
+                                            ('Value', '@y{0.2f}')],
                                   formatters={'x': 'datetime'}))
 control_chart.xaxis.axis_label = "Simulation Date"
 
