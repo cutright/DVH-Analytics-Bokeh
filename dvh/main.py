@@ -17,7 +17,7 @@ import itertools
 from datetime import datetime
 from os.path import dirname, join
 from bokeh.layouts import layout, column, row
-from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool
+from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, DatetimeTickFormatter
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
@@ -63,6 +63,7 @@ source_plans = ColumnDataSource(data=dict())
 source_rxs = ColumnDataSource(data=dict())
 source_endpoint_names = ColumnDataSource(data=dict(ep1=[], ep2=[], ep3=[], ep4=[], ep5=[], ep6=[], ep7=[], ep8=[]))
 source_endpoints = ColumnDataSource(data=dict())
+source_time = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -221,6 +222,7 @@ def update_data():
     update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
     update_button.label = old_update_button_label
     update_button.button_type = old_update_button_type
+    control_chart_y.value = ''
 
 
 # Checks size of current query, changes update button to orange if over 50 DVHs
@@ -1201,6 +1203,38 @@ def review_eud_a_value_ticker(attr, old, new):
     calculate_review_dvh()
 
 
+def update_control_chart(attr, old, new):
+    if new:
+        y_source = range_categories[new]['source']
+        y_var_name = range_categories[new]['var_name']
+        y_source_uids = y_source.data['uid']
+        y_source_mrns = y_source.data['mrn']
+        y_values = y_source.data[y_var_name]
+        sim_study_dates = source_plans.data['sim_study_date']
+        sim_study_dates_uids = source_plans.data['uid']
+
+        x_values = []
+        for uid in y_source_uids:
+            sim_study_dates_index = sim_study_dates_uids.index(uid)
+            current_date_str = sim_study_dates[sim_study_dates_index]
+            current_date = datetime(int(current_date_str[0:4]),
+                                    int(current_date_str[5:7]),
+                                    int(current_date_str[8:10]))
+            x_values.append(current_date)
+
+        for v in range(0, len(y_values)):
+            if not isinstance(y_values[v], (int, long, float)):
+                y_values[v] = 0
+
+        source_time.data = {'x': x_values,
+                            'y': y_values,
+                            'mrn': y_source_mrns}
+    else:
+        source_time.data = {'x': [],
+                            'y': [],
+                            'mrn': []}
+
+
 # set up layout
 
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
@@ -1465,6 +1499,25 @@ main_add_endpoint_button.on_click(button_add_endpoint_row)
 query_row.append(row(update_button, main_add_selector_button, main_add_range_button))
 query_row_type.append('main')
 
+# Control Chart layout
+control_chart = figure(plot_width=1000, plot_height=400, tools=tools, logo=None,
+                       active_drag="box_zoom", x_axis_type='datetime')
+control_chart.circle('x', 'y', size=10, color="navy", alpha=0.5, source=source_time)
+control_chart.add_tools(HoverTool(show_arrow=False,
+                                  line_policy='next',
+                                  tooltips=[('MRN', '@mrn'),
+                                            ('Date', '$x'),
+                                            ('Value', '$y')]))
+control_chart.xaxis.axis_label = "Simulation Date"
+
+control_chart_title = Div(text="<b>Control Chart</b>", width=1000)
+control_chart_options = range_categories.keys()
+control_chart_options.sort()
+control_chart_options.append('')
+control_chart_y = Select(value=control_chart_options[-1], options=control_chart_options, width=300)
+control_chart_y.title = "Y Axis"
+control_chart_y.on_change('value', update_control_chart)
+
 # define main layout to pass to curdoc()
 layout = column(row(radio_group_dose, radio_group_volume),
                 row(select_reviewed_mrn, select_reviewed_dvh, review_rx, review_eud_a_value),
@@ -1486,7 +1539,10 @@ layout = column(row(radio_group_dose, radio_group_volume),
                 beam_table_title,
                 data_table_beams,
                 beam_table_title2,
-                data_table_beams2)
+                data_table_beams2,
+                control_chart_title,
+                control_chart_y,
+                control_chart)
 
 # go ahead and add a selector row for the user
 button_add_selector_row()
