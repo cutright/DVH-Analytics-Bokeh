@@ -1229,14 +1229,21 @@ def update_control_chart(attr, old, new):
                                             int(current_date_str[8:10]))
                 x_values.append(current_date)
                 skipped.append(False)
-                if uid in current_dvh_group_1.study_instance_uid and uid in current_dvh_group_2.study_instance_uid:
-                    colors.append('purple')
-                elif uid in current_dvh_group_1.study_instance_uid:
+            except:
+                skipped.append(True)
+
+            if not skipped[-1]:
+                if current_dvh_group_1 and current_dvh_group_2:
+                    if uid in current_dvh_group_1.study_instance_uid and uid in current_dvh_group_2.study_instance_uid:
+                        colors.append('purple')
+                    elif uid in current_dvh_group_1.study_instance_uid:
+                        colors.append('blue')
+                    else:
+                        colors.append('red')
+                elif current_dvh_group_1:
                     colors.append('blue')
                 else:
                     colors.append('red')
-            except:
-                skipped.append(True)
 
         y_values = []
         y_mrns = []
@@ -1529,8 +1536,9 @@ control_chart.circle('x', 'y', size=10, color='color', alpha=0.5, source=source_
 control_chart.add_tools(HoverTool(show_arrow=False,
                                   line_policy='next',
                                   tooltips=[('MRN', '@mrn'),
-                                            ('Date', '$x'),
-                                            ('Value', '$y')]))
+                                            ('Date', '@x{%F}'),
+                                            ('Value', '@y{i}')],
+                                  formatters={'x': 'datetime'}))
 control_chart.xaxis.axis_label = "Simulation Date"
 
 control_chart_title = Div(text="<b>Control Chart</b>", width=1000)
