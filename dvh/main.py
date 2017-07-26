@@ -63,7 +63,7 @@ source_plans = ColumnDataSource(data=dict())
 source_rxs = ColumnDataSource(data=dict())
 source_endpoint_names = ColumnDataSource(data=dict(ep1=[], ep2=[], ep3=[], ep4=[], ep5=[], ep6=[], ep7=[], ep8=[]))
 source_endpoints = ColumnDataSource(data=dict())
-source_time = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
+source_time = ColumnDataSource(data=dict(x=[], y=[], mrn=[], color=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -1215,6 +1215,7 @@ def update_control_chart(attr, old, new):
 
         x_values = []
         skipped = []
+        colors = []
         for v in range(0, len(y_source_values)):
             uid = y_source_uids[v]
             try:
@@ -1228,6 +1229,12 @@ def update_control_chart(attr, old, new):
                                             int(current_date_str[8:10]))
                 x_values.append(current_date)
                 skipped.append(False)
+                if uid in current_dvh_group_1.study_instance_uid and uid in current_dvh_group_2.study_instance_uid:
+                    colors.append('purple')
+                elif uid in current_dvh_group_1.study_instance_uid:
+                    colors.append('blue')
+                else:
+                    colors.append('red')
             except:
                 skipped.append(True)
 
@@ -1242,11 +1249,13 @@ def update_control_chart(attr, old, new):
 
         source_time.data = {'x': x_values,
                             'y': y_values,
-                            'mrn': y_mrns}
+                            'mrn': y_mrns,
+                            'color': colors}
     else:
         source_time.data = {'x': [],
                             'y': [],
-                            'mrn': []}
+                            'mrn': [],
+                            'color': []}
 
 
 # set up layout
@@ -1516,7 +1525,7 @@ query_row_type.append('main')
 # Control Chart layout
 control_chart = figure(plot_width=1000, plot_height=400, tools=tools, logo=None,
                        active_drag="box_zoom", x_axis_type='datetime')
-control_chart.circle('x', 'y', size=10, color="navy", alpha=0.5, source=source_time)
+control_chart.circle('x', 'y', size=10, color='color', alpha=0.5, source=source_time)
 control_chart.add_tools(HoverTool(show_arrow=False,
                                   line_policy='next',
                                   tooltips=[('MRN', '@mrn'),
