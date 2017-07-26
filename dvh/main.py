@@ -1207,28 +1207,42 @@ def update_control_chart(attr, old, new):
     if new:
         y_source = range_categories[new]['source']
         y_var_name = range_categories[new]['var_name']
+        y_source_values = y_source.data[y_var_name]
         y_source_uids = y_source.data['uid']
         y_source_mrns = y_source.data['mrn']
-        y_values = y_source.data[y_var_name]
         sim_study_dates = source_plans.data['sim_study_date']
         sim_study_dates_uids = source_plans.data['uid']
 
         x_values = []
-        for uid in y_source_uids:
-            sim_study_dates_index = sim_study_dates_uids.index(uid)
-            current_date_str = sim_study_dates[sim_study_dates_index]
-            current_date = datetime(int(current_date_str[0:4]),
-                                    int(current_date_str[5:7]),
-                                    int(current_date_str[8:10]))
-            x_values.append(current_date)
+        skipped = []
+        for v in range(0, len(y_source_values)):
+            uid = y_source_uids[v]
+            try:
+                sim_study_dates_index = sim_study_dates_uids.index(uid)
+                current_date_str = sim_study_dates[sim_study_dates_index]
+                if current_date_str == 'None':
+                    current_date = datetime(2020, 1, 1)
+                else:
+                    current_date = datetime(int(current_date_str[0:4]),
+                                            int(current_date_str[5:7]),
+                                            int(current_date_str[8:10]))
+                x_values.append(current_date)
+                skipped.append(False)
+            except:
+                skipped.append(True)
 
-        for v in range(0, len(y_values)):
-            if not isinstance(y_values[v], (int, long, float)):
-                y_values[v] = 0
+        y_values = []
+        y_mrns = []
+        for v in range(0, len(y_source_values)):
+            if not skipped[v]:
+                y_values.append(y_source_values[v])
+                y_mrns.append(y_source_mrns[v])
+                if not isinstance(y_values[-1], (int, long, float)):
+                    y_values[-1] = 0
 
         source_time.data = {'x': x_values,
                             'y': y_values,
-                            'mrn': y_source_mrns}
+                            'mrn': y_mrns}
     else:
         source_time.data = {'x': [],
                             'y': [],
