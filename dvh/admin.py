@@ -691,7 +691,8 @@ def update_update_db_column():
     if update_db_table.value.lower() == 'dvhs':
         new_options = ['mrn', 'study_instance_uid', 'institutional_roi', 'physician_roi', 'roi_name', 'roi_type']
     elif update_db_table.value.lower() == 'plans':
-        new_options = ['mrn', 'study_instance_uid', 'age', 'birth_date', 'patient_sex', 'physician', 'rx_dose', 'tx_modality', 'tx_site']
+        new_options = ['mrn', 'study_instance_uid', 'age', 'birth_date', 'patient_sex', 'physician', 'rx_dose',
+                       'sim_study_date', 'tx_modality', 'tx_site']
     elif update_db_table.value.lower() == 'rxs':
         new_options = ['mrn', 'study_instance_uid', 'plan_name', 'rx_dose', 'rx_percent']
     elif update_db_table.value.lower() == 'beams':
@@ -731,7 +732,11 @@ def update_query_source():
 
 
 def update_db():
-    DVH_SQL().update(update_db_table.value, update_db_column.value, update_db_value.value, update_db_condition.value)
+    update_value = update_db_value.value
+    if update_db_column.value in {'birth_date', 'sim_study_date'}:
+        update_value = "'" + update_value + "'::date"
+    print(update_value)
+    DVH_SQL().update(update_db_table.value, update_db_column.value, update_value, update_db_condition.value)
     update_query_source()
 
 

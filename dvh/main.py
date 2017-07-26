@@ -1221,7 +1221,7 @@ def update_control_chart(attr, old, new):
                 sim_study_dates_index = sim_study_dates_uids.index(uid)
                 current_date_str = sim_study_dates[sim_study_dates_index]
                 if current_date_str == 'None':
-                    current_date = datetime(2020, 1, 1)
+                    current_date = datetime.now()
                 else:
                     current_date = datetime(int(current_date_str[0:4]),
                                             int(current_date_str[5:7]),

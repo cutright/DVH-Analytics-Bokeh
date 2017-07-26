@@ -69,10 +69,9 @@ class DVH_SQL:
         return results
 
     def update(self, table_name, column, value, condition_str):
-        update = "Update " + table_name + " SET " + column + " = '" \
+        update = "Update " + table_name + " SET " + column + " = " \
                  + str(value) \
-                 + "' WHERE " + condition_str
-
+                 + " WHERE " + condition_str
         self.cursor.execute(update)
         self.cnx.commit()
 
