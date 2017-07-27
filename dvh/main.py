@@ -63,7 +63,7 @@ source_plans = ColumnDataSource(data=dict())
 source_rxs = ColumnDataSource(data=dict())
 source_endpoint_names = ColumnDataSource(data=dict(ep1=[], ep2=[], ep3=[], ep4=[], ep5=[], ep6=[], ep7=[], ep8=[]))
 source_endpoints = ColumnDataSource(data=dict())
-source_time = ColumnDataSource(data=dict(x=[], y=[], mrn=[], color=[]))
+source_time = ColumnDataSource(data=dict(x=[], y=[], mrn=[], color=[], avg=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -93,7 +93,7 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
                     'Rx Dose': {'var_name': 'rx_dose', 'table': 'Plans', 'units': 'Gy', 'source': source_plans},
                     'Rx Isodose': {'var_name': 'rx_percent', 'table': 'Rxs', 'units': '%', 'source': source_rxs},
                     'Simulation Date': {'var_name': 'sim_study_date', 'table': 'Plans', 'units': '', 'source': source_plans},
-                    'Total Plan MU': {'var_name': 'total_mu', 'table': 'Plans', 'units': '', 'source': source_plans},
+                    'Total Plan MU': {'var_name': 'total_mu', 'table': 'Plans', 'units': 'MU', 'source': source_plans},
                     'Fraction Dose': {'var_name': 'fx_dose', 'table': 'Rxs', 'units': 'Gy', 'source': source_rxs},
                     'Beam Dose': {'var_name': 'beam_dose', 'table': 'Beams', 'units': 'Gy', 'source': source_beams},
                     'Beam MU': {'var_name': 'beam_mu', 'table': 'Beams', 'units': '', 'source': source_beams},
@@ -1203,7 +1203,16 @@ def review_eud_a_value_ticker(attr, old, new):
     calculate_review_dvh()
 
 
-def update_control_chart(attr, old, new):
+def update_control_chart_ticker(attr, old, new):
+    update_control_chart()
+
+
+def update_control_chart_text_ticker(attr, old, new):
+    update_control_chart()
+
+
+def update_control_chart():
+    new = control_chart_y.value
     if new:
         y_source = range_categories[new]['source']
         y_var_name = range_categories[new]['var_name']
@@ -1212,6 +1221,11 @@ def update_control_chart(attr, old, new):
         y_source_mrns = y_source.data['mrn']
         sim_study_dates = source_plans.data['sim_study_date']
         sim_study_dates_uids = source_plans.data['uid']
+
+        if range_categories[new]['units']:
+            control_chart.yaxis.axis_label = new + " (" + range_categories[new]['units'] + ")"
+        else:
+            control_chart.yaxis.axis_label = new
 
         x_values = []
         skipped = []
@@ -1254,15 +1268,42 @@ def update_control_chart(attr, old, new):
                 if not isinstance(y_values[-1], (int, long, float)):
                     y_values[-1] = 0
 
-        source_time.data = {'x': x_values,
-                            'y': y_values,
-                            'mrn': y_mrns,
-                            'color': colors}
+        sort_index = sorted(range(len(x_values)), key=lambda k: x_values[k])
+        x_values_sorted = []
+        y_values_sorted = []
+        y_mrns_sorted = []
+        colors_sorted = []
+        for s in range(0, len(x_values)):
+            x_values_sorted.append(x_values[sort_index[s]])
+            y_values_sorted.append(y_values[sort_index[s]])
+            y_mrns_sorted.append(y_mrns[sort_index[s]])
+            colors_sorted.append(colors[sort_index[s]])
+
+        try:
+            avg_len = int(control_chart_text_input.value)
+        except:
+            avg_len = 3
+        cumsum, moving_aves = [0], []
+
+        for i, x in enumerate(y_values_sorted, 1):
+            cumsum.append(cumsum[i - 1] + x)
+            if i >= avg_len:
+                moving_ave = (cumsum[i] - cumsum[i - avg_len]) / avg_len
+                moving_aves.append(moving_ave)
+            else:
+                moving_aves.append(0)
+
+        source_time.data = {'x': x_values_sorted,
+                            'y': y_values_sorted,
+                            'mrn': y_mrns_sorted,
+                            'color': colors_sorted,
+                            'avg': moving_aves}
     else:
         source_time.data = {'x': [],
                             'y': [],
                             'mrn': [],
-                            'color': []}
+                            'color': [],
+                            'avg': []}
 
 
 # set up layout
@@ -1533,6 +1574,7 @@ query_row_type.append('main')
 control_chart = figure(plot_width=1000, plot_height=400, tools=tools, logo=None,
                        active_drag="box_zoom", x_axis_type='datetime')
 control_chart.circle('x', 'y', size=10, color='color', alpha=0.5, source=source_time)
+control_chart.line('x', 'avg', color='black', source=source_time)
 control_chart.add_tools(HoverTool(show_arrow=False,
                                   line_policy='next',
                                   tooltips=[('MRN', '@mrn'),
@@ -1540,14 +1582,18 @@ control_chart.add_tools(HoverTool(show_arrow=False,
                                             ('Value', '@y{0.2f}')],
                                   formatters={'x': 'datetime'}))
 control_chart.xaxis.axis_label = "Simulation Date"
+control_chart.yaxis.axis_label = ""
 
-control_chart_title = Div(text="<b>Control Chart</b>", width=1000)
+control_chart_title = Div(text="<b>Range-Variable Trending</b>", width=1000)
 control_chart_options = range_categories.keys()
 control_chart_options.sort()
 control_chart_options.append('')
 control_chart_y = Select(value=control_chart_options[-1], options=control_chart_options, width=300)
 control_chart_y.title = "Y Axis"
-control_chart_y.on_change('value', update_control_chart)
+control_chart_y.on_change('value', update_control_chart_ticker)
+
+control_chart_text_input = TextInput(value='', title="Averaging Distance:", width=260)
+control_chart_text_input.on_change('value', update_control_chart_text_ticker)
 
 # define main layout to pass to curdoc()
 layout = column(row(radio_group_dose, radio_group_volume),
@@ -1572,7 +1618,7 @@ layout = column(row(radio_group_dose, radio_group_volume),
                 beam_table_title2,
                 data_table_beams2,
                 control_chart_title,
-                control_chart_y,
+                row(control_chart_y, control_chart_text_input),
                 control_chart)
 
 # go ahead and add a selector row for the user
