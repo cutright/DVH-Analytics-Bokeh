@@ -1285,17 +1285,17 @@ def update_control_chart():
         y_collapsed = [y_values_sorted[0]]
         w_collapsed = [1]
         for n in range(1, len(x_values_sorted)):
-            if x_values_sorted[v] == x_collapsed[-1]:
-                y_collapsed[-1] = (y_collapsed[-1] + y_values_sorted[v]) / 2.
+            if x_values_sorted[n] == x_collapsed[-1]:
+                y_collapsed[-1] = (y_collapsed[-1] + y_values_sorted[n]) / 2.
                 w_collapsed[-1] += 1
             else:
-                x_collapsed.append(x_values_sorted[v])
-                y_collapsed.append(y_values_sorted[v])
+                x_collapsed.append(x_values_sorted[n])
+                y_collapsed.append(y_values_sorted[n])
                 w_collapsed.append(1)
 
-        print(x_collapsed)
-        print(y_collapsed)
-        print(w_collapsed)
+        print(len(x_collapsed))
+        print(len(y_collapsed))
+        print(len(w_collapsed))
 
         try:
             avg_len = int(control_chart_text_input.value)
@@ -1303,14 +1303,14 @@ def update_control_chart():
             avg_len = 1
         cumsum, moving_aves = [0], []
 
-        for i, x in enumerate(y_collapsed, 1):
+        for i, y in enumerate(y_collapsed, 1):
             print(i, x, sep=' ')
-            cumsum.append(cumsum[i - 1] + x)
+            cumsum.append(cumsum[i - 1] + y)
             if i >= avg_len:
                 moving_ave = (cumsum[i] - cumsum[i - avg_len]) / avg_len
                 moving_aves.append(moving_ave)
             else:
-                moving_aves.append(x)
+                moving_aves.append(y)
 
         source_time.data = {'x': x_values,
                             'y': y_values,
