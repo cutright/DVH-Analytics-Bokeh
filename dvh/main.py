@@ -63,7 +63,8 @@ source_plans = ColumnDataSource(data=dict())
 source_rxs = ColumnDataSource(data=dict())
 source_endpoint_names = ColumnDataSource(data=dict(ep1=[], ep2=[], ep3=[], ep4=[], ep5=[], ep6=[], ep7=[], ep8=[]))
 source_endpoints = ColumnDataSource(data=dict())
-source_time = ColumnDataSource(data=dict(x=[], y=[], mrn=[], color=[], avg=[]))
+source_time = ColumnDataSource(data=dict(x=[], y=[], mrn=[], color=[]))
+source_time_collapsed = ColumnDataSource(data=dict(x=[], y=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -1279,25 +1280,44 @@ def update_control_chart():
             y_mrns_sorted.append(y_mrns[sort_index[s]])
             colors_sorted.append(colors[sort_index[s]])
 
+        # average daily data and keep track of points per day
+        x_collapsed = [x_values_sorted[0]]
+        y_collapsed = [y_values_sorted[0]]
+        w_collapsed = [1]
+        for n in range(1, len(x_values_sorted)):
+            if x_values_sorted[v] == x_collapsed[-1]:
+                y_collapsed[-1] = (y_collapsed[-1] + y_values_sorted[v]) / 2.
+                w_collapsed[-1] += 1
+            else:
+                x_collapsed.append(x_values_sorted[v])
+                y_collapsed.append(y_values_sorted[v])
+                w_collapsed.append(1)
+
+        print(x_collapsed)
+        print(y_collapsed)
+        print(w_collapsed)
+
         try:
             avg_len = int(control_chart_text_input.value)
         except:
-            avg_len = 3
+            avg_len = 1
         cumsum, moving_aves = [0], []
 
-        for i, x in enumerate(y_values_sorted, 1):
+        for i, x in enumerate(y_collapsed, 1):
+            print(i, x, sep=' ')
             cumsum.append(cumsum[i - 1] + x)
             if i >= avg_len:
                 moving_ave = (cumsum[i] - cumsum[i - avg_len]) / avg_len
                 moving_aves.append(moving_ave)
             else:
-                moving_aves.append(0)
+                moving_aves.append(x)
 
-        source_time.data = {'x': x_values_sorted,
-                            'y': y_values_sorted,
-                            'mrn': y_mrns_sorted,
-                            'color': colors_sorted,
-                            'avg': moving_aves}
+        source_time.data = {'x': x_values,
+                            'y': y_values,
+                            'mrn': y_mrns,
+                            'color': colors}
+        source_time_collapsed.data = {'x': x_collapsed,
+                                      'y': moving_aves}
     else:
         source_time.data = {'x': [],
                             'y': [],
@@ -1574,7 +1594,7 @@ query_row_type.append('main')
 control_chart = figure(plot_width=1000, plot_height=400, tools=tools, logo=None,
                        active_drag="box_zoom", x_axis_type='datetime')
 control_chart.circle('x', 'y', size=10, color='color', alpha=0.5, source=source_time)
-control_chart.line('x', 'avg', color='black', source=source_time)
+control_chart.line('x', 'y', color='black', source=source_time_collapsed)
 control_chart.add_tools(HoverTool(show_arrow=False,
                                   line_policy='next',
                                   tooltips=[('MRN', '@mrn'),
