@@ -1339,6 +1339,9 @@ def control_chart_update_trend():
 
     selected = source_time.selected['1d']['indices']
 
+    if not selected:
+        selected = range(0, len(source_time.data['x']))
+
     x, y = [], []
     for i in range(0, len(source_time.data['x'])):
         if i in selected:
