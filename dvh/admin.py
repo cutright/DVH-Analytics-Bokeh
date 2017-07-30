@@ -6,12 +6,13 @@ Created on Fri Mar 24 13:43:28 2017
 """
 
 from __future__ import print_function
-from utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection
+from utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection, recalculate_ages
 import os
 import datetime
 from roi_name_manager import DatabaseROIs, clean_name
 from sql_connector import DVH_SQL
 from dicom_to_sql import dicom_to_sql, rebuild_database
+from analysis_tools import update_all_min_distances_in_db
 from bokeh.models.widgets import Select, Button, Tabs, Panel, TextInput, RadioButtonGroup, Div, MultiSelect, TableColumn, DataTable
 from bokeh.layouts import layout
 from bokeh.plotting import figure
@@ -734,8 +735,7 @@ def update_query_source():
 def update_db():
     update_value = update_db_value.value
     if update_db_column.value in {'birth_date', 'sim_study_date'}:
-        update_value = "'" + update_value + "'::date"
-    print(update_value)
+        update_value = update_value + "::date"
     DVH_SQL().update(update_db_table.value, update_db_column.value, update_value, update_db_condition.value)
     update_query_source()
 
@@ -831,6 +831,24 @@ def delete_backup():
         else:
             new_index = len(backup_select.options) - 2
         update_backup_select(new_index)
+
+
+def calculate_all_ptv_dist():
+    if calculate_condition.value:
+        print("condition: ", calculate_condition.value, sep='')
+        update_all_min_distances_in_db(calculate_condition.value)
+    else:
+        update_all_min_distances_in_db()
+    update_query_source()
+
+
+def recalculate_ages_click():
+    if calculate_condition.value:
+        print("condition: ", calculate_condition.value, sep='')
+        recalculate_ages(calculate_condition.value)
+    else:
+        recalculate_ages()
+    update_query_source()
 
 
 ######################################################
@@ -1041,6 +1059,13 @@ delete_from_db_value = TextInput(value='', title="Value", width=300)
 delete_from_db_button = Button(label='Delete', button_type='warning', width=100)
 delete_from_db_button.on_click(delete_from_db)
 
+calculations_title = Div(text="<b>Post Import Calculations</b>", width=1000)
+calculate_condition = TextInput(value='', title="Condition", width=300)
+calculate_ptv_dist_button = Button(label='Calc PTV distances', button_type='warning', width=150)
+calculate_ptv_dist_button.on_click(calculate_all_ptv_dist)
+calculate_ages_button = Button(label='Calc Patient Ages', button_type='warning', width=150)
+calculate_ages_button.on_click(recalculate_ages_click)
+
 db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [query_title],
                            [query_table, query_columns, query_condition, table_slider, query_button],
@@ -1048,6 +1073,8 @@ db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [update_db_table, update_db_column, update_db_condition, update_db_value, update_db_button],
                            [delete_from_db_title],
                            [delete_from_db_column, delete_from_db_value, delete_from_db_button],
+                           [calculations_title],
+                           [calculate_condition, calculate_ptv_dist_button, calculate_ages_button],
                            [data_table_rxs]])
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

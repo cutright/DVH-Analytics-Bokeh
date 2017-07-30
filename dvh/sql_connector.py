@@ -69,9 +69,11 @@ class DVH_SQL:
         return results
 
     def update(self, table_name, column, value, condition_str):
-        update = "Update " + table_name + " SET " + column + " = " \
-                 + str(value) \
-                 + " WHERE " + condition_str
+        if '::date' in str(value):
+            value = "'" + value.strip('::date') + "'::date"
+            update = "Update " + table_name + " SET " + column + " = " + str(value) + " WHERE " + condition_str
+        else:
+            update = "Update " + table_name + " SET " + column + " = '" + str(value) + "' WHERE " + condition_str
         self.cursor.execute(update)
         self.cnx.commit()
 

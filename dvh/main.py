@@ -64,7 +64,8 @@ source_rxs = ColumnDataSource(data=dict())
 source_endpoint_names = ColumnDataSource(data=dict(ep1=[], ep2=[], ep3=[], ep4=[], ep5=[], ep6=[], ep7=[], ep8=[]))
 source_endpoints = ColumnDataSource(data=dict())
 source_time = ColumnDataSource(data=dict(x=[], y=[], mrn=[], color=[]))
-source_time_collapsed = ColumnDataSource(data=dict(x=[], y=[]))
+source_time_trend = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
+source_time_collapsed = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -1212,6 +1213,24 @@ def update_control_chart_text_ticker(attr, old, new):
     update_control_chart()
 
 
+def collapse_into_single_dates(x, y):
+
+    # average daily data and keep track of points per day
+    x_collapsed = [x[0]]
+    y_collapsed = [y[0]]
+    w_collapsed = [1]
+    for n in range(1, len(x)):
+        if x[n] == x_collapsed[-1]:
+            y_collapsed[-1] = (y_collapsed[-1] + y[n])
+            w_collapsed[-1] += 1
+        else:
+            x_collapsed.append(x[n])
+            y_collapsed.append(y[n])
+            w_collapsed.append(1)
+
+    return x_collapsed, y_collapsed, w_collapsed
+
+
 def update_control_chart():
     new = control_chart_y.value
     if new:
@@ -1281,21 +1300,7 @@ def update_control_chart():
             colors_sorted.append(colors[sort_index[s]])
 
         # average daily data and keep track of points per day
-        x_collapsed = [x_values_sorted[0]]
-        y_collapsed = [y_values_sorted[0]]
-        w_collapsed = [1]
-        for n in range(1, len(x_values_sorted)):
-            if x_values_sorted[n] == x_collapsed[-1]:
-                y_collapsed[-1] = (y_collapsed[-1] + y_values_sorted[n]) / 2.
-                w_collapsed[-1] += 1
-            else:
-                x_collapsed.append(x_values_sorted[n])
-                y_collapsed.append(y_values_sorted[n])
-                w_collapsed.append(1)
-
-        print(len(x_collapsed))
-        print(len(y_collapsed))
-        print(len(w_collapsed))
+        x_collapsed, y_collapsed, w_collapsed = collapse_into_single_dates(x_values_sorted, y_values_sorted)
 
         try:
             avg_len = int(control_chart_text_input.value)
@@ -1304,26 +1309,64 @@ def update_control_chart():
         cumsum, moving_aves = [0], []
 
         for i, y in enumerate(y_collapsed, 1):
-            print(i, x, sep=' ')
-            cumsum.append(cumsum[i - 1] + y)
+            cumsum.append(cumsum[i - 1] + y / w_collapsed[i - 1])
             if i >= avg_len:
                 moving_ave = (cumsum[i] - cumsum[i - avg_len]) / avg_len
                 moving_aves.append(moving_ave)
-            else:
-                moving_aves.append(y)
+        x_final = []
+        for i in range(avg_len, len(x_collapsed)):
+            x_final.append(x_collapsed[i])
 
-        source_time.data = {'x': x_values,
-                            'y': y_values,
-                            'mrn': y_mrns,
-                            'color': colors}
-        source_time_collapsed.data = {'x': x_collapsed,
-                                      'y': moving_aves}
+        source_time.data = {'x': x_values_sorted,
+                            'y': y_values_sorted,
+                            'mrn': y_mrns_sorted,
+                            'color': colors_sorted}
+        source_time_trend.data = {'x': x_final,
+                                  'y': moving_aves[1:],
+                                  'mrn': ['Avg'] * len(x_final)}
     else:
         source_time.data = {'x': [],
                             'y': [],
                             'mrn': [],
                             'color': [],
                             'avg': []}
+        source_time_trend.data = {'x': [],
+                                  'y': [],
+                                  'mrn': []}
+
+
+def control_chart_update_trend():
+
+    selected = source_time.selected['1d']['indices']
+
+    x, y = [], []
+    for i in range(0, len(source_time.data['x'])):
+        if i in selected:
+            x.append(source_time.data['x'][i])
+            y.append(source_time.data['y'][i])
+
+    # average daily data and keep track of points per day
+    x, y, w = collapse_into_single_dates(x, y)
+
+    try:
+        avg_len = int(control_chart_text_input.value)
+    except:
+        avg_len = 1
+    cumsum, moving_aves = [0], []
+
+    for i, y in enumerate(y, 1):
+        cumsum.append(cumsum[i - 1] + y / w[i - 1])
+        if i >= avg_len:
+            moving_ave = (cumsum[i] - cumsum[i - avg_len]) / avg_len
+            moving_aves.append(moving_ave)
+
+    x_final = []
+    for i in range(avg_len, len(x)):
+        x_final.append(x[i])
+
+    source_time_trend.data = {'x': x_final,
+                              'y': moving_aves[1:],
+                              'mrn': ['Avg'] * len(x_final)}
 
 
 # set up layout
@@ -1591,13 +1634,14 @@ query_row.append(row(update_button, main_add_selector_button, main_add_range_but
 query_row_type.append('main')
 
 # Control Chart layout
+tools = "pan,wheel_zoom,box_zoom,lasso_select,reset,crosshair,save"
 control_chart = figure(plot_width=1000, plot_height=400, tools=tools, logo=None,
                        active_drag="box_zoom", x_axis_type='datetime')
-control_chart.circle('x', 'y', size=10, color='color', alpha=0.5, source=source_time)
-control_chart.line('x', 'y', color='black', source=source_time_collapsed)
-control_chart.add_tools(HoverTool(show_arrow=False,
+control_chart.circle('x', 'y', size=10, color='color', alpha=0.25, source=source_time)
+control_chart.line('x', 'y', color='black', source=source_time_trend)
+control_chart.add_tools(HoverTool(show_arrow=True,
                                   line_policy='next',
-                                  tooltips=[('MRN', '@mrn'),
+                                  tooltips=[('ID', '@mrn'),
                                             ('Date', '@x{%F}'),
                                             ('Value', '@y{0.2f}')],
                                   formatters={'x': 'datetime'}))
@@ -1612,8 +1656,16 @@ control_chart_y = Select(value=control_chart_options[-1], options=control_chart_
 control_chart_y.title = "Y Axis"
 control_chart_y.on_change('value', update_control_chart_ticker)
 
-control_chart_text_input = TextInput(value='', title="Averaging Distance:", width=260)
+control_chart_text_input = TextInput(value='', title="Lookback Distance:", width=260)
 control_chart_text_input.on_change('value', update_control_chart_text_ticker)
+
+lookback_units_options = ['Dates with a Sim', 'Days', 'Patients']
+control_chart_lookback_units = Select(value=lookback_units_options[0], options=lookback_units_options, width=200)
+control_chart_lookback_units.title = 'Lookback Units'
+control_chart_lookback_units.on_change('value', update_control_chart_ticker)
+
+control_chart_trend_update_button = Button(label="Force Update", button_type="primary", width=180)
+control_chart_trend_update_button.on_click(control_chart_update_trend)
 
 # define main layout to pass to curdoc()
 layout = column(row(radio_group_dose, radio_group_volume),
@@ -1638,7 +1690,7 @@ layout = column(row(radio_group_dose, radio_group_volume),
                 beam_table_title2,
                 data_table_beams2,
                 control_chart_title,
-                row(control_chart_y, control_chart_text_input),
+                row(control_chart_y, control_chart_lookback_units, control_chart_text_input, control_chart_trend_update_button),
                 control_chart)
 
 # go ahead and add a selector row for the user

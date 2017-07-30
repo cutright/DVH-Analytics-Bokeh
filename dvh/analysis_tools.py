@@ -425,10 +425,14 @@ def update_min_distances_in_db(study_instance_uid, roi_name):
                          % (study_instance_uid, roi_name))
 
 
-def update_all_min_distances_in_db():
-    condition = "LOWER(roi_type) IN ('organ', 'ctv', 'gtv') AND (" \
+def update_all_min_distances_in_db(*condition):
+    if condition:
+        condition = " AND (" + condition[0] + ")"
+    else:
+        condition = ''
+    condition = "(LOWER(roi_type) IN ('organ', 'ctv', 'gtv') AND (" \
                 "LOWER(roi_name) NOT IN ('external', 'skin') OR " \
-                "LOWER(physician_roi) NOT IN ('uncategorized', 'ignored', 'external', 'skin'))"
+                "LOWER(physician_roi) NOT IN ('uncategorized', 'ignored', 'external', 'skin')))" + condition
     rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition)
     for roi in rois:
         if roi[1].lower() not in {'external', 'skin'} and \

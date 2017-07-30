@@ -102,35 +102,42 @@ class Temp_DICOM_FileSet:
         return roi
 
 
-def recalculate_ages():
+def recalculate_ages(*custom_condition):
 
-    dvh_data = QuerySQL('Plans', "mrn != ''")
+    if custom_condition:
+        custom_condition = " AND " + custom_condition[0]
+    else:
+        custom_condition = ''
+
+    dvh_data = QuerySQL('Plans', "mrn != ''" + custom_condition)
     cnx = DVH_SQL()
 
     for i in range(0, len(dvh_data.mrn)):
+        mrn = dvh_data.mrn[i]
         uid = dvh_data.study_instance_uid[i]
         sim_study_date = dvh_data.sim_study_date[i].split('-')
         birth_date = dvh_data.birth_date[i].split('-')
 
-        birth_year = int(birth_date[0])
-        birth_month = int(birth_date[1])
-        birth_day = int(birth_date[2])
-        birth_date_obj = datetime(birth_year, birth_month, birth_day)
+        try:
+            birth_year = int(birth_date[0])
+            birth_month = int(birth_date[1])
+            birth_day = int(birth_date[2])
+            birth_date_obj = datetime(birth_year, birth_month, birth_day)
 
-        sim_study_year = int(sim_study_date[0])
-        sim_study_month = int(sim_study_date[1])
-        sim_study_day = int(sim_study_date[2])
-        sim_study_date_obj = datetime(sim_study_year,
-                                               sim_study_month,
-                                               sim_study_day)
+            sim_study_year = int(sim_study_date[0])
+            sim_study_month = int(sim_study_date[1])
+            sim_study_day = int(sim_study_date[2])
+            sim_study_date_obj = datetime(sim_study_year, sim_study_month, sim_study_day)
 
-        if sim_study_date == '1800-01-01':
-            age = '(NULL)'
-        else:
-            age = relativedelta(sim_study_date_obj, birth_date_obj).years
+            if sim_study_date == '1800-01-01':
+                age = '(NULL)'
+            else:
+                age = relativedelta(sim_study_date_obj, birth_date_obj).years
 
-        condition = "study_instance_uid = '" + uid + "'"
-        cnx.update('Plans', 'age', str(age), condition)
+            condition = "study_instance_uid = '" + uid + "'"
+            cnx.update('Plans', 'age', str(age), condition)
+        except:
+            print("Update Failed for", mrn, "sim date:", sim_study_date, "birthdate", birth_date, sep=' ')
 
     cnx.cnx.close()
 
