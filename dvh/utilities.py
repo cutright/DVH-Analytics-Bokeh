@@ -385,8 +385,6 @@ def surface_area_of_roi(coord):
 #     all_z_values = np.sort(all_z_values)
 #     thicknesses = np.abs(np.diff(all_z_values))
 #     thicknesses = np.append(thicknesses, np.min(thicknesses))
-#     first_slice = min(all_z_values)
-#     final_slice = max(all_z_values)
 #     all_z_values = all_z_values.tolist()
 #
 #     z_index = 0
