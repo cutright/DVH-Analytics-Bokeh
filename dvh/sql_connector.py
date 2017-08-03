@@ -118,6 +118,7 @@ class DVH_SQL:
                          '(NULL)',
                          '(NULL)',
                          str(round(dvh_table.surface_area[x], 2)),
+                         '(NULL)',
                          'NOW()']
             sql_input = '\',\''.join(sql_input)
             sql_input += '\');'
@@ -161,6 +162,7 @@ class DVH_SQL:
                      str(plan.total_mu),
                      plan.dose_grid_resolution,
                      plan.heterogeneity_correction,
+                     'false',
                      'NOW()']
         sql_input = '\',\''.join(sql_input)
         sql_input += '\');'
@@ -224,6 +226,8 @@ class DVH_SQL:
                              beams.treatment_machine[x],
                              beams.scan_mode[x],
                              str(beams.scan_spot_count[x]),
+                             str(beams.beam_mu_per_deg[x]),
+                             str(beams.beam_mu_per_cp[x]),
                              'NOW()']
                 sql_input = '\',\''.join(sql_input)
                 sql_input += '\');'

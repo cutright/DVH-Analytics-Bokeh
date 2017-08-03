@@ -36,7 +36,8 @@ class BeamRow:
                  collimator_range, collimator_min, collimator_max,
                  couch_start, couch_end, couch_rot_dir,
                  couch_range, couch_min, couch_max,
-                 beam_dose_pt, isocenter, ssd, treatment_machine, scan_mode, scan_spot_count):
+                 beam_dose_pt, isocenter, ssd, treatment_machine, scan_mode, scan_spot_count,
+                 beam_mu_per_deg, beam_mu_per_cp):
 
         for key, value in locals().iteritems():
             if key != 'self':
@@ -540,6 +541,13 @@ class BeamTable:
                 else:
                     ssd = '(NULL)'
 
+                if gantry['range'] > 0:
+                    beam_mu_per_deg = round(beam_mu / gantry['range'], 2)
+                else:
+                    beam_mu_per_deg = '(NULL)'
+
+                beam_mu_per_cp = round(beam_mu / float(control_point_count), 2)
+
                 current_beam = BeamRow(mrn, study_instance_uid, beam_num + 1,
                                        beam_name, fx_grp + 1, fxs,
                                        fx_grp_beam_count, beam_dose, beam_mu, radiation_type,
@@ -550,7 +558,8 @@ class BeamTable:
                                        collimator['range'], collimator['min'], collimator['max'],
                                        couch['start'], couch['end'], couch['rot_dir'],
                                        couch['range'], couch['min'], couch['max'],
-                                       beam_dose_pt, isocenter, ssd, treatment_machine, scan_mode, scan_spot_count)
+                                       beam_dose_pt, isocenter, ssd, treatment_machine, scan_mode, scan_spot_count,
+                                       beam_mu_per_deg, beam_mu_per_cp)
 
                 values[beam_num] = current_beam
                 beam_num += 1

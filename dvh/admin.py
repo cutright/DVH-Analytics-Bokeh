@@ -756,8 +756,10 @@ def import_inbox():
 
 def rebuild_db_button_click():
     rebuild_db_button.label = 'Rebuilding...'
+    rebuild_db_button.button_type = 'danger'
     rebuild_database(directories['imported'])
     rebuild_db_button.label = 'Rebuild database'
+    rebuild_db_button.button_type = 'warning'
 
 
 def backup_db():
