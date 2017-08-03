@@ -736,6 +736,7 @@ def update_dvh_data(dvh):
         dvh.dist_to_ptv_median.extend(['N/A'] * extra_rows)
         dvh.dist_to_ptv_mean.extend(['N/A'] * extra_rows)
         dvh.dist_to_ptv_max.extend(['N/A'] * extra_rows)
+        dvh.ptv_overlap.extend(['N/A'] * extra_rows)
     if group_1_count > 0:
         dvh.rx_dose.extend(calc_stats(dvh_group_1.rx_dose))
         dvh.volume.extend(calc_stats(dvh_group_1.volume))
@@ -774,6 +775,7 @@ def update_dvh_data(dvh):
     dvh.dist_to_ptv_mean.insert(0, 'N/A')
     dvh.dist_to_ptv_median.insert(0, 'N/A')
     dvh.dist_to_ptv_max.insert(0, 'N/A')
+    dvh.ptv_overlap.insert(0, 'N/A')
     line_colors.insert(0, 'green')
     x_data.insert(0, [0])
     y_data.insert(0, [0])
