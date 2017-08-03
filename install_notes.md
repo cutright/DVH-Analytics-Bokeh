@@ -18,6 +18,10 @@ If you're on Mac or Linux, you may need:
 ~~~~
 $ sudo pip install dvh-analytics
 ~~~~
+And for Linux only, you may need to install freetype prior to pip install dvh-analytics:
+~~~~
+$ sudo apt-get install libfreetype6-dev
+~~~~
 
 ## Define directories and connection settings
 For a web-based UI, type in the following to access the Settings:
