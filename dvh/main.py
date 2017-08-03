@@ -87,7 +87,8 @@ selector_categories = {'ROI Institutional Category': {'var_name': 'institutional
                        'Heterogeneity Correction': {'var_name': 'heterogeneity_correction', 'table': 'Plans'},
                        'Scan Mode': {'var_name': 'scan_mode', 'table': 'Beams'},
                        'MRN': {'var_name': 'mrn', 'table': 'Plans'},
-                       'UID': {'var_name': 'study_instance_uid', 'table': 'Plans'}}
+                       'UID': {'var_name': 'study_instance_uid', 'table': 'Plans'},
+                       'Baseline': {'var_name': 'baseline', 'table': 'Plans'}}
 range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 'source': source_plans},
                     'Beam Energy Min': {'var_name': 'beam_energy_min', 'table': 'Beams', 'units': '', 'source': source_beams},
                     'Beam Energy Max': {'var_name': 'beam_energy_max', 'table': 'Beams', 'units': '', 'source': source_beams},
@@ -126,7 +127,9 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
                     'Distance to PTV Mean': {'var_name': 'dist_to_ptv_mean', 'table': 'DVHs', 'units': 'cm', 'source': source},
                     'Distance to PTV Median': {'var_name': 'dist_to_ptv_median', 'table': 'DVHs', 'units': 'cm', 'source': source},
                     'Distance to PTV Max': {'var_name': 'dist_to_ptv_max', 'table': 'DVHs', 'units': 'cm', 'source': source},
-                    'Scan Spots': {'var_name': 'scan_spot_count', 'table': 'Beams', 'units': '', 'source': source_beams}}
+                    'Scan Spots': {'var_name': 'scan_spot_count', 'table': 'Beams', 'units': '', 'source': source_beams},
+                    'Beam MU per deg': {'var_name': 'beam_mu_per_deg', 'table': 'Beams', 'units': '', 'source': source_beams},
+                    'Beam MU per control point': {'var_name': 'beam_mu_per_cp', 'table': 'Beams', 'units': '', 'source': source_beams}}
 
 
 # Functions that add widget rows
@@ -794,6 +797,7 @@ def update_dvh_data(dvh):
                    'dist_to_ptv_mean': dvh.dist_to_ptv_mean,
                    'dist_to_ptv_median': dvh.dist_to_ptv_median,
                    'dist_to_ptv_max': dvh.dist_to_ptv_max,
+                   'ptv_overlap': dvh.ptv_overlap,
                    'x': x_data,
                    'y': y_data,
                    'color': line_colors,
@@ -828,6 +832,8 @@ def update_beam_data(uids):
                          'beam_energy_min': beam_data.beam_energy_min,
                          'beam_energy_max': beam_data.beam_energy_max,
                          'beam_mu': beam_data.beam_mu,
+                         'beam_mu_per_deg': beam_data.beam_mu_per_deg,
+                         'beam_mu_per_cp': beam_data.beam_mu_per_cp,
                          'beam_name': beam_data.beam_name,
                          'beam_number': beam_data.beam_number,
                          'beam_type': beam_data.beam_type,
@@ -880,7 +886,8 @@ def update_plan_data(uids):
                          'total_mu': plan_data.total_mu,
                          'tx_modality': plan_data.tx_modality,
                          'tx_site': plan_data.tx_site,
-                         'heterogeneity_correction': plan_data.heterogeneity_correction}
+                         'heterogeneity_correction': plan_data.heterogeneity_correction,
+                         'baseline': plan_data.baseline}
 
 
 # updates rx ColumnSourceData for a given list of uids
@@ -1513,7 +1520,7 @@ dvh_plots.add_layout(legend_stats, 'right')
 dvh_plots.legend.click_policy = "hide"
 
 # Set up DataTable for dvhs
-data_table_title = Div(text="<b>DVHs</b>", width=1000)
+data_table_title = Div(text="<b>DVHs</b>", width=1200)
 columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="roi_name", title="ROI Name"),
            TableColumn(field="roi_type", title="ROI Type", width=80),
@@ -1525,11 +1532,12 @@ columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="max_dose", title="Max Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="eud", title="EUD", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="eud_a_value", title="a", width=80),
-           TableColumn(field="dist_to_ptv_min", title="Dist to PTV", width=80, formatter=NumberFormatter(format="0.0"))]
+           TableColumn(field="dist_to_ptv_min", title="Dist to PTV", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="ptv_overlap", title="PTV Overlap", width=80, formatter=NumberFormatter(format="0.0"))]
 data_table = DataTable(source=source, columns=columns, width=1000)
 
 # Set up EndPoint DataTable
-endpoint_table_title = Div(text="<b>DVH Endpoints</b>", width=1000)
+endpoint_table_title = Div(text="<b>DVH Endpoints</b>", width=1200)
 columns = [TableColumn(field="mrn", title="MRN", width=160),
            TableColumn(field="ep1", title=endpoint_columns[0], width=120),
            TableColumn(field="ep2", title=endpoint_columns[1], width=120),
@@ -1553,6 +1561,8 @@ columns = [TableColumn(field="mrn", title="MRN", width=105),
            TableColumn(field="beam_energy_min", title="Energy Min", width=80),
            TableColumn(field="beam_energy_max", title="Energy Max", width=80),
            TableColumn(field="beam_mu", title="MU", width=100, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="beam_mu_per_deg", title="MU/deg", width=100, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="beam_mu_per_cp", title="MU/CP", width=100, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="beam_type", title="Type", width=100),
            TableColumn(field="scan_mode", title="Scan Mode", width=100),
            TableColumn(field="scan_spot_count", title="Scan Spots", width=100),
@@ -1599,7 +1609,8 @@ columns = [TableColumn(field="mrn", title="MRN", width=420),
            TableColumn(field="sim_study_date", title="Sim Study Date"),
            TableColumn(field="total_mu", title="Total MU", formatter=NumberFormatter(format="0.0")),
            TableColumn(field="tx_modality", title="Tx Modality"),
-           TableColumn(field="tx_site", title="Tx Site")]
+           TableColumn(field="tx_site", title="Tx Site"),
+           TableColumn(field="baseline", title="Baseline")]
 data_table_plans = DataTable(source=source_plans, columns=columns, width=1200)
 
 # Set up Rxs DataTable
