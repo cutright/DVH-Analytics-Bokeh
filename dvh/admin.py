@@ -747,19 +747,32 @@ def delete_from_db():
 
 
 def import_inbox():
-    import_inbox_button.button_type = 'warning'
-    import_inbox_button.label = 'Importing...'
-    dicom_to_sql()
+    if import_inbox_button.label in {'Cancel'}:
+        rebuild_db_button.label = 'Rebuild database'
+        rebuild_db_button.button_type = 'warning'
+    else:
+        import_inbox_button.button_type = 'warning'
+        import_inbox_button.label = 'Importing...'
+        dicom_to_sql()
     import_inbox_button.button_type = 'success'
     import_inbox_button.label = 'Import all from inbox'
 
 
 def rebuild_db_button_click():
-    rebuild_db_button.label = 'Rebuilding...'
-    rebuild_db_button.button_type = 'danger'
-    rebuild_database(directories['imported'])
-    rebuild_db_button.label = 'Rebuild database'
-    rebuild_db_button.button_type = 'warning'
+    if rebuild_db_button.button_type in {'warning'}:
+        rebuild_db_button.label = 'Are you sure?'
+        rebuild_db_button.button_type = 'danger'
+        import_inbox_button.button_type = 'success'
+        import_inbox_button.label = 'Cancel'
+
+    else:
+        rebuild_db_button.label = 'Rebuilding...'
+        rebuild_db_button.button_type = 'danger'
+        import_inbox_button.button_type = 'success'
+        import_inbox_button.label = 'Import all from inbox'
+        rebuild_database(directories['imported'])
+        rebuild_db_button.label = 'Rebuild database'
+        rebuild_db_button.button_type = 'warning'
 
 
 def backup_db():
