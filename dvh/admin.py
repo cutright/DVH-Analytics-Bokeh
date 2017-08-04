@@ -21,6 +21,7 @@ from bokeh.models import ColumnDataSource, LabelSet, Range1d, Slider
 
 
 query_source = ColumnDataSource(data=dict())
+baseline_source = ColumnDataSource(data=dict(mrn=[]))
 
 directories = {}
 config = {}
@@ -720,7 +721,10 @@ def update_query_source():
         new_data[column] = []
         table_columns.append(TableColumn(field=column, title=column))
     columns_str = ','.join(columns).strip()
-    query_cursor = DVH_SQL().query(query_table.value, columns_str, query_condition.value)
+    if query_condition.value:
+        query_cursor = DVH_SQL().query(query_table.value, columns_str, query_condition.value)
+    else:
+        query_cursor = DVH_SQL().query(query_table.value, columns_str)
 
     for row in query_cursor:
         for i in range(0, len(columns)):
@@ -864,6 +868,135 @@ def recalculate_ages_click():
     else:
         recalculate_ages()
     update_query_source()
+
+
+def update_baseline_source():
+    baseline_layout.children.pop()
+    columns = ['mrn', 'sim_study_date', 'physician', 'rx_dose', 'fxs', 'tx_modality', 'tx_site',
+               'study_instance_uid', 'import_time_stamp', 'baseline']
+    new_data = {}
+    table_columns = []
+    for column in columns:
+        new_data[column] = []
+        table_columns.append(TableColumn(field=column, title=column))
+    columns_str = ','.join(columns).strip()
+    if baseline_condition.value:
+        query_cursor = DVH_SQL().query('Plans', columns_str, baseline_condition.value)
+    else:
+        query_cursor = DVH_SQL().query('Plans', columns_str)
+
+    for row in query_cursor:
+        for i in range(0, len(columns)):
+            new_data[columns[i]].append(str(row[i]))
+
+    baseline_source.data = new_data
+
+    baseline_table_new = DataTable(source=baseline_source, columns=table_columns, width=baseline_table_slider.value, editable=True)
+    baseline_layout.children.append(baseline_table_new)
+
+    update_baseline_mrns()
+
+
+def update_baseline_mrns():
+    if len(baseline_source.data['mrn']) == 0:
+        options = ['']
+    else:
+        options = []
+        for i in range(0, len(baseline_source.data['mrn'])):
+            options.append(baseline_source.data['mrn'][i])
+        options.sort()
+
+    baseline_mrn_select.options = options
+    baseline_mrn_select.value = options[0]
+
+    update_baseline_study_dates()
+
+
+def update_baseline_study_dates():
+
+    if len(baseline_source.data['mrn']) == 0:
+        options = ['']
+    else:
+        study_dates = []
+
+        for i in range(0, len(baseline_source.data['mrn'])):
+            if baseline_source.data['mrn'][i] == baseline_mrn_select.value:
+                study_dates.append(baseline_source.data['sim_study_date'][i])
+
+        options = []
+        for i in range(0, len(study_dates)):
+            options.append(study_dates[i])
+        options.sort()
+
+    baseline_study_date_select.options = options
+    baseline_study_date_select.value = options[0]
+
+    update_baseline_uid()
+
+
+def update_baseline_uid():
+    if len(baseline_source.data['mrn']) == 0:
+        options = ['']
+    else:
+        uids = []
+
+        for i in range(0, len(baseline_source.data['mrn'])):
+            if baseline_source.data['mrn'][i] == baseline_mrn_select.value:
+                if baseline_source.data['sim_study_date'][i] == baseline_study_date_select.value:
+                    uids.append(baseline_source.data['study_instance_uid'][i])
+        options = uids
+        options.sort()
+
+    baseline_uid_select.options = options
+    baseline_uid_select.value = options[0]
+
+    update_baseline_status_select()
+
+
+def update_baseline_status_select():
+    if len(baseline_source.data['mrn']) == 0:
+        baseline_status_select.options = ['']
+        baseline_status_select.value = ''
+    else:
+        index = baseline_source.data['study_instance_uid'].index(baseline_uid_select.value)
+        baseline_status_select.options = ['True', 'False']
+        baseline_status_select.value = baseline_source.data['baseline'][index]
+
+
+def update_baseline_mrn_ticker(attr, old, new):
+    update_baseline_study_dates()
+
+
+def update_baseline_study_date_ticker(attr, old, new):
+    update_baseline_uid()
+
+
+def update_baseline_uid_ticker(attr, old, new):
+    update_baseline_status_select()
+
+
+def update_baseline_status_ticker(attr, old, new):
+    uid = baseline_uid_select.value
+    current_baseline = DVH_SQL().query('Plans', 'baseline', "study_instance_uid = '" + uid + "'")[0][0]
+
+    if new not in {str(current_baseline), ''}:
+        if new == 'True':
+            baseline = 1
+        else:
+            baseline = 0
+
+        DVH_SQL().update('Plans', 'baseline', baseline, "study_instance_uid = '" + baseline_uid_select.value + "'")
+        update_baseline_source()
+
+
+def source_selection_ticker(attr, old, new):
+    index = baseline_source.selected['1d']['indices'][0]
+    mrn = baseline_source.data['mrn'][index]
+    date = baseline_source.data['sim_study_date'][index]
+    uid = baseline_source.data['study_instance_uid'][index]
+    baseline_mrn_select.value = mrn
+    baseline_study_date_select.value = date
+    baseline_uid_select.value = uid
 
 
 ######################################################
@@ -1092,6 +1225,37 @@ db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [calculate_condition, calculate_ptv_dist_button, calculate_ages_button],
                            [data_table_rxs]])
 
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Baseline Objects
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+baseline_title = Div(text="<b>Query Database</b>", width=1000)
+baseline_condition = TextInput(value='', title="Condition", width=300)
+baseline_query_button = Button(label='Query', button_type='primary', width=100)
+baseline_table_slider = Slider(start=300, end=2000, value=1025, step=10, title="Table Width")
+
+baseline_query_button.on_click(update_baseline_source)
+
+baseline_title_update = Div(text="<b>Update Database</b>", width=1025)
+baseline_status_select = Select(value='', options=[''], width=200, height=100, title='Baseline Status')
+baseline_study_date_select = Select(value='', options=[''], width=200, height=100, title='Sim Study Date')
+baseline_uid_select = Select(value='', options=[''], width=425, height=100, title='Study Instance UID')
+baseline_mrn_select = Select(value='', options=[''], width=200, height=100, title='MRN')
+
+baseline_mrn_select.on_change('value', update_baseline_mrn_ticker)
+baseline_study_date_select.on_change('value', update_baseline_study_date_ticker)
+baseline_uid_select.on_change('value', update_baseline_uid_ticker)
+baseline_status_select.on_change('value', update_baseline_status_ticker)
+
+baseline_table = DataTable(source=baseline_source, columns=[], width=1025)
+
+baseline_source.on_change('selected', source_selection_ticker)
+
+baseline_layout = layout([[baseline_title],
+                          [baseline_condition, baseline_table_slider, baseline_query_button],
+                          [baseline_title_update],
+                          [baseline_mrn_select, baseline_study_date_select, baseline_uid_select, baseline_status_select],
+                          [baseline_table]])
+
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Backup utility
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1128,8 +1292,9 @@ backup_layout = layout([[backup_select, delete_backup_button, restore_db_button,
 roi_tab = Panel(child=roi_layout, title='ROI Name Manager')
 db_tab = Panel(child=db_editor_layout, title='Database Editor')
 backup_tab = Panel(child=backup_layout, title='Backup & Restore')
+baseline_tab = Panel(child=baseline_layout, title='Baseline Plans')
 
-tabs = Tabs(tabs=[db_tab, roi_tab, backup_tab])
+tabs = Tabs(tabs=[db_tab, roi_tab, baseline_tab, backup_tab])
 
 # Create the document Bokeh server will use to generate the webpage
 curdoc().add_root(tabs)
