@@ -22,7 +22,7 @@ from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
 from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, \
-    NumberFormatter, RadioButtonGroup, TextInput, RadioGroup, CheckboxButtonGroup
+    NumberFormatter, RadioButtonGroup, TextInput, RadioGroup, CheckboxButtonGroup, Dropdown
 from dicompylercore import dicomparser, dvhcalc
 
 # Declare variables
@@ -1666,13 +1666,14 @@ update_button = Button(label="Update", button_type="success", width=180)
 update_button.on_click(update_data)
 
 # define Download button and call download.js on click
-download_button = Button(label="Download", button_type="default", width=100)
-download_button.callback = CustomJS(args=dict(source=source,
-                                              source_rxs=source_rxs,
-                                              source_plans=source_plans,
-                                              source_beams=source_beams,
-                                              source_endpoint_names=source_endpoint_names),
-                                    code=open(join(dirname(__file__), "download.js")).read())
+menu = [("All Data", "all"), ("Lite", "lite"), ("Only DVHs", "dvhs")]
+download_dropdown = Dropdown(label="Download", button_type="default", menu=menu, width=100)
+download_dropdown.callback = CustomJS(args=dict(source=source,
+                                                source_rxs=source_rxs,
+                                                source_plans=source_plans,
+                                                source_beams=source_beams,
+                                                source_endpoint_names=source_endpoint_names),
+                                      code=open(join(dirname(__file__), "download.js")).read())
 
 # define button to widget row for discrete data filtering
 main_add_selector_button = Button(label="Add Selection Filter", button_type="primary", width=180)
@@ -1742,7 +1743,7 @@ layout = column(row(radio_group_dose, radio_group_volume),
                     main_add_endpoint_button,
                     update_button,
                     calculate_review_dvh_button,
-                    download_button),
+                    download_dropdown),
                 data_table_title,
                 data_table,
                 endpoint_table_title,
