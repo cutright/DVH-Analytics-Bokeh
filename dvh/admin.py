@@ -788,7 +788,7 @@ def backup_db():
     if not os.path.isdir(abs_path):
         os.mkdir(abs_path)
 
-    new_file = config['dbname'] +\
+    new_file = config['dbname'] + '_' + config['host'] + '_' + config['port'] +\
                '_' + str(datetime.datetime.now()).split('.')[0].replace(':', '-').replace(' ', '_') +\
                '.sql'
     abs_file_path = os.path.join(abs_path, new_file)
@@ -1229,7 +1229,7 @@ db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
 # Baseline Objects
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 baseline_title = Div(text="<b>Query Database</b>", width=1000)
-baseline_condition = TextInput(value='', title="Condition", width=300)
+baseline_condition = TextInput(value='', title="Condition", width=625)
 baseline_query_button = Button(label='Query', button_type='primary', width=100)
 baseline_table_slider = Slider(start=300, end=2000, value=1025, step=10, title="Table Width")
 
@@ -1259,7 +1259,7 @@ baseline_layout = layout([[baseline_title],
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Backup utility
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-backup_select = Select(value=options[0], options=options, title="Available Backups", width=250)
+backup_select = Select(value=options[0], options=options, title="Available Backups", width=350)
 delete_backup_button = Button(label='Delete', button_type='warning', width=100)
 restore_db_button = Button(label='Restore', button_type='primary', width=100)
 backup_db_button = Button(label='Backup', button_type='success', width=100)
@@ -1269,7 +1269,7 @@ warning_div = Div(text="<b>WARNING:</b> Restore requires your OS user name to be
                        " file isn't empty.  Validate by typing 'psql' in a terminal/command prompt, then"
                        " <i>SELECT * FROM pg_settings WHERE name = 'port';</i> "
                        " The resulting port should match the port below"
-                       " (i.e., make sure you're backing up the correct database).", width=550)
+                       " (i.e., make sure you're backing up the correct database).", width=650)
 host_div = Div(text="<b>Host</b>: %s" % config['host'])
 port_div = Div(text="<b>Port</b>: %s" % config['port'])
 db_div = Div(text="<b>Database</b>: %s" % config['dbname'])
