@@ -11,6 +11,7 @@ from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL, get_unique_list
 import os
 from scipy.spatial.distance import cdist
+from utilities import calc_ptv_overlap
 
 
 class DVH:
@@ -360,6 +361,30 @@ def get_roi_coordinates_from_string(roi_coord_string):
     return roi_coordinates
 
 
+def get_planes_from_string(roi_coord_string):
+    planes = {}
+    contours = roi_coord_string.split(':')
+
+    for contour in contours:
+        contour = contour.split(',')
+        z = contour.pop(0)
+        z = round(float(z), 2)
+        z_str = str(z)
+
+        if z_str not in planes.keys():
+            planes[z_str] = []
+
+        i, points = 0, []
+        while i < len(contour):
+            point = [float(contour[i]), float(contour[i+1]), z]
+            if point not in points:
+                points.append(point)
+            i += 2
+        planes[z_str].append(points)
+
+    return planes
+
+
 def get_min_distances_to_target(oar_coordinates, target_coordinates):
     # type: ([np.array], [np.array]) -> [float]
     """
@@ -425,6 +450,35 @@ def update_min_distances_in_db(study_instance_uid, roi_name):
                          % (study_instance_uid, roi_name))
 
 
+def update_ptv_overlap_in_db(study_instance_uid, roi_name):
+
+    oar_coordinates_string = DVH_SQL().query('dvhs',
+                                             'roi_coord_string',
+                                             "study_instance_uid = '%s' and roi_name = '%s'"
+                                             % (study_instance_uid, roi_name))
+
+    ptv_coordinates_string = DVH_SQL().query('dvhs',
+                                             'roi_coord_string',
+                                             "study_instance_uid = '%s' and roi_type = 'PTV'"
+                                             % study_instance_uid)
+    if not ptv_coordinates_string:
+        ptv_coordinates_string = DVH_SQL().query('dvhs',
+                                                 'roi_coord_string',
+                                                 "study_instance_uid = '%s' and roi_type = 'PTV1'"
+                                                 % study_instance_uid)
+    if ptv_coordinates_string:
+        oar = get_planes_from_string(oar_coordinates_string[0][0])
+        ptv = get_planes_from_string(ptv_coordinates_string[0][0])
+
+        ptv_overlap = calc_ptv_overlap(oar, ptv)
+
+        DVH_SQL().update('dvhs',
+                         'ptv_overlap',
+                         round(float(ptv_overlap), 2),
+                         "study_instance_uid = '%s' and roi_name = '%s'"
+                         % (study_instance_uid, roi_name))
+
+
 def update_all_min_distances_in_db(*condition):
     if condition:
         condition = " AND (" + condition[0] + ")"
@@ -437,10 +491,20 @@ def update_all_min_distances_in_db(*condition):
     for roi in rois:
         if roi[1].lower() not in {'external', 'skin'} and \
                         roi[2].lower() not in {'uncategorized', 'ignored', 'external', 'skin'}:
-            print('updating', roi[1], sep=' ')
+            print('updating dist to ptv:', roi[1], sep=' ')
             update_min_distances_in_db(roi[0], roi[1])
         else:
-            print('skipping', roi[1], sep=' ')
+            print('skipping dist to ptv:', roi[1], sep=' ')
 
+
+def update_all_ptv_overlaps_in_db(*condition):
+    if condition:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
+    else:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
+    for roi in rois:
+        print('updating ptv_overlap:', roi[1], sep=' ')
+        update_ptv_overlap_in_db(roi[0], roi[1])
+        
 if __name__ == '__main__':
     pass

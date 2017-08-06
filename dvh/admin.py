@@ -12,7 +12,7 @@ import datetime
 from roi_name_manager import DatabaseROIs, clean_name
 from sql_connector import DVH_SQL
 from dicom_to_sql import dicom_to_sql, rebuild_database
-from analysis_tools import update_all_min_distances_in_db
+from analysis_tools import update_all_min_distances_in_db, update_all_ptv_overlaps_in_db
 from bokeh.models.widgets import Select, Button, Tabs, Panel, TextInput, RadioButtonGroup, Div, MultiSelect, TableColumn, DataTable
 from bokeh.layouts import layout
 from bokeh.plotting import figure
@@ -693,7 +693,7 @@ def update_update_db_column():
     if update_db_table.value.lower() == 'dvhs':
         new_options = ['mrn', 'study_instance_uid', 'institutional_roi', 'physician_roi', 'roi_name', 'roi_type']
     elif update_db_table.value.lower() == 'plans':
-        new_options = ['mrn', 'study_instance_uid', 'age', 'birth_date', 'patient_sex', 'physician', 'rx_dose',
+        new_options = ['mrn', 'study_instance_uid', 'age', 'birth_date', 'fxs', 'patient_sex', 'physician', 'rx_dose',
                        'sim_study_date', 'tx_modality', 'tx_site']
     elif update_db_table.value.lower() == 'rxs':
         new_options = ['mrn', 'study_instance_uid', 'plan_name', 'rx_dose', 'rx_percent']
@@ -737,17 +737,31 @@ def update_query_source():
 
 
 def update_db():
+    update_db_button.label = 'Updating...'
+    update_db_button.button_type = 'danger'
     update_value = update_db_value.value
     if update_db_column.value in {'birth_date', 'sim_study_date'}:
         update_value = update_value + "::date"
     DVH_SQL().update(update_db_table.value, update_db_column.value, update_value, update_db_condition.value)
     update_query_source()
+    update_db_button.label = 'Update'
+    update_db_button.button_type = 'warning'
 
 
 def delete_from_db():
-    condition = delete_from_db_column.value + " = '" + delete_from_db_value.value + "'"
-    DVH_SQL().delete_rows(condition)
-    update_query_source()
+    if delete_from_db_value.value and delete_auth_text.value == 'delete':
+        condition = delete_from_db_column.value + " = '" + delete_from_db_value.value + "'"
+        DVH_SQL().delete_rows(condition)
+        update_query_source()
+        delete_from_db_value.value = ''
+        delete_auth_text.value = ''
+
+
+def delete_auth_text_ticker(attr, old, new):
+    if new == 'delete':
+        delete_from_db_button.button_type = 'danger'
+    else:
+        delete_from_db_button.button_type = 'warning'
 
 
 def import_inbox():
@@ -852,22 +866,40 @@ def delete_backup():
         update_backup_select(new_index)
 
 
-def calculate_all_ptv_dist():
+def calculate_ptv_distances():
+    calculate_ptv_dist_button.label = 'Calculating...'
+    calculate_ptv_dist_button.button_type = 'warning'
     if calculate_condition.value:
-        print("condition: ", calculate_condition.value, sep='')
         update_all_min_distances_in_db(calculate_condition.value)
     else:
         update_all_min_distances_in_db()
     update_query_source()
+    calculate_ptv_dist_button.label = 'Calc PTV Distances'
+    calculate_ptv_dist_button.button_type = 'primary'
 
 
-def recalculate_ages_click():
+def calculate_ptv_overlap():
+    calculate_ptv_overlap_button.label = 'Calculating...'
+    calculate_ptv_overlap_button.button_type = 'warning'
     if calculate_condition.value:
-        print("condition: ", calculate_condition.value, sep='')
+        update_all_ptv_overlaps_in_db(calculate_condition.value)
+    else:
+        update_all_ptv_overlaps_in_db()
+    update_query_source()
+    calculate_ptv_overlap_button.label = 'Calc PTV Overlap'
+    calculate_ptv_overlap_button.button_type = 'primary'
+
+
+def calculate_ages_click():
+    calculate_ages_button.label = 'Calculating...'
+    calculate_ages_button.button_type = 'warning'
+    if calculate_condition.value:
         recalculate_ages(calculate_condition.value)
     else:
         recalculate_ages()
     update_query_source()
+    calculate_ages_button.label = 'Calc Patient Ages'
+    calculate_ages_button.button_type = 'primary'
 
 
 def update_baseline_source():
@@ -1190,7 +1222,7 @@ update_db_table = Select(value='DVHs', options=['DVHs', 'Plans', 'Rxs', 'Beams']
 update_db_column = Select(value='', options=[''], width=250, title='Column')
 update_db_value = TextInput(value='', title="Value", width=300)
 update_db_condition = TextInput(value='', title="Condition", width=300)
-update_db_button = Button(label='Update', button_type='warning', width=100)
+update_db_button = Button(label='Update DB', button_type='warning', width=100)
 
 update_db_table.on_change('value', update_update_db_columns_ticker)
 update_db_button.on_click(update_db)
@@ -1203,16 +1235,20 @@ data_table_rxs = DataTable(source=query_source, columns=[], width=1000)
 delete_from_db_title = Div(text="<b>Delete all data with mrn or study_instance_uid</b>", width=1000)
 delete_from_db_column = Select(value='mrn', options=['mrn', 'study_instance_uid'], width=200, height=100,
                                title='Patient Identifier')
-delete_from_db_value = TextInput(value='', title="Value", width=300)
+delete_from_db_value = TextInput(value='', title="Value (required)", width=300)
 delete_from_db_button = Button(label='Delete', button_type='warning', width=100)
+delete_auth_text = TextInput(value='', title="Type 'delete' here to authorize", width=300)
+delete_auth_text.on_change('value', delete_auth_text_ticker)
 delete_from_db_button.on_click(delete_from_db)
 
 calculations_title = Div(text="<b>Post Import Calculations</b>", width=1000)
 calculate_condition = TextInput(value='', title="Condition", width=300)
-calculate_ptv_dist_button = Button(label='Calc PTV distances', button_type='warning', width=150)
-calculate_ptv_dist_button.on_click(calculate_all_ptv_dist)
-calculate_ages_button = Button(label='Calc Patient Ages', button_type='warning', width=150)
-calculate_ages_button.on_click(recalculate_ages_click)
+calculate_ptv_dist_button = Button(label='Calc PTV Distances', button_type='primary', width=150)
+calculate_ptv_dist_button.on_click(calculate_ptv_distances)
+calculate_ptv_overlap_button = Button(label='Calc PTV Overlap', button_type='primary', width=150)
+calculate_ptv_overlap_button.on_click(calculate_ptv_overlap)
+calculate_ages_button = Button(label='Calc Patient Ages', button_type='primary', width=150)
+calculate_ages_button.on_click(calculate_ages_click)
 
 db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [query_title],
@@ -1220,9 +1256,9 @@ db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [update_db_title],
                            [update_db_table, update_db_column, update_db_condition, update_db_value, update_db_button],
                            [delete_from_db_title],
-                           [delete_from_db_column, delete_from_db_value, delete_from_db_button],
+                           [delete_from_db_column, delete_from_db_value, delete_auth_text, delete_from_db_button],
                            [calculations_title],
-                           [calculate_condition, calculate_ptv_dist_button, calculate_ages_button],
+                           [calculate_condition, calculate_ptv_dist_button, calculate_ptv_overlap_button, calculate_ages_button],
                            [data_table_rxs]])
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
