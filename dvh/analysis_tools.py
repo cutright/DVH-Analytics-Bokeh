@@ -470,13 +470,16 @@ def update_ptv_overlap_in_db(study_instance_uid, roi_name):
         oar = get_planes_from_string(oar_coordinates_string[0][0])
         ptv = get_planes_from_string(ptv_coordinates_string[0][0])
 
-        ptv_overlap = calc_ptv_overlap(oar, ptv)
+        try:
+            ptv_overlap = calc_ptv_overlap(oar, ptv)
 
-        DVH_SQL().update('dvhs',
-                         'ptv_overlap',
-                         round(float(ptv_overlap), 2),
-                         "study_instance_uid = '%s' and roi_name = '%s'"
-                         % (study_instance_uid, roi_name))
+            DVH_SQL().update('dvhs',
+                             'ptv_overlap',
+                             round(float(ptv_overlap), 2),
+                             "study_instance_uid = '%s' and roi_name = '%s'"
+                             % (study_instance_uid, roi_name))
+        except:
+            pass
 
 
 def update_all_min_distances_in_db(*condition):
@@ -505,6 +508,6 @@ def update_all_ptv_overlaps_in_db(*condition):
     for roi in rois:
         print('updating ptv_overlap:', roi[1], sep=' ')
         update_ptv_overlap_in_db(roi[0], roi[1])
-        
+
 if __name__ == '__main__':
     pass
