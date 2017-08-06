@@ -12,6 +12,7 @@ import dicom
 import sys
 from shapely.geometry import Polygon, Point
 import numpy as np
+from scipy.spatial.distance import cdist
 
 
 class Temp_DICOM_FileSet:
@@ -370,6 +371,29 @@ def surface_area_of_roi(coord):
     return round(surface_area / 100., 2)
 
 
+def points_to_shapely_polygon(sets_of_points):
+
+    composite_polygon = []
+    for set_of_points in sets_of_points:
+
+        points = [(point[0], point[1]) for point in set_of_points]
+        points.append(points[0])  # Explicitly connect the final point to the first
+        current_polygon = Polygon(points)  # Convert to Shapely Polygon
+
+        # if there are sets of points in a slice, each set is a polygon,
+        # interior polygons are subtractions, exterior are addition
+        # Only need to check one point for interior vs exterior
+        if composite_polygon:
+            if Point((points[0][0], points[0][1])).disjoint(composite_polygon):
+                composite_polygon = current_polygon.union(composite_polygon)
+            else:
+                composite_polygon = current_polygon.difference(composite_polygon)
+        else:
+            composite_polygon = current_polygon
+
+    return composite_polygon
+
+
 def calc_ptv_overlap(oar, ptv):
 
     intersection_volume = 0.
@@ -384,37 +408,148 @@ def calc_ptv_overlap(oar, ptv):
         # also used to check for top and bottom slices, to add area of those contours
         thickness = thicknesses[all_z_values.index(round(float(z), 1))]
 
-        previous_ptv = []
-        for ptv_plane in ptv[z]:
-            ptv_points = [(point[0], point[1]) for point in ptv_plane]
-            if z in oar.keys():
-                previous_oar = []
-                for oar_plane in oar[z]:
-                    oar_points = [(point[0], point[1]) for point in oar_plane]
+        if z in oar.keys():
+            for ptv_plane in ptv[z]:
+                ptv = points_to_shapely_polygon(ptv_plane)
+                oar = points_to_shapely_polygon(oar[z])
 
-                    current_intersection_volume = 0
-                    # if structure is a point or contains only 2 points, assume zero volume
-                    if ptv_points and len(ptv_points) > 2 and oar_points and len(oar_points) > 2:
-
-                        # Explicitly connect the final point to the first
-                        ptv_points.append(ptv_points[0])
-                        oar_points.append(oar_points[0])
-
-                        ptv_contour = Polygon(ptv_points).buffer(0.05, cap_style=1, join_style=1)
-                        oar_contour = Polygon(oar_points).buffer(0.05, cap_style=1, join_style=1)
-                        current_intersection_volume = ptv_contour.intersection(oar_contour).area * thickness
-
-                        if previous_oar and not Point((oar_points[0][0], oar_points[0][1])).disjoint(previous_oar):
-                            current_intersection_volume *= -1
-                            previous_oar = []
-                        else:
-                            previous_oar = oar_contour
-
-                    if previous_ptv and not Point((ptv_points[0][0], ptv_points[0][1])).disjoint(previous_ptv):
-                        intersection_volume -= current_intersection_volume
-                        previous_ptv = []
-                    else:
-                        intersection_volume += current_intersection_volume
-                        previous_ptv = ptv_contour
+                intersection_volume += ptv.intersection(oar).area * thickness
 
     return round(intersection_volume / 1000., 2)
+
+
+def get_roi_coordinates_from_string(roi_coord_string):
+    roi_coordinates = []
+    contours = roi_coord_string.split(':')
+
+    for contour in contours:
+        contour = contour.split(',')
+        z = contour.pop(0)
+        z = float(z)
+        i = 0
+        while i < len(contour):
+            roi_coordinates.append(np.array((float(contour[i]), float(contour[i + 1]), z)))
+            i += 2
+
+    return roi_coordinates
+
+
+def get_planes_from_string(roi_coord_string):
+    planes = {}
+    contours = roi_coord_string.split(':')
+
+    for contour in contours:
+        contour = contour.split(',')
+        z = contour.pop(0)
+        z = round(float(z), 2)
+        z_str = str(z)
+
+        if z_str not in planes.keys():
+            planes[z_str] = []
+
+        i, points = 0, []
+        while i < len(contour):
+            point = [float(contour[i]), float(contour[i+1]), z]
+            if point not in points:
+                points.append(point)
+            i += 2
+        planes[z_str].append(points)
+
+    return planes
+
+
+def get_min_distances_to_target(oar_coordinates, target_coordinates):
+    # type: ([np.array], [np.array]) -> [float]
+    """
+
+    :param oar_coordinates: list of numpy arrays of 3D points defining the surface of the OAR
+    :param target_coordinates: list of numpy arrays of 3D points defining the surface of the PTV
+    :return: min_distances: list of numpy arrays of 3D points defining the surface of the OAR
+    :rtype: [float]
+    """
+    min_distances = []
+    all_distances = cdist(oar_coordinates, target_coordinates, 'euclidean')
+    for oar_point in all_distances:
+        min_distances.append(float(np.min(oar_point)/10.))
+
+    return min_distances
+
+
+def update_min_distances_in_db(study_instance_uid, roi_name):
+
+    oar_coordinates_string = DVH_SQL().query('dvhs',
+                                             'roi_coord_string',
+                                             "study_instance_uid = '%s' and roi_name = '%s'"
+                                             % (study_instance_uid, roi_name))
+
+    ptv_coordinates_string = DVH_SQL().query('dvhs',
+                                             'roi_coord_string',
+                                             "study_instance_uid = '%s' and roi_type = 'PTV'"
+                                             % study_instance_uid)
+    if not ptv_coordinates_string:
+        ptv_coordinates_string = DVH_SQL().query('dvhs',
+                                                 'roi_coord_string',
+                                                 "study_instance_uid = '%s' and roi_type = 'PTV1'"
+                                                 % study_instance_uid)
+    if ptv_coordinates_string:
+
+        oar_coordinates = get_roi_coordinates_from_string(oar_coordinates_string[0][0])
+        ptv_coordinates = get_roi_coordinates_from_string(ptv_coordinates_string[0][0])
+
+        min_distances = get_min_distances_to_target(oar_coordinates, ptv_coordinates)
+
+        DVH_SQL().update('dvhs',
+                         'dist_to_ptv_min',
+                         round(float(np.min(min_distances)), 1),
+                         "study_instance_uid = '%s' and roi_name = '%s'"
+                         % (study_instance_uid, roi_name))
+
+        DVH_SQL().update('dvhs',
+                         'dist_to_ptv_mean',
+                         round(float(np.mean(min_distances)), 1),
+                         "study_instance_uid = '%s' and roi_name = '%s'"
+                         % (study_instance_uid, roi_name))
+
+        DVH_SQL().update('dvhs',
+                         'dist_to_ptv_median',
+                         round(float(np.median(min_distances)), 1),
+                         "study_instance_uid = '%s' and roi_name = '%s'"
+                         % (study_instance_uid, roi_name))
+
+        DVH_SQL().update('dvhs',
+                         'dist_to_ptv_max',
+                         round(float(np.max(min_distances)), 1),
+                         "study_instance_uid = '%s' and roi_name = '%s'"
+                         % (study_instance_uid, roi_name))
+
+
+def update_ptv_overlap_in_db(study_instance_uid, roi_name):
+
+    oar_coordinates_string = DVH_SQL().query('dvhs',
+                                             'roi_coord_string',
+                                             "study_instance_uid = '%s' and roi_name = '%s'"
+                                             % (study_instance_uid, roi_name))
+
+    ptv_coordinates_string = DVH_SQL().query('dvhs',
+                                             'roi_coord_string',
+                                             "study_instance_uid = '%s' and roi_type = 'PTV'"
+                                             % study_instance_uid)
+    if not ptv_coordinates_string:
+        ptv_coordinates_string = DVH_SQL().query('dvhs',
+                                                 'roi_coord_string',
+                                                 "study_instance_uid = '%s' and roi_type = 'PTV1'"
+                                                 % study_instance_uid)
+    if ptv_coordinates_string:
+        oar = get_planes_from_string(oar_coordinates_string[0][0])
+        ptv = get_planes_from_string(ptv_coordinates_string[0][0])
+
+        try:
+            ptv_overlap = calc_ptv_overlap(oar, ptv)
+
+            DVH_SQL().update('dvhs',
+                             'ptv_overlap',
+                             round(float(ptv_overlap), 2),
+                             "study_instance_uid = '%s' and roi_name = '%s'"
+                             % (study_instance_uid, roi_name))
+        except:
+            pass

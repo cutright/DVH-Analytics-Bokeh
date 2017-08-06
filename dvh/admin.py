@@ -6,13 +6,13 @@ Created on Fri Mar 24 13:43:28 2017
 """
 
 from __future__ import print_function
-from utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection, recalculate_ages
+from utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection, \
+    recalculate_ages, update_min_distances_in_db, update_ptv_overlap_in_db
 import os
 import datetime
 from roi_name_manager import DatabaseROIs, clean_name
 from sql_connector import DVH_SQL
 from dicom_to_sql import dicom_to_sql, rebuild_database
-from analysis_tools import update_all_min_distances_in_db, update_all_ptv_overlaps_in_db
 from bokeh.models.widgets import Select, Button, Tabs, Panel, TextInput, RadioButtonGroup, Div, MultiSelect, TableColumn, DataTable
 from bokeh.layouts import layout
 from bokeh.plotting import figure
@@ -1029,6 +1029,44 @@ def source_selection_ticker(attr, old, new):
     baseline_mrn_select.value = mrn
     baseline_study_date_select.value = date
     baseline_uid_select.value = uid
+
+
+def update_all_min_distances_in_db(*condition):
+    if condition:
+        condition = " AND (" + condition[0] + ")"
+    else:
+        condition = ''
+    condition = "(LOWER(roi_type) IN ('organ', 'ctv', 'gtv') AND (" \
+                "LOWER(roi_name) NOT IN ('external', 'skin') OR " \
+                "LOWER(physician_roi) NOT IN ('uncategorized', 'ignored', 'external', 'skin')))" + condition
+    rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition)
+    counter = 0.
+    total_rois = float(len(rois))
+    for roi in rois:
+        calculate_ptv_dist_button.label = str(int((counter / total_rois) * 100)) + '%'
+        counter += 1.
+        if roi[1].lower() not in {'external', 'skin'} and \
+                        roi[2].lower() not in {'uncategorized', 'ignored', 'external', 'skin'}:
+            print('updating dist to ptv:', roi[1], sep=' ')
+            update_min_distances_in_db(roi[0], roi[1])
+        else:
+            print('skipping dist to ptv:', roi[1], sep=' ')
+    calculate_ptv_dist_button.label = 'Calc PTV Distances'
+
+
+def update_all_ptv_overlaps_in_db(*condition):
+    if condition:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
+    else:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
+    counter = 0.
+    total_rois = float(len(rois))
+    for roi in rois:
+        calculate_ptv_overlap_button.label = str(int((counter / total_rois) * 100)) + '%'
+        counter += 1.
+        print('updating ptv_overlap:', roi[1], sep=' ')
+        update_ptv_overlap_in_db(roi[0], roi[1])
+    calculate_ptv_overlap_button.label = 'Calc PTV Overlap'
 
 
 ######################################################
