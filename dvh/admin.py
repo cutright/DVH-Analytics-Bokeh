@@ -7,7 +7,7 @@ Created on Fri Mar 24 13:43:28 2017
 
 from __future__ import print_function
 from utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection, \
-    recalculate_ages, update_min_distances_in_db, update_ptv_overlap_in_db
+    recalculate_ages, update_min_distances_in_db, update_ptv_overlap_in_db, update_volumes_in_db
 import os
 import datetime
 from roi_name_manager import DatabaseROIs, clean_name
@@ -1067,6 +1067,16 @@ def update_all_ptv_overlaps_in_db(*condition):
         print('updating ptv_overlap:', roi[1], sep=' ')
         update_ptv_overlap_in_db(roi[0], roi[1])
     calculate_ptv_overlap_button.label = 'Calc PTV Overlap'
+
+
+def recalculate_roi_volumes(*condition):
+    rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
+    counter = 0.
+    total_rois = float(len(rois))
+    for roi in rois:
+        counter += 1.
+        print('updating volume:', roi[1], int(100. * counter / total_rois), sep=' ')
+        update_volumes_in_db(roi[0], roi[1])
 
 
 ######################################################

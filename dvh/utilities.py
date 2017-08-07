@@ -586,3 +586,21 @@ def update_ptv_overlap_in_db(study_instance_uid, roi_name):
                          round(float(ptv_overlap), 2),
                          "study_instance_uid = '%s' and roi_name = '%s'"
                          % (study_instance_uid, roi_name))
+
+
+def update_volumes_in_db(study_instance_uid, roi_name):
+
+    coordinates_string = DVH_SQL().query('dvhs',
+                                         'roi_coord_string',
+                                         "study_instance_uid = '%s' and roi_name = '%s'"
+                                         % (study_instance_uid, roi_name))
+
+    roi = get_planes_from_string(coordinates_string[0][0])
+
+    volume = calc_volume(roi)
+
+    DVH_SQL().update('dvhs',
+                     'volume',
+                     round(float(volume), 2),
+                     "study_instance_uid = '%s' and roi_name = '%s'"
+                     % (study_instance_uid, roi_name))
