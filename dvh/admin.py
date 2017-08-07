@@ -1070,7 +1070,10 @@ def update_all_ptv_overlaps_in_db(*condition):
 
 
 def recalculate_roi_volumes(*condition):
-    rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
+    if condition:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
+    else:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
     counter = 0.
     total_rois = float(len(rois))
     for roi in rois:

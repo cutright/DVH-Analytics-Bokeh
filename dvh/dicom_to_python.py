@@ -353,7 +353,7 @@ class DVHTable:
                                              physician_roi,
                                              current_roi_name,
                                              roi_type,
-                                             volume,
+                                             current_dvh_calc.volume,
                                              current_dvh_calc.min,
                                              current_dvh_calc.mean,
                                              current_dvh_calc.max,

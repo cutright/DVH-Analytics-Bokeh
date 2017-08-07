@@ -387,7 +387,7 @@ def points_to_shapely_polygon(sets_of_points):
             # if there are multiple sets of points in a slice, each set is a polygon,
             # interior polygons are subtractions, exterior are addition
             # Only need to check one point for interior vs exterior
-            current_polygon = Polygon(points).buffer(0, join_style=1, cap_style=1)  # clean stray points
+            current_polygon = Polygon(points).buffer(0)  # clean stray points
             if composite_polygon:
                 if Point((points[0][0], points[0][1])).disjoint(composite_polygon):
                     composite_polygon = composite_polygon.union(current_polygon)
