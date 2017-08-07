@@ -311,8 +311,8 @@ def dicompyler_roi_coord_to_db_string(coord):
         for plane in coord[z]:
             points = [z]
             for point in plane['data']:
-                points.append(str(point[0]))
-                points.append(str(point[1]))
+                points.append(str(round(point[0], 3)))
+                points.append(str(round(point[1], 3)))
             contours.append(','.join(points))
     return ':'.join(contours)
 
@@ -372,29 +372,40 @@ def surface_area_of_roi(coord):
 
 
 def points_to_shapely_polygon(sets_of_points):
+    # sets of points are lists using str(z) as keys
+    # each item is an ordered list of points representing a polygon, each point is a 3-item list [x, y, z]
+    # polygon n is inside polygon n-1, then the current accumulated polygon is
+    #    polygon n subtracted from the accumulated polygon up to and including polygon n-1
+    #    Same method DICOM uses to handle rings and islands
 
     composite_polygon = []
     for set_of_points in sets_of_points:
+        if len(set_of_points) > 3:
+            points = [(point[0], point[1]) for point in set_of_points]
+            points.append(points[0])  # Explicitly connect the final point to the first
 
-        points = [(point[0], point[1]) for point in set_of_points]
-        points.append(points[0])  # Explicitly connect the final point to the first
-        current_polygon = Polygon(points)  # Convert to Shapely Polygon
-
-        # if there are sets of points in a slice, each set is a polygon,
-        # interior polygons are subtractions, exterior are addition
-        # Only need to check one point for interior vs exterior
-        if composite_polygon:
-            if Point((points[0][0], points[0][1])).disjoint(composite_polygon):
-                composite_polygon = current_polygon.union(composite_polygon)
+            # if there are multiple sets of points in a slice, each set is a polygon,
+            # interior polygons are subtractions, exterior are addition
+            # Only need to check one point for interior vs exterior
+            current_polygon = Polygon(points).buffer(0, join_style=1, cap_style=1)  # clean stray points
+            if composite_polygon:
+                if Point((points[0][0], points[0][1])).disjoint(composite_polygon):
+                    composite_polygon = composite_polygon.union(current_polygon)
+                else:
+                    composite_polygon = composite_polygon.symmetric_difference(current_polygon)
             else:
-                composite_polygon = current_polygon.difference(composite_polygon)
-        else:
-            composite_polygon = current_polygon
+                composite_polygon = current_polygon
 
     return composite_polygon
 
 
 def calc_ptv_overlap(oar, ptv):
+
+    # oar and ptv are lists using str(z) as keys
+    # each item is an ordered list of points representing a polygon
+    # polygon n is inside polygon n-1, then the current accumulated polygon is
+    #    polygon n subtracted from the accumulated polygon up to and including polygon n-1
+    #    Same method DICOM uses to handle rings and islands
 
     intersection_volume = 0.
     all_z_values = [round(float(z), 2) for z in ptv.keys()]
@@ -409,11 +420,10 @@ def calc_ptv_overlap(oar, ptv):
         thickness = thicknesses[all_z_values.index(round(float(z), 1))]
 
         if z in oar.keys():
-            for ptv_plane in ptv[z]:
-                ptv = points_to_shapely_polygon(ptv_plane)
-                oar = points_to_shapely_polygon(oar[z])
-
-                intersection_volume += ptv.intersection(oar).area * thickness
+            shapely_ptv = points_to_shapely_polygon(ptv[z])
+            shapely_oar = points_to_shapely_polygon(oar[z])
+            if shapely_oar and shapely_ptv:
+                intersection_volume += shapely_ptv.intersection(shapely_oar).area * thickness
 
     return round(intersection_volume / 1000., 2)
 
@@ -450,8 +460,7 @@ def get_planes_from_string(roi_coord_string):
         i, points = 0, []
         while i < len(contour):
             point = [float(contour[i]), float(contour[i+1]), z]
-            if point not in points:
-                points.append(point)
+            points.append(point)
             i += 2
         planes[z_str].append(points)
 
@@ -543,13 +552,10 @@ def update_ptv_overlap_in_db(study_instance_uid, roi_name):
         oar = get_planes_from_string(oar_coordinates_string[0][0])
         ptv = get_planes_from_string(ptv_coordinates_string[0][0])
 
-        try:
-            ptv_overlap = calc_ptv_overlap(oar, ptv)
+        ptv_overlap = calc_ptv_overlap(oar, ptv)
 
-            DVH_SQL().update('dvhs',
-                             'ptv_overlap',
-                             round(float(ptv_overlap), 2),
-                             "study_instance_uid = '%s' and roi_name = '%s'"
-                             % (study_instance_uid, roi_name))
-        except:
-            pass
+        DVH_SQL().update('dvhs',
+                         'ptv_overlap',
+                         round(float(ptv_overlap), 2),
+                         "study_instance_uid = '%s' and roi_name = '%s'"
+                         % (study_instance_uid, roi_name))
