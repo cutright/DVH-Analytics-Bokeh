@@ -428,6 +428,33 @@ def calc_ptv_overlap(oar, ptv):
     return round(intersection_volume / 1000., 2)
 
 
+def calc_volume(roi):
+
+    # oar and ptv are lists using str(z) as keys
+    # each item is an ordered list of points representing a polygon
+    # polygon n is inside polygon n-1, then the current accumulated polygon is
+    #    polygon n subtracted from the accumulated polygon up to and including polygon n-1
+    #    Same method DICOM uses to handle rings and islands
+
+    volume = 0.
+    all_z_values = [round(float(z), 2) for z in roi.keys()]
+    all_z_values = np.sort(all_z_values)
+    thicknesses = np.abs(np.diff(all_z_values))
+    thicknesses = np.append(thicknesses, np.min(thicknesses))
+    all_z_values = all_z_values.tolist()
+
+    for z in roi.keys():
+        # z in coord will not necessarily go in order of z, convert z to float to lookup thickness
+        # also used to check for top and bottom slices, to add area of those contours
+
+        thickness = thicknesses[all_z_values.index(round(float(z), 2))]
+        shapely_roi = points_to_shapely_polygon(roi[z])
+        if shapely_roi:
+            volume += shapely_roi.area * thickness
+
+    return round(volume / 1000., 2)
+
+
 def get_roi_coordinates_from_string(roi_coord_string):
     roi_coordinates = []
     contours = roi_coord_string.split(':')
