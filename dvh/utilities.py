@@ -417,9 +417,9 @@ def calc_ptv_overlap(oar, ptv):
     for z in ptv.keys():
         # z in coord will not necessarily go in order of z, convert z to float to lookup thickness
         # also used to check for top and bottom slices, to add area of those contours
-        thickness = thicknesses[all_z_values.index(round(float(z), 1))]
 
         if z in oar.keys():
+            thickness = thicknesses[all_z_values.index(round(float(z), 2))]
             shapely_ptv = points_to_shapely_polygon(ptv[z])
             shapely_oar = points_to_shapely_polygon(oar[z])
             if shapely_oar and shapely_ptv:
