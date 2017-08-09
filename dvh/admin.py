@@ -552,7 +552,9 @@ def delete_ignored_dvh():
         DVH_SQL().delete_dvh(roi_info['roi_name'], roi_info['study_instance_uid'])
         update_ignored_variations_select()
         delete_ignored_button_roi.button_type = 'warning'
-        delete_ignored_button_roi.label = 'Delete DVH?'
+        delete_ignored_button_roi.label = 'Delete DVH'
+        unignore_button_roi.button_type = 'primary'
+        unignore_button_roi.label = 'Unignore'
 
 
 def ignore_dvh():
