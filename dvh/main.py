@@ -36,6 +36,7 @@ query_row_type = []
 endpoint_columns = {}
 x = []
 y = []
+uids_1, uids_2 = [], []
 eud_a_values = get_eud_a_values()
 widget_row_start = 0
 
@@ -582,10 +583,27 @@ class EndPointRow:
             self.text_input.title = 'Dose (' + self.unit_labels[1][self.units.active] + '):'
 
 
+def get_group_list(uids):
+
+    groups = []
+    for r in range(0, len(uids)):
+        if uids[r] in uids_1:
+            if uids[r] in uids_2:
+                groups.append('Blue & Red')
+            else:
+                groups.append('Blue')
+        else:
+            groups.append('Red')
+
+    return groups
+
+
 # input is a DVH class from Analysis_Tools.py
 # This function creates a new ColumnSourceData and calls
 # the functions to update beam, rx, and plans ColumnSourceData variables
 def update_dvh_data(dvh):
+
+    global uids_1, uids_2
 
     dvh_group_1 = []
     dvh_group_2 = []
@@ -622,6 +640,7 @@ def update_dvh_data(dvh):
     # stat_dvhs = dvh.get_standard_stat_dvh(dose=stat_dose_scale, volume=stat_volume_scale)
 
     if group_1_count == 0:
+        uids_1 = []
         source_patch_1.data = {'x_patch': [],
                                'y_patch': []}
         source_stats_1.data = {'x': [],
@@ -632,8 +651,9 @@ def update_dvh_data(dvh):
                                'q3': [],
                                'max': []}
     else:
-        uids, dvh_query_str = get_query(group=1)
-        dvh_group_1 = DVH(uid=uids, dvh_condition=dvh_query_str)
+        uids_1, dvh_query_str = get_query(group=1)
+        dvh_group_1 = DVH(uid=uids_1, dvh_condition=dvh_query_str)
+        uids_1 = dvh_group_1.study_instance_uid
         stat_dvhs_1 = dvh_group_1.get_standard_stat_dvh(dose=stat_dose_scale, volume=stat_volume_scale)
 
         if radio_group_dose.active == 1:
@@ -651,6 +671,7 @@ def update_dvh_data(dvh):
                                'q3': stat_dvhs_1['q3'].tolist(),
                                'max': stat_dvhs_1['max'].tolist()}
     if group_2_count == 0:
+        uids_2 = []
         source_patch_2.data = {'x_patch': [],
                                'y_patch': []}
         source_stats_2.data = {'x': [],
@@ -661,8 +682,9 @@ def update_dvh_data(dvh):
                                'q3': [],
                                'max': []}
     else:
-        uids, dvh_query_str = get_query(group=2)
-        dvh_group_2 = DVH(uid=uids, dvh_condition=dvh_query_str)
+        uids_2, dvh_query_str = get_query(group=2)
+        dvh_group_2 = DVH(uid=uids_2, dvh_condition=dvh_query_str)
+        uids_2 = dvh_group_2.study_instance_uid
         stat_dvhs_2 = dvh_group_2.get_standard_stat_dvh(dose=stat_dose_scale, volume=stat_volume_scale)
 
         if radio_group_dose.active == 1:
@@ -711,6 +733,29 @@ def update_dvh_data(dvh):
 
     y_names = ['Max', 'Q3', 'Median', 'Mean', 'Q1', 'Min']
 
+    # Determine Population group (blue (1) or red (2))
+    dvh_groups = []
+    for r in range(0, len(dvh.study_instance_uid)):
+
+        if dvh_group_1:
+            if dvh.study_instance_uid[r] in uids_1:
+                index_1 = dvh_group_1.study_instance_uid.index(dvh.study_instance_uid[r])
+                if dvh.roi_name[r] in {dvh_group_1.roi_name[index_1]}:
+                    dvh_groups.append('Blue')
+                    print(r, dvh.mrn[r], 'Blue', sep=' ')
+
+        if dvh_group_2:
+            if dvh.study_instance_uid[r] in uids_2:
+                index_2 = dvh_group_2.study_instance_uid.index(dvh.study_instance_uid[r])
+                if dvh.roi_name[r] in {dvh_group_2.roi_name[index_2]}:
+                    if len(dvh_groups) == r + 1:
+                        dvh_groups[r] = 'Blue & Red'
+                        print(r, dvh.mrn[r], 'Blue & Red', sep=' ')
+                    else:
+                        dvh_groups.append('Red')
+                        print(r, dvh.mrn[r], 'Red', sep=' ')
+    dvh_groups.insert(0, 'Review')
+
     for n in range(0, 6):
         if group_1_count > 0:
             dvh.mrn.append(y_names[n])
@@ -718,12 +763,14 @@ def update_dvh_data(dvh):
             x_data.append(x_axis.tolist())
             current = stat_dvhs_1[y_names[n].lower()].tolist()
             y_data.append(current)
+            dvh_groups.append('Blue')
         if group_2_count > 0:
             dvh.mrn.append(y_names[n])
             dvh.roi_name.append('Red Group')
             x_data.append(x_axis.tolist())
             current = stat_dvhs_2[y_names[n].lower()].tolist()
             y_data.append(current)
+            dvh_groups.append('Red')
 
     # Adjust dvh object to include stats data
     if extra_rows > 0:
@@ -815,9 +862,11 @@ def update_dvh_data(dvh):
                    'y_scale': y_scale}
     print(str(datetime.now()), 'source.data set', sep=' ')
 
+    print(str(datetime.now()), 'begin updating beam, plan, rx data sources', sep=' ')
     update_beam_data(dvh.study_instance_uid)
     update_plan_data(dvh.study_instance_uid)
     update_rx_data(dvh.study_instance_uid)
+    print(str(datetime.now()), 'all sources set', sep=' ')
 
     return dvh_group_1, dvh_group_2
 
@@ -828,7 +877,10 @@ def update_beam_data(uids):
     cond_str = "study_instance_uid in ('" + "', '".join(uids) + "')"
     beam_data = QuerySQL('Beams', cond_str)
 
+    groups = get_group_list(beam_data.study_instance_uid)
+
     source_beams.data = {'mrn': beam_data.mrn,
+                         'group': groups,
                          'uid': beam_data.study_instance_uid,
                          'beam_dose': beam_data.beam_dose,
                          'beam_energy_min': beam_data.beam_energy_min,
@@ -874,8 +926,12 @@ def update_plan_data(uids):
     cond_str = "study_instance_uid in ('" + "', '".join(uids) + "')"
     plan_data = QuerySQL('Plans', cond_str)
 
+    # Determine Groups
+    groups = get_group_list(plan_data.study_instance_uid)
+
     source_plans.data = {'mrn': plan_data.mrn,
                          'uid': plan_data.study_instance_uid,
+                         'group': groups,
                          'age': plan_data.age,
                          'birth_date': plan_data.birth_date,
                          'dose_grid_res': plan_data.dose_grid_res,
@@ -898,8 +954,11 @@ def update_rx_data(uids):
     cond_str = "study_instance_uid in ('" + "', '".join(uids) + "')"
     rx_data = QuerySQL('Rxs', cond_str)
 
+    groups = get_group_list(rx_data.study_instance_uid)
+
     source_rxs.data = {'mrn': rx_data.mrn,
                        'uid': rx_data.study_instance_uid,
+                       'group': groups,
                        'plan_name': rx_data.plan_name,
                        'fx_dose': rx_data.fx_dose,
                        'rx_percent': rx_data.rx_percent,
@@ -1554,6 +1613,7 @@ data_table_endpoints = DataTable(source=source, columns=columns, width=1200)
 # Set up Beams DataTable
 beam_table_title = Div(text="<b>Beams</b>", width=1500)
 columns = [TableColumn(field="mrn", title="MRN", width=105),
+           TableColumn(field="group", title="Group", width=230),
            TableColumn(field="beam_number", title="Beam", width=50),
            TableColumn(field="fx_count", title="Fxs", width=50),
            TableColumn(field="fx_grp_beam_count", title="Beams", width=50),
@@ -1575,6 +1635,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=105),
 data_table_beams = DataTable(source=source_beams, columns=columns, width=1300)
 beam_table_title2 = Div(text="<b>Beams Continued</b>", width=1500)
 columns = [TableColumn(field="mrn", title="MRN", width=105),
+           TableColumn(field="group", title="Group", width=230),
            TableColumn(field="beam_name", title="Name", width=150),
            TableColumn(field="gantry_start", title="Gan Start", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="gantry_end", title="End", width=80, formatter=NumberFormatter(format="0.0")),
@@ -1599,6 +1660,7 @@ data_table_beams2 = DataTable(source=source_beams, columns=columns, width=1300)
 # Set up Plans DataTable
 plans_table_title = Div(text="<b>Plans</b>", width=1200)
 columns = [TableColumn(field="mrn", title="MRN", width=420),
+           TableColumn(field="group", title="Group", width=230),
            TableColumn(field="age", title="Age", width=80),
            TableColumn(field="birth_date", title="Birth Date"),
            TableColumn(field="dose_grid_res", title="Dose Grid Res"),
@@ -1618,6 +1680,7 @@ data_table_plans = DataTable(source=source_plans, columns=columns, width=1300)
 # Set up Rxs DataTable
 rxs_table_title = Div(text="<b>Rxs</b>", width=1000)
 columns = [TableColumn(field="mrn", title="MRN"),
+           TableColumn(field="group", title="Group", width=230),
            TableColumn(field="plan_name", title="Plan Name"),
            TableColumn(field="fx_dose", title="Fx Dose", formatter=NumberFormatter(format="0.00")),
            TableColumn(field="rx_percent", title="Rx Isodose", formatter=NumberFormatter(format="0.0")),
