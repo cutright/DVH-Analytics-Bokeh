@@ -21,7 +21,7 @@ from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Datetime
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
-from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, \
+from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, Panel, Tabs, \
     NumberFormatter, RadioButtonGroup, TextInput, RadioGroup, CheckboxButtonGroup, Dropdown
 from dicompylercore import dicomparser, dvhcalc
 
@@ -1536,7 +1536,7 @@ columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="eud_a_value", title="a", width=80),
            TableColumn(field="dist_to_ptv_min", title="Dist to PTV", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="ptv_overlap", title="PTV Overlap", width=80, formatter=NumberFormatter(format="0.0"))]
-data_table = DataTable(source=source, columns=columns, width=1000)
+data_table = DataTable(source=source, columns=columns, width=1200)
 
 # Set up EndPoint DataTable
 endpoint_table_title = Div(text="<b>DVH Endpoints</b>", width=1200)
@@ -1549,7 +1549,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=160),
            TableColumn(field="ep6", title=endpoint_columns[5], width=120),
            TableColumn(field="ep7", title=endpoint_columns[6], width=120),
            TableColumn(field="ep8", title=endpoint_columns[7], width=120)]
-data_table_endpoints = DataTable(source=source, columns=columns, width=1000)
+data_table_endpoints = DataTable(source=source, columns=columns, width=1200)
 
 # Set up Beams DataTable
 beam_table_title = Div(text="<b>Beams</b>", width=1500)
@@ -1613,7 +1613,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=420),
            TableColumn(field="tx_modality", title="Tx Modality"),
            TableColumn(field="tx_site", title="Tx Site"),
            TableColumn(field="baseline", title="Baseline")]
-data_table_plans = DataTable(source=source_plans, columns=columns, width=1200)
+data_table_plans = DataTable(source=source_plans, columns=columns, width=1300)
 
 # Set up Rxs DataTable
 rxs_table_title = Div(text="<b>Rxs</b>", width=1000)
@@ -1628,7 +1628,7 @@ columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="fx_grp_name", title="Fx Grp Name"),
            TableColumn(field="normalization_method", title="Norm Method"),
            TableColumn(field="normalization_object", title="Norm Object")]
-data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1000)
+data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1300)
 
 # Setup axis normalization radio buttons
 radio_group_dose = RadioGroup(labels=["Absolute Dose", "Relative Dose (Rx)"], active=0, width=200)
@@ -1747,22 +1747,31 @@ layout = column(row(radio_group_dose, radio_group_volume),
                 data_table_title,
                 data_table,
                 endpoint_table_title,
-                data_table_endpoints,
-                rxs_table_title,
-                data_table_rxs,
-                plans_table_title,
-                data_table_plans,
-                beam_table_title,
-                data_table_beams,
-                beam_table_title2,
-                data_table_beams2,
-                control_chart_title,
-                row(control_chart_y, control_chart_lookback_units, control_chart_text_input, control_chart_percentile, trend_update_button),
-                control_chart)
+                data_table_endpoints)
+
+layout_planning_data = column(rxs_table_title,
+                              data_table_rxs,
+                              plans_table_title,
+                              data_table_plans,
+                              beam_table_title,
+                              data_table_beams,
+                              beam_table_title2,
+                              data_table_beams2)
+
+layout_trending = column(control_chart_title,
+                         row(control_chart_y, control_chart_lookback_units, control_chart_text_input,
+                             control_chart_percentile, trend_update_button),
+                         control_chart)
+
+dvh_tab = Panel(child=layout, title='DVHs')
+planning_data_tab = Panel(child=layout_planning_data, title='Planning Data')
+trending_tab = Panel(child=layout_trending, title='Range-Variable Trending')
+
+tabs = Tabs(tabs=[dvh_tab, planning_data_tab, trending_tab])
 
 # go ahead and add a selector row for the user
 button_add_selector_row()
 
 # Create the document Bokeh server will use to generate the webpage
-curdoc().add_root(layout)
+curdoc().add_root(tabs)
 curdoc().title = "DVH Analytics"
