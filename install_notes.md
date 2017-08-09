@@ -61,7 +61,7 @@ may over-ride any of these default behaviors with any combination of the followi
 For example, the following command will not check for duplicate database entries and will not remove the dicom files 
 from the inbox folder:
 ~~~~
-$ dvh import --force-update --do-not-move-files
+$ dvh import --force-update --do-not-move
 ~~~~
 If you'd like to import from a directory other than the one in your settings:
 ~~~~
