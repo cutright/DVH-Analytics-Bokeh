@@ -37,7 +37,7 @@ endpoint_columns = {}
 x = []
 y = []
 eud_a_values = get_eud_a_values()
-widget_row_start = 3
+widget_row_start = 0
 
 for i in range(0, 10):
     endpoint_columns[i] = ''
@@ -140,7 +140,7 @@ def button_add_selector_row():
     main_add_selector_button.label = 'Updating Layout...'
     main_add_selector_button.button_type = 'warning'
     query_row.append(SelectorRow())
-    layout.children.insert(widget_row_start + len(query_row_type), query_row[-1].row)
+    layout_query.children.insert(widget_row_start + len(query_row_type), query_row[-1].row)
     query_row_type.append('selector')
     update_update_button_status()
     main_add_selector_button.label = old_label
@@ -154,7 +154,7 @@ def button_add_range_row():
     main_add_range_button.label = 'Updating Layout...'
     main_add_range_button.button_type = 'warning'
     query_row.append(RangeRow())
-    layout.children.insert(widget_row_start + len(query_row_type), query_row[-1].row)
+    layout_query.children.insert(widget_row_start + len(query_row_type), query_row[-1].row)
     query_row_type.append('range')
     update_update_button_status()
     main_add_range_button.label = old_label
@@ -168,7 +168,7 @@ def button_add_endpoint_row():
     main_add_endpoint_button.label = 'Updating Layout...'
     main_add_endpoint_button.button_type = 'warning'
     query_row.append(EndPointRow())
-    layout.children.insert(widget_row_start + len(query_row_type), query_row[-1].row)
+    layout_query.children.insert(widget_row_start + len(query_row_type), query_row[-1].row)
     query_row_type.append('endpoint')
     main_add_endpoint_button.label = old_label
     main_add_endpoint_button.button_type = old_type
@@ -445,7 +445,7 @@ class SelectorRow:
         update_update_button_status()
 
     def delete_row(self):
-        del (layout.children[widget_row_start + self.id])
+        del (layout_query.children[widget_row_start + self.id])
         query_row_type.pop(self.id)
         query_row.pop(self.id)
         update_query_row_ids()
@@ -512,7 +512,7 @@ class RangeRow:
         update_update_button_status()
 
     def delete_row(self):
-        del (layout.children[widget_row_start + self.id])
+        del (layout_query.children[widget_row_start + self.id])
         query_row_type.pop(self.id)
         query_row.pop(self.id)
         update_query_row_ids()
@@ -569,7 +569,7 @@ class EndPointRow:
             update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
 
     def delete_row(self):
-        del (layout.children[widget_row_start + self.id])
+        del (layout_query.children[widget_row_start + self.id])
         query_row_type.pop(self.id)
         query_row.pop(self.id)
         update_query_row_ids()
@@ -1735,19 +1735,21 @@ trend_update_button = Button(label="Update Trend", button_type="primary", width=
 trend_update_button.on_click(control_chart_update_trend)
 
 # define main layout to pass to curdoc()
-layout = column(row(radio_group_dose, radio_group_volume),
-                row(select_reviewed_mrn, select_reviewed_dvh, review_rx, review_eud_a_value),
-                dvh_plots,
-                row(main_add_selector_button,
-                    main_add_range_button,
-                    main_add_endpoint_button,
-                    update_button,
-                    calculate_review_dvh_button,
-                    download_dropdown),
-                data_table_title,
-                data_table,
-                endpoint_table_title,
-                data_table_endpoints)
+layout_query = column(row(main_add_selector_button,
+                          main_add_range_button,
+                          main_add_endpoint_button,
+                          update_button,
+                          calculate_review_dvh_button,
+                          download_dropdown))
+
+
+layout_dvhs = column(row(radio_group_dose, radio_group_volume),
+                     row(select_reviewed_mrn, select_reviewed_dvh, review_rx, review_eud_a_value),
+                     dvh_plots,
+                     data_table_title,
+                     data_table,
+                     endpoint_table_title,
+                     data_table_endpoints)
 
 layout_planning_data = column(rxs_table_title,
                               data_table_rxs,
@@ -1763,11 +1765,12 @@ layout_trending = column(control_chart_title,
                              control_chart_percentile, trend_update_button),
                          control_chart)
 
-dvh_tab = Panel(child=layout, title='DVHs')
+query_tab = Panel(child=layout_query, title='Query')
+dvh_tab = Panel(child=layout_dvhs, title='DVHs')
 planning_data_tab = Panel(child=layout_planning_data, title='Planning Data')
 trending_tab = Panel(child=layout_trending, title='Range-Variable Trending')
 
-tabs = Tabs(tabs=[dvh_tab, planning_data_tab, trending_tab])
+tabs = Tabs(tabs=[query_tab, dvh_tab, planning_data_tab, trending_tab])
 
 # go ahead and add a selector row for the user
 button_add_selector_row()
