@@ -536,25 +536,25 @@ def update_min_distances_in_db(study_instance_uid, roi_name):
 
         DVH_SQL().update('dvhs',
                          'dist_to_ptv_min',
-                         round(float(np.min(min_distances)), 1),
+                         round(float(np.min(min_distances)), 2),
                          "study_instance_uid = '%s' and roi_name = '%s'"
                          % (study_instance_uid, roi_name))
 
         DVH_SQL().update('dvhs',
                          'dist_to_ptv_mean',
-                         round(float(np.mean(min_distances)), 1),
+                         round(float(np.mean(min_distances)), 2),
                          "study_instance_uid = '%s' and roi_name = '%s'"
                          % (study_instance_uid, roi_name))
 
         DVH_SQL().update('dvhs',
                          'dist_to_ptv_median',
-                         round(float(np.median(min_distances)), 1),
+                         round(float(np.median(min_distances)), 2),
                          "study_instance_uid = '%s' and roi_name = '%s'"
                          % (study_instance_uid, roi_name))
 
         DVH_SQL().update('dvhs',
                          'dist_to_ptv_max',
-                         round(float(np.max(min_distances)), 1),
+                         round(float(np.max(min_distances)), 2),
                          "study_instance_uid = '%s' and roi_name = '%s'"
                          % (study_instance_uid, roi_name))
 
