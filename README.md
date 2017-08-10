@@ -8,7 +8,7 @@ This code is still in development.  Please contact the developer if  you are int
 
 This code builds a SQL database of DVHs and various planning parameters from DICOM files 
 (i.e., Plan, Structure, Dose). Since this code extracts data
-directly from DICOM files, and we intend to accomodate an array of treatment planning system vendors.
+directly from DICOM files, we intend to accomodate an array of treatment planning system vendors.
 
 This code is built upon these core libraries:
 * [pydicom](http://code.google.com/p/pydicom/) - Read, modify and write DICOM files with python code
