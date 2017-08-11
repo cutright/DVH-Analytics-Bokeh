@@ -434,24 +434,22 @@ def get_union(rois):
 
     all_z_values = []
     for roi in rois:
-        current_z_values = [round(float(z), 2) for z in roi.keys()]
-        for z in current_z_values:
+        for z in roi.keys():
             if z not in all_z_values:
                 all_z_values.append(z)
 
     for z in all_z_values:
-        z_str = str(round(float(z), 2))
 
-        if z_str not in new_roi.keys():
-            new_roi[z_str] = []
+        if z not in new_roi.keys():
+            new_roi[z] = []
 
         current_slice = []
         for roi in rois:
-            if z_str in roi.keys():
+            if z in roi.keys() and len(roi[z]) > 2:
                 if not current_slice:
-                    current_slice = points_to_shapely_polygon(roi[z_str])
+                    current_slice = points_to_shapely_polygon(roi[z])
                 else:
-                    current_slice = current_slice.union(points_to_shapely_polygon(roi[z_str]))
+                    current_slice = current_slice.union(points_to_shapely_polygon(roi[z]))
 
         if current_slice:
             if current_slice.type != 'MultiPolygon':
@@ -463,8 +461,8 @@ def get_union(rois):
                 x_coord, y_coord = xy[0], xy[1]
                 points = []
                 for i in range(0, len(x_coord)):
-                    points.append([x_coord[i], y_coord[i], z])
-                new_roi[z_str].append(points)
+                    points.append([x_coord[i], y_coord[i], round(float(z), 2)])
+                new_roi[z].append(points)
 
                 if hasattr(polygon, 'interiors'):
                     for interior in polygon.interiors:
@@ -472,10 +470,10 @@ def get_union(rois):
                         x_coord, y_coord = xy[0], xy[1]
                         points = []
                         for i in range(0, len(x_coord)):
-                            points.append([x_coord[i], y_coord[i], z])
-                        new_roi[z_str].append(points)
+                            points.append([x_coord[i], y_coord[i], round(float(z), 2)])
+                        new_roi[z].append(points)
         else:
-            print('WARNING: no contour found for slice %s' % z_str)
+            print('WARNING: no contour found for slice %s' % z)
 
     return new_roi
 
@@ -566,6 +564,8 @@ def get_min_distances_to_target(oar_coordinates, target_coordinates):
     :rtype: [float]
     """
     min_distances = []
+    print(oar_coordinates)
+    print(target_coordinates)
     all_distances = cdist(oar_coordinates, target_coordinates, 'euclidean')
     for oar_point in all_distances:
         min_distances.append(float(np.min(oar_point)/10.))
@@ -595,31 +595,34 @@ def update_min_distances_in_db(study_instance_uid, roi_name):
         tv_planes = get_union(ptvs)
         tv_coordinates = get_roi_coordinates_from_planes(tv_planes)
 
-        min_distances = get_min_distances_to_target(oar_coordinates, tv_coordinates)
+        try:
+            min_distances = get_min_distances_to_target(oar_coordinates, tv_coordinates)
 
-        DVH_SQL().update('dvhs',
-                         'dist_to_ptv_min',
-                         round(float(np.min(min_distances)), 2),
-                         "study_instance_uid = '%s' and roi_name = '%s'"
-                         % (study_instance_uid, roi_name))
+            DVH_SQL().update('dvhs',
+                             'dist_to_ptv_min',
+                             round(float(np.min(min_distances)), 2),
+                             "study_instance_uid = '%s' and roi_name = '%s'"
+                             % (study_instance_uid, roi_name))
 
-        DVH_SQL().update('dvhs',
-                         'dist_to_ptv_mean',
-                         round(float(np.mean(min_distances)), 2),
-                         "study_instance_uid = '%s' and roi_name = '%s'"
-                         % (study_instance_uid, roi_name))
+            DVH_SQL().update('dvhs',
+                             'dist_to_ptv_mean',
+                             round(float(np.mean(min_distances)), 2),
+                             "study_instance_uid = '%s' and roi_name = '%s'"
+                             % (study_instance_uid, roi_name))
 
-        DVH_SQL().update('dvhs',
-                         'dist_to_ptv_median',
-                         round(float(np.median(min_distances)), 2),
-                         "study_instance_uid = '%s' and roi_name = '%s'"
-                         % (study_instance_uid, roi_name))
+            DVH_SQL().update('dvhs',
+                             'dist_to_ptv_median',
+                             round(float(np.median(min_distances)), 2),
+                             "study_instance_uid = '%s' and roi_name = '%s'"
+                             % (study_instance_uid, roi_name))
 
-        DVH_SQL().update('dvhs',
-                         'dist_to_ptv_max',
-                         round(float(np.max(min_distances)), 2),
-                         "study_instance_uid = '%s' and roi_name = '%s'"
-                         % (study_instance_uid, roi_name))
+            DVH_SQL().update('dvhs',
+                             'dist_to_ptv_max',
+                             round(float(np.max(min_distances)), 2),
+                             "study_instance_uid = '%s' and roi_name = '%s'"
+                             % (study_instance_uid, roi_name))
+        except:
+            pass
 
 
 def update_treatment_volume_overlap_in_db(study_instance_uid, roi_name):
