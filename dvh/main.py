@@ -742,7 +742,6 @@ def update_dvh_data(dvh):
                 index_1 = dvh_group_1.study_instance_uid.index(dvh.study_instance_uid[r])
                 if dvh.roi_name[r] in {dvh_group_1.roi_name[index_1]}:
                     dvh_groups.append('Blue')
-                    print(r, dvh.mrn[r], 'Blue', sep=' ')
 
         if dvh_group_2:
             if dvh.study_instance_uid[r] in uids_2:
@@ -750,10 +749,8 @@ def update_dvh_data(dvh):
                 if dvh.roi_name[r] in {dvh_group_2.roi_name[index_2]}:
                     if len(dvh_groups) == r + 1:
                         dvh_groups[r] = 'Blue & Red'
-                        print(r, dvh.mrn[r], 'Blue & Red', sep=' ')
                     else:
                         dvh_groups.append('Red')
-                        print(r, dvh.mrn[r], 'Red', sep=' ')
     dvh_groups.insert(0, 'Review')
 
     for n in range(0, 6):
@@ -1281,8 +1278,6 @@ def update_control_chart_ticker(attr, old, new):
 
 def update_control_chart_y_ticker(attr, old, new):
     update_control_chart()
-    # source_time.selected['1d']['indices'] = range(0, len(source_time.data['x']))
-    # control_chart_update_trend()
 
 
 def update_control_chart_text_ticker(attr, old, new):
@@ -1310,6 +1305,13 @@ def collapse_into_single_dates(x, y):
 def update_control_chart():
     new = control_chart_y.value
     if new:
+
+        # reset selection
+        selected = {'0d': {'glyph': None, 'indices': []},
+                    '1d': {'indices': []},
+                    '2d': {'indices': {}}}
+        source_time.selected = selected
+
         y_source = range_categories[new]['source']
         y_var_name = range_categories[new]['var_name']
         y_source_values = y_source.data[y_var_name]
