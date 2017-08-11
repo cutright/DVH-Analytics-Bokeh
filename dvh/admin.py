@@ -7,7 +7,7 @@ Created on Fri Mar 24 13:43:28 2017
 
 from __future__ import print_function
 from utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection, \
-    recalculate_ages, update_min_distances_in_db, update_ptv_overlap_in_db, update_volumes_in_db
+    recalculate_ages, update_min_distances_in_db, update_treatment_volume_overlap_in_db, update_volumes_in_db
 import os
 import datetime
 from roi_name_manager import DatabaseROIs, clean_name
@@ -881,15 +881,15 @@ def calculate_ptv_distances():
 
 
 def calculate_ptv_overlap():
-    calculate_ptv_overlap_button.label = 'Calculating...'
-    calculate_ptv_overlap_button.button_type = 'warning'
+    calculate_tv_overlap_button.label = 'Calculating...'
+    calculate_tv_overlap_button.button_type = 'warning'
     if calculate_condition.value:
-        update_all_ptv_overlaps_in_db(calculate_condition.value)
+        update_all_tv_overlaps_in_db(calculate_condition.value)
     else:
-        update_all_ptv_overlaps_in_db()
+        update_all_tv_overlaps_in_db()
     update_query_source()
-    calculate_ptv_overlap_button.label = 'Calc PTV Overlap'
-    calculate_ptv_overlap_button.button_type = 'primary'
+    calculate_tv_overlap_button.label = 'Calc PTV Overlap'
+    calculate_tv_overlap_button.button_type = 'primary'
 
 
 def calculate_ages_click():
@@ -1056,7 +1056,7 @@ def update_all_min_distances_in_db(*condition):
     calculate_ptv_dist_button.label = 'Calc PTV Distances'
 
 
-def update_all_ptv_overlaps_in_db(*condition):
+def update_all_tv_overlaps_in_db(*condition):
     if condition:
         rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
     else:
@@ -1064,13 +1064,15 @@ def update_all_ptv_overlaps_in_db(*condition):
     counter = 0.
     total_rois = float(len(rois))
     for roi in rois:
-        calculate_ptv_overlap_button.label = str(int((counter / total_rois) * 100)) + '%'
+        calculate_tv_overlap_button.label = str(int((counter / total_rois) * 100)) + '%'
         counter += 1.
         print('updating ptv_overlap:', roi[1], sep=' ')
-        update_ptv_overlap_in_db(roi[0], roi[1])
-    calculate_ptv_overlap_button.label = 'Calc PTV Overlap'
+        update_treatment_volume_overlap_in_db(roi[0], roi[1])
+    calculate_tv_overlap_button.label = 'Calc PTV Overlap'
 
 
+# Calculates volumes using Shapely, not dicompyler
+# This function is not in the GUI
 def recalculate_roi_volumes(*condition):
     if condition:
         rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
@@ -1298,8 +1300,8 @@ calculations_title = Div(text="<b>Post Import Calculations</b>", width=1000)
 calculate_condition = TextInput(value='', title="Condition", width=300)
 calculate_ptv_dist_button = Button(label='Calc PTV Distances', button_type='primary', width=150)
 calculate_ptv_dist_button.on_click(calculate_ptv_distances)
-calculate_ptv_overlap_button = Button(label='Calc PTV Overlap', button_type='primary', width=150)
-calculate_ptv_overlap_button.on_click(calculate_ptv_overlap)
+calculate_tv_overlap_button = Button(label='Calc PTV Overlap', button_type='primary', width=150)
+calculate_tv_overlap_button.on_click(calculate_ptv_overlap)
 calculate_ages_button = Button(label='Calc Patient Ages', button_type='primary', width=150)
 calculate_ages_button.on_click(calculate_ages_click)
 
@@ -1311,7 +1313,7 @@ db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [delete_from_db_title],
                            [delete_from_db_column, delete_from_db_value, delete_auth_text, delete_from_db_button],
                            [calculations_title],
-                           [calculate_condition, calculate_ptv_dist_button, calculate_ptv_overlap_button, calculate_ages_button],
+                           [calculate_condition, calculate_ptv_dist_button, calculate_tv_overlap_button, calculate_ages_button],
                            [data_table_rxs]])
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

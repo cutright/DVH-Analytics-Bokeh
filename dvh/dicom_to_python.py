@@ -345,7 +345,7 @@ class DVHTable:
                     coord = rt_structure.GetStructureCoordinates(key)
                     roi_coord_str = dicompyler_roi_coord_to_db_string(rt_structure.GetStructureCoordinates(key))
                     surface_area = surface_area_of_roi(coord)
-                    volume = calc_volume(get_planes_from_string(roi_coord_str))
+                    # volume = calc_volume(get_planes_from_string(roi_coord_str))
 
                     current_dvh_row = DVHRow(mrn,
                                              study_instance_uid,
