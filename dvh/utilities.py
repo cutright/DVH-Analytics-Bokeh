@@ -453,26 +453,29 @@ def get_union(rois):
                 else:
                     current_slice = current_slice.union(points_to_shapely_polygon(roi[z_str]))
 
-        if current_slice.type != 'MultiPolygon':
-            current_slice = [current_slice]
+        if current_slice:
+            if current_slice.type != 'MultiPolygon':
+                current_slice = [current_slice]
 
-        for polygon in current_slice:
+            for polygon in current_slice:
 
-            xy = polygon.exterior.xy
-            x_coord, y_coord = xy[0], xy[1]
-            points = []
-            for i in range(0, len(x_coord)):
-                points.append([x_coord[i], y_coord[i], z])
-            new_roi[z_str].append(points)
+                xy = polygon.exterior.xy
+                x_coord, y_coord = xy[0], xy[1]
+                points = []
+                for i in range(0, len(x_coord)):
+                    points.append([x_coord[i], y_coord[i], z])
+                new_roi[z_str].append(points)
 
-            if hasattr(polygon, 'interiors'):
-                for interior in polygon.interiors:
-                    xy = interior.coords.xy
-                    x_coord, y_coord = xy[0], xy[1]
-                    points = []
-                    for i in range(0, len(x_coord)):
-                        points.append([x_coord[i], y_coord[i], z])
-                    new_roi[z_str].append(points)
+                if hasattr(polygon, 'interiors'):
+                    for interior in polygon.interiors:
+                        xy = interior.coords.xy
+                        x_coord, y_coord = xy[0], xy[1]
+                        points = []
+                        for i in range(0, len(x_coord)):
+                            points.append([x_coord[i], y_coord[i], z])
+                        new_roi[z_str].append(points)
+        else:
+            print('WARNING: no contour found for slice %s' % z_str)
 
     return new_roi
 
