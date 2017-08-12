@@ -1632,6 +1632,9 @@ def update_roi_viewer_data():
             x.append(x[initial_polygon_index])
             y.append(y[initial_polygon_index])
             z.append(z[initial_polygon_index])
+            x.append(float('nan'))
+            y.append(float('nan'))
+            z.append(float('nan'))
         roi_viewer_data[z_plane] = {'x': x,
                                     'y': y,
                                     'z': z}
@@ -1658,6 +1661,9 @@ def update_roi2_viewer_data():
             x.append(x[initial_polygon_index])
             y.append(y[initial_polygon_index])
             z.append(z[initial_polygon_index])
+            x.append(float('nan'))
+            y.append(float('nan'))
+            z.append(float('nan'))
         roi2_viewer_data[z_plane] = {'x': x,
                                      'y': y,
                                      'z': z}
@@ -1684,6 +1690,9 @@ def update_roi3_viewer_data():
             x.append(x[initial_polygon_index])
             y.append(y[initial_polygon_index])
             z.append(z[initial_polygon_index])
+            x.append(float('nan'))
+            y.append(float('nan'))
+            z.append(float('nan'))
         roi3_viewer_data[z_plane] = {'x': x,
                                      'y': y,
                                      'z': z}
@@ -1710,6 +1719,9 @@ def update_roi4_viewer_data():
             x.append(x[initial_polygon_index])
             y.append(y[initial_polygon_index])
             z.append(z[initial_polygon_index])
+            x.append(float('nan'))
+            y.append(float('nan'))
+            z.append(float('nan'))
         roi4_viewer_data[z_plane] = {'x': x,
                                      'y': y,
                                      'z': z}
@@ -1742,6 +1754,20 @@ def update_roi4_viewer():
         source_roi4_viewer.data = roi4_viewer_data[z]
     else:
         source_roi4_viewer.data = {'x': [], 'y': [], 'z': []}
+
+
+def roi_viewer_flip_y_axis():
+    if roi_viewer.y_range.flipped:
+        roi_viewer.y_range.flipped = False
+    else:
+        roi_viewer.y_range.flipped = True
+
+
+def roi_viewer_flip_x_axis():
+    if roi_viewer.x_range.flipped:
+        roi_viewer.x_range.flipped = False
+    else:
+        roi_viewer.x_range.flipped = True
 
 
 # set up layout
@@ -2073,6 +2099,8 @@ roi_viewer_roi4_select = Select(value='', options=[''], width=200, height=100, t
 roi_viewer_slice_select = Select(value='', options=[''], width=200, title='Slice: z = ')
 roi_viewer_previous_slice = Button(label="<", button_type="primary", width=50)
 roi_viewer_next_slice = Button(label=">", button_type="primary", width=50)
+roi_viewer_flip_x_axis_button = Button(label='Flip X-Axis', button_type='primary', width=100)
+roi_viewer_flip_y_axis_button = Button(label='Flip Y-Axis', button_type='primary', width=100)
 
 roi_viewer_mrn_select.on_change('value', roi_viewer_mrn_ticker)
 roi_viewer_study_date_select.on_change('value', roi_viewer_study_date_ticker)
@@ -2084,12 +2112,16 @@ roi_viewer_roi4_select.on_change('value', roi_viewer_roi4_ticker)
 roi_viewer_slice_select.on_change('value', roi_viewer_slice_ticker)
 roi_viewer_previous_slice.on_click(roi_viewer_go_to_previous_slice)
 roi_viewer_next_slice.on_click(roi_viewer_go_to_next_slice)
+roi_viewer_flip_x_axis_button.on_click(roi_viewer_flip_x_axis)
+roi_viewer_flip_y_axis_button.on_click(roi_viewer_flip_y_axis)
 
 roi_viewer = figure(plot_width=825, plot_height=600, logo=None)
 roi_viewer.patch('x', 'y', source=source_roi_viewer, color='blue', alpha=0.5)
 roi_viewer.patch('x', 'y', source=source_roi2_viewer, color='green', alpha=0.5)
 roi_viewer.patch('x', 'y', source=source_roi3_viewer, color='red', alpha=0.5)
 roi_viewer.patch('x', 'y', source=source_roi4_viewer, color='orange', alpha=0.5)
+roi_viewer.xaxis.axis_label = "Lateral DICOM Coordinate (mm)"
+roi_viewer.yaxis.axis_label = "Anterior/Posterior DICOM Coordinate (mm)"
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # define main layout to pass to curdoc()
@@ -2115,6 +2147,7 @@ roi_viewer_layout = layout([[roi_viewer_title_update],
                             [roi_viewer_roi_select, roi_viewer_slice_select,
                              roi_viewer_previous_slice, roi_viewer_next_slice],
                             [roi_viewer_roi2_select, roi_viewer_roi3_select, roi_viewer_roi4_select],
+                            [roi_viewer_flip_x_axis_button, roi_viewer_flip_y_axis_button],
                             [roi_viewer]])
 
 layout_planning_data = column(rxs_table_title,
