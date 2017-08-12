@@ -9,7 +9,7 @@ Created on Sun Apr 21 2017
 
 from __future__ import print_function
 from analysis_tools import DVH, get_study_instance_uids, calc_eud, get_eud_a_values
-from utilities import Temp_DICOM_FileSet
+from utilities import Temp_DICOM_FileSet, get_planes_from_string
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL
 import numpy as np
@@ -52,6 +52,11 @@ if dvh_review_mrns[0] != '':
 else:
     dvh_review_rois = ['']
 
+roi_viewer_data = {}
+roi2_viewer_data = {}
+roi3_viewer_data = {}
+roi4_viewer_data = {}
+
 # Initialize ColumnDataSource variables
 source = ColumnDataSource(data=dict(color=[], x=[], y=[], mrn=[],
                                     ep1=[], ep2=[], ep3=[], ep4=[], ep5=[], ep6=[], ep7=[], ep8=[]))
@@ -68,6 +73,10 @@ source_time = ColumnDataSource(data=dict(x=[], y=[], mrn=[], color=[]))
 source_time_trend = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
 source_time_collapsed = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
 source_time_bound = ColumnDataSource(data=dict(x=[], upper=[], avg=[], lower=[], mrn=[]))
+source_roi_viewer = ColumnDataSource(data=dict(x=[], y=[]))
+source_roi2_viewer = ColumnDataSource(data=dict(x=[], y=[]))
+source_roi3_viewer = ColumnDataSource(data=dict(x=[], y=[]))
+source_roi4_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -231,6 +240,7 @@ def update_data():
     update_button.label = old_update_button_label
     update_button.button_type = old_update_button_type
     control_chart_y.value = ''
+    update_roi_viewer_mrn()
 
 
 # Checks size of current query, changes update button to orange if over 50 DVHs
@@ -1485,6 +1495,255 @@ def control_chart_update_trend():
                               'lower': lower_bound}
 
 
+def update_roi_viewer_mrn():
+    options = ['']
+    for mrn in source_plans.data['mrn']:
+        options.append(mrn)
+    options.sort()
+    roi_viewer_mrn_select.options = options
+    roi_viewer_mrn_select.value = ''
+
+
+def roi_viewer_mrn_ticker(attr, old, new):
+
+    if new == '':
+        roi_viewer_study_date_select.options = ['']
+        roi_viewer_study_date_select.value = ''
+        roi_viewer_uid_select.options = ['']
+        roi_viewer_uid_select.value = ''
+        roi_viewer_roi_select.options = ['']
+        roi_viewer_roi_select.value = ''
+
+    else:
+        options = []
+        for i in range(0, len(source_plans.data['mrn'])):
+            if source_plans.data['mrn'][i] == new:
+                options.append(source_plans.data['sim_study_date'][i])
+        options.sort()
+        old_sim_date = roi_viewer_study_date_select.value
+        roi_viewer_study_date_select.options = options
+        roi_viewer_study_date_select.value = options[0]
+        if old_sim_date == options[0]:
+            update_roi_viewer_uid()
+
+
+def roi_viewer_study_date_ticker(attr, old, new):
+    update_roi_viewer_uid()
+
+
+def update_roi_viewer_uid():
+    if roi_viewer_mrn_select.value != '':
+        options = []
+        for i in range(0, len(source_plans.data['mrn'])):
+            if source_plans.data['mrn'][i] == roi_viewer_mrn_select.value and \
+                            source_plans.data['sim_study_date'][i] == roi_viewer_study_date_select.value:
+                options.append(source_plans.data['uid'][i])
+        roi_viewer_uid_select.options = options
+        roi_viewer_uid_select.value = options[0]
+
+
+def roi_viewer_uid_ticker(attr, old, new):
+    update_roi_viewer_rois()
+
+
+def roi_viewer_roi_ticker(attr, old, new):
+    update_roi_viewer_data()
+    update_roi_viewer_slice()
+
+
+def roi_viewer_roi2_ticker(attr, old, new):
+    update_roi2_viewer_data()
+    update_roi2_viewer()
+
+
+def roi_viewer_roi3_ticker(attr, old, new):
+    update_roi3_viewer_data()
+    update_roi3_viewer()
+
+
+def roi_viewer_roi4_ticker(attr, old, new):
+    update_roi4_viewer_data()
+    update_roi4_viewer()
+
+
+def roi_viewer_slice_ticker(attr, old, new):
+    update_roi_viewer()
+    update_roi2_viewer()
+    update_roi3_viewer()
+    update_roi4_viewer()
+
+
+def update_roi_viewer_slice():
+    options = roi_viewer_data.keys()
+    options.sort()
+    roi_viewer_slice_select.options = options
+    roi_viewer_slice_select.value = options[0]
+
+
+def roi_viewer_go_to_previous_slice():
+    index = roi_viewer_slice_select.options.index(roi_viewer_slice_select.value)
+    roi_viewer_slice_select.value = roi_viewer_slice_select.options[index - 1]
+
+
+def roi_viewer_go_to_next_slice():
+    index = roi_viewer_slice_select.options.index(roi_viewer_slice_select.value)
+    if index + 1 == len(roi_viewer_slice_select.options):
+        index = -1
+    roi_viewer_slice_select.value = roi_viewer_slice_select.options[index + 1]
+
+
+def update_roi_viewer_rois():
+    options = []
+    for i in range(0, len(source.data['uid'])):
+        if source.data['uid'][i] == roi_viewer_uid_select.value:
+            options.append(source.data['roi_name'][i])
+    options.sort()
+    roi_viewer_roi_select.options = options
+    roi_viewer_roi_select.value = options[0]
+
+    roi_viewer_roi2_select.options = [''] + options
+    roi_viewer_roi2_select.value = ''
+
+    roi_viewer_roi3_select.options = [''] + options
+    roi_viewer_roi3_select.value = ''
+
+    roi_viewer_roi4_select.options = [''] + options
+    roi_viewer_roi4_select.value = ''
+
+
+def update_roi_viewer_data():
+    global roi_viewer_data
+    roi_viewer_data = {}
+
+    roi_name = roi_viewer_roi_select.value
+    uid = roi_viewer_uid_select.value
+    roi_coord_string = DVH_SQL().query('dvhs',
+                                       'roi_coord_string',
+                                       "study_instance_uid = '%s' and roi_name = '%s'" % (uid, roi_name))
+    roi_planes = get_planes_from_string(roi_coord_string[0][0])
+    for z_plane in roi_planes.keys():
+        x, y, z = [], [], []
+        for polygon in roi_planes[z_plane]:
+            initial_polygon_index = len(x)
+            for point in polygon:
+                x.append(point[0])
+                y.append(point[1])
+                z.append(point[2])
+            x.append(x[initial_polygon_index])
+            y.append(y[initial_polygon_index])
+            z.append(z[initial_polygon_index])
+        roi_viewer_data[z_plane] = {'x': x,
+                                    'y': y,
+                                    'z': z}
+
+
+def update_roi2_viewer_data():
+    global roi2_viewer_data
+    roi2_viewer_data = {}
+
+    roi_name = roi_viewer_roi2_select.value
+    uid = roi_viewer_uid_select.value
+    roi_coord_string = DVH_SQL().query('dvhs',
+                                       'roi_coord_string',
+                                       "study_instance_uid = '%s' and roi_name = '%s'" % (uid, roi_name))
+    roi_planes = get_planes_from_string(roi_coord_string[0][0])
+    for z_plane in roi_planes.keys():
+        x, y, z = [], [], []
+        for polygon in roi_planes[z_plane]:
+            initial_polygon_index = len(x)
+            for point in polygon:
+                x.append(point[0])
+                y.append(point[1])
+                z.append(point[2])
+            x.append(x[initial_polygon_index])
+            y.append(y[initial_polygon_index])
+            z.append(z[initial_polygon_index])
+        roi2_viewer_data[z_plane] = {'x': x,
+                                     'y': y,
+                                     'z': z}
+
+
+def update_roi3_viewer_data():
+    global roi3_viewer_data
+    roi3_viewer_data = {}
+
+    roi_name = roi_viewer_roi3_select.value
+    uid = roi_viewer_uid_select.value
+    roi_coord_string = DVH_SQL().query('dvhs',
+                                       'roi_coord_string',
+                                       "study_instance_uid = '%s' and roi_name = '%s'" % (uid, roi_name))
+    roi_planes = get_planes_from_string(roi_coord_string[0][0])
+    for z_plane in roi_planes.keys():
+        x, y, z = [], [], []
+        for polygon in roi_planes[z_plane]:
+            initial_polygon_index = len(x)
+            for point in polygon:
+                x.append(point[0])
+                y.append(point[1])
+                z.append(point[2])
+            x.append(x[initial_polygon_index])
+            y.append(y[initial_polygon_index])
+            z.append(z[initial_polygon_index])
+        roi3_viewer_data[z_plane] = {'x': x,
+                                     'y': y,
+                                     'z': z}
+
+
+def update_roi4_viewer_data():
+    global roi4_viewer_data
+    roi4_viewer_data = {}
+
+    roi_name = roi_viewer_roi4_select.value
+    uid = roi_viewer_uid_select.value
+    roi_coord_string = DVH_SQL().query('dvhs',
+                                       'roi_coord_string',
+                                       "study_instance_uid = '%s' and roi_name = '%s'" % (uid, roi_name))
+    roi_planes = get_planes_from_string(roi_coord_string[0][0])
+    for z_plane in roi_planes.keys():
+        x, y, z = [], [], []
+        for polygon in roi_planes[z_plane]:
+            initial_polygon_index = len(x)
+            for point in polygon:
+                x.append(point[0])
+                y.append(point[1])
+                z.append(point[2])
+            x.append(x[initial_polygon_index])
+            y.append(y[initial_polygon_index])
+            z.append(z[initial_polygon_index])
+        roi4_viewer_data[z_plane] = {'x': x,
+                                     'y': y,
+                                     'z': z}
+
+
+def update_roi_viewer():
+    z = roi_viewer_slice_select.value
+    source_roi_viewer.data = roi_viewer_data[z]
+
+
+def update_roi2_viewer():
+    z = roi_viewer_slice_select.value
+    if z in roi2_viewer_data.keys():
+        source_roi2_viewer.data = roi2_viewer_data[z]
+    else:
+        source_roi2_viewer.data = {'x': [], 'y': [], 'z': []}
+
+
+def update_roi3_viewer():
+    z = roi_viewer_slice_select.value
+    if z in roi3_viewer_data.keys():
+        source_roi3_viewer.data = roi3_viewer_data[z]
+    else:
+        source_roi3_viewer.data = {'x': [], 'y': [], 'z': []}
+
+
+def update_roi4_viewer():
+    z = roi_viewer_slice_select.value
+    if z in roi4_viewer_data.keys():
+        source_roi4_viewer.data = roi4_viewer_data[z]
+    else:
+        source_roi4_viewer.data = {'x': [], 'y': [], 'z': []}
+
+
 # set up layout
 
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
@@ -1799,7 +2058,42 @@ control_chart_lookback_units.on_change('value', update_control_chart_ticker)
 trend_update_button = Button(label="Update Trend", button_type="primary", width=150)
 trend_update_button.on_click(control_chart_update_trend)
 
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# ROI Viewer Objects
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+roi_viewer_title_update = Div(text="<bSelect ROI</b>", width=1025)
+roi_viewer_options = [''] + source.data['mrn']
+roi_viewer_mrn_select = Select(value='', options=roi_viewer_options, width=200, title='MRN')
+roi_viewer_study_date_select = Select(value='', options=[''], width=200, title='Sim Study Date')
+roi_viewer_uid_select = Select(value='', options=[''], width=425, title='Study Instance UID')
+roi_viewer_roi_select = Select(value='', options=[''], width=400, title='ROI 1: Blue')
+roi_viewer_roi2_select = Select(value='', options=[''], width=200, height=100, title='ROI 2: Green')
+roi_viewer_roi3_select = Select(value='', options=[''], width=200, height=100, title='ROI 3: Red')
+roi_viewer_roi4_select = Select(value='', options=[''], width=200, height=100, title='ROI 4: Magenta')
+roi_viewer_slice_select = Select(value='', options=[''], width=200, title='Slice: z = ')
+roi_viewer_previous_slice = Button(label="<", button_type="primary", width=50)
+roi_viewer_next_slice = Button(label=">", button_type="primary", width=50)
+
+roi_viewer_mrn_select.on_change('value', roi_viewer_mrn_ticker)
+roi_viewer_study_date_select.on_change('value', roi_viewer_study_date_ticker)
+roi_viewer_uid_select.on_change('value', roi_viewer_uid_ticker)
+roi_viewer_roi_select.on_change('value', roi_viewer_roi_ticker)
+roi_viewer_roi2_select.on_change('value', roi_viewer_roi2_ticker)
+roi_viewer_roi3_select.on_change('value', roi_viewer_roi3_ticker)
+roi_viewer_roi4_select.on_change('value', roi_viewer_roi4_ticker)
+roi_viewer_slice_select.on_change('value', roi_viewer_slice_ticker)
+roi_viewer_previous_slice.on_click(roi_viewer_go_to_previous_slice)
+roi_viewer_next_slice.on_click(roi_viewer_go_to_next_slice)
+
+roi_viewer = figure(plot_width=825, plot_height=600, logo=None)
+roi_viewer.patch('x', 'y', source=source_roi_viewer, color='blue', alpha=0.5)
+roi_viewer.patch('x', 'y', source=source_roi2_viewer, color='green', alpha=0.5)
+roi_viewer.patch('x', 'y', source=source_roi3_viewer, color='red', alpha=0.5)
+roi_viewer.patch('x', 'y', source=source_roi4_viewer, color='magenta', alpha=0.5)
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # define main layout to pass to curdoc()
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 layout_query = column(row(main_add_selector_button,
                           main_add_range_button,
                           main_add_endpoint_button,
@@ -1815,6 +2109,13 @@ layout_dvhs = column(row(radio_group_dose, radio_group_volume),
                      data_table,
                      endpoint_table_title,
                      data_table_endpoints)
+
+roi_viewer_layout = layout([[roi_viewer_title_update],
+                            [roi_viewer_mrn_select, roi_viewer_study_date_select, roi_viewer_uid_select],
+                            [roi_viewer_roi_select, roi_viewer_slice_select,
+                             roi_viewer_previous_slice, roi_viewer_next_slice],
+                            [roi_viewer_roi2_select, roi_viewer_roi3_select, roi_viewer_roi4_select],
+                            [roi_viewer]])
 
 layout_planning_data = column(rxs_table_title,
                               data_table_rxs,
@@ -1832,10 +2133,11 @@ layout_trending = column(control_chart_title,
 
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
+roi_viewer_tab = Panel(child=roi_viewer_layout, title='ROI Viewer')
 planning_data_tab = Panel(child=layout_planning_data, title='Planning Data')
 trending_tab = Panel(child=layout_trending, title='Range-Variable Trending')
 
-tabs = Tabs(tabs=[query_tab, dvh_tab, planning_data_tab, trending_tab])
+tabs = Tabs(tabs=[query_tab, dvh_tab, roi_viewer_tab, planning_data_tab, trending_tab])
 
 # go ahead and add a selector row for the user
 button_add_selector_row()
