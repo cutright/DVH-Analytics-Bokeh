@@ -2069,7 +2069,7 @@ roi_viewer_uid_select = Select(value='', options=[''], width=425, title='Study I
 roi_viewer_roi_select = Select(value='', options=[''], width=400, title='ROI 1: Blue')
 roi_viewer_roi2_select = Select(value='', options=[''], width=200, height=100, title='ROI 2: Green')
 roi_viewer_roi3_select = Select(value='', options=[''], width=200, height=100, title='ROI 3: Red')
-roi_viewer_roi4_select = Select(value='', options=[''], width=200, height=100, title='ROI 4: Magenta')
+roi_viewer_roi4_select = Select(value='', options=[''], width=200, height=100, title='ROI 4: Orange')
 roi_viewer_slice_select = Select(value='', options=[''], width=200, title='Slice: z = ')
 roi_viewer_previous_slice = Button(label="<", button_type="primary", width=50)
 roi_viewer_next_slice = Button(label=">", button_type="primary", width=50)
@@ -2089,7 +2089,7 @@ roi_viewer = figure(plot_width=825, plot_height=600, logo=None)
 roi_viewer.patch('x', 'y', source=source_roi_viewer, color='blue', alpha=0.5)
 roi_viewer.patch('x', 'y', source=source_roi2_viewer, color='green', alpha=0.5)
 roi_viewer.patch('x', 'y', source=source_roi3_viewer, color='red', alpha=0.5)
-roi_viewer.patch('x', 'y', source=source_roi4_viewer, color='magenta', alpha=0.5)
+roi_viewer.patch('x', 'y', source=source_roi4_viewer, color='orange', alpha=0.5)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # define main layout to pass to curdoc()
