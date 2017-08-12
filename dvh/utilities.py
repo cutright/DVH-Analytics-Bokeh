@@ -445,7 +445,7 @@ def get_union(rois):
 
         current_slice = []
         for roi in rois:
-            if z in roi.keys() and len(roi[z]) > 2:
+            if z in roi.keys():
                 if not current_slice:
                     current_slice = points_to_shapely_polygon(roi[z])
                 else:
@@ -564,8 +564,6 @@ def get_min_distances_to_target(oar_coordinates, target_coordinates):
     :rtype: [float]
     """
     min_distances = []
-    print(oar_coordinates)
-    print(target_coordinates)
     all_distances = cdist(oar_coordinates, target_coordinates, 'euclidean')
     for oar_point in all_distances:
         min_distances.append(float(np.min(oar_point)/10.))

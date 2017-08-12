@@ -9,7 +9,7 @@ Created on Sun Apr 21 2017
 
 from __future__ import print_function
 from analysis_tools import DVH, get_study_instance_uids, calc_eud, get_eud_a_values
-from utilities import Temp_DICOM_FileSet, get_planes_from_string
+from utilities import Temp_DICOM_FileSet, get_planes_from_string, get_union, get_roi_coordinates_from_planes
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL
 import numpy as np
@@ -56,6 +56,7 @@ roi_viewer_data = {}
 roi2_viewer_data = {}
 roi3_viewer_data = {}
 roi4_viewer_data = {}
+tv_data = {}
 
 # Initialize ColumnDataSource variables
 source = ColumnDataSource(data=dict(color=[], x=[], y=[], mrn=[],
@@ -77,6 +78,7 @@ source_roi_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi2_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi3_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi4_viewer = ColumnDataSource(data=dict(x=[], y=[]))
+source_tv = ColumnDataSource(data=dict(x=[], y=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -1496,12 +1498,16 @@ def control_chart_update_trend():
 
 
 def update_roi_viewer_mrn():
-    options = ['']
+    options = []
     for mrn in source_plans.data['mrn']:
         options.append(mrn)
-    options.sort()
-    roi_viewer_mrn_select.options = options
-    roi_viewer_mrn_select.value = ''
+    if options:
+        options.sort()
+        roi_viewer_mrn_select.options = options
+        roi_viewer_mrn_select.value = options[0]
+    else:
+        roi_viewer_mrn_select.options = ['']
+        roi_viewer_mrn_select.value = ''
 
 
 def roi_viewer_mrn_ticker(attr, old, new):
@@ -1513,6 +1519,12 @@ def roi_viewer_mrn_ticker(attr, old, new):
         roi_viewer_uid_select.value = ''
         roi_viewer_roi_select.options = ['']
         roi_viewer_roi_select.value = ''
+        roi_viewer_roi2_select.options = ['']
+        roi_viewer_roi2_select.value = ''
+        roi_viewer_roi3_select.options = ['']
+        roi_viewer_roi3_select.value = ''
+        roi_viewer_roi4_select.options = ['']
+        roi_viewer_roi4_select.value = ''
 
     else:
         options = []
@@ -1547,22 +1559,26 @@ def roi_viewer_uid_ticker(attr, old, new):
 
 
 def roi_viewer_roi_ticker(attr, old, new):
-    update_roi_viewer_data()
+    global roi_viewer_data
+    roi_viewer_data = update_roi_viewer_data(roi_viewer_roi_select.value)
     update_roi_viewer_slice()
 
 
 def roi_viewer_roi2_ticker(attr, old, new):
-    update_roi2_viewer_data()
+    global roi2_viewer_data
+    roi2_viewer_data = update_roi_viewer_data(roi_viewer_roi2_select.value)
     update_roi2_viewer()
 
 
 def roi_viewer_roi3_ticker(attr, old, new):
-    update_roi3_viewer_data()
+    global roi3_viewer_data
+    roi3_viewer_data = update_roi_viewer_data(roi_viewer_roi3_select.value)
     update_roi3_viewer()
 
 
 def roi_viewer_roi4_ticker(attr, old, new):
-    update_roi4_viewer_data()
+    global roi4_viewer_data
+    roi4_viewer_data = update_roi_viewer_data(roi_viewer_roi4_select.value)
     update_roi4_viewer()
 
 
@@ -1571,6 +1587,7 @@ def roi_viewer_slice_ticker(attr, old, new):
     update_roi2_viewer()
     update_roi3_viewer()
     update_roi4_viewer()
+    source_tv.data = {'x': [], 'y': [], 'z': []}
 
 
 def update_roi_viewer_slice():
@@ -1611,11 +1628,9 @@ def update_roi_viewer_rois():
     roi_viewer_roi4_select.value = ''
 
 
-def update_roi_viewer_data():
-    global roi_viewer_data
-    roi_viewer_data = {}
+def update_roi_viewer_data(roi_name):
 
-    roi_name = roi_viewer_roi_select.value
+    roi_data = {}
     uid = roi_viewer_uid_select.value
     roi_coord_string = DVH_SQL().query('dvhs',
                                        'roi_coord_string',
@@ -1635,24 +1650,33 @@ def update_roi_viewer_data():
             x.append(float('nan'))
             y.append(float('nan'))
             z.append(float('nan'))
-        roi_viewer_data[z_plane] = {'x': x,
-                                    'y': y,
-                                    'z': z}
+        roi_data[z_plane] = {'x': x,
+                             'y': y,
+                             'z': z}
+
+    return roi_data
 
 
-def update_roi2_viewer_data():
-    global roi2_viewer_data
-    roi2_viewer_data = {}
+def update_tv_data():
+    global tv_data
+    tv_data = {}
 
-    roi_name = roi_viewer_roi2_select.value
     uid = roi_viewer_uid_select.value
-    roi_coord_string = DVH_SQL().query('dvhs',
-                                       'roi_coord_string',
-                                       "study_instance_uid = '%s' and roi_name = '%s'" % (uid, roi_name))
-    roi_planes = get_planes_from_string(roi_coord_string[0][0])
-    for z_plane in roi_planes.keys():
+    ptv_coordinates_strings = DVH_SQL().query('dvhs',
+                                              'roi_coord_string',
+                                              "study_instance_uid = '%s' and roi_type like 'PTV%%'"
+                                              % uid)
+
+    if ptv_coordinates_strings:
+
+        ptvs = []
+        for ptv in ptv_coordinates_strings:
+            ptvs.append(get_planes_from_string(ptv[0]))
+        tv_planes = get_union(ptvs)
+
+    for z_plane in tv_planes.keys():
         x, y, z = [], [], []
-        for polygon in roi_planes[z_plane]:
+        for polygon in tv_planes[z_plane]:
             initial_polygon_index = len(x)
             for point in polygon:
                 x.append(point[0])
@@ -1664,67 +1688,9 @@ def update_roi2_viewer_data():
             x.append(float('nan'))
             y.append(float('nan'))
             z.append(float('nan'))
-        roi2_viewer_data[z_plane] = {'x': x,
-                                     'y': y,
-                                     'z': z}
-
-
-def update_roi3_viewer_data():
-    global roi3_viewer_data
-    roi3_viewer_data = {}
-
-    roi_name = roi_viewer_roi3_select.value
-    uid = roi_viewer_uid_select.value
-    roi_coord_string = DVH_SQL().query('dvhs',
-                                       'roi_coord_string',
-                                       "study_instance_uid = '%s' and roi_name = '%s'" % (uid, roi_name))
-    roi_planes = get_planes_from_string(roi_coord_string[0][0])
-    for z_plane in roi_planes.keys():
-        x, y, z = [], [], []
-        for polygon in roi_planes[z_plane]:
-            initial_polygon_index = len(x)
-            for point in polygon:
-                x.append(point[0])
-                y.append(point[1])
-                z.append(point[2])
-            x.append(x[initial_polygon_index])
-            y.append(y[initial_polygon_index])
-            z.append(z[initial_polygon_index])
-            x.append(float('nan'))
-            y.append(float('nan'))
-            z.append(float('nan'))
-        roi3_viewer_data[z_plane] = {'x': x,
-                                     'y': y,
-                                     'z': z}
-
-
-def update_roi4_viewer_data():
-    global roi4_viewer_data
-    roi4_viewer_data = {}
-
-    roi_name = roi_viewer_roi4_select.value
-    uid = roi_viewer_uid_select.value
-    roi_coord_string = DVH_SQL().query('dvhs',
-                                       'roi_coord_string',
-                                       "study_instance_uid = '%s' and roi_name = '%s'" % (uid, roi_name))
-    roi_planes = get_planes_from_string(roi_coord_string[0][0])
-    for z_plane in roi_planes.keys():
-        x, y, z = [], [], []
-        for polygon in roi_planes[z_plane]:
-            initial_polygon_index = len(x)
-            for point in polygon:
-                x.append(point[0])
-                y.append(point[1])
-                z.append(point[2])
-            x.append(x[initial_polygon_index])
-            y.append(y[initial_polygon_index])
-            z.append(z[initial_polygon_index])
-            x.append(float('nan'))
-            y.append(float('nan'))
-            z.append(float('nan'))
-        roi4_viewer_data[z_plane] = {'x': x,
-                                     'y': y,
-                                     'z': z}
+            tv_data[z_plane] = {'x': x,
+                                'y': y,
+                                'z': z}
 
 
 def update_roi_viewer():
@@ -1768,6 +1734,15 @@ def roi_viewer_flip_x_axis():
         roi_viewer.x_range.flipped = False
     else:
         roi_viewer.x_range.flipped = True
+
+
+def roi_viewer_plot_tv():
+    update_tv_data()
+    z = roi_viewer_slice_select.value
+    if z in tv_data.keys() and not source_tv.data['x']:
+        source_tv.data = tv_data[z]
+    else:
+        source_tv.data = {'x': [], 'y': [], 'z': []}
 
 
 # set up layout
@@ -2087,7 +2062,6 @@ trend_update_button.on_click(control_chart_update_trend)
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # ROI Viewer Objects
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-roi_viewer_title_update = Div(text="<bSelect ROI</b>", width=1025)
 roi_viewer_options = [''] + source.data['mrn']
 roi_viewer_mrn_select = Select(value='', options=roi_viewer_options, width=200, title='MRN')
 roi_viewer_study_date_select = Select(value='', options=[''], width=200, title='Sim Study Date')
@@ -2099,8 +2073,11 @@ roi_viewer_roi4_select = Select(value='', options=[''], width=200, height=100, t
 roi_viewer_slice_select = Select(value='', options=[''], width=200, title='Slice: z = ')
 roi_viewer_previous_slice = Button(label="<", button_type="primary", width=50)
 roi_viewer_next_slice = Button(label=">", button_type="primary", width=50)
+roi_viewer_flip_text = Div(text="<b>NOTE:</b> Axis flipping requires a figure reset (Click the circular double-arrow)",
+                           width=1025)
 roi_viewer_flip_x_axis_button = Button(label='Flip X-Axis', button_type='primary', width=100)
 roi_viewer_flip_y_axis_button = Button(label='Flip Y-Axis', button_type='primary', width=100)
+roi_viewer_plot_tv_button = Button(label='Plot TV', button_type='primary', width=100)
 
 roi_viewer_mrn_select.on_change('value', roi_viewer_mrn_ticker)
 roi_viewer_study_date_select.on_change('value', roi_viewer_study_date_ticker)
@@ -2114,12 +2091,14 @@ roi_viewer_previous_slice.on_click(roi_viewer_go_to_previous_slice)
 roi_viewer_next_slice.on_click(roi_viewer_go_to_next_slice)
 roi_viewer_flip_x_axis_button.on_click(roi_viewer_flip_x_axis)
 roi_viewer_flip_y_axis_button.on_click(roi_viewer_flip_y_axis)
+roi_viewer_plot_tv_button.on_click(roi_viewer_plot_tv)
 
 roi_viewer = figure(plot_width=825, plot_height=600, logo=None)
 roi_viewer.patch('x', 'y', source=source_roi_viewer, color='blue', alpha=0.5)
 roi_viewer.patch('x', 'y', source=source_roi2_viewer, color='green', alpha=0.5)
 roi_viewer.patch('x', 'y', source=source_roi3_viewer, color='red', alpha=0.5)
 roi_viewer.patch('x', 'y', source=source_roi4_viewer, color='orange', alpha=0.5)
+roi_viewer.patch('x', 'y', source=source_tv, color='black', alpha=0.5)
 roi_viewer.xaxis.axis_label = "Lateral DICOM Coordinate (mm)"
 roi_viewer.yaxis.axis_label = "Anterior/Posterior DICOM Coordinate (mm)"
 
@@ -2142,12 +2121,12 @@ layout_dvhs = column(row(radio_group_dose, radio_group_volume),
                      endpoint_table_title,
                      data_table_endpoints)
 
-roi_viewer_layout = layout([[roi_viewer_title_update],
-                            [roi_viewer_mrn_select, roi_viewer_study_date_select, roi_viewer_uid_select],
+roi_viewer_layout = layout([[roi_viewer_mrn_select, roi_viewer_study_date_select, roi_viewer_uid_select],
                             [roi_viewer_roi_select, roi_viewer_slice_select,
                              roi_viewer_previous_slice, roi_viewer_next_slice],
                             [roi_viewer_roi2_select, roi_viewer_roi3_select, roi_viewer_roi4_select],
-                            [roi_viewer_flip_x_axis_button, roi_viewer_flip_y_axis_button],
+                            [roi_viewer_flip_text],
+                            [roi_viewer_flip_x_axis_button, roi_viewer_flip_y_axis_button, roi_viewer_plot_tv_button],
                             [roi_viewer]])
 
 layout_planning_data = column(rxs_table_title,
