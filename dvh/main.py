@@ -654,9 +654,10 @@ def update_dvh_data(dvh):
 
     if radio_group_dose.active == 1:
         stat_dose_scale = 'relative'
-        x_axis = dvh.get_stat_dvh(type=False, dose=stat_dose_scale)
+        x_axis_stat = dvh.get_stat_dvh(type=False, dose=stat_dose_scale)
     else:
         stat_dose_scale = 'absolute'
+        x_axis_stat = x_axis
     if radio_group_volume.active == 0:
         stat_volume_scale = 'absolute'
     else:
@@ -787,15 +788,15 @@ def update_dvh_data(dvh):
     for n in range(0, 6):
         if group_1_count > 0:
             dvh.mrn.append(y_names[n])
-            dvh.roi_name.append('Blue Group')
-            x_data.append(x_axis.tolist())
+            dvh.roi_name.append('N/A')
+            x_data.append(x_axis_stat.tolist())
             current = stat_dvhs_1[y_names[n].lower()].tolist()
             y_data.append(current)
             dvh_groups.append('Blue')
         if group_2_count > 0:
             dvh.mrn.append(y_names[n])
-            dvh.roi_name.append('Red Group')
-            x_data.append(x_axis.tolist())
+            dvh.roi_name.append('N/A')
+            x_data.append(x_axis_stat.tolist())
             current = stat_dvhs_2[y_names[n].lower()].tolist()
             y_data.append(current)
             dvh_groups.append('Red')
