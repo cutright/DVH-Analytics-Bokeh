@@ -9,7 +9,7 @@ Created on Sun Apr 21 2017
 
 from __future__ import print_function
 from analysis_tools import DVH, get_study_instance_uids, calc_eud, get_eud_a_values
-from utilities import Temp_DICOM_FileSet, get_planes_from_string, get_union, get_roi_coordinates_from_planes
+from utilities import Temp_DICOM_FileSet, get_planes_from_string, get_union
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL
 import numpy as np
@@ -17,13 +17,15 @@ import itertools
 from datetime import datetime
 from os.path import dirname, join
 from bokeh.layouts import layout, column, row
-from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, DatetimeTickFormatter
+from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
 from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, Panel, Tabs, \
-    NumberFormatter, RadioButtonGroup, TextInput, RadioGroup, CheckboxButtonGroup, Dropdown
+    NumberFormatter, RadioButtonGroup, TextInput, RadioGroup, CheckboxButtonGroup, Dropdown, CheckboxGroup
 from dicompylercore import dicomparser, dvhcalc
+from bokeh import events
+# import time
 
 # Declare variables
 colors = itertools.cycle(palette)
@@ -243,6 +245,13 @@ def update_data():
     update_button.button_type = old_update_button_type
     control_chart_y.value = ''
     update_roi_viewer_mrn()
+    # Use this code once we track down where empty queries fail
+    #     print(str(datetime.now()), 'Query returned no results ', current_dvh.query, sep=' ')
+    #     update_button.label = 'No results match query'
+    #     update_button.button_type = 'danger'
+    #     time.sleep(3)
+    #     update_button.label = 'Perform Query'
+    #     update_button.button_type = 'success'
 
 
 # Checks size of current query, changes update button to orange if over 50 DVHs
@@ -254,7 +263,7 @@ def update_update_button_status():
         update_button.label = "Large Update (" + str(count) + ")"
     else:
         update_button.button_type = "success"
-        update_button.label = "Update"
+        update_button.label = "Perform Query"
 
 
 # Ticker function for abs/rel dose radio buttons
@@ -458,6 +467,8 @@ class SelectorRow:
         update_update_button_status()
 
     def delete_row(self):
+        self.delete_last_row.button_type = 'danger'
+        self.delete_last_row.label = 'Deleting...'
         del (layout_query.children[widget_row_start + self.id])
         query_row_type.pop(self.id)
         query_row.pop(self.id)
@@ -525,6 +536,8 @@ class RangeRow:
         update_update_button_status()
 
     def delete_row(self):
+        self.delete_last_row.button_type = 'danger'
+        self.delete_last_row.label = 'Deleting...'
         del (layout_query.children[widget_row_start + self.id])
         query_row_type.pop(self.id)
         query_row.pop(self.id)
@@ -582,6 +595,8 @@ class EndPointRow:
             update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
 
     def delete_row(self):
+        self.delete_last_row.button_type = 'danger'
+        self.delete_last_row.label = 'Deleting...'
         del (layout_query.children[widget_row_start + self.id])
         query_row_type.pop(self.id)
         query_row.pop(self.id)
@@ -751,14 +766,18 @@ def update_dvh_data(dvh):
 
         if dvh_group_1:
             if dvh.study_instance_uid[r] in uids_1:
-                index_1 = dvh_group_1.study_instance_uid.index(dvh.study_instance_uid[r])
-                if dvh.roi_name[r] in {dvh_group_1.roi_name[index_1]}:
+                index_1_uid = dvh_group_1.study_instance_uid.index(dvh.study_instance_uid[r])
+                index_1_roi = dvh_group_1.roi_name.index(dvh.roi_name[r])
+                if dvh.roi_name[r] in {dvh_group_1.roi_name[index_1_uid]} or \
+                                dvh.study_instance_uid[r] in {dvh_group_1.study_instance_uid[index_1_roi]}:
                     dvh_groups.append('Blue')
 
         if dvh_group_2:
             if dvh.study_instance_uid[r] in uids_2:
-                index_2 = dvh_group_2.study_instance_uid.index(dvh.study_instance_uid[r])
-                if dvh.roi_name[r] in {dvh_group_2.roi_name[index_2]}:
+                index_2_uid = dvh_group_2.study_instance_uid.index(dvh.study_instance_uid[r])
+                index_2_roi = dvh_group_1.roi_name.index(dvh.roi_name[r])
+                if dvh.roi_name[r] in {dvh_group_2.roi_name[index_2_uid]} or \
+                                dvh.study_instance_uid[r] in {dvh_group_2.study_instance_uid[index_2_roi]}:
                     if len(dvh_groups) == r + 1:
                         dvh_groups[r] = 'Blue & Red'
                     else:
@@ -838,6 +857,7 @@ def update_dvh_data(dvh):
 
     print(str(datetime.now()), 'writing source.data', sep=' ')
     source.data = {'mrn': dvh.mrn,
+                   'group': dvh_groups,
                    'uid': dvh.study_instance_uid,
                    'roi_institutional': dvh.institutional_roi,
                    'roi_physician': dvh.physician_roi,
@@ -869,7 +889,6 @@ def update_dvh_data(dvh):
                    'ep8': new_endpoint_columns,
                    'x_scale': x_scale,
                    'y_scale': y_scale}
-    print(str(datetime.now()), 'source.data set', sep=' ')
 
     print(str(datetime.now()), 'begin updating beam, plan, rx data sources', sep=' ')
     update_beam_data(dvh.study_instance_uid)
@@ -1132,11 +1151,11 @@ def calc_stats(data):
 def update_dvh_review_rois(attr, old, new):
     global temp_dvh_info, dvh_review_rois
     if select_reviewed_mrn.value:
-        initial_button_type = calculate_review_dvh_button.button_type
-        calculate_review_dvh_button.button_type = "warning"
-
-        initial_label = calculate_review_dvh_button.label
-        calculate_review_dvh_button.label = "Updating..."
+        # initial_button_type = calculate_review_dvh_button.button_type
+        # calculate_review_dvh_button.button_type = "warning"
+        #
+        # initial_label = calculate_review_dvh_button.label
+        # calculate_review_dvh_button.label = "Updating..."
         if new != '':
             dvh_review_rois = temp_dvh_info.get_roi_names(new).values()
             select_reviewed_dvh.options = dvh_review_rois
@@ -1144,9 +1163,9 @@ def update_dvh_review_rois(attr, old, new):
         else:
             select_reviewed_dvh.options = ['']
             select_reviewed_dvh.value = ['']
-
-        calculate_review_dvh_button.button_type = initial_button_type
-        calculate_review_dvh_button.label = initial_label
+        #
+        # calculate_review_dvh_button.button_type = initial_button_type
+        # calculate_review_dvh_button.label = initial_label
     else:
         select_reviewed_dvh.options = ['']
         select_reviewed_dvh.value = ''
@@ -1181,13 +1200,13 @@ def calculate_review_dvh():
 
     try:
         if not source.data['x']:
-            calculate_review_dvh_button.button_type = 'warning'
-            calculate_review_dvh_button.label = 'Waiting...'
+            # calculate_review_dvh_button.button_type = 'warning'
+            # calculate_review_dvh_button.label = 'Waiting...'
             update_data()
 
         else:
-            calculate_review_dvh_button.button_type = 'warning'
-            calculate_review_dvh_button.label = 'Calculating...'
+            # calculate_review_dvh_button.button_type = 'warning'
+            # calculate_review_dvh_button.label = 'Calculating...'
 
             file_index = temp_dvh_info.mrn.index(select_reviewed_mrn.value)
             roi_index = dvh_review_rois.index(select_reviewed_dvh.value)
@@ -1252,8 +1271,8 @@ def calculate_review_dvh():
 
     source.patch(patches)
 
-    calculate_review_dvh_button.button_type = 'success'
-    calculate_review_dvh_button.label = 'Calculate Review DVH'
+    # calculate_review_dvh_button.button_type = 'success'
+    # calculate_review_dvh_button.label = 'Calculate Review DVH'
 
 
 def group_count():
@@ -1745,6 +1764,14 @@ def roi_viewer_plot_tv():
         source_tv.data = {'x': [], 'y': [], 'z': []}
 
 
+def roi_viewer_wheel_event(event):
+    if roi_viewer_scrolling.active:
+        if event.delta > 0:
+            roi_viewer_go_to_next_slice()
+        elif event.delta < 0:
+            roi_viewer_go_to_previous_slice()
+
+
 # set up layout
 
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
@@ -1845,6 +1872,7 @@ dvh_plots.legend.click_policy = "hide"
 # Set up DataTable for dvhs
 data_table_title = Div(text="<b>DVHs</b>", width=1200)
 columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
+           TableColumn(field="group", title="Group", width=175),
            TableColumn(field="roi_name", title="ROI Name"),
            TableColumn(field="roi_type", title="ROI Type", width=80),
            TableColumn(field="rx_dose", title="Rx Dose", width=100, formatter=NumberFormatter(format="0.00")),
@@ -1979,15 +2007,15 @@ review_rx.on_change('value', review_rx_ticker)
 review_eud_a_value = TextInput(value='1', title="EUD a-value:", width=170)
 review_eud_a_value.on_change('value', review_eud_a_value_ticker)
 
-calculate_review_dvh_button = Button(label="Calculate Review DVH",
-                                     button_type="success",
-                                     width=180)
-calculate_review_dvh_button.on_click(calculate_review_dvh)
+# calculate_review_dvh_button = Button(label="Calculate Review DVH",
+#                                      button_type="success",
+#                                      width=180)
+# calculate_review_dvh_button.on_click(calculate_review_dvh)
 
 # Begin defining main row of widgets below figure
 
 # define Update button
-update_button = Button(label="Update", button_type="success", width=180)
+update_button = Button(label="Perform Query", button_type="success", width=360)
 update_button.on_click(update_data)
 
 # define Download button and call download.js on click
@@ -2101,6 +2129,9 @@ roi_viewer.patch('x', 'y', source=source_roi4_viewer, color='orange', alpha=0.5)
 roi_viewer.patch('x', 'y', source=source_tv, color='black', alpha=0.5)
 roi_viewer.xaxis.axis_label = "Lateral DICOM Coordinate (mm)"
 roi_viewer.yaxis.axis_label = "Anterior/Posterior DICOM Coordinate (mm)"
+wheel_attributes = ['delta']
+roi_viewer.on_event(events.MouseWheel, roi_viewer_wheel_event)
+roi_viewer_scrolling = CheckboxGroup(labels=["Enable Slice Scrolling with Mouse Wheel"], active=[0])
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # define main layout to pass to curdoc()
@@ -2109,7 +2140,6 @@ layout_query = column(row(main_add_selector_button,
                           main_add_range_button,
                           main_add_endpoint_button,
                           update_button,
-                          calculate_review_dvh_button,
                           download_dropdown))
 
 
@@ -2127,6 +2157,7 @@ roi_viewer_layout = layout([[roi_viewer_mrn_select, roi_viewer_study_date_select
                             [roi_viewer_roi2_select, roi_viewer_roi3_select, roi_viewer_roi4_select],
                             [roi_viewer_flip_text],
                             [roi_viewer_flip_x_axis_button, roi_viewer_flip_y_axis_button, roi_viewer_plot_tv_button],
+                            [roi_viewer_scrolling],
                             [roi_viewer]])
 
 layout_planning_data = column(rxs_table_title,
