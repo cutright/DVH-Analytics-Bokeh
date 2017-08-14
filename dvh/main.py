@@ -58,6 +58,7 @@ roi_viewer_data = {}
 roi2_viewer_data = {}
 roi3_viewer_data = {}
 roi4_viewer_data = {}
+roi5_viewer_data = {}
 tv_data = {}
 
 # Initialize ColumnDataSource variables
@@ -80,6 +81,7 @@ source_roi_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi2_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi3_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi4_viewer = ColumnDataSource(data=dict(x=[], y=[]))
+source_roi5_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_tv = ColumnDataSource(data=dict(x=[], y=[]))
 
 
@@ -1545,6 +1547,8 @@ def roi_viewer_mrn_ticker(attr, old, new):
         roi_viewer_roi3_select.value = ''
         roi_viewer_roi4_select.options = ['']
         roi_viewer_roi4_select.value = ''
+        roi_viewer_roi5_select.options = ['']
+        roi_viewer_roi5_select.value = ''
 
     else:
         options = []
@@ -1602,11 +1606,18 @@ def roi_viewer_roi4_ticker(attr, old, new):
     update_roi4_viewer()
 
 
+def roi_viewer_roi5_ticker(attr, old, new):
+    global roi5_viewer_data
+    roi5_viewer_data = update_roi_viewer_data(roi_viewer_roi5_select.value)
+    update_roi5_viewer()
+
+
 def roi_viewer_slice_ticker(attr, old, new):
     update_roi_viewer()
     update_roi2_viewer()
     update_roi3_viewer()
     update_roi4_viewer()
+    update_roi5_viewer()
     source_tv.data = {'x': [], 'y': [], 'z': []}
 
 
@@ -1646,6 +1657,9 @@ def update_roi_viewer_rois():
 
     roi_viewer_roi4_select.options = [''] + options
     roi_viewer_roi4_select.value = ''
+
+    roi_viewer_roi5_select.options = [''] + options
+    roi_viewer_roi5_select.value = ''
 
 
 def update_roi_viewer_data(roi_name):
@@ -1740,6 +1754,14 @@ def update_roi4_viewer():
         source_roi4_viewer.data = roi4_viewer_data[z]
     else:
         source_roi4_viewer.data = {'x': [], 'y': [], 'z': []}
+
+
+def update_roi5_viewer():
+    z = roi_viewer_slice_select.value
+    if z in roi5_viewer_data.keys():
+        source_roi5_viewer.data = roi5_viewer_data[z]
+    else:
+        source_roi5_viewer.data = {'x': [], 'y': [], 'z': []}
 
 
 def roi_viewer_flip_y_axis():
@@ -2099,6 +2121,7 @@ roi_viewer_roi_select = Select(value='', options=[''], width=400, title='ROI 1: 
 roi_viewer_roi2_select = Select(value='', options=[''], width=200, height=100, title='ROI 2: Green')
 roi_viewer_roi3_select = Select(value='', options=[''], width=200, height=100, title='ROI 3: Red')
 roi_viewer_roi4_select = Select(value='', options=[''], width=200, height=100, title='ROI 4: Orange')
+roi_viewer_roi5_select = Select(value='', options=[''], width=200, height=100, title='ROI 5: Light Green')
 roi_viewer_slice_select = Select(value='', options=[''], width=200, title='Slice: z = ')
 roi_viewer_previous_slice = Button(label="<", button_type="primary", width=50)
 roi_viewer_next_slice = Button(label=">", button_type="primary", width=50)
@@ -2115,6 +2138,7 @@ roi_viewer_roi_select.on_change('value', roi_viewer_roi_ticker)
 roi_viewer_roi2_select.on_change('value', roi_viewer_roi2_ticker)
 roi_viewer_roi3_select.on_change('value', roi_viewer_roi3_ticker)
 roi_viewer_roi4_select.on_change('value', roi_viewer_roi4_ticker)
+roi_viewer_roi5_select.on_change('value', roi_viewer_roi5_ticker)
 roi_viewer_slice_select.on_change('value', roi_viewer_slice_ticker)
 roi_viewer_previous_slice.on_click(roi_viewer_go_to_previous_slice)
 roi_viewer_next_slice.on_click(roi_viewer_go_to_next_slice)
@@ -2127,6 +2151,7 @@ roi_viewer.patch('x', 'y', source=source_roi_viewer, color='blue', alpha=0.5)
 roi_viewer.patch('x', 'y', source=source_roi2_viewer, color='green', alpha=0.5)
 roi_viewer.patch('x', 'y', source=source_roi3_viewer, color='red', alpha=0.5)
 roi_viewer.patch('x', 'y', source=source_roi4_viewer, color='orange', alpha=0.5)
+roi_viewer.patch('x', 'y', source=source_roi5_viewer, color='lightgreen', alpha=0.5)
 roi_viewer.patch('x', 'y', source=source_tv, color='black', alpha=0.5)
 roi_viewer.xaxis.axis_label = "Lateral DICOM Coordinate (mm)"
 roi_viewer.yaxis.axis_label = "Anterior/Posterior DICOM Coordinate (mm)"
@@ -2155,7 +2180,8 @@ layout_dvhs = column(row(radio_group_dose, radio_group_volume),
 roi_viewer_layout = layout([[roi_viewer_mrn_select, roi_viewer_study_date_select, roi_viewer_uid_select],
                             [roi_viewer_roi_select, roi_viewer_slice_select,
                              roi_viewer_previous_slice, roi_viewer_next_slice],
-                            [roi_viewer_roi2_select, roi_viewer_roi3_select, roi_viewer_roi4_select],
+                            [roi_viewer_roi2_select, roi_viewer_roi3_select,
+                             roi_viewer_roi4_select, roi_viewer_roi5_select],
                             [roi_viewer_flip_text],
                             [roi_viewer_flip_x_axis_button, roi_viewer_flip_y_axis_button, roi_viewer_plot_tv_button],
                             [roi_viewer_scrolling],
