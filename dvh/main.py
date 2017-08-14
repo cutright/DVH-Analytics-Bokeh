@@ -767,24 +767,25 @@ def update_dvh_data(dvh):
     dvh_groups = []
     for r in range(0, len(dvh.study_instance_uid)):
 
+        current_uid = dvh.study_instance_uid[r]
+        current_roi = dvh.roi_name[r]
+
         if dvh_group_1:
-            if dvh.study_instance_uid[r] in uids_1:
-                index_1_uid = dvh_group_1.study_instance_uid.index(dvh.study_instance_uid[r])
-                index_1_roi = dvh_group_1.roi_name.index(dvh.roi_name[r])
-                if dvh.roi_name[r] in {dvh_group_1.roi_name[index_1_uid]} or \
-                                dvh.study_instance_uid[r] in {dvh_group_1.study_instance_uid[index_1_roi]}:
+            for r1 in range(0, len(dvh_group_1.study_instance_uid)):
+                if dvh_group_1.study_instance_uid[r1] == current_uid and dvh_group_1.roi_name[r1] == current_roi:
                     dvh_groups.append('Blue')
 
         if dvh_group_2:
-            if dvh.study_instance_uid[r] in uids_2:
-                index_2_uid = dvh_group_2.study_instance_uid.index(dvh.study_instance_uid[r])
-                index_2_roi = dvh_group_1.roi_name.index(dvh.roi_name[r])
-                if dvh.roi_name[r] in {dvh_group_2.roi_name[index_2_uid]} or \
-                                dvh.study_instance_uid[r] in {dvh_group_2.study_instance_uid[index_2_roi]}:
+            for r2 in range(0, len(dvh_group_2.study_instance_uid)):
+                if dvh_group_2.study_instance_uid[r2] == current_uid and dvh_group_2.roi_name[r2] == current_roi:
                     if len(dvh_groups) == r + 1:
                         dvh_groups[r] = 'Blue & Red'
                     else:
                         dvh_groups.append('Red')
+
+        if len(dvh_groups) < r + 1:
+            dvh_groups.append('error')
+
     dvh_groups.insert(0, 'Review')
 
     for n in range(0, 6):
