@@ -79,6 +79,8 @@ source_time_trend_2 = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
 source_time_collapsed = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
 source_time_bound_1 = ColumnDataSource(data=dict(x=[], upper=[], avg=[], lower=[], mrn=[]))
 source_time_bound_2 = ColumnDataSource(data=dict(x=[], upper=[], avg=[], lower=[], mrn=[]))
+source_time_patch_1 = ColumnDataSource(data=dict(x=[], y=[]))
+source_time_patch_2 = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi2_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi3_viewer = ColumnDataSource(data=dict(x=[], y=[]))
@@ -1498,41 +1500,70 @@ def control_chart_update_trend():
     except:
         avg_len = 1
 
-    # average daily data and keep track of points per day, calculate moving average
-    group_1_collapsed = collapse_into_single_dates(group_1['x'], group_1['y'])
-    group_2_collapsed = collapse_into_single_dates(group_2['x'], group_2['y'])
-    x_trend_1, moving_avgs_1 = moving_avg(group_1_collapsed, avg_len)
-    x_trend_2, moving_avgs_2 = moving_avg(group_2_collapsed, avg_len)
-
-    y_np_1 = np.array(group_1['y'])
-    y_np_2 = np.array(group_2['y'])
     try:
         percentile = float(control_chart_percentile.value)
     except:
         percentile = 90.
-    upper_bound_1 = [float(np.percentile(y_np_1, 50. + percentile / 2.))] * len(selected['x'])
-    upper_bound_2 = [float(np.percentile(y_np_2, 50. + percentile / 2.))] * len(selected['x'])
-    average_1 = [float(np.percentile(y_np_1, 50))] * len(selected['x'])
-    average_2 = [float(np.percentile(y_np_2, 50))] * len(selected['x'])
-    lower_bound_1 = [float(np.percentile(y_np_1, 50. - percentile / 2.))] * len(selected['x'])
-    lower_bound_2 = [float(np.percentile(y_np_2, 50. - percentile / 2.))] * len(selected['x'])
 
-    source_time_trend_1.data = {'x': x_trend_1,
-                                'y': moving_avgs_1,
-                                'mrn': ['Avg'] * len(x_trend_1)}
-    source_time_bound_1.data = {'x': selected['x'],
-                                'mrn': ['Bound'] * len(selected['x']),
-                                'upper': upper_bound_1,
-                                'avg': average_1,
-                                'lower': lower_bound_1}
-    source_time_trend_2.data = {'x': x_trend_2,
-                                'y': moving_avgs_2,
-                                'mrn': ['Avg'] * len(x_trend_2)}
-    source_time_bound_2.data = {'x': selected['x'],
-                                'mrn': ['Bound'] * len(selected['x']),
-                                'upper': upper_bound_2,
-                                'avg': average_2,
-                                'lower': lower_bound_2}
+    # average daily data and keep track of points per day, calculate moving average
+    if group_1['x']:
+        group_1_collapsed = collapse_into_single_dates(group_1['x'], group_1['y'])
+        x_trend_1, moving_avgs_1 = moving_avg(group_1_collapsed, avg_len)
+
+        y_np_1 = np.array(group_1['y'])
+        upper_bound_1 = float(np.percentile(y_np_1, 50. + percentile / 2.))
+        average_1 = float(np.percentile(y_np_1, 50))
+        lower_bound_1 = float(np.percentile(y_np_1, 50. - percentile / 2.))
+        source_time_trend_1.data = {'x': x_trend_1,
+                                    'y': moving_avgs_1,
+                                    'mrn': ['Avg'] * len(x_trend_1)}
+        source_time_bound_1.data = {'x': selected['x'],
+                                    'mrn': ['Bound'] * len(selected['x']),
+                                    'upper': [upper_bound_1] * len(selected['x']),
+                                    'avg': [average_1] * len(selected['x']),
+                                    'lower': [lower_bound_1] * len(selected['x'])}
+        source_time_patch_1.data = {'x': [selected['x'][0], selected['x'][-1], selected['x'][-1], selected['x'][0]],
+                                    'y': [upper_bound_1, upper_bound_1, lower_bound_1, lower_bound_1]}
+    else:
+        source_time_trend_1.data = {'x': [],
+                                    'y': [],
+                                    'mrn': []}
+        source_time_bound_1.data = {'x': [],
+                                    'mrn': [],
+                                    'upper': [],
+                                    'avg': [],
+                                    'lower': []}
+        source_time_patch_1.data = {'x': [],
+                                    'y': []}
+    if group_2['x']:
+        group_2_collapsed = collapse_into_single_dates(group_2['x'], group_2['y'])
+        x_trend_2, moving_avgs_2 = moving_avg(group_2_collapsed, avg_len)
+
+        y_np_2 = np.array(group_2['y'])
+        upper_bound_2 = float(np.percentile(y_np_2, 50. + percentile / 2.))
+        average_2 = float(np.percentile(y_np_2, 50))
+        lower_bound_2 = float(np.percentile(y_np_2, 50. - percentile / 2.))
+        source_time_trend_2.data = {'x': x_trend_2,
+                                    'y': moving_avgs_2,
+                                    'mrn': ['Avg'] * len(x_trend_2)}
+        source_time_bound_2.data = {'x': selected['x'],
+                                    'mrn': ['Bound'] * len(selected['x']),
+                                    'upper': [upper_bound_2] * len(selected['x']),
+                                    'avg': [average_2] * len(selected['x']),
+                                    'lower': [lower_bound_2] * len(selected['x'])}
+        source_time_patch_2.data = {'x': [selected['x'][0], selected['x'][-1], selected['x'][-1], selected['x'][0]],
+                                    'y': [upper_bound_2,  upper_bound_2, lower_bound_2, lower_bound_2]}
+    else:
+        source_time_trend_2.data = {'x': [],
+                                    'y': [],
+                                    'mrn': []}
+        source_time_bound_2.data = {'x': [],
+                                    'mrn': [],
+                                    'upper': [],
+                                    'avg': [],
+                                    'lower': []}
+        source_time_patch_2.data = {'x': [],
+                                    'y': []}
 
 
 def update_roi_viewer_mrn():
@@ -2098,6 +2129,8 @@ control_chart.line('x', 'y', color='red', source=source_time_trend_2)
 control_chart.line('x', 'upper', color='red', source=source_time_bound_2, line_dash='dashed')
 control_chart.line('x', 'avg', color='red', source=source_time_bound_2, line_dash='dotted')
 control_chart.line('x', 'lower', color='red', source=source_time_bound_2, line_dash='dashed')
+control_chart.patch('x', 'y', color='blue', source=source_time_patch_1, alpha=0.1)
+control_chart.patch('x', 'y', color='red', source=source_time_patch_2, alpha=0.1)
 control_chart.add_tools(HoverTool(show_arrow=True,
                                   line_policy='next',
                                   tooltips=[('ID', '@mrn'),
