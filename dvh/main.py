@@ -1382,7 +1382,28 @@ def update_control_chart():
             if not skipped[-1]:
                 if current_dvh_group_1 and current_dvh_group_2:
                     if uid in current_dvh_group_1.study_instance_uid and uid in current_dvh_group_2.study_instance_uid:
-                        colors.append('purple')
+                        if range_categories[control_chart_y.value]['source'] == source:
+                            for r in range(0, len(current_dvh.study_instance_uid)):
+
+                                current_uid = current_dvh.study_instance_uid[r]
+                                current_roi = current_dvh.roi_name[r]
+                                current_r_found = False
+
+                                for r1 in range(0, len(current_dvh_group_1.study_instance_uid)):
+                                    if current_dvh_group_1.study_instance_uid[r1] == current_uid and \
+                                                    current_dvh_group_1.roi_name[r1] == current_roi:
+                                        colors.append('blue')
+                                        current_r_found = True
+
+                                for r2 in range(0, len(current_dvh_group_2.study_instance_uid)):
+                                    if current_dvh_group_2.study_instance_uid[r2] == current_uid and \
+                                                    current_dvh_group_2.roi_name[r2] == current_roi:
+                                        if current_r_found:
+                                            colors[-1] = 'purple'
+                                        else:
+                                            colors.append('red')
+                        else:
+                            colors.append('purple')
                     elif uid in current_dvh_group_1.study_instance_uid:
                         colors.append('blue')
                     else:
