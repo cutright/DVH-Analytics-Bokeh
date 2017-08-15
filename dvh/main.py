@@ -17,7 +17,7 @@ import itertools
 from datetime import datetime
 from os.path import dirname, join
 from bokeh.layouts import layout, column, row
-from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool
+from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
@@ -32,6 +32,7 @@ colors = itertools.cycle(palette)
 current_dvh = []
 current_dvh_group_1 = []
 current_dvh_group_2 = []
+group_1, group_2 = [], []
 update_warning = True
 query_row = []
 query_row_type = []
@@ -1469,6 +1470,8 @@ def moving_avg(xyw, avg_len):
 
 
 def control_chart_update_trend():
+    global group_1, group_2
+
     selected_indices = source_time.selected['1d']['indices']
 
     if not selected_indices:
@@ -1567,29 +1570,52 @@ def control_chart_update_trend():
         source_time_patch_2.data = {'x': [],
                                     'y': []}
 
-
-    # Update Histograms
-    bin_size = 10
-
-    hist, bins = np.histogram(group_1['y'], bins=bin_size)
-    width = [0.7 * (bins[1] - bins[0])] * bin_size
-    center = (bins[:-1] + bins[1:]) / 2.
-    source_histogram_1.data = {'x': center,
-                               'top': hist,
-                               'width': width}
-
-    hist, bins = np.histogram(group_2['y'], bins=bin_size)
-    width = [0.7 * (bins[1] - bins[0])] * bin_size
-    center = (bins[:-1] + bins[1:]) / 2.
-    source_histogram_2.data = {'x': center,
-                               'top': hist,
-                               'width': width}
-
     x_var = control_chart_y.value
     if range_categories[x_var]['units']:
         histograms.xaxis.axis_label = x_var + " (" + range_categories[x_var]['units'] + ")"
     else:
         histograms.xaxis.axis_label = x_var
+
+    update_histogram_1()
+    update_histogram_2()
+
+
+def histogram_1_slider_ticker(attr, old, new):
+    update_histogram_1()
+
+
+def histogram_2_slider_ticker(attr, old, new):
+    update_histogram_2()
+
+
+def update_histogram_1():
+    global group_1
+
+    # Update Histograms
+    bin_size = histogram_bin_count_slider_1.value
+    width_fraction = 0.9
+
+    hist, bins = np.histogram(group_1['y'], bins=bin_size)
+    width = [width_fraction * (bins[1] - bins[0])] * bin_size
+    center = (bins[:-1] + bins[1:]) / 2.
+    source_histogram_1.data = {'x': center,
+                               'top': hist,
+                               'width': width}
+
+
+def update_histogram_2():
+    global group_2
+
+    # Update Histograms
+    bin_size = histogram_bin_count_slider_2.value
+    width_fraction = 0.9
+
+    hist, bins = np.histogram(group_2['y'], bins=bin_size)
+    width = [width_fraction * (bins[1] - bins[0])] * bin_size
+    center = (bins[:-1] + bins[1:]) / 2.
+    source_histogram_2.data = {'x': center,
+                               'top': hist,
+                               'width': width}
 
 
 def update_roi_viewer_mrn():
@@ -2196,6 +2222,10 @@ histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogr
 histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_2, color='red', alpha=0.3)
 histograms.xaxis.axis_label = ""
 histograms.yaxis.axis_label = "Counts"
+histogram_bin_count_slider_1 = Slider(start=0, end=100, value=10, step=1, title="Blue Bin Count")
+histogram_bin_count_slider_2 = Slider(start=0, end=100, value=10, step=1, title="Red Bin Count")
+histogram_bin_count_slider_1.on_change('value', histogram_1_slider_ticker)
+histogram_bin_count_slider_2.on_change('value', histogram_2_slider_ticker)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # ROI Viewer Objects
@@ -2286,6 +2316,7 @@ layout_trending = column(control_chart_title,
                          row(control_chart_y, control_chart_lookback_units, control_chart_text_lookback_distance,
                              control_chart_percentile, trend_update_button),
                          control_chart,
+                         row(histogram_bin_count_slider_1, histogram_bin_count_slider_2),
                          histograms)
 
 query_tab = Panel(child=layout_query, title='Query')
