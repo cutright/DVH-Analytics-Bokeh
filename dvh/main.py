@@ -2225,10 +2225,10 @@ histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogr
 histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_2, color='red', alpha=0.3)
 histograms.xaxis.axis_label = ""
 histograms.yaxis.axis_label = "Counts"
-histogram_bin_slider = Slider(start=0, end=100, value=10, step=1, title="Bin Count")
+histogram_bin_slider = Slider(start=1, end=100, value=10, step=1, title="Bin Count")
 histogram_bin_slider.on_change('value', histograms_bin_count_slider_ticker)
 histogram_normaltest_1_text = Div(text="<b>Blue Group Normal Test p-value = </b>")
-histogram_normaltest_2_text = Div(text="<b>Red  Group Normal Test p-value = </b>")
+histogram_normaltest_2_text = Div(text="<b>Red Group Normal Test p-value = </b>")
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # ROI Viewer Objects
