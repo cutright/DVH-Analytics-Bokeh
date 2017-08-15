@@ -25,6 +25,7 @@ from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, Pa
     NumberFormatter, RadioButtonGroup, TextInput, RadioGroup, CheckboxButtonGroup, Dropdown, CheckboxGroup
 from dicompylercore import dicomparser, dvhcalc
 from bokeh import events
+from scipy.stats import ttest_ind, ranksums, normaltest
 # import time
 
 # Declare variables
@@ -1604,6 +1605,21 @@ def update_histograms():
                                'top': hist,
                                'width': width}
 
+    if group_1['y']:
+        s1, p1 = normaltest(group_1['y'])
+        p1 = "%0.3f" % p1
+    else:
+        p1 = ''
+
+    if group_2['y']:
+        s2, p2 = normaltest(group_2['y'])
+        p2 = "%0.3f" % p2
+    else:
+        p2 = ''
+
+    histogram_normaltest_1_text.text = "<b>Blue Group Normal Test p-value =</b> %s" % p1
+    histogram_normaltest_2_text.text = "<b>Red  Group Normal Test p-value =</b> %s" % p2
+
 
 def update_roi_viewer_mrn():
     options = []
@@ -2211,6 +2227,8 @@ histograms.xaxis.axis_label = ""
 histograms.yaxis.axis_label = "Counts"
 histogram_bin_slider = Slider(start=0, end=100, value=10, step=1, title="Bin Count")
 histogram_bin_slider.on_change('value', histograms_bin_count_slider_ticker)
+histogram_normaltest_1_text = Div(text="<b>Blue Group Normal Test p-value = </b>")
+histogram_normaltest_2_text = Div(text="<b>Red  Group Normal Test p-value = </b>")
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # ROI Viewer Objects
@@ -2302,6 +2320,8 @@ layout_trending = column(control_chart_title,
                              control_chart_percentile, trend_update_button),
                          control_chart,
                          row(histogram_bin_slider),
+                         histogram_normaltest_1_text,
+                         histogram_normaltest_2_text,
                          histograms)
 
 query_tab = Panel(child=layout_query, title='Query')
