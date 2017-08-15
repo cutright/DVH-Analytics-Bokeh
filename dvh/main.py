@@ -87,6 +87,8 @@ source_roi3_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi4_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi5_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_tv = ColumnDataSource(data=dict(x=[], y=[]))
+source_histogram_1 = ColumnDataSource(data=dict(x=[], top=[], width=[]))
+source_histogram_2 = ColumnDataSource(data=dict(x=[], top=[], width=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -1565,6 +1567,22 @@ def control_chart_update_trend():
         source_time_patch_2.data = {'x': [],
                                     'y': []}
 
+    bin_size = 10
+
+    hist, bins = np.histogram(group_1['y'], bins=bin_size)
+    width = [0.7 * (bins[1] - bins[0])] * bin_size
+    center = (bins[:-1] + bins[1:]) / 2.
+    source_histogram_1.data = {'x': center,
+                               'top': hist,
+                               'width': width}
+
+    hist, bins = np.histogram(group_2['y'], bins=bin_size)
+    width = [0.7 * (bins[1] - bins[0])] * bin_size
+    center = (bins[:-1] + bins[1:]) / 2.
+    source_histogram_2.data = {'x': center,
+                               'top': hist,
+                               'width': width}
+
 
 def update_roi_viewer_mrn():
     options = []
@@ -2163,6 +2181,12 @@ control_chart_lookback_units.on_change('value', update_control_chart_ticker)
 trend_update_button = Button(label="Update Trend", button_type="primary", width=150)
 trend_update_button.on_click(control_chart_update_trend)
 
+# histograms
+tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
+histograms = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
+histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_1, color='blue', alpha=0.4)
+histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_2, color='red', alpha=0.4)
+
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # ROI Viewer Objects
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2208,7 +2232,6 @@ roi_viewer.patch('x', 'y', source=source_roi5_viewer, color='lightgreen', alpha=
 roi_viewer.patch('x', 'y', source=source_tv, color='black', alpha=0.5)
 roi_viewer.xaxis.axis_label = "Lateral DICOM Coordinate (mm)"
 roi_viewer.yaxis.axis_label = "Anterior/Posterior DICOM Coordinate (mm)"
-wheel_attributes = ['delta']
 roi_viewer.on_event(events.MouseWheel, roi_viewer_wheel_event)
 roi_viewer_scrolling = CheckboxGroup(labels=["Enable Slice Scrolling with Mouse Wheel"], active=[0])
 
@@ -2252,7 +2275,8 @@ layout_planning_data = column(rxs_table_title,
 layout_trending = column(control_chart_title,
                          row(control_chart_y, control_chart_lookback_units, control_chart_text_lookback_distance,
                              control_chart_percentile, trend_update_button),
-                         control_chart)
+                         control_chart,
+                         histograms)
 
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
