@@ -1576,23 +1576,18 @@ def control_chart_update_trend():
     else:
         histograms.xaxis.axis_label = x_var
 
-    update_histogram_1()
-    update_histogram_2()
+    update_histograms()
 
 
-def histogram_1_slider_ticker(attr, old, new):
-    update_histogram_1()
+def histograms_bin_count_slider_ticker(attr, old, new):
+    update_histograms()
 
 
-def histogram_2_slider_ticker(attr, old, new):
-    update_histogram_2()
-
-
-def update_histogram_1():
-    global group_1
+def update_histograms():
+    global group_1, group_2
 
     # Update Histograms
-    bin_size = histogram_bin_count_slider_1.value
+    bin_size = histogram_bin_slider.value
     width_fraction = 0.9
 
     hist, bins = np.histogram(group_1['y'], bins=bin_size)
@@ -1601,14 +1596,6 @@ def update_histogram_1():
     source_histogram_1.data = {'x': center,
                                'top': hist,
                                'width': width}
-
-
-def update_histogram_2():
-    global group_2
-
-    # Update Histograms
-    bin_size = histogram_bin_count_slider_2.value
-    width_fraction = 0.9
 
     hist, bins = np.histogram(group_2['y'], bins=bin_size)
     width = [width_fraction * (bins[1] - bins[0])] * bin_size
@@ -2222,10 +2209,8 @@ histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogr
 histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_2, color='red', alpha=0.3)
 histograms.xaxis.axis_label = ""
 histograms.yaxis.axis_label = "Counts"
-histogram_bin_count_slider_1 = Slider(start=0, end=100, value=10, step=1, title="Blue Bin Count")
-histogram_bin_count_slider_2 = Slider(start=0, end=100, value=10, step=1, title="Red Bin Count")
-histogram_bin_count_slider_1.on_change('value', histogram_1_slider_ticker)
-histogram_bin_count_slider_2.on_change('value', histogram_2_slider_ticker)
+histogram_bin_slider = Slider(start=0, end=100, value=10, step=1, title="Bin Count")
+histogram_bin_slider.on_change('value', histograms_bin_count_slider_ticker)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # ROI Viewer Objects
@@ -2316,7 +2301,7 @@ layout_trending = column(control_chart_title,
                          row(control_chart_y, control_chart_lookback_units, control_chart_text_lookback_distance,
                              control_chart_percentile, trend_update_button),
                          control_chart,
-                         row(histogram_bin_count_slider_1, histogram_bin_count_slider_2),
+                         row(histogram_bin_slider),
                          histograms)
 
 query_tab = Panel(child=layout_query, title='Query')
