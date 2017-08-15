@@ -1577,6 +1577,31 @@ def control_chart_update_trend():
     else:
         histograms.xaxis.axis_label = x_var
 
+    # Normal Test for Blue Group
+    if group_1['y']:
+        s1, p1 = normaltest(group_1['y'])
+        p1 = "%0.3f" % p1
+    else:
+        p1 = ''
+
+    # Normal Test for Red Group
+    if group_2['y']:
+        s2, p2 = normaltest(group_2['y'])
+        p2 = "%0.3f" % p2
+    else:
+        p2 = ''
+
+    # t-Test
+    if group_1['y'] and group_2['y']:
+        s, p = ttest_ind(group_1['y'], group_2['y'])
+        p = "%0.3f" % p
+    else:
+        p = ''
+
+    histogram_normaltest_1_text.text = "<b>Blue Group Normal Test p-value =</b> %s" % p1
+    histogram_normaltest_2_text.text = "<b>Red  Group Normal Test p-value =</b> %s" % p2
+    histogram_ttest_text.text = "<b>t-Test p-value =</b> %s" % p
+
     update_histograms()
 
 
@@ -1604,21 +1629,6 @@ def update_histograms():
     source_histogram_2.data = {'x': center,
                                'top': hist,
                                'width': width}
-
-    if group_1['y']:
-        s1, p1 = normaltest(group_1['y'])
-        p1 = "%0.3f" % p1
-    else:
-        p1 = ''
-
-    if group_2['y']:
-        s2, p2 = normaltest(group_2['y'])
-        p2 = "%0.3f" % p2
-    else:
-        p2 = ''
-
-    histogram_normaltest_1_text.text = "<b>Blue Group Normal Test p-value =</b> %s" % p1
-    histogram_normaltest_2_text.text = "<b>Red  Group Normal Test p-value =</b> %s" % p2
 
 
 def update_roi_viewer_mrn():
@@ -2229,6 +2239,7 @@ histogram_bin_slider = Slider(start=1, end=100, value=10, step=1, title="Bin Cou
 histogram_bin_slider.on_change('value', histograms_bin_count_slider_ticker)
 histogram_normaltest_1_text = Div(text="<b>Blue Group Normal Test p-value = </b>")
 histogram_normaltest_2_text = Div(text="<b>Red Group Normal Test p-value = </b>")
+histogram_ttest_text = Div(text="<b>t-Test p-value =</b>")
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # ROI Viewer Objects
@@ -2322,6 +2333,7 @@ layout_trending = column(control_chart_title,
                          row(histogram_bin_slider),
                          histogram_normaltest_1_text,
                          histogram_normaltest_2_text,
+                         histogram_ttest_text,
                          histograms)
 
 query_tab = Panel(child=layout_query, title='Query')
