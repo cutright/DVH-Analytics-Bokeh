@@ -1567,6 +1567,8 @@ def control_chart_update_trend():
         source_time_patch_2.data = {'x': [],
                                     'y': []}
 
+
+    # Update Histograms
     bin_size = 10
 
     hist, bins = np.histogram(group_1['y'], bins=bin_size)
@@ -1582,6 +1584,12 @@ def control_chart_update_trend():
     source_histogram_2.data = {'x': center,
                                'top': hist,
                                'width': width}
+
+    x_var = control_chart_y.value
+    if range_categories[x_var]['units']:
+        histograms.xaxis.axis_label = x_var + " (" + range_categories[x_var]['units'] + ")"
+    else:
+        histograms.xaxis.axis_label = x_var
 
 
 def update_roi_viewer_mrn():
@@ -2184,8 +2192,10 @@ trend_update_button.on_click(control_chart_update_trend)
 # histograms
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
 histograms = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
-histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_1, color='blue', alpha=0.4)
-histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_2, color='red', alpha=0.4)
+histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_1, color='blue', alpha=0.3)
+histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_2, color='red', alpha=0.3)
+histograms.xaxis.axis_label = ""
+histograms.yaxis.axis_label = "Counts"
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # ROI Viewer Objects
