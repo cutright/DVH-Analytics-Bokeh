@@ -90,8 +90,8 @@ source_roi3_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi4_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi5_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_tv = ColumnDataSource(data=dict(x=[], y=[]))
-source_histogram_1 = ColumnDataSource(data=dict(x=[], top=[], width=[]))
-source_histogram_2 = ColumnDataSource(data=dict(x=[], top=[], width=[]))
+source_histogram_1 = ColumnDataSource(data=dict(x=[], top=[], width=[], color=[]))
+source_histogram_2 = ColumnDataSource(data=dict(x=[], top=[], width=[], color=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -1372,6 +1372,9 @@ def update_control_chart():
         if new.startswith('DVH Endpoint'):
             y_var_name = 'ep' + str(new[-1])
             y_source_values = endpoint_data[y_var_name]
+            # source.data[y_var_name] always returns source.data['ep1'] values?
+            # even printing source.data['ep2'] explicitly yields 'ep1' values.
+            # endpoint_data created to work around this. Bug?
             y_source_uids = source.data['uid']
             y_source_mrns = source.data['mrn']
             control_chart.yaxis.axis_label = source_endpoint_names.data[y_var_name][0]
@@ -1494,64 +1497,143 @@ def moving_avg(xyw, avg_len):
 
 def control_chart_update_trend():
     global group_1, group_2
+    if control_chart_y.value:
+        selected_indices = source_time.selected['1d']['indices']
 
-    selected_indices = source_time.selected['1d']['indices']
+        if not selected_indices:
+            selected_indices = range(0, len(source_time.data['x']))
 
-    if not selected_indices:
-        selected_indices = range(0, len(source_time.data['x']))
+        selected = {'x': [], 'y': [], 'color': []}
+        for i in range(0, len(source_time.data['x'])):
+            if i in selected_indices:
+                selected['x'].append(source_time.data['x'][i])
+                selected['y'].append(source_time.data['y'][i])
+                selected['color'].append(source_time.data['color'][i])
 
-    selected = {'x': [], 'y': [], 'color': []}
-    for i in range(0, len(source_time.data['x'])):
-        if i in selected_indices:
-            selected['x'].append(source_time.data['x'][i])
-            selected['y'].append(source_time.data['y'][i])
-            selected['color'].append(source_time.data['color'][i])
+        # group data in blue and red groups (group 1 and 2, respectively)
+        group_1 = {'x': [], 'y': []}
+        group_2 = {'x': [], 'y': []}
+        for i in range(0, len(selected['x'])):
+            if selected['color'][i] in {'purple'}:
+                group_1['x'].append(selected['x'][i])
+                group_1['y'].append(selected['y'][i])
+                group_2['x'].append(selected['x'][i])
+                group_2['y'].append(selected['y'][i])
+            elif selected['color'][i] in {'blue'}:
+                group_1['x'].append(selected['x'][i])
+                group_1['y'].append(selected['y'][i])
+            elif selected['color'][i] in {'red'}:
+                group_2['x'].append(selected['x'][i])
+                group_2['y'].append(selected['y'][i])
 
-    # group data in blue and red groups (group 1 and 2, respectively)
-    group_1 = {'x': [], 'y': []}
-    group_2 = {'x': [], 'y': []}
-    for i in range(0, len(selected['x'])):
-        if selected['color'][i] in {'purple'}:
-            group_1['x'].append(selected['x'][i])
-            group_1['y'].append(selected['y'][i])
-            group_2['x'].append(selected['x'][i])
-            group_2['y'].append(selected['y'][i])
-        elif selected['color'][i] in {'blue'}:
-            group_1['x'].append(selected['x'][i])
-            group_1['y'].append(selected['y'][i])
-        elif selected['color'][i] in {'red'}:
-            group_2['x'].append(selected['x'][i])
-            group_2['y'].append(selected['y'][i])
+        try:
+            avg_len = int(control_chart_text_lookback_distance.value)
+        except:
+            avg_len = 1
 
-    try:
-        avg_len = int(control_chart_text_lookback_distance.value)
-    except:
-        avg_len = 1
+        try:
+            percentile = float(control_chart_percentile.value)
+        except:
+            percentile = 90.
 
-    try:
-        percentile = float(control_chart_percentile.value)
-    except:
-        percentile = 90.
+        # average daily data and keep track of points per day, calculate moving average
+        if group_1['x']:
+            group_1_collapsed = collapse_into_single_dates(group_1['x'], group_1['y'])
+            x_trend_1, moving_avgs_1 = moving_avg(group_1_collapsed, avg_len)
 
-    # average daily data and keep track of points per day, calculate moving average
-    if group_1['x']:
-        group_1_collapsed = collapse_into_single_dates(group_1['x'], group_1['y'])
-        x_trend_1, moving_avgs_1 = moving_avg(group_1_collapsed, avg_len)
+            y_np_1 = np.array(group_1['y'])
+            upper_bound_1 = float(np.percentile(y_np_1, 50. + percentile / 2.))
+            average_1 = float(np.percentile(y_np_1, 50))
+            lower_bound_1 = float(np.percentile(y_np_1, 50. - percentile / 2.))
+            source_time_trend_1.data = {'x': x_trend_1,
+                                        'y': moving_avgs_1,
+                                        'mrn': ['Avg'] * len(x_trend_1)}
+            source_time_bound_1.data = {'x': selected['x'],
+                                        'mrn': ['Bound'] * len(selected['x']),
+                                        'upper': [upper_bound_1] * len(selected['x']),
+                                        'avg': [average_1] * len(selected['x']),
+                                        'lower': [lower_bound_1] * len(selected['x'])}
+            source_time_patch_1.data = {'x': [selected['x'][0], selected['x'][-1], selected['x'][-1], selected['x'][0]],
+                                        'y': [upper_bound_1, upper_bound_1, lower_bound_1, lower_bound_1]}
+        else:
+            source_time_trend_1.data = {'x': [],
+                                        'y': [],
+                                        'mrn': []}
+            source_time_bound_1.data = {'x': [],
+                                        'mrn': [],
+                                        'upper': [],
+                                        'avg': [],
+                                        'lower': []}
+            source_time_patch_1.data = {'x': [],
+                                        'y': []}
+        if group_2['x']:
+            group_2_collapsed = collapse_into_single_dates(group_2['x'], group_2['y'])
+            x_trend_2, moving_avgs_2 = moving_avg(group_2_collapsed, avg_len)
 
-        y_np_1 = np.array(group_1['y'])
-        upper_bound_1 = float(np.percentile(y_np_1, 50. + percentile / 2.))
-        average_1 = float(np.percentile(y_np_1, 50))
-        lower_bound_1 = float(np.percentile(y_np_1, 50. - percentile / 2.))
-        source_time_trend_1.data = {'x': x_trend_1,
-                                    'y': moving_avgs_1,
-                                    'mrn': ['Avg'] * len(x_trend_1)}
-        source_time_bound_1.data = {'x': selected['x'],
-                                    'mrn': ['Bound'] * len(selected['x']),
-                                    'upper': [upper_bound_1] * len(selected['x']),
-                                    'avg': [average_1] * len(selected['x']),
-                                    'lower': [lower_bound_1] * len(selected['x'])}
-        source_time_patch_1.data = {'x': [selected['x'][0], selected['x'][-1], selected['x'][-1], selected['x'][0]],
-                                    'y': [upper_bound_1, upper_bound_1, lower_bound_1, lower_bound_1]}
+            y_np_2 = np.array(group_2['y'])
+            upper_bound_2 = float(np.percentile(y_np_2, 50. + percentile / 2.))
+            average_2 = float(np.percentile(y_np_2, 50))
+            lower_bound_2 = float(np.percentile(y_np_2, 50. - percentile / 2.))
+            source_time_trend_2.data = {'x': x_trend_2,
+                                        'y': moving_avgs_2,
+                                        'mrn': ['Avg'] * len(x_trend_2)}
+            source_time_bound_2.data = {'x': selected['x'],
+                                        'mrn': ['Bound'] * len(selected['x']),
+                                        'upper': [upper_bound_2] * len(selected['x']),
+                                        'avg': [average_2] * len(selected['x']),
+                                        'lower': [lower_bound_2] * len(selected['x'])}
+            source_time_patch_2.data = {'x': [selected['x'][0], selected['x'][-1], selected['x'][-1], selected['x'][0]],
+                                        'y': [upper_bound_2,  upper_bound_2, lower_bound_2, lower_bound_2]}
+        else:
+            source_time_trend_2.data = {'x': [],
+                                        'y': [],
+                                        'mrn': []}
+            source_time_bound_2.data = {'x': [],
+                                        'mrn': [],
+                                        'upper': [],
+                                        'avg': [],
+                                        'lower': []}
+            source_time_patch_2.data = {'x': [],
+                                        'y': []}
+        x_var = str(control_chart_y.value)
+        if x_var.startswith('DVH Endpoint'):
+            x_var_name = "ep%s" % x_var[-1]
+            histograms.xaxis.axis_label = source_endpoint_names.data[x_var_name][0]
+        else:
+            if range_categories[x_var]['units']:
+                histograms.xaxis.axis_label = "%s (%s)" % (x_var, range_categories[x_var]['units'])
+            else:
+                histograms.xaxis.axis_label = x_var
+
+        # Normal Test for Blue Group
+        if group_1['y']:
+            s1, p1 = normaltest(group_1['y'])
+            p1 = "%0.3f" % p1
+        else:
+            p1 = ''
+
+        # Normal Test for Red Group
+        if group_2['y']:
+            s2, p2 = normaltest(group_2['y'])
+            p2 = "%0.3f" % p2
+        else:
+            p2 = ''
+
+        # t-Test and Rank Sums
+        if group_1['y'] and group_2['y']:
+            st, pt = ttest_ind(group_1['y'], group_2['y'])
+            sr, pr = ranksums(group_1['y'], group_2['y'])
+            pt = "%0.3f" % pt
+            pr = "%0.3f" % pr
+        else:
+            pt = ''
+            pr = ''
+
+        histogram_normaltest_1_text.text = "Blue Group Normal Test p-value = %s" % p1
+        histogram_normaltest_2_text.text = "Red  Group Normal Test p-value = %s" % p2
+        histogram_ttest_text.text = "Two Sample t-Test (Blue vs Red) p-value = %s" % pt
+        histogram_ranksums_text.text = "Wilcoxon rank-sum (Blue vs Red) p-value = %s" % pr
+
     else:
         source_time_trend_1.data = {'x': [],
                                     'y': [],
@@ -1563,25 +1645,7 @@ def control_chart_update_trend():
                                     'lower': []}
         source_time_patch_1.data = {'x': [],
                                     'y': []}
-    if group_2['x']:
-        group_2_collapsed = collapse_into_single_dates(group_2['x'], group_2['y'])
-        x_trend_2, moving_avgs_2 = moving_avg(group_2_collapsed, avg_len)
 
-        y_np_2 = np.array(group_2['y'])
-        upper_bound_2 = float(np.percentile(y_np_2, 50. + percentile / 2.))
-        average_2 = float(np.percentile(y_np_2, 50))
-        lower_bound_2 = float(np.percentile(y_np_2, 50. - percentile / 2.))
-        source_time_trend_2.data = {'x': x_trend_2,
-                                    'y': moving_avgs_2,
-                                    'mrn': ['Avg'] * len(x_trend_2)}
-        source_time_bound_2.data = {'x': selected['x'],
-                                    'mrn': ['Bound'] * len(selected['x']),
-                                    'upper': [upper_bound_2] * len(selected['x']),
-                                    'avg': [average_2] * len(selected['x']),
-                                    'lower': [lower_bound_2] * len(selected['x'])}
-        source_time_patch_2.data = {'x': [selected['x'][0], selected['x'][-1], selected['x'][-1], selected['x'][0]],
-                                    'y': [upper_bound_2,  upper_bound_2, lower_bound_2, lower_bound_2]}
-    else:
         source_time_trend_2.data = {'x': [],
                                     'y': [],
                                     'mrn': []}
@@ -1592,40 +1656,10 @@ def control_chart_update_trend():
                                     'lower': []}
         source_time_patch_2.data = {'x': [],
                                     'y': []}
-    x_var = str(control_chart_y.value)
-    if x_var.startswith('DVH Endpoint'):
-        x_var_name = "ep%s" % x_var[-1]
-        histograms.xaxis.axis_label = source_endpoint_names.data[x_var_name][0]
-    else:
-        if range_categories[x_var]['units']:
-            histograms.xaxis.axis_label = "%s (%s)" % (x_var, range_categories[x_var]['units'])
-        else:
-            histograms.xaxis.axis_label = x_var
-
-    # Normal Test for Blue Group
-    if group_1['y']:
-        s1, p1 = normaltest(group_1['y'])
-        p1 = "%0.3f" % p1
-    else:
-        p1 = ''
-
-    # Normal Test for Red Group
-    if group_2['y']:
-        s2, p2 = normaltest(group_2['y'])
-        p2 = "%0.3f" % p2
-    else:
-        p2 = ''
-
-    # t-Test
-    if group_1['y'] and group_2['y']:
-        s, p = ttest_ind(group_1['y'], group_2['y'])
-        p = "%0.3f" % p
-    else:
-        p = ''
-
-    histogram_normaltest_1_text.text = "<b>Blue Group Normal Test p-value =</b> %s" % p1
-    histogram_normaltest_2_text.text = "<b>Red  Group Normal Test p-value =</b> %s" % p2
-    histogram_ttest_text.text = "<b>t-Test p-value =</b> %s" % p
+        histogram_normaltest_1_text.text = "Blue Group Normal Test p-value = "
+        histogram_normaltest_2_text.text = "Red  Group Normal Test p-value = "
+        histogram_ttest_text.text = "Two Sample t-Test (Blue vs Red) p-value = "
+        histogram_ranksums_text.text = "Wilcoxon rank-sum (Blue vs Red) p-value = "
 
     update_histograms()
 
@@ -1637,23 +1671,37 @@ def histograms_bin_count_slider_ticker(attr, old, new):
 def update_histograms():
     global group_1, group_2
 
-    # Update Histograms
-    bin_size = histogram_bin_slider.value
-    width_fraction = 0.9
+    if control_chart_y.value != '':
 
-    hist, bins = np.histogram(group_1['y'], bins=bin_size)
-    width = [width_fraction * (bins[1] - bins[0])] * bin_size
-    center = (bins[:-1] + bins[1:]) / 2.
-    source_histogram_1.data = {'x': center,
-                               'top': hist,
-                               'width': width}
+        # Update Histograms
+        bin_size = histogram_bin_slider.value
+        width_fraction = 0.9
 
-    hist, bins = np.histogram(group_2['y'], bins=bin_size)
-    width = [width_fraction * (bins[1] - bins[0])] * bin_size
-    center = (bins[:-1] + bins[1:]) / 2.
-    source_histogram_2.data = {'x': center,
-                               'top': hist,
-                               'width': width}
+        hist, bins = np.histogram(group_1['y'], bins=bin_size)
+        width = [width_fraction * (bins[1] - bins[0])] * bin_size
+        center = (bins[:-1] + bins[1:]) / 2.
+        source_histogram_1.data = {'x': center,
+                                   'top': hist,
+                                   'width': width,
+                                   'color': ['blue'] * len(center)}
+
+        hist, bins = np.histogram(group_2['y'], bins=bin_size)
+        width = [width_fraction * (bins[1] - bins[0])] * bin_size
+        center = (bins[:-1] + bins[1:]) / 2.
+        source_histogram_2.data = {'x': center,
+                                   'top': hist,
+                                   'width': width,
+                                   'color': ['red'] * len(center)}
+    else:
+        source_histogram_1.data = {'x': [],
+                                   'top': [],
+                                   'width': [],
+                                   'color': []}
+
+        source_histogram_2.data = {'x': [],
+                                   'top': [],
+                                   'width': [],
+                                   'color': []}
 
 
 def update_roi_viewer_mrn():
@@ -2262,11 +2310,17 @@ histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogr
 histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_2, color='red', alpha=0.3)
 histograms.xaxis.axis_label = ""
 histograms.yaxis.axis_label = "Counts"
-histogram_bin_slider = Slider(start=1, end=100, value=10, step=1, title="Bin Count")
+histogram_bin_slider = Slider(start=1, end=100, value=10, step=1, title="Number of Bins")
 histogram_bin_slider.on_change('value', histograms_bin_count_slider_ticker)
-histogram_normaltest_1_text = Div(text="<b>Blue Group Normal Test p-value = </b>", width=300)
-histogram_normaltest_2_text = Div(text="<b>Red Group Normal Test p-value = </b>", width=300)
-histogram_ttest_text = Div(text="<b>t-Test p-value =</b>", width=300)
+histogram_normaltest_1_text = Div(text="Blue Group Normal Test p-value = ", width=400)
+histogram_normaltest_2_text = Div(text="Red Group Normal Test p-value = ", width=400)
+histogram_ttest_text = Div(text="Two Sample t-Test (Blue vs Red) p-value = ", width=400)
+histogram_ranksums_text = Div(text="Wilcoxon rank-sum (Blue vs Red) p-value = ", width=400)
+histograms.add_tools(HoverTool(show_arrow=True,
+                               line_policy='next',
+                               tooltips=[('Color', '@color'),
+                                         ('x', '@x{0.2f}'),
+                                         ('Counts', '@top')]))
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # ROI Viewer Objects
@@ -2358,7 +2412,8 @@ layout_trending = column(control_chart_title,
                              control_chart_percentile, trend_update_button),
                          control_chart,
                          row(histogram_bin_slider),
-                         row(histogram_normaltest_1_text, histogram_normaltest_2_text, histogram_ttest_text),
+                         row(histogram_normaltest_1_text, histogram_ttest_text),
+                         row(histogram_normaltest_2_text, histogram_ranksums_text),
                          histograms)
 
 query_tab = Panel(child=layout_query, title='Query')
