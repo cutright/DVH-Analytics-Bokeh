@@ -678,8 +678,7 @@ def update_query_columns():
     # new_options.pop(new_options.index('study_instance_uid'))
     if query_table.value.lower() == 'dvhs':
         new_options.pop(new_options.index('dvh_string'))
-        # new_options.pop(new_options.index('roi_coord_string'))
-        # new_options.pop(new_options.index('distances_to_ptv'))
+        new_options.pop(new_options.index('roi_coord_string'))
     options_tuples = []
     for option in new_options:
         options_tuples.append(tuple([option, option]))
@@ -692,17 +691,11 @@ def update_update_db_columns_ticker(attr, old, new):
 
 
 def update_update_db_column():
+    new_options = DVH_SQL().get_column_names(update_db_table.value.lower())
+    new_options.pop(new_options.index('import_time_stamp'))
     if update_db_table.value.lower() == 'dvhs':
-        new_options = ['mrn', 'study_instance_uid', 'institutional_roi', 'physician_roi', 'roi_name', 'roi_type']
-    elif update_db_table.value.lower() == 'plans':
-        new_options = ['mrn', 'study_instance_uid', 'age', 'birth_date', 'fxs', 'patient_sex', 'physician', 'rx_dose',
-                       'sim_study_date', 'tx_modality', 'tx_site']
-    elif update_db_table.value.lower() == 'rxs':
-        new_options = ['mrn', 'study_instance_uid', 'plan_name', 'rx_dose', 'rx_percent']
-    elif update_db_table.value.lower() == 'beams':
-        new_options = ['mrn', 'study_instance_uid']
-    else:
-        new_options = ['']
+        new_options.pop(new_options.index('dvh_string'))
+        new_options.pop(new_options.index('roi_coord_string'))
 
     update_db_column.options = new_options
     update_db_column.value = new_options[0]
@@ -1263,7 +1256,7 @@ rebuild_db_button = Button(label='Rebuild database', button_type='warning', widt
 rebuild_db_button.on_click(rebuild_db_button_click)
 
 query_title = Div(text="<b>Query Database</b>", width=1000)
-query_table = Select(value='DVHs', options=['DVHs', 'Plans', 'Rxs', 'Beams'], width=200, height=100, title='Table')
+query_table = Select(value='DVHs', options=['DVHs', 'Plans', 'Rxs', 'Beams'], width=200, title='Table')
 query_columns = MultiSelect(title="Columns (Ctrl or Shift Click enabled)", width=250, options=[tuple(['', ''])])
 query_condition = TextInput(value='', title="Condition", width=300)
 query_button = Button(label='Query', button_type='primary', width=100)

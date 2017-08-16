@@ -620,7 +620,7 @@ def update_min_distances_in_db(study_instance_uid, roi_name):
                              "study_instance_uid = '%s' and roi_name = '%s'"
                              % (study_instance_uid, roi_name))
         except:
-            pass
+            print('dist_to_ptv calculation failure, skipping')
 
 
 def update_treatment_volume_overlap_in_db(study_instance_uid, roi_name):
