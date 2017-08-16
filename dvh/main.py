@@ -38,6 +38,7 @@ update_warning = True
 query_row = []
 query_row_type = []
 endpoint_columns = {}
+endpoint_data = {'ep1': [], 'ep2': [], 'ep3': [], 'ep4': [], 'ep5': [], 'ep6': [], 'ep7': [], 'ep8': []}
 x = []
 y = []
 uids_1, uids_2 = [], []
@@ -1015,6 +1016,7 @@ def update_rx_data(uids):
 # note that endpoint ColumnSourceData exits in dvh data ColumnSourceData (i.e.,
 # the main ColumnSourceData variable, or 'source')
 def update_endpoint_data(dvh, dvh_group_1, dvh_group_2):
+    global endpoint_data
     group_1_count, group_2_count = group_count()
     if group_1_count > 0 and group_2_count > 0:
         extra_rows = 12
@@ -1034,7 +1036,10 @@ def update_endpoint_data(dvh, dvh_group_1, dvh_group_2):
     for i in range(0, len(query_row)):
         if query_row_type[i] == 'endpoint' and counter < 8:
             output_unit = ['Gy', 'cc']
-            x = float(query_row[i].text_input.value)
+            try:
+                x = float(query_row[i].text_input.value)
+            except:
+                x = 0.
             x_for_text = x
             if query_row[i].units.active == 0:
                 endpoint_input = 'relative'
@@ -1103,6 +1108,15 @@ def update_endpoint_data(dvh, dvh_group_1, dvh_group_2):
                'ep6': tuple_list[5],
                'ep7': tuple_list[6],
                'ep8': tuple_list[7]}
+
+    endpoint_data = {'ep1': endpoints_map[0],
+                     'ep2': endpoints_map[1],
+                     'ep3': endpoints_map[2],
+                     'ep4': endpoints_map[3],
+                     'ep5': endpoints_map[4],
+                     'ep6': endpoints_map[5],
+                     'ep7': endpoints_map[6],
+                     'ep8': endpoints_map[7]}
 
     source.patch(patches)
 
@@ -1289,15 +1303,15 @@ def calculate_review_dvh():
 
 def group_count():
     global query_row, query_row_type
-    group_1 = 0
-    group_2 = 0
+    group_1_count = 0
+    group_2_count = 0
     for i in range(0, len(query_row)):
         if query_row_type[i] in {'selector', 'range'}:
             if 0 in query_row[i].pop_grp.active:
-                group_1 += 1
+                group_1_count += 1
             if 1 in query_row[i].pop_grp.active:
-                group_2 += 1
-    return group_1, group_2
+                group_2_count += 1
+    return group_1_count, group_2_count
 
 
 def select_reviewed_dvh_ticker(attr, old, new):
@@ -1346,7 +1360,7 @@ def collapse_into_single_dates(x, y):
 
 
 def update_control_chart():
-    new = control_chart_y.value
+    new = str(control_chart_y.value)
     if new:
 
         # reset selection
@@ -1355,18 +1369,26 @@ def update_control_chart():
                     '2d': {'indices': {}}}
         source_time.selected = selected
 
-        y_source = range_categories[new]['source']
-        y_var_name = range_categories[new]['var_name']
-        y_source_values = y_source.data[y_var_name]
-        y_source_uids = y_source.data['uid']
-        y_source_mrns = y_source.data['mrn']
+        if new.startswith('DVH Endpoint'):
+            y_var_name = 'ep' + str(new[-1])
+            y_source_values = endpoint_data[y_var_name]
+            y_source_uids = source.data['uid']
+            y_source_mrns = source.data['mrn']
+            control_chart.yaxis.axis_label = source_endpoint_names.data[y_var_name][0]
+        else:
+            y_source = range_categories[new]['source']
+            y_var_name = range_categories[new]['var_name']
+            y_source_values = y_source.data[y_var_name]
+            y_source_uids = y_source.data['uid']
+            y_source_mrns = y_source.data['mrn']
+
+            if range_categories[new]['units']:
+                control_chart.yaxis.axis_label = "%s (%s)" % (new, range_categories[new]['units'])
+            else:
+                control_chart.yaxis.axis_label = new
+
         sim_study_dates = source_plans.data['sim_study_date']
         sim_study_dates_uids = source_plans.data['uid']
-
-        if range_categories[new]['units']:
-            control_chart.yaxis.axis_label = new + " (" + range_categories[new]['units'] + ")"
-        else:
-            control_chart.yaxis.axis_label = new
 
         x_values = []
         skipped = []
@@ -1570,12 +1592,15 @@ def control_chart_update_trend():
                                     'lower': []}
         source_time_patch_2.data = {'x': [],
                                     'y': []}
-
-    x_var = control_chart_y.value
-    if range_categories[x_var]['units']:
-        histograms.xaxis.axis_label = x_var + " (" + range_categories[x_var]['units'] + ")"
+    x_var = str(control_chart_y.value)
+    if x_var.startswith('DVH Endpoint'):
+        x_var_name = "ep%s" % x_var[-1]
+        histograms.xaxis.axis_label = source_endpoint_names.data[x_var_name][0]
     else:
-        histograms.xaxis.axis_label = x_var
+        if range_categories[x_var]['units']:
+            histograms.xaxis.axis_label = "%s (%s)" % (x_var, range_categories[x_var]['units'])
+        else:
+            histograms.xaxis.axis_label = x_var
 
     # Normal Test for Blue Group
     if group_1['y']:
@@ -2182,7 +2207,7 @@ query_row.append(row(update_button, main_add_selector_button, main_add_range_but
 query_row_type.append('main')
 
 # Control Chart layout
-tools = "pan,wheel_zoom,box_zoom,lasso_select,reset,crosshair,save"
+tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
 control_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None,
                        active_drag="box_zoom", x_axis_type='datetime')
 control_chart.circle('x', 'y', size=10, color='color', alpha=0.25, source=source_time)
@@ -2206,7 +2231,9 @@ control_chart.xaxis.axis_label = "Simulation Date"
 control_chart.yaxis.axis_label = ""
 
 control_chart_title = Div(text="<b>Range-Variable Trending</b>", width=1000)
-control_chart_options = range_categories.keys()
+control_chart_options = range_categories.keys() + ['DVH Endpoint 1', 'DVH Endpoint 2', 'DVH Endpoint 3',
+                                                   'DVH Endpoint 4', 'DVH Endpoint 5', 'DVH Endpoint 6',
+                                                   'DVH Endpoint 7', 'DVH Endpoint 8']
 control_chart_options.sort()
 control_chart_options.append('')
 control_chart_y = Select(value=control_chart_options[-1], options=control_chart_options, width=300)
@@ -2237,9 +2264,9 @@ histograms.xaxis.axis_label = ""
 histograms.yaxis.axis_label = "Counts"
 histogram_bin_slider = Slider(start=1, end=100, value=10, step=1, title="Bin Count")
 histogram_bin_slider.on_change('value', histograms_bin_count_slider_ticker)
-histogram_normaltest_1_text = Div(text="<b>Blue Group Normal Test p-value = </b>")
-histogram_normaltest_2_text = Div(text="<b>Red Group Normal Test p-value = </b>")
-histogram_ttest_text = Div(text="<b>t-Test p-value =</b>")
+histogram_normaltest_1_text = Div(text="<b>Blue Group Normal Test p-value = </b>", width=300)
+histogram_normaltest_2_text = Div(text="<b>Red Group Normal Test p-value = </b>", width=300)
+histogram_ttest_text = Div(text="<b>t-Test p-value =</b>", width=300)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # ROI Viewer Objects
@@ -2331,9 +2358,7 @@ layout_trending = column(control_chart_title,
                              control_chart_percentile, trend_update_button),
                          control_chart,
                          row(histogram_bin_slider),
-                         histogram_normaltest_1_text,
-                         histogram_normaltest_2_text,
-                         histogram_ttest_text,
+                         row(histogram_normaltest_1_text, histogram_normaltest_2_text, histogram_ttest_text),
                          histograms)
 
 query_tab = Panel(child=layout_query, title='Query')
