@@ -7,7 +7,7 @@ if (cb_obj.get('value') == 'all' || cb_obj.get('value') == 'lite') {
 
     var data = source.data;
     var ep_names = source_endpoint_names.data;
-    filetext = 'DVH Data\nmrn,uid,roi_name,roi_type,rx_dose,volume,surface_area,min_dose,mean_dose,max_dose,eud,a,dist_to_ptv_min,dist_to_ptv_mean,dist_to_ptv_median,dist_to_ptv_max';
+    filetext = 'DVH Data\nmrn,uid,roi_name,roi_type,rx_dose,volume,surface_area,min_dose,mean_dose,max_dose,eud,a,dist_to_ptv_min,dist_to_ptv_mean,dist_to_ptv_median,dist_to_ptv_max,';
     ep_names_string = [ep_names['ep1'][0].toString(),
                        ep_names['ep2'][0].toString(),
                        ep_names['ep3'][0].toString(),
