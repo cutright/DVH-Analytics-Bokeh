@@ -77,6 +77,8 @@ source_rxs = ColumnDataSource(data=dict())
 source_endpoint_names = ColumnDataSource(data=dict(ep1=[], ep2=[], ep3=[], ep4=[], ep5=[], ep6=[], ep7=[], ep8=[]))
 source_endpoints = ColumnDataSource(data=dict())
 source_time = ColumnDataSource(data=dict(x=[], y=[], mrn=[], color=[]))
+source_time_1 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
+source_time_2 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
 source_time_trend_1 = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
 source_time_trend_2 = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
 source_time_collapsed = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
@@ -1463,16 +1465,32 @@ def update_control_chart():
             y_mrns_sorted.append(y_mrns[sort_index[s]])
             colors_sorted.append(colors[sort_index[s]])
 
+        source_time_1_data = {'x': [], 'y': [], 'mrn': []}
+        source_time_2_data = {'x': [], 'y': [], 'mrn': []}
+        for i in range(0, len(x_values_sorted)):
+            if colors_sorted[i] in {'blue', 'purple'}:
+                source_time_1_data['x'].append(x_values_sorted[i])
+                source_time_1_data['y'].append(y_values_sorted[i])
+                source_time_1_data['mrn'].append(y_mrns_sorted[i])
+            if colors_sorted[i] in {'red', 'purple'}:
+                source_time_2_data['x'].append(x_values_sorted[i])
+                source_time_2_data['y'].append(y_values_sorted[i])
+                source_time_2_data['mrn'].append(y_mrns_sorted[i])
+
         source_time.data = {'x': x_values_sorted,
                             'y': y_values_sorted,
                             'mrn': y_mrns_sorted,
                             'color': colors_sorted}
+        source_time_1.data = source_time_1_data
+        source_time_2.data = source_time_2_data
     else:
         source_time.data = {'x': [],
                             'y': [],
                             'mrn': [],
                             'color': [],
                             'avg': []}
+        source_time_1.data = {'x': [], 'y': [], 'mrn': []}
+        source_time_2.data = {'x': [], 'y': [], 'mrn': []}
 
     control_chart_update_trend()
 
@@ -1983,7 +2001,7 @@ def roi_viewer_wheel_event(event):
 # set up layout
 
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
-dvh_plots = figure(plot_width=1000, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
+dvh_plots = figure(plot_width=1050, plot_height=500, tools=tools, logo=None, active_drag="box_zoom")
 dvh_plots.add_tools(HoverTool(show_arrow=False,
                               line_policy='next',
                               tooltips=[('Label', '@mrn @roi_name'),
@@ -1991,17 +2009,6 @@ dvh_plots.add_tools(HoverTool(show_arrow=False,
                                         ('Volume', '$y')]))
 
 # Add statistical plots to figure
-# stats_min = dvh_plots.line('x', 'min',
-#                            source=source_stats_1,
-#                            line_width=2,
-#                            color='black',
-#                            line_dash='dotted',
-#                            alpha=0.2)
-# stats_q1 = dvh_plots.line('x', 'q1',
-#                           source=source_stats_1,
-#                           line_width=0.5,
-#                           color='black',
-#                           alpha=0.2)
 stats_median_1 = dvh_plots.line('x', 'median',
                                 source=source_stats_1,
                                 line_width=1,
@@ -2014,17 +2021,6 @@ stats_mean_1 = dvh_plots.line('x', 'mean',
                               color='blue',
                               line_dash='dashed',
                               alpha=0.5)
-# stats_q3 = dvh_plots.line('x', 'q3',
-#                           source=source_stats_1,
-#                           line_width=0.5,
-#                           color='black',
-#                           alpha=0.2)
-# stats_max = dvh_plots.line('x', 'max',
-#                            source=source_stats_1,
-#                            line_width=2,
-#                            color='black',
-#                            line_dash='dotted',
-#                            alpha=0.2)
 stats_median_2 = dvh_plots.line('x', 'median',
                                 source=source_stats_2,
                                 line_width=1,
@@ -2049,29 +2045,21 @@ dvh_plots.multi_line('x', 'y',
 
 
 # Shaded region between Q1 and Q3
-dvh_plots.patch('x_patch', 'y_patch',
-                source=source_patch_1,
-                alpha=0.15)
-dvh_plots.patch('x_patch', 'y_patch',
-                source=source_patch_2,
-                alpha=0.075,
-                color='red')
+iqr_1 = dvh_plots.patch('x_patch', 'y_patch', source=source_patch_1, alpha=0.075, color='blue')
+iqr_2 = dvh_plots.patch('x_patch', 'y_patch', source=source_patch_2, alpha=0.075, color='red')
 
 # Set x and y axis labels
 dvh_plots.xaxis.axis_label = "Dose (Gy)"
 dvh_plots.yaxis.axis_label = "Normalized Volume"
 
 # Set the legend (for stat dvhs only)
-legend_stats = Legend(items=[
-        # ("Max", [stats_max]),
-        # ("Q3", [stats_q3]),
-        ("Median", [stats_median_1]),
-        ("Mean", [stats_mean_1]),
-        # ("Q1", [stats_q1]),
-        # ("Min", [stats_min])
-        ("Median", [stats_median_2]),
-        ("Mean", [stats_mean_2]),
-    ], location=(0, -250))
+legend_stats = Legend(items=[("Median", [stats_median_1]),
+                             ("Mean", [stats_mean_1]),
+                             ("IQR", [iqr_1]),
+                             ("Median", [stats_median_2]),
+                             ("Mean", [stats_mean_2]),
+                             ("IQR", [iqr_2])],
+                      location=(25, 0))
 
 # Add the layout outside the plot, clicking legend item hides the line
 dvh_plots.add_layout(legend_stats, 'right')
@@ -2258,17 +2246,18 @@ query_row_type.append('main')
 tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
 control_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None,
                        active_drag="box_zoom", x_axis_type='datetime')
-control_chart.circle('x', 'y', size=10, color='color', alpha=0.25, source=source_time)
-control_chart.line('x', 'y', color='blue', source=source_time_trend_1)
-control_chart.line('x', 'upper', color='blue', source=source_time_bound_1, line_dash='dashed')
-control_chart.line('x', 'avg', color='blue', source=source_time_bound_1, line_dash='dotted')
-control_chart.line('x', 'lower', color='blue', source=source_time_bound_1, line_dash='dashed')
-control_chart.line('x', 'y', color='red', source=source_time_trend_2)
-control_chart.line('x', 'upper', color='red', source=source_time_bound_2, line_dash='dashed')
-control_chart.line('x', 'avg', color='red', source=source_time_bound_2, line_dash='dotted')
-control_chart.line('x', 'lower', color='red', source=source_time_bound_2, line_dash='dashed')
-control_chart.patch('x', 'y', color='blue', source=source_time_patch_1, alpha=0.1)
-control_chart.patch('x', 'y', color='red', source=source_time_patch_2, alpha=0.1)
+control_chart_data_1 = control_chart.circle('x', 'y', size=10, color='blue', alpha=0.25, source=source_time_1)
+control_chart_data_2 = control_chart.circle('x', 'y', size=10, color='red', alpha=0.25, source=source_time_2)
+control_chart_trend_1 = control_chart.line('x', 'y', color='blue', source=source_time_trend_1)
+# control_chart.line('x', 'upper', color='blue', source=source_time_bound_1, line_dash='dashed')
+control_chart_avg_1 = control_chart.line('x', 'avg', color='blue', source=source_time_bound_1, line_dash='dotted')
+# control_chart.line('x', 'lower', color='blue', source=source_time_bound_1, line_dash='dashed')
+control_chart_trend_2 = control_chart.line('x', 'y', color='red', source=source_time_trend_2)
+# control_chart.line('x', 'upper', color='red', source=source_time_bound_2, line_dash='dashed')
+control_chart_avg_2 = control_chart.line('x', 'avg', color='red', source=source_time_bound_2, line_dash='dotted')
+# control_chart.line('x', 'lower', color='red', source=source_time_bound_2, line_dash='dashed')
+control_chart_patch_1 = control_chart.patch('x', 'y', color='blue', source=source_time_patch_1, alpha=0.1)
+control_chart_patch_2 = control_chart.patch('x', 'y', color='red', source=source_time_patch_2, alpha=0.1)
 control_chart.add_tools(HoverTool(show_arrow=True,
                                   tooltips=[('ID', '@mrn'),
                                             ('Date', '@x{%F}'),
@@ -2276,6 +2265,20 @@ control_chart.add_tools(HoverTool(show_arrow=True,
                                   formatters={'x': 'datetime'}))
 control_chart.xaxis.axis_label = "Simulation Date"
 control_chart.yaxis.axis_label = ""
+# Set the legend
+legend_control_chart = Legend(items=[("Blue Group", [control_chart_data_1]),
+                                     ("Series Average", [control_chart_avg_1]),
+                                     ("Rolling Average", [control_chart_trend_1]),
+                                     ("Percentile Region", [control_chart_patch_1]),
+                                     ("Red Group", [control_chart_data_2]),
+                                     ("Series Average", [control_chart_avg_2]),
+                                     ("Rolling Average", [control_chart_trend_2]),
+                                     ("Percentile Region", [control_chart_patch_2]),],
+                              location=(25, 0),)
+
+# Add the layout outside the plot, clicking legend item hides the line
+control_chart.add_layout(legend_control_chart, 'right')
+control_chart.legend.click_policy = "hide"
 
 control_chart_title = Div(text="<b>Range-Variable Trending</b>", width=1000)
 control_chart_options = range_categories.keys() + ['DVH Endpoint 1', 'DVH Endpoint 2', 'DVH Endpoint 3',
@@ -2302,11 +2305,13 @@ control_chart_lookback_units.on_change('value', update_control_chart_ticker)
 trend_update_button = Button(label="Update Trend", button_type="primary", width=150)
 trend_update_button.on_click(control_chart_update_trend)
 
+div_horizontal_bar = Div(text="<hr>", width=1050)
+
 # histograms
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
 histograms = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
-histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_1, color='blue', alpha=0.3)
-histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_2, color='red', alpha=0.3)
+hist_1 = histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_1, color='blue', alpha=0.3)
+hist_2 = histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_2, color='red', alpha=0.3)
 histograms.xaxis.axis_label = ""
 histograms.yaxis.axis_label = "Counts"
 histogram_bin_slider = Slider(start=1, end=100, value=10, step=1, title="Number of Bins")
@@ -2317,9 +2322,16 @@ histogram_ttest_text = Div(text="Two Sample t-Test (Blue vs Red) p-value = ", wi
 histogram_ranksums_text = Div(text="Wilcoxon rank-sum (Blue vs Red) p-value = ", width=400)
 histograms.add_tools(HoverTool(show_arrow=True,
                                line_policy='next',
-                               tooltips=[('Color', '@color'),
-                                         ('x', '@x{0.2f}'),
+                               tooltips=[('x', '@x{0.2f}'),
                                          ('Counts', '@top')]))
+# Set the legend
+legend_hist = Legend(items=[("Blue Group", [hist_1]),
+                            ("Red Group", [hist_2])],
+                     location=(25, 0))
+
+# Add the layout outside the plot, clicking legend item hides the line
+histograms.add_layout(legend_hist, 'right')
+histograms.legend.click_policy = "hide"
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # ROI Viewer Objects
@@ -2410,6 +2422,7 @@ layout_trending = column(control_chart_title,
                          row(control_chart_y, control_chart_lookback_units, control_chart_text_lookback_distance,
                              control_chart_percentile, trend_update_button),
                          control_chart,
+                         div_horizontal_bar,
                          row(histogram_bin_slider),
                          row(histogram_normaltest_1_text, histogram_ttest_text),
                          row(histogram_normaltest_2_text, histogram_ranksums_text),
