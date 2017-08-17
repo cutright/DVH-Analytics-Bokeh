@@ -318,7 +318,8 @@ def dicompyler_roi_coord_to_db_string(coord):
 
 
 def surface_area_of_roi(coord):
-
+    # This function does not account for axial area in between top and bottom slices
+    # Needs a rewrite
     """
 
     :param coord: dicompyler structure coordinates from GetStructureCoordinates()
@@ -330,14 +331,13 @@ def surface_area_of_roi(coord):
     all_z_values = np.sort(all_z_values)
     thicknesses = np.abs(np.diff(all_z_values))
     thicknesses = np.append(thicknesses, np.min(thicknesses))
-    first_slice = min(all_z_values)
-    final_slice = max(all_z_values)
+    first_slice = str(round(min(all_z_values), 2))
+    final_slice = str(round(max(all_z_values), 2))
     all_z_values = all_z_values.tolist()
 
     for z in coord:
         # z in coord will not necessarily go in order of z, convert z to float to lookup thickness
         # also used to check for top and bottom slices, to add area of those contours
-        z_value = round(float(z), 1)
         thickness = thicknesses[all_z_values.index(round(float(z), 1))]
 
         previous_contour = []
@@ -356,7 +356,7 @@ def surface_area_of_roi(coord):
                 surface_area += perimeter * thickness
 
                 # Account for top and bottom surfaces
-                if z_value in {first_slice, final_slice}:
+                if z in {first_slice, final_slice}:
                     # if current contour is contained within the previous contour, then current contour is a subtraction
                     # this is how DICOM handles ring structures
                     if previous_contour and not Point((points[0][0], points[0][1])).disjoint(previous_contour):

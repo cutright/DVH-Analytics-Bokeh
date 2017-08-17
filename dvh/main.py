@@ -2270,7 +2270,6 @@ control_chart.line('x', 'lower', color='red', source=source_time_bound_2, line_d
 control_chart.patch('x', 'y', color='blue', source=source_time_patch_1, alpha=0.1)
 control_chart.patch('x', 'y', color='red', source=source_time_patch_2, alpha=0.1)
 control_chart.add_tools(HoverTool(show_arrow=True,
-                                  line_policy='next',
                                   tooltips=[('ID', '@mrn'),
                                             ('Date', '@x{%F}'),
                                             ('Value', '@y{0.2f}')],
