@@ -37,6 +37,7 @@ group_1, group_2 = [], []
 update_warning = True
 query_row = []
 query_row_type = []
+anon_id_map = {}
 endpoint_columns = {}
 endpoint_data = {'ep1': [], 'ep2': [], 'ep3': [], 'ep4': [], 'ep5': [], 'ep6': [], 'ep7': [], 'ep8': []}
 x = []
@@ -643,7 +644,7 @@ def get_group_list(uids):
 # the functions to update beam, rx, and plans ColumnSourceData variables
 def update_dvh_data(dvh):
 
-    global uids_1, uids_2
+    global uids_1, uids_2, anon_id_map
 
     dvh_group_1 = []
     dvh_group_2 = []
@@ -870,8 +871,19 @@ def update_dvh_data(dvh):
     x_data.insert(0, [0])
     y_data.insert(0, [0])
 
+    # anonymize ids
+    anon_id_map = {}
+    anon_id = []
+    counter = 1
+    for mrn in dvh.mrn:
+        if mrn not in anon_id_map.keys():
+            anon_id_map[mrn] = counter
+            counter += 1
+        anon_id.append(anon_id_map[mrn])
+
     print(str(datetime.now()), 'writing source.data', sep=' ')
     source.data = {'mrn': dvh.mrn,
+                   'anon_id': anon_id,
                    'group': dvh_groups,
                    'uid': dvh.study_instance_uid,
                    'roi_institutional': dvh.institutional_roi,
@@ -2081,7 +2093,7 @@ columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="eud_a_value", title="a", width=80),
            TableColumn(field="dist_to_ptv_min", title="Dist to PTV", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="ptv_overlap", title="PTV Overlap", width=80, formatter=NumberFormatter(format="0.0"))]
-data_table = DataTable(source=source, columns=columns, width=1200)
+data_table = DataTable(source=source, columns=columns, width=1200, editable=True)
 
 # Set up EndPoint DataTable
 endpoint_table_title = Div(text="<b>DVH Endpoints</b>", width=1200)
@@ -2094,7 +2106,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=160),
            TableColumn(field="ep6", title=endpoint_columns[5], width=120),
            TableColumn(field="ep7", title=endpoint_columns[6], width=120),
            TableColumn(field="ep8", title=endpoint_columns[7], width=120)]
-data_table_endpoints = DataTable(source=source, columns=columns, width=1200)
+data_table_endpoints = DataTable(source=source, columns=columns, width=1200, editable=True)
 
 # Set up Beams DataTable
 beam_table_title = Div(text="<b>Beams</b>", width=1500)
@@ -2118,7 +2130,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=105),
            TableColumn(field="radiation_type", title="Rad. Type", width=80),
            TableColumn(field="ssd", title="SSD", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="treatment_machine", title="Tx Machine", width=80)]
-data_table_beams = DataTable(source=source_beams, columns=columns, width=1300)
+data_table_beams = DataTable(source=source_beams, columns=columns, width=1300, editable=True)
 beam_table_title2 = Div(text="<b>Beams Continued</b>", width=1500)
 columns = [TableColumn(field="mrn", title="MRN", width=105),
            TableColumn(field="group", title="Group", width=230),
@@ -2141,7 +2153,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=105),
            TableColumn(field="couch_range", title="Range", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="couch_min", title="Min", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="couch_max", title="Max", width=80, formatter=NumberFormatter(format="0.0"))]
-data_table_beams2 = DataTable(source=source_beams, columns=columns, width=1300)
+data_table_beams2 = DataTable(source=source_beams, columns=columns, width=1300, editable=True)
 
 # Set up Plans DataTable
 plans_table_title = Div(text="<b>Plans</b>", width=1200)
@@ -2161,7 +2173,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=420),
            TableColumn(field="tx_modality", title="Tx Modality"),
            TableColumn(field="tx_site", title="Tx Site"),
            TableColumn(field="baseline", title="Baseline")]
-data_table_plans = DataTable(source=source_plans, columns=columns, width=1300)
+data_table_plans = DataTable(source=source_plans, columns=columns, width=1300, editable=True)
 
 # Set up Rxs DataTable
 rxs_table_title = Div(text="<b>Rxs</b>", width=1000)
@@ -2177,7 +2189,7 @@ columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="fx_grp_name", title="Fx Grp Name"),
            TableColumn(field="normalization_method", title="Norm Method"),
            TableColumn(field="normalization_object", title="Norm Object")]
-data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1300)
+data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1300, editable=True)
 
 # Setup axis normalization radio buttons
 radio_group_dose = RadioGroup(labels=["Absolute Dose", "Relative Dose (Rx)"], active=0, width=200)
@@ -2215,7 +2227,7 @@ update_button = Button(label="Perform Query", button_type="success", width=360)
 update_button.on_click(update_data)
 
 # define Download button and call download.js on click
-menu = [("All Data", "all"), ("Lite", "lite"), ("Only DVHs", "dvhs")]
+menu = [("All Data", "all"), ("Lite", "lite"), ("Only DVHs", "dvhs"), ("Anonymized DVHs", "anon_dvhs")]
 download_dropdown = Dropdown(label="Download", button_type="default", menu=menu, width=100)
 download_dropdown.callback = CustomJS(args=dict(source=source,
                                                 source_rxs=source_rxs,

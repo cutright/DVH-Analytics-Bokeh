@@ -702,7 +702,7 @@ def update_update_db_column():
 
 
 def update_query_source():
-    db_editor_layout.children.pop()
+
     columns = query_columns.value
     if 'mrn' not in columns:
         columns.insert(0, 'mrn')
@@ -725,22 +725,25 @@ def update_query_source():
         for i in range(0, len(columns)):
             new_data[columns[i]].append(str(row[i]))
 
-    query_source.data = new_data
+    if new_data:
+        query_source.data = new_data
 
-    data_table_rxs_new = DataTable(source=query_source, columns=table_columns, width=table_slider.value, editable=True)
-    db_editor_layout.children.append(data_table_rxs_new)
+        data_table_rxs_new = DataTable(source=query_source, columns=table_columns, width=table_slider.value, editable=True)
+        db_editor_layout.children.pop()
+        db_editor_layout.children.append(data_table_rxs_new)
 
 
 def update_db():
-    update_db_button.label = 'Updating...'
-    update_db_button.button_type = 'danger'
-    update_value = update_db_value.value
-    if update_db_column.value in {'birth_date', 'sim_study_date'}:
-        update_value = update_value + "::date"
-    DVH_SQL().update(update_db_table.value, update_db_column.value, update_value, update_db_condition.value)
-    update_query_source()
-    update_db_button.label = 'Update'
-    update_db_button.button_type = 'warning'
+    if update_db_condition.value and update_db_value.value:
+        update_db_button.label = 'Updating...'
+        update_db_button.button_type = 'danger'
+        update_value = update_db_value.value
+        if update_db_column.value in {'birth_date', 'sim_study_date'}:
+            update_value = update_value + "::date"
+        DVH_SQL().update(update_db_table.value, update_db_column.value, update_value, update_db_condition.value)
+        update_query_source()
+        update_db_button.label = 'Update'
+        update_db_button.button_type = 'warning'
 
 
 def delete_from_db():
@@ -750,6 +753,23 @@ def delete_from_db():
         update_query_source()
         delete_from_db_value.value = ''
         delete_auth_text.value = ''
+
+
+def change_mrn_uid():
+    change_mrn_uid_button.label = 'Updating...'
+    change_mrn_uid_button.button_type = 'danger'
+    old = change_mrn_uid_old_value.value
+    new = change_mrn_uid_new_value.value
+    if old and new and old != new:
+        if change_mrn_uid_column.value == 'mrn':
+            DVH_SQL().change_mrn(old, new)
+        elif change_mrn_uid_column.value == 'study_instance_uid':
+            DVH_SQL().change_uid(old, new)
+    change_mrn_uid_old_value.value = ''
+    change_mrn_uid_new_value.value = ''
+    change_mrn_uid_button.label = 'Rename'
+    change_mrn_uid_button.button_type = 'warning'
+    update_query_source()
 
 
 def delete_auth_text_ticker(attr, old, new):
@@ -1289,6 +1309,14 @@ delete_auth_text = TextInput(value='', title="Type 'delete' here to authorize", 
 delete_auth_text.on_change('value', delete_auth_text_ticker)
 delete_from_db_button.on_click(delete_from_db)
 
+change_mrn_uid_title = Div(text="<b>Change mrn or study_instance_uid in all tables</b>", width=1000)
+change_mrn_uid_column = Select(value='mrn', options=['mrn', 'study_instance_uid'], width=200, height=100,
+                               title='Patient Identifier')
+change_mrn_uid_old_value = TextInput(value='', title="Old", width=300)
+change_mrn_uid_new_value = TextInput(value='', title="New", width=300)
+change_mrn_uid_button = Button(label='Rename', button_type='warning', width=100)
+change_mrn_uid_button.on_click(change_mrn_uid)
+
 calculations_title = Div(text="<b>Post Import Calculations</b>", width=1000)
 calculate_condition = TextInput(value='', title="Condition", width=300)
 calculate_ptv_dist_button = Button(label='Calc PTV Distances', button_type='primary', width=150)
@@ -1305,6 +1333,9 @@ db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [update_db_table, update_db_column, update_db_condition, update_db_value, update_db_button],
                            [delete_from_db_title],
                            [delete_from_db_column, delete_from_db_value, delete_auth_text, delete_from_db_button],
+                           [change_mrn_uid_title],
+                           [change_mrn_uid_column, change_mrn_uid_old_value,
+                            change_mrn_uid_new_value, change_mrn_uid_button],
                            [calculations_title],
                            [calculate_condition, calculate_ptv_dist_button, calculate_tv_overlap_button, calculate_ages_button],
                            [data_table_rxs]])

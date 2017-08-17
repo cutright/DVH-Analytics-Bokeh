@@ -34,6 +34,7 @@ class DVH_SQL:
 
         self.cnx = cnx
         self.cursor = cnx.cursor()
+        self.tables = ['DVHs', 'Plans', 'Rxs', 'Beams']
 
     def close(self):
         self.cnx.close()
@@ -277,14 +278,19 @@ class DVH_SQL:
 
     def delete_rows(self, condition_str):
 
-        self.cursor.execute('DELETE FROM Plans WHERE ' + condition_str + ';')
-        self.cnx.commit()
-        self.cursor.execute('DELETE FROM DVHs WHERE ' + condition_str + ';')
-        self.cnx.commit()
-        self.cursor.execute('DELETE FROM Rxs WHERE ' + condition_str + ';')
-        self.cnx.commit()
-        self.cursor.execute('DELETE FROM Beams WHERE ' + condition_str + ';')
-        self.cnx.commit()
+        for table in self.tables:
+            self.cursor.execute("DELETE FROM %s WHERE %s;" % (table, condition_str))
+            self.cnx.commit()
+
+    def change_mrn(self, old, new):
+        condition = "mrn = '%s'" % old
+        for table in self.tables:
+            self.update(table, 'mrn', new, condition)
+
+    def change_uid(self, old, new):
+        condition = "study_instance_uid = '%s'" % old
+        for table in self.tables:
+            self.update(table, 'study_instance_uid', new, condition)
 
     def delete_dvh(self, roi_name, study_instance_uid):
         self.cursor.execute("DELETE FROM DVHs WHERE roi_name = '" + roi_name +
@@ -293,11 +299,9 @@ class DVH_SQL:
 
     def drop_tables(self):
         print('Dropping tables')
-        self.cursor.execute('DROP TABLE IF EXISTS Plans;')
-        self.cursor.execute('DROP TABLE IF EXISTS DVHs;')
-        self.cursor.execute('DROP TABLE IF EXISTS Beams;')
-        self.cursor.execute('DROP TABLE IF EXISTS Rxs;')
-        self.cnx.commit()
+        for table in self.tables:
+            self.cursor.execute("DROP TABLE IF EXISTS %s;" % table)
+            self.cnx.commit()
 
     def initialize_database(self):
         print('Loading create_tables.sql')
