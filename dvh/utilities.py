@@ -445,7 +445,8 @@ def get_union(rois):
 
         current_slice = []
         for roi in rois:
-            if z in roi.keys():
+            # Make sure current roi has at least 3 points in z plane
+            if z in roi.keys() and len(roi[z][0]) > 2:
                 if not current_slice:
                     current_slice = points_to_shapely_polygon(roi[z])
                 else:
@@ -456,7 +457,6 @@ def get_union(rois):
                 current_slice = [current_slice]
 
             for polygon in current_slice:
-
                 xy = polygon.exterior.xy
                 x_coord, y_coord = xy[0], xy[1]
                 points = []
