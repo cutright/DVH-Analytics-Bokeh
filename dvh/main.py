@@ -150,11 +150,11 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
                     'ROI Mean Dose': {'var_name': 'mean_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
                     'ROI Max Dose': {'var_name': 'max_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
                     'ROI Volume': {'var_name': 'volume', 'table': 'DVHs', 'units': 'cc', 'source': source},
-                    'ROI Surface Area': {'var_name': 'surface_area', 'table': 'DVHs', 'units': 'cm^2', 'source': source},
                     'Distance to PTV Min': {'var_name': 'dist_to_ptv_min', 'table': 'DVHs', 'units': 'cm', 'source': source},
                     'Distance to PTV Mean': {'var_name': 'dist_to_ptv_mean', 'table': 'DVHs', 'units': 'cm', 'source': source},
                     'Distance to PTV Median': {'var_name': 'dist_to_ptv_median', 'table': 'DVHs', 'units': 'cm', 'source': source},
                     'Distance to PTV Max': {'var_name': 'dist_to_ptv_max', 'table': 'DVHs', 'units': 'cm', 'source': source},
+                    'PTV Overlap': {'var_name': 'ptv_overlap', 'table': 'DVHs', 'units': 'cc', 'source': source},
                     'Scan Spots': {'var_name': 'scan_spot_count', 'table': 'Beams', 'units': '', 'source': source_beams},
                     'Beam MU per deg': {'var_name': 'beam_mu_per_deg', 'table': 'Beams', 'units': '', 'source': source_beams},
                     'Beam MU per control point': {'var_name': 'beam_mu_per_cp', 'table': 'Beams', 'units': '', 'source': source_beams}}
@@ -1694,7 +1694,7 @@ def control_chart_update_trend():
     update_histograms()
 
 
-def histograms_bin_count_slider_ticker(attr, old, new):
+def histograms_ticker(attr, old, new):
     update_histograms()
 
 
@@ -1708,6 +1708,11 @@ def update_histograms():
         width_fraction = 0.9
 
         hist, bins = np.histogram(group_1['y'], bins=bin_size)
+        if histogram_radio_group.active == 1:
+            hist = np.divide(hist, np.float(np.max(hist)))
+            histograms.yaxis.axis_label = "Relative Frequency"
+        else:
+            histograms.yaxis.axis_label = "Frequency"
         width = [width_fraction * (bins[1] - bins[0])] * bin_size
         center = (bins[:-1] + bins[1:]) / 2.
         source_histogram_1.data = {'x': center,
@@ -1716,6 +1721,8 @@ def update_histograms():
                                    'color': ['blue'] * len(center)}
 
         hist, bins = np.histogram(group_2['y'], bins=bin_size)
+        if histogram_radio_group.active == 1:
+            hist = np.divide(hist, np.float(np.max(hist)))
         width = [width_fraction * (bins[1] - bins[0])] * bin_size
         center = (bins[:-1] + bins[1:]) / 2.
         source_histogram_2.data = {'x': center,
@@ -2292,20 +2299,17 @@ legend_control_chart = Legend(items=[("Blue Group", [control_chart_data_1]),
 control_chart.add_layout(legend_control_chart, 'right')
 control_chart.legend.click_policy = "hide"
 
-control_chart_title = Div(text="<b>Range-Variable Trending</b>", width=1000)
-control_chart_options = range_categories.keys() + ['DVH Endpoint 1', 'DVH Endpoint 2', 'DVH Endpoint 3',
-                                                   'DVH Endpoint 4', 'DVH Endpoint 5', 'DVH Endpoint 6',
-                                                   'DVH Endpoint 7', 'DVH Endpoint 8']
+control_chart_options = range_categories.keys()
 control_chart_options.sort()
 control_chart_options.append('')
 control_chart_y = Select(value=control_chart_options[-1], options=control_chart_options, width=300)
-control_chart_y.title = "Y Axis"
+control_chart_y.title = "Select a Range Variable"
 control_chart_y.on_change('value', update_control_chart_y_ticker)
 
-control_chart_text_lookback_distance = TextInput(value='1', title="Lookback Distance:", width=200)
+control_chart_text_lookback_distance = TextInput(value='1', title="Lookback Distance", width=200)
 control_chart_text_lookback_distance.on_change('value', update_control_chart_trend_ticker)
 
-control_chart_percentile = TextInput(value='90', title="Percentile:", width=200)
+control_chart_percentile = TextInput(value='90', title="Percentile", width=200)
 control_chart_percentile.on_change('value', update_control_chart_trend_ticker)
 
 lookback_units_options = ['Dates with a Sim', 'Days', 'Patients']
@@ -2325,9 +2329,11 @@ histograms = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, ac
 hist_1 = histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_1, color='blue', alpha=0.3)
 hist_2 = histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_2, color='red', alpha=0.3)
 histograms.xaxis.axis_label = ""
-histograms.yaxis.axis_label = "Counts"
+histograms.yaxis.axis_label = "Frequency"
 histogram_bin_slider = Slider(start=1, end=100, value=10, step=1, title="Number of Bins")
-histogram_bin_slider.on_change('value', histograms_bin_count_slider_ticker)
+histogram_bin_slider.on_change('value', histograms_ticker)
+histogram_radio_group = RadioGroup(labels=["Absolute Y-Axis", "Relative Y-Axis (to Group Max)"], active=0)
+histogram_radio_group.on_change('active', histograms_ticker)
 histogram_normaltest_1_text = Div(text="Blue Group Normal Test p-value = ", width=400)
 histogram_normaltest_2_text = Div(text="Red Group Normal Test p-value = ", width=400)
 histogram_ttest_text = Div(text="Two Sample t-Test (Blue vs Red) p-value = ", width=400)
@@ -2430,12 +2436,11 @@ layout_planning_data = column(rxs_table_title,
                               beam_table_title2,
                               data_table_beams2)
 
-layout_trending = column(control_chart_title,
-                         row(control_chart_y, control_chart_lookback_units, control_chart_text_lookback_distance,
+layout_trending = column(row(control_chart_y, control_chart_lookback_units, control_chart_text_lookback_distance,
                              control_chart_percentile, trend_update_button),
                          control_chart,
                          div_horizontal_bar,
-                         row(histogram_bin_slider),
+                         row(histogram_bin_slider, histogram_radio_group),
                          row(histogram_normaltest_1_text, histogram_ttest_text),
                          row(histogram_normaltest_2_text, histogram_ranksums_text),
                          histograms)
