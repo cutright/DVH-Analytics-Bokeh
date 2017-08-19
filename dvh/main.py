@@ -1376,125 +1376,7 @@ def collapse_into_single_dates(x, y):
 def update_control_chart():
     new = str(control_chart_y.value)
     if new:
-
-        # reset selection
-        selected = {'0d': {'glyph': None, 'indices': []},
-                    '1d': {'indices': []},
-                    '2d': {'indices': {}}}
-        source_time.selected = selected
-
-        if new.startswith('DVH Endpoint'):
-            y_var_name = 'ep' + str(new[-1])
-            y_source_values = endpoint_data[y_var_name]
-            # source.data[y_var_name] always returns source.data['ep1'] values?
-            # even printing source.data['ep2'] explicitly yields 'ep1' values.
-            # endpoint_data created to work around this. Bug?
-            y_source_uids = source.data['uid']
-            y_source_mrns = source.data['mrn']
-            control_chart.yaxis.axis_label = source_endpoint_names.data[y_var_name][0]
-        else:
-            y_source = range_categories[new]['source']
-            y_var_name = range_categories[new]['var_name']
-            y_source_values = y_source.data[y_var_name]
-            y_source_uids = y_source.data['uid']
-            y_source_mrns = y_source.data['mrn']
-
-            if range_categories[new]['units']:
-                control_chart.yaxis.axis_label = "%s (%s)" % (new, range_categories[new]['units'])
-            else:
-                control_chart.yaxis.axis_label = new
-
-        sim_study_dates = source_plans.data['sim_study_date']
-        sim_study_dates_uids = source_plans.data['uid']
-
-        x_values = []
-        skipped = []
-        colors = []
-        for v in range(0, len(y_source_values)):
-            uid = y_source_uids[v]
-            try:
-                sim_study_dates_index = sim_study_dates_uids.index(uid)
-                current_date_str = sim_study_dates[sim_study_dates_index]
-                if current_date_str == 'None':
-                    current_date = datetime.now()
-                else:
-                    current_date = datetime(int(current_date_str[0:4]),
-                                            int(current_date_str[5:7]),
-                                            int(current_date_str[8:10]))
-                x_values.append(current_date)
-                skipped.append(False)
-            except:
-                skipped.append(True)
-
-            if not skipped[-1]:
-                if current_dvh_group_1 and current_dvh_group_2:
-                    if uid in current_dvh_group_1.study_instance_uid and uid in current_dvh_group_2.study_instance_uid:
-                        if range_categories[control_chart_y.value]['source'] == source:
-                            for r in range(0, len(current_dvh.study_instance_uid)):
-
-                                current_uid = current_dvh.study_instance_uid[r]
-                                current_roi = current_dvh.roi_name[r]
-                                current_r_found = False
-
-                                for r1 in range(0, len(current_dvh_group_1.study_instance_uid)):
-                                    if current_dvh_group_1.study_instance_uid[r1] == current_uid and \
-                                                    current_dvh_group_1.roi_name[r1] == current_roi:
-                                        colors.append('blue')
-                                        current_r_found = True
-
-                                for r2 in range(0, len(current_dvh_group_2.study_instance_uid)):
-                                    if current_dvh_group_2.study_instance_uid[r2] == current_uid and \
-                                                    current_dvh_group_2.roi_name[r2] == current_roi:
-                                        if current_r_found:
-                                            colors[-1] = 'purple'
-                                        else:
-                                            colors.append('red')
-                        else:
-                            colors.append('purple')
-                    elif uid in current_dvh_group_1.study_instance_uid:
-                        colors.append('blue')
-                    else:
-                        colors.append('red')
-                elif current_dvh_group_1:
-                    colors.append('blue')
-                else:
-                    colors.append('red')
-
-        y_values = []
-        y_mrns = []
-        for v in range(0, len(y_source_values)):
-            if not skipped[v]:
-                y_values.append(y_source_values[v])
-                y_mrns.append(y_source_mrns[v])
-                if not isinstance(y_values[-1], (int, long, float)):
-                    y_values[-1] = 0
-
-        sort_index = sorted(range(len(x_values)), key=lambda k: x_values[k])
-        x_values_sorted, y_values_sorted, y_mrns_sorted, colors_sorted = [], [], [], []
-        for s in range(0, len(x_values)):
-            x_values_sorted.append(x_values[sort_index[s]])
-            y_values_sorted.append(y_values[sort_index[s]])
-            y_mrns_sorted.append(y_mrns[sort_index[s]])
-            colors_sorted.append(colors[sort_index[s]])
-
-        source_time_1_data = {'x': [], 'y': [], 'mrn': []}
-        source_time_2_data = {'x': [], 'y': [], 'mrn': []}
-        for i in range(0, len(x_values_sorted)):
-            if colors_sorted[i] in {'blue', 'purple'}:
-                source_time_1_data['x'].append(x_values_sorted[i])
-                source_time_1_data['y'].append(y_values_sorted[i])
-                source_time_1_data['mrn'].append(y_mrns_sorted[i])
-            if colors_sorted[i] in {'red', 'purple'}:
-                source_time_2_data['x'].append(x_values_sorted[i])
-                source_time_2_data['y'].append(y_values_sorted[i])
-                source_time_2_data['mrn'].append(y_mrns_sorted[i])
-
-        source_time.data = {'x': x_values_sorted,
-                            'y': y_values_sorted,
-                            'mrn': y_mrns_sorted,
-                            'color': colors_sorted}
-        source_time_1.data = source_time_1_data
-        source_time_2.data = source_time_2_data
+        update_trend_chart(new, source_time, source_time_1, source_time_2)
     else:
         source_time.data = {'x': [],
                             'y': [],
@@ -1505,6 +1387,127 @@ def update_control_chart():
         source_time_2.data = {'x': [], 'y': [], 'mrn': []}
 
     control_chart_update_trend()
+
+
+def update_trend_chart(new_y, s, s1, s2):
+    # reset selection
+    selected = {'0d': {'glyph': None, 'indices': []},
+                '1d': {'indices': []},
+                '2d': {'indices': {}}}
+    s.selected = selected
+
+    if new_y.startswith('DVH Endpoint'):
+        y_var_name = 'ep' + str(new_y[-1])
+        y_source_values = endpoint_data[y_var_name]
+        # source.data[y_var_name] always returns source.data['ep1'] values?
+        # even printing source.data['ep2'] explicitly yields 'ep1' values.
+        # endpoint_data created to work around this. Bug?
+        y_source_uids = source.data['uid']
+        y_source_mrns = source.data['mrn']
+        control_chart.yaxis.axis_label = source_endpoint_names.data[y_var_name][0]
+    else:
+        y_source = range_categories[new_y]['source']
+        y_var_name = range_categories[new_y]['var_name']
+        y_source_values = y_source.data[y_var_name]
+        y_source_uids = y_source.data['uid']
+        y_source_mrns = y_source.data['mrn']
+
+        if range_categories[new_y]['units']:
+            control_chart.yaxis.axis_label = "%s (%s)" % (new_y, range_categories[new_y]['units'])
+        else:
+            control_chart.yaxis.axis_label = new_y
+
+    sim_study_dates = source_plans.data['sim_study_date']
+    sim_study_dates_uids = source_plans.data['uid']
+
+    x_values = []
+    skipped = []
+    colors = []
+    for v in range(0, len(y_source_values)):
+        uid = y_source_uids[v]
+        try:
+            sim_study_dates_index = sim_study_dates_uids.index(uid)
+            current_date_str = sim_study_dates[sim_study_dates_index]
+            if current_date_str == 'None':
+                current_date = datetime.now()
+            else:
+                current_date = datetime(int(current_date_str[0:4]),
+                                        int(current_date_str[5:7]),
+                                        int(current_date_str[8:10]))
+            x_values.append(current_date)
+            skipped.append(False)
+        except:
+            skipped.append(True)
+
+        if not skipped[-1]:
+            if current_dvh_group_1 and current_dvh_group_2:
+                if uid in current_dvh_group_1.study_instance_uid and uid in current_dvh_group_2.study_instance_uid:
+                    if range_categories[control_chart_y.value]['source'] == source:
+                        for r in range(0, len(current_dvh.study_instance_uid)):
+
+                            current_uid = current_dvh.study_instance_uid[r]
+                            current_roi = current_dvh.roi_name[r]
+                            current_r_found = False
+
+                            for r1 in range(0, len(current_dvh_group_1.study_instance_uid)):
+                                if current_dvh_group_1.study_instance_uid[r1] == current_uid and \
+                                                current_dvh_group_1.roi_name[r1] == current_roi:
+                                    colors.append('blue')
+                                    current_r_found = True
+
+                            for r2 in range(0, len(current_dvh_group_2.study_instance_uid)):
+                                if current_dvh_group_2.study_instance_uid[r2] == current_uid and \
+                                                current_dvh_group_2.roi_name[r2] == current_roi:
+                                    if current_r_found:
+                                        colors[-1] = 'purple'
+                                    else:
+                                        colors.append('red')
+                    else:
+                        colors.append('purple')
+                elif uid in current_dvh_group_1.study_instance_uid:
+                    colors.append('blue')
+                else:
+                    colors.append('red')
+            elif current_dvh_group_1:
+                colors.append('blue')
+            else:
+                colors.append('red')
+
+    y_values = []
+    y_mrns = []
+    for v in range(0, len(y_source_values)):
+        if not skipped[v]:
+            y_values.append(y_source_values[v])
+            y_mrns.append(y_source_mrns[v])
+            if not isinstance(y_values[-1], (int, long, float)):
+                y_values[-1] = 0
+
+    sort_index = sorted(range(len(x_values)), key=lambda k: x_values[k])
+    x_values_sorted, y_values_sorted, y_mrns_sorted, colors_sorted = [], [], [], []
+    for q in range(0, len(x_values)):
+        x_values_sorted.append(x_values[sort_index[q]])
+        y_values_sorted.append(y_values[sort_index[q]])
+        y_mrns_sorted.append(y_mrns[sort_index[q]])
+        colors_sorted.append(colors[sort_index[q]])
+
+    s1_data = {'x': [], 'y': [], 'mrn': []}
+    s2_data = {'x': [], 'y': [], 'mrn': []}
+    for i in range(0, len(x_values_sorted)):
+        if colors_sorted[i] in {'blue', 'purple'}:
+            s1_data['x'].append(x_values_sorted[i])
+            s1_data['y'].append(y_values_sorted[i])
+            s1_data['mrn'].append(y_mrns_sorted[i])
+        if colors_sorted[i] in {'red', 'purple'}:
+            s2_data['x'].append(x_values_sorted[i])
+            s2_data['y'].append(y_values_sorted[i])
+            s2_data['mrn'].append(y_mrns_sorted[i])
+
+    s.data = {'x': x_values_sorted,
+              'y': y_values_sorted,
+              'mrn': y_mrns_sorted,
+              'color': colors_sorted}
+    s1.data = s1_data
+    s2.data = s2_data
 
 
 def moving_avg(xyw, avg_len):
@@ -1528,33 +1531,55 @@ def moving_avg(xyw, avg_len):
 def control_chart_update_trend():
     global group_1, group_2
     if control_chart_y.value:
-        selected_indices = source_time.selected['1d']['indices']
+        group_1, group_2, source_time_trend_1.data, source_time_trend_2.data, \
+        source_time_bound_1.data, source_time_bound_2.data, \
+        source_time_patch_1.data, source_time_patch_2.data = update_trend_chart_trend(group_1, group_2, source_time)
+    else:
+        source_time_trend_1.data = {'x': [], 'y': [], 'mrn': []}
+        source_time_bound_1.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+        source_time_patch_1.data = {'x': [], 'y': []}
+
+        source_time_trend_2.data = {'x': [], 'y': [], 'mrn': []}
+        source_time_bound_2.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+        source_time_patch_2.data = {'x': [], 'y': []}
+
+        histogram_normaltest_1_text.text = "Blue Group Normal Test p-value = "
+        histogram_normaltest_2_text.text = "Red  Group Normal Test p-value = "
+        histogram_ttest_text.text = "Two Sample t-Test (Blue vs Red) p-value = "
+        histogram_ranksums_text.text = "Wilcoxon rank-sum (Blue vs Red) p-value = "
+
+    update_histograms(group_1, group_2, source_histogram_1, source_histogram_2)
+
+
+def update_trend_chart_trend(grp1, grp2, s_time):
+    if control_chart_y.value:
+        selected_indices = s_time.selected['1d']['indices']
 
         if not selected_indices:
-            selected_indices = range(0, len(source_time.data['x']))
+            selected_indices = range(0, len(s_time.data['x']))
 
         selected = {'x': [], 'y': [], 'color': []}
-        for i in range(0, len(source_time.data['x'])):
+        for i in range(0, len(s_time.data['x'])):
             if i in selected_indices:
-                selected['x'].append(source_time.data['x'][i])
-                selected['y'].append(source_time.data['y'][i])
-                selected['color'].append(source_time.data['color'][i])
+                selected['x'].append(s_time.data['x'][i])
+                selected['y'].append(s_time.data['y'][i])
+                selected['color'].append(s_time.data['color'][i])
 
         # group data in blue and red groups (group 1 and 2, respectively)
-        group_1 = {'x': [], 'y': []}
-        group_2 = {'x': [], 'y': []}
+        grp1 = {'x': [], 'y': []}
+        grp2 = {'x': [], 'y': []}
         for i in range(0, len(selected['x'])):
             if selected['color'][i] in {'purple'}:
-                group_1['x'].append(selected['x'][i])
-                group_1['y'].append(selected['y'][i])
-                group_2['x'].append(selected['x'][i])
-                group_2['y'].append(selected['y'][i])
+                grp1['x'].append(selected['x'][i])
+                grp1['y'].append(selected['y'][i])
+                grp2['x'].append(selected['x'][i])
+                grp2['y'].append(selected['y'][i])
             elif selected['color'][i] in {'blue'}:
-                group_1['x'].append(selected['x'][i])
-                group_1['y'].append(selected['y'][i])
+                grp1['x'].append(selected['x'][i])
+                grp1['y'].append(selected['y'][i])
             elif selected['color'][i] in {'red'}:
-                group_2['x'].append(selected['x'][i])
-                group_2['y'].append(selected['y'][i])
+                grp2['x'].append(selected['x'][i])
+                grp2['y'].append(selected['y'][i])
 
         try:
             avg_len = int(control_chart_text_lookback_distance.value)
@@ -1567,64 +1592,50 @@ def control_chart_update_trend():
             percentile = 90.
 
         # average daily data and keep track of points per day, calculate moving average
-        if group_1['x']:
-            group_1_collapsed = collapse_into_single_dates(group_1['x'], group_1['y'])
-            x_trend_1, moving_avgs_1 = moving_avg(group_1_collapsed, avg_len)
+        if grp1['x']:
+            grp1_collapsed = collapse_into_single_dates(grp1['x'], grp1['y'])
+            x_trend_1, moving_avgs_1 = moving_avg(grp1_collapsed, avg_len)
 
-            y_np_1 = np.array(group_1['y'])
+            y_np_1 = np.array(grp1['y'])
             upper_bound_1 = float(np.percentile(y_np_1, 50. + percentile / 2.))
             average_1 = float(np.percentile(y_np_1, 50))
             lower_bound_1 = float(np.percentile(y_np_1, 50. - percentile / 2.))
-            source_time_trend_1.data = {'x': x_trend_1,
-                                        'y': moving_avgs_1,
-                                        'mrn': ['Avg'] * len(x_trend_1)}
-            source_time_bound_1.data = {'x': selected['x'],
-                                        'mrn': ['Bound'] * len(selected['x']),
-                                        'upper': [upper_bound_1] * len(selected['x']),
-                                        'avg': [average_1] * len(selected['x']),
-                                        'lower': [lower_bound_1] * len(selected['x'])}
-            source_time_patch_1.data = {'x': [selected['x'][0], selected['x'][-1], selected['x'][-1], selected['x'][0]],
-                                        'y': [upper_bound_1, upper_bound_1, lower_bound_1, lower_bound_1]}
+            trend_1 = {'x': x_trend_1,
+                       'y': moving_avgs_1,
+                       'mrn': ['Avg'] * len(x_trend_1)}
+            bound_1 = {'x': selected['x'],
+                       'mrn': ['Bound'] * len(selected['x']),
+                       'upper': [upper_bound_1] * len(selected['x']),
+                       'avg': [average_1] * len(selected['x']),
+                       'lower': [lower_bound_1] * len(selected['x'])}
+            patch_1 = {'x': [selected['x'][0], selected['x'][-1], selected['x'][-1], selected['x'][0]],
+                       'y': [upper_bound_1, upper_bound_1, lower_bound_1, lower_bound_1]}
         else:
-            source_time_trend_1.data = {'x': [],
-                                        'y': [],
-                                        'mrn': []}
-            source_time_bound_1.data = {'x': [],
-                                        'mrn': [],
-                                        'upper': [],
-                                        'avg': [],
-                                        'lower': []}
-            source_time_patch_1.data = {'x': [],
-                                        'y': []}
-        if group_2['x']:
-            group_2_collapsed = collapse_into_single_dates(group_2['x'], group_2['y'])
-            x_trend_2, moving_avgs_2 = moving_avg(group_2_collapsed, avg_len)
+            trend_1 = {'x': [], 'y': [], 'mrn': []}
+            bound_1 = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+            patch_1 = {'x': [], 'y': []}
+        if grp2['x']:
+            grp2_collapsed = collapse_into_single_dates(grp2['x'], grp2['y'])
+            x_trend_2, moving_avgs_2 = moving_avg(grp2_collapsed, avg_len)
 
-            y_np_2 = np.array(group_2['y'])
+            y_np_2 = np.array(grp2['y'])
             upper_bound_2 = float(np.percentile(y_np_2, 50. + percentile / 2.))
             average_2 = float(np.percentile(y_np_2, 50))
             lower_bound_2 = float(np.percentile(y_np_2, 50. - percentile / 2.))
-            source_time_trend_2.data = {'x': x_trend_2,
-                                        'y': moving_avgs_2,
-                                        'mrn': ['Avg'] * len(x_trend_2)}
-            source_time_bound_2.data = {'x': selected['x'],
-                                        'mrn': ['Bound'] * len(selected['x']),
-                                        'upper': [upper_bound_2] * len(selected['x']),
-                                        'avg': [average_2] * len(selected['x']),
-                                        'lower': [lower_bound_2] * len(selected['x'])}
-            source_time_patch_2.data = {'x': [selected['x'][0], selected['x'][-1], selected['x'][-1], selected['x'][0]],
-                                        'y': [upper_bound_2,  upper_bound_2, lower_bound_2, lower_bound_2]}
+            trend_2 = {'x': x_trend_2,
+                       'y': moving_avgs_2,
+                       'mrn': ['Avg'] * len(x_trend_2)}
+            bound_2 = {'x': selected['x'],
+                       'mrn': ['Bound'] * len(selected['x']),
+                       'upper': [upper_bound_2] * len(selected['x']),
+                       'avg': [average_2] * len(selected['x']),
+                       'lower': [lower_bound_2] * len(selected['x'])}
+            patch_2 = {'x': [selected['x'][0], selected['x'][-1], selected['x'][-1], selected['x'][0]],
+                       'y': [upper_bound_2,  upper_bound_2, lower_bound_2, lower_bound_2]}
         else:
-            source_time_trend_2.data = {'x': [],
-                                        'y': [],
-                                        'mrn': []}
-            source_time_bound_2.data = {'x': [],
-                                        'mrn': [],
-                                        'upper': [],
-                                        'avg': [],
-                                        'lower': []}
-            source_time_patch_2.data = {'x': [],
-                                        'y': []}
+            trend_2 = {'x': [], 'y': [], 'mrn': []}
+            bound_2 = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+            patch_2 = {'x': [], 'y': []}
         x_var = str(control_chart_y.value)
         if x_var.startswith('DVH Endpoint'):
             x_var_name = "ep%s" % x_var[-1]
@@ -1636,70 +1647,55 @@ def control_chart_update_trend():
                 histograms.xaxis.axis_label = x_var
 
         # Normal Test for Blue Group
-        if group_1['y']:
-            s1, p1 = normaltest(group_1['y'])
-            p1 = "%0.3f" % p1
+        if grp1['y']:
+            stat1, pval1 = normaltest(grp1['y'])
+            pval1 = "%0.3f" % pval1
         else:
-            p1 = ''
+            pval1 = ''
 
         # Normal Test for Red Group
-        if group_2['y']:
-            s2, p2 = normaltest(group_2['y'])
-            p2 = "%0.3f" % p2
+        if grp2['y']:
+            stat2, pval2 = normaltest(grp2['y'])
+            pval2 = "%0.3f" % pval2
         else:
-            p2 = ''
+            pval2 = ''
 
         # t-Test and Rank Sums
-        if group_1['y'] and group_2['y']:
-            st, pt = ttest_ind(group_1['y'], group_2['y'])
-            sr, pr = ranksums(group_1['y'], group_2['y'])
-            pt = "%0.3f" % pt
-            pr = "%0.3f" % pr
+        if grp1['y'] and grp2['y']:
+            statt, pvalt = ttest_ind(grp1['y'], grp2['y'])
+            statr, pvalr = ranksums(grp1['y'], grp2['y'])
+            pvalt = "%0.3f" % pvalt
+            pvalr = "%0.3f" % pvalr
         else:
-            pt = ''
-            pr = ''
+            pvalt = ''
+            pvalr = ''
 
-        histogram_normaltest_1_text.text = "Blue Group Normal Test p-value = %s" % p1
-        histogram_normaltest_2_text.text = "Red  Group Normal Test p-value = %s" % p2
-        histogram_ttest_text.text = "Two Sample t-Test (Blue vs Red) p-value = %s" % pt
-        histogram_ranksums_text.text = "Wilcoxon rank-sum (Blue vs Red) p-value = %s" % pr
+        histogram_normaltest_1_text.text = "Blue Group Normal Test p-value = %s" % pval1
+        histogram_normaltest_2_text.text = "Red  Group Normal Test p-value = %s" % pval2
+        histogram_ttest_text.text = "Two Sample t-Test (Blue vs Red) p-value = %s" % pvalt
+        histogram_ranksums_text.text = "Wilcoxon rank-sum (Blue vs Red) p-value = %s" % pvalr
 
     else:
-        source_time_trend_1.data = {'x': [],
-                                    'y': [],
-                                    'mrn': []}
-        source_time_bound_1.data = {'x': [],
-                                    'mrn': [],
-                                    'upper': [],
-                                    'avg': [],
-                                    'lower': []}
-        source_time_patch_1.data = {'x': [],
-                                    'y': []}
+        trend_1 = {'x': [], 'y': [], 'mrn': []}
+        bound_1 = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+        patch_1 = {'x': [], 'y': []}
 
-        source_time_trend_2.data = {'x': [],
-                                    'y': [],
-                                    'mrn': []}
-        source_time_bound_2.data = {'x': [],
-                                    'mrn': [],
-                                    'upper': [],
-                                    'avg': [],
-                                    'lower': []}
-        source_time_patch_2.data = {'x': [],
-                                    'y': []}
+        trend_1 = {'x': [], 'y': [], 'mrn': []}
+        bound_2 = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+        patch_2 = {'x': [], 'y': []}
         histogram_normaltest_1_text.text = "Blue Group Normal Test p-value = "
         histogram_normaltest_2_text.text = "Red  Group Normal Test p-value = "
         histogram_ttest_text.text = "Two Sample t-Test (Blue vs Red) p-value = "
         histogram_ranksums_text.text = "Wilcoxon rank-sum (Blue vs Red) p-value = "
 
-    update_histograms()
+    return grp1, grp2, trend_1, trend_2, bound_1, bound_2, patch_1, patch_2
 
 
 def histograms_ticker(attr, old, new):
-    update_histograms()
+    update_histograms(group_1, group_2, source_histogram_1, source_histogram_2)
 
 
-def update_histograms():
-    global group_1, group_2
+def update_histograms(grp1, grp2, s_hist_1, s_hist_2):
 
     if control_chart_y.value != '':
 
@@ -1707,7 +1703,7 @@ def update_histograms():
         bin_size = histogram_bin_slider.value
         width_fraction = 0.9
 
-        hist, bins = np.histogram(group_1['y'], bins=bin_size)
+        hist, bins = np.histogram(grp1['y'], bins=bin_size)
         if histogram_radio_group.active == 1:
             hist = np.divide(hist, np.float(np.max(hist)))
             histograms.yaxis.axis_label = "Relative Frequency"
@@ -1715,30 +1711,17 @@ def update_histograms():
             histograms.yaxis.axis_label = "Frequency"
         width = [width_fraction * (bins[1] - bins[0])] * bin_size
         center = (bins[:-1] + bins[1:]) / 2.
-        source_histogram_1.data = {'x': center,
-                                   'top': hist,
-                                   'width': width,
-                                   'color': ['blue'] * len(center)}
+        s_hist_1.data = {'x': center, 'top': hist, 'width': width, 'color': ['blue'] * len(center)}
 
-        hist, bins = np.histogram(group_2['y'], bins=bin_size)
+        hist, bins = np.histogram(grp2['y'], bins=bin_size)
         if histogram_radio_group.active == 1:
             hist = np.divide(hist, np.float(np.max(hist)))
         width = [width_fraction * (bins[1] - bins[0])] * bin_size
         center = (bins[:-1] + bins[1:]) / 2.
-        source_histogram_2.data = {'x': center,
-                                   'top': hist,
-                                   'width': width,
-                                   'color': ['red'] * len(center)}
+        s_hist_2.data = {'x': center, 'top': hist, 'width': width, 'color': ['red'] * len(center)}
     else:
-        source_histogram_1.data = {'x': [],
-                                   'top': [],
-                                   'width': [],
-                                   'color': []}
-
-        source_histogram_2.data = {'x': [],
-                                   'top': [],
-                                   'width': [],
-                                   'color': []}
+        s_hist_1.data = {'x': [], 'top': [], 'width': [], 'color': []}
+        s_hist_2.data = {'x': [], 'top': [], 'width': [], 'color': []}
 
 
 def update_roi_viewer_mrn():
