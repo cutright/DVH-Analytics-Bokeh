@@ -273,6 +273,8 @@ def dose_to_volume(dvh, volume, *roi_volume):
 def volume_of_dose(dvh, dose):
 
     x = [int(np.floor(dose * 100)), int(np.ceil(dose * 100))]
+    if len(dvh) < x[1]:
+        return dvh[-1]
     y = [dvh[x[0]], dvh[x[1]]]
     roi_volume = np.interp(float(dose), x, y)
 
