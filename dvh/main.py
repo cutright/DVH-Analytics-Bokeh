@@ -33,7 +33,7 @@ colors = itertools.cycle(palette)
 current_dvh = []
 current_dvh_group_1 = []
 current_dvh_group_2 = []
-group_1, group_2 = [], []
+group_1, group_2, group_1a_ep, group_2a_ep, group_1b_ep, group_2b_ep = [], [], [], [], [], []
 update_warning = True
 query_row = []
 query_row_type = []
@@ -87,6 +87,26 @@ source_time_bound_1 = ColumnDataSource(data=dict(x=[], upper=[], avg=[], lower=[
 source_time_bound_2 = ColumnDataSource(data=dict(x=[], upper=[], avg=[], lower=[], mrn=[]))
 source_time_patch_1 = ColumnDataSource(data=dict(x=[], y=[]))
 source_time_patch_2 = ColumnDataSource(data=dict(x=[], y=[]))
+source_ep_time_a = ColumnDataSource(data=dict(x=[], y=[], mrn=[], color=[]))
+source_ep_time_1a = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
+source_ep_time_1b = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
+source_ep_time_b = ColumnDataSource(data=dict(x=[], y=[], mrn=[], color=[]))
+source_ep_time_2a = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
+source_ep_time_2b = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
+source_ep_time_trend_1a = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
+source_ep_time_trend_1b = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
+source_ep_time_trend_2a = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
+source_ep_time_trend_2b = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
+source_ep_time_1_collapsed = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
+source_ep_time_2_collapsed = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
+source_ep_time_bound_1a = ColumnDataSource(data=dict(x=[], upper=[], avg=[], lower=[], mrn=[]))
+source_ep_time_bound_1b = ColumnDataSource(data=dict(x=[], upper=[], avg=[], lower=[], mrn=[]))
+source_ep_time_bound_2a = ColumnDataSource(data=dict(x=[], upper=[], avg=[], lower=[], mrn=[]))
+source_ep_time_bound_2b = ColumnDataSource(data=dict(x=[], upper=[], avg=[], lower=[], mrn=[]))
+source_ep_time_patch_1a = ColumnDataSource(data=dict(x=[], y=[]))
+source_ep_time_patch_1b = ColumnDataSource(data=dict(x=[], y=[]))
+source_ep_time_patch_2a = ColumnDataSource(data=dict(x=[], y=[]))
+source_ep_time_patch_2b = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi2_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi3_viewer = ColumnDataSource(data=dict(x=[], y=[]))
@@ -95,6 +115,10 @@ source_roi5_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_tv = ColumnDataSource(data=dict(x=[], y=[]))
 source_histogram_1 = ColumnDataSource(data=dict(x=[], top=[], width=[], color=[]))
 source_histogram_2 = ColumnDataSource(data=dict(x=[], top=[], width=[], color=[]))
+source_ep_histogram_1a = ColumnDataSource(data=dict(x=[], top=[], width=[], color=[]))
+source_ep_histogram_1b = ColumnDataSource(data=dict(x=[], top=[], width=[], color=[]))
+source_ep_histogram_2a = ColumnDataSource(data=dict(x=[], top=[], width=[], color=[]))
+source_ep_histogram_2b = ColumnDataSource(data=dict(x=[], top=[], width=[], color=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -258,6 +282,7 @@ def update_data():
     update_button.label = old_update_button_label
     update_button.button_type = old_update_button_type
     control_chart_y.value = ''
+    ep_chart_ya.value = ''
     update_roi_viewer_mrn()
     # Use this code once we track down where empty queries fail
     #     print(str(datetime.now()), 'Query returned no results ', current_dvh.query, sep=' ')
@@ -594,19 +619,23 @@ class EndPointRow:
         self.units_out.labels = self.unit_labels[old]
         if self.text_input.value != '':
             update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
+            update_ep_chart()
 
     def endpoint_calc_ticker(self, attrname, old, new):
         if self.text_input.value != '':
             update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
+            update_ep_chart()
 
     def endpoint_units_ticker(self, attrname, old, new):
         self.update_text_input_title()
         if self.text_input.value != '':
             update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
+            update_ep_chart()
 
     def endpoint_units_out_ticker(self, attrname, old, new):
         if self.text_input.value != '':
             update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
+            update_ep_chart()
 
     def delete_row(self):
         self.delete_last_row.button_type = 'danger'
@@ -1347,12 +1376,28 @@ def update_control_chart_ticker(attr, old, new):
     update_control_chart()
 
 
+def update_ep_chart_ticker(attr, old, new):
+    update_ep_chart()
+
+
 def update_control_chart_y_ticker(attr, old, new):
     update_control_chart()
 
 
+def update_ep_chart_ya_ticker(attr, old, new):
+    update_ep_chart()
+
+
+def update_ep_chart_yb_ticker(attr, old, new):
+    update_ep_chart()
+
+
 def update_control_chart_trend_ticker(attr, old, new):
     control_chart_update_trend()
+
+
+def update_ep_chart_trend_ticker(attr, old, new):
+    ep_chart_update_trend()
 
 
 def collapse_into_single_dates(x, y):
@@ -1376,20 +1421,48 @@ def collapse_into_single_dates(x, y):
 def update_control_chart():
     new = str(control_chart_y.value)
     if new:
-        update_trend_chart(new, source_time, source_time_1, source_time_2)
+        if range_categories[new]['units']:
+            control_chart.yaxis.axis_label = "%s (%s)" % (new, range_categories[new]['units'])
+        else:
+            control_chart.yaxis.axis_label = new
+        source_time.data, source_time_1.data, source_time_2.data = \
+            update_trend_chart(new, source_time, 'control')
     else:
-        source_time.data = {'x': [],
-                            'y': [],
-                            'mrn': [],
-                            'color': [],
-                            'avg': []}
+        source_time.data = {'x': [], 'y': [], 'mrn': [], 'color': [], 'avg': []}
         source_time_1.data = {'x': [], 'y': [], 'mrn': []}
         source_time_2.data = {'x': [], 'y': [], 'mrn': []}
 
     control_chart_update_trend()
 
 
-def update_trend_chart(new_y, s, s1, s2):
+def update_ep_chart():
+    new_a = str(ep_chart_ya.value)
+    new_b = str(ep_chart_yb.value)
+    if new_a:
+        source_ep_time_a.data, source_ep_time_1a.data, source_ep_time_2a.data = \
+            update_trend_chart(new_a, source_ep_time_a, 'ep')
+        y_var_a_name = "ep%s" % new_a[-1]
+        units = source_endpoint_names.data[y_var_a_name][0].split('(')[1][0:-1]
+        if source_endpoint_names.data[y_var_a_name][0][0] == 'D':
+            ep_chart.yaxis.axis_label = "Dose (%s)" % units
+        else:
+            ep_chart.yaxis.axis_label = "Volume (%s)" % units
+        if new_b:
+            source_ep_time_b.data, source_ep_time_1b.data, source_ep_time_2b.data = \
+                update_trend_chart(new_b, source_ep_time_b, 'ep')
+        else:
+            source_ep_time_b.data = {'x': [], 'y': [], 'mrn': [], 'color': [], 'avg': []}
+            source_ep_time_1b.data = {'x': [], 'y': [], 'mrn': []}
+            source_ep_time_2b.data = {'x': [], 'y': [], 'mrn': []}
+    else:
+        source_ep_time_a.data = {'x': [], 'y': [], 'mrn': [], 'color': [], 'avg': []}
+        source_ep_time_1a.data = {'x': [], 'y': [], 'mrn': []}
+        source_ep_time_2a.data = {'x': [], 'y': [], 'mrn': []}
+
+    ep_chart_update_trend()
+
+
+def update_trend_chart(new_y, s, chart_type):
     # reset selection
     selected = {'0d': {'glyph': None, 'indices': []},
                 '1d': {'indices': []},
@@ -1404,18 +1477,12 @@ def update_trend_chart(new_y, s, s1, s2):
         # endpoint_data created to work around this. Bug?
         y_source_uids = source.data['uid']
         y_source_mrns = source.data['mrn']
-        control_chart.yaxis.axis_label = source_endpoint_names.data[y_var_name][0]
     else:
         y_source = range_categories[new_y]['source']
         y_var_name = range_categories[new_y]['var_name']
         y_source_values = y_source.data[y_var_name]
         y_source_uids = y_source.data['uid']
         y_source_mrns = y_source.data['mrn']
-
-        if range_categories[new_y]['units']:
-            control_chart.yaxis.axis_label = "%s (%s)" % (new_y, range_categories[new_y]['units'])
-        else:
-            control_chart.yaxis.axis_label = new_y
 
     sim_study_dates = source_plans.data['sim_study_date']
     sim_study_dates_uids = source_plans.data['uid']
@@ -1442,7 +1509,8 @@ def update_trend_chart(new_y, s, s1, s2):
         if not skipped[-1]:
             if current_dvh_group_1 and current_dvh_group_2:
                 if uid in current_dvh_group_1.study_instance_uid and uid in current_dvh_group_2.study_instance_uid:
-                    if range_categories[control_chart_y.value]['source'] == source:
+                    if (chart_type == 'control' and range_categories[control_chart_y.value]['source'] == source) or \
+                                    chart_type == 'ep':
                         for r in range(0, len(current_dvh.study_instance_uid)):
 
                             current_uid = current_dvh.study_instance_uid[r]
@@ -1502,12 +1570,11 @@ def update_trend_chart(new_y, s, s1, s2):
             s2_data['y'].append(y_values_sorted[i])
             s2_data['mrn'].append(y_mrns_sorted[i])
 
-    s.data = {'x': x_values_sorted,
+    s_data = {'x': x_values_sorted,
               'y': y_values_sorted,
               'mrn': y_mrns_sorted,
               'color': colors_sorted}
-    s1.data = s1_data
-    s2.data = s2_data
+    return s_data, s1_data, s2_data
 
 
 def moving_avg(xyw, avg_len):
@@ -1531,9 +1598,21 @@ def moving_avg(xyw, avg_len):
 def control_chart_update_trend():
     global group_1, group_2
     if control_chart_y.value:
+        try:
+            avg_len = int(control_chart_text_lookback_distance.value)
+        except:
+            avg_len = 1
+
+        try:
+            percentile = float(control_chart_percentile.value)
+        except:
+            percentile = 90.
+
         group_1, group_2, source_time_trend_1.data, source_time_trend_2.data, \
         source_time_bound_1.data, source_time_bound_2.data, \
-        source_time_patch_1.data, source_time_patch_2.data = update_trend_chart_trend(group_1, group_2, source_time)
+        source_time_patch_1.data, source_time_patch_2.data = update_trend_chart_trend(source_time,
+                                                                                      control_chart_y.value,
+                                                                                      avg_len, percentile)
     else:
         source_time_trend_1.data = {'x': [], 'y': [], 'mrn': []}
         source_time_bound_1.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
@@ -1548,180 +1627,242 @@ def control_chart_update_trend():
         histogram_ttest_text.text = "Two Sample t-Test (Blue vs Red) p-value = "
         histogram_ranksums_text.text = "Wilcoxon rank-sum (Blue vs Red) p-value = "
 
-    update_histograms(group_1, group_2, source_histogram_1, source_histogram_2)
+    source_histogram_1.data, source_histogram_2.data = update_histograms(group_1, group_2,
+                                                                         control_chart_y.value,
+                                                                         histogram_radio_group.active,
+                                                                         histogram_bin_slider.value)
 
 
-def update_trend_chart_trend(grp1, grp2, s_time):
-    if control_chart_y.value:
-        selected_indices = s_time.selected['1d']['indices']
+def ep_chart_update_trend():
+    global group_1a_ep, group_2a_ep, group_1b_ep, group_2b_ep
 
-        if not selected_indices:
-            selected_indices = range(0, len(s_time.data['x']))
-
-        selected = {'x': [], 'y': [], 'color': []}
-        for i in range(0, len(s_time.data['x'])):
-            if i in selected_indices:
-                selected['x'].append(s_time.data['x'][i])
-                selected['y'].append(s_time.data['y'][i])
-                selected['color'].append(s_time.data['color'][i])
-
-        # group data in blue and red groups (group 1 and 2, respectively)
-        grp1 = {'x': [], 'y': []}
-        grp2 = {'x': [], 'y': []}
-        for i in range(0, len(selected['x'])):
-            if selected['color'][i] in {'purple'}:
-                grp1['x'].append(selected['x'][i])
-                grp1['y'].append(selected['y'][i])
-                grp2['x'].append(selected['x'][i])
-                grp2['y'].append(selected['y'][i])
-            elif selected['color'][i] in {'blue'}:
-                grp1['x'].append(selected['x'][i])
-                grp1['y'].append(selected['y'][i])
-            elif selected['color'][i] in {'red'}:
-                grp2['x'].append(selected['x'][i])
-                grp2['y'].append(selected['y'][i])
-
+    if ep_chart_ya.value:
         try:
-            avg_len = int(control_chart_text_lookback_distance.value)
+            avg_len = int(ep_chart_text_lookback_distance.value)
         except:
             avg_len = 1
 
         try:
-            percentile = float(control_chart_percentile.value)
+            percentile = float(ep_chart_percentile.value)
         except:
             percentile = 90.
 
-        # average daily data and keep track of points per day, calculate moving average
-        if grp1['x']:
-            grp1_collapsed = collapse_into_single_dates(grp1['x'], grp1['y'])
-            x_trend_1, moving_avgs_1 = moving_avg(grp1_collapsed, avg_len)
-
-            y_np_1 = np.array(grp1['y'])
-            upper_bound_1 = float(np.percentile(y_np_1, 50. + percentile / 2.))
-            average_1 = float(np.percentile(y_np_1, 50))
-            lower_bound_1 = float(np.percentile(y_np_1, 50. - percentile / 2.))
-            trend_1 = {'x': x_trend_1,
-                       'y': moving_avgs_1,
-                       'mrn': ['Avg'] * len(x_trend_1)}
-            bound_1 = {'x': selected['x'],
-                       'mrn': ['Bound'] * len(selected['x']),
-                       'upper': [upper_bound_1] * len(selected['x']),
-                       'avg': [average_1] * len(selected['x']),
-                       'lower': [lower_bound_1] * len(selected['x'])}
-            patch_1 = {'x': [selected['x'][0], selected['x'][-1], selected['x'][-1], selected['x'][0]],
-                       'y': [upper_bound_1, upper_bound_1, lower_bound_1, lower_bound_1]}
+        group_1a_ep, group_2a_ep, source_ep_time_trend_1a.data, source_ep_time_trend_2a.data, \
+        source_ep_time_bound_1a.data, source_ep_time_bound_2a.data, \
+        source_ep_time_patch_1a.data, source_ep_time_patch_2a.data = update_trend_chart_trend(source_ep_time_a,
+                                                                                              ep_chart_ya.value,
+                                                                                              avg_len, percentile)
+        if ep_chart_yb.value:
+            group_1b_ep, group_2b_ep, source_ep_time_trend_1b.data, source_ep_time_trend_2b.data, \
+            source_ep_time_bound_1b.data, source_ep_time_bound_2b.data, \
+            source_ep_time_patch_1b.data, source_ep_time_patch_2b.data = update_trend_chart_trend(source_ep_time_b,
+                                                                                                  ep_chart_yb.value,
+                                                                                                  avg_len, percentile)
         else:
-            trend_1 = {'x': [], 'y': [], 'mrn': []}
-            bound_1 = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
-            patch_1 = {'x': [], 'y': []}
-        if grp2['x']:
-            grp2_collapsed = collapse_into_single_dates(grp2['x'], grp2['y'])
-            x_trend_2, moving_avgs_2 = moving_avg(grp2_collapsed, avg_len)
+            source_ep_time_trend_1b.data = {'x': [], 'y': [], 'mrn': []}
+            source_ep_time_bound_1b.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+            source_ep_time_patch_1b.data = {'x': [], 'y': []}
 
-            y_np_2 = np.array(grp2['y'])
-            upper_bound_2 = float(np.percentile(y_np_2, 50. + percentile / 2.))
-            average_2 = float(np.percentile(y_np_2, 50))
-            lower_bound_2 = float(np.percentile(y_np_2, 50. - percentile / 2.))
-            trend_2 = {'x': x_trend_2,
-                       'y': moving_avgs_2,
-                       'mrn': ['Avg'] * len(x_trend_2)}
-            bound_2 = {'x': selected['x'],
-                       'mrn': ['Bound'] * len(selected['x']),
-                       'upper': [upper_bound_2] * len(selected['x']),
-                       'avg': [average_2] * len(selected['x']),
-                       'lower': [lower_bound_2] * len(selected['x'])}
-            patch_2 = {'x': [selected['x'][0], selected['x'][-1], selected['x'][-1], selected['x'][0]],
-                       'y': [upper_bound_2,  upper_bound_2, lower_bound_2, lower_bound_2]}
-        else:
-            trend_2 = {'x': [], 'y': [], 'mrn': []}
-            bound_2 = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
-            patch_2 = {'x': [], 'y': []}
-        x_var = str(control_chart_y.value)
-        if x_var.startswith('DVH Endpoint'):
-            x_var_name = "ep%s" % x_var[-1]
-            histograms.xaxis.axis_label = source_endpoint_names.data[x_var_name][0]
-        else:
-            if range_categories[x_var]['units']:
-                histograms.xaxis.axis_label = "%s (%s)" % (x_var, range_categories[x_var]['units'])
-            else:
-                histograms.xaxis.axis_label = x_var
+            source_ep_time_trend_2b.data = {'x': [], 'y': [], 'mrn': []}
+            source_ep_time_bound_2b.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+            source_ep_time_patch_2b.data = {'x': [], 'y': []}
 
-        # Normal Test for Blue Group
-        if grp1['y']:
-            stat1, pval1 = normaltest(grp1['y'])
-            pval1 = "%0.3f" % pval1
-        else:
-            pval1 = ''
+    else:
+        source_ep_time_trend_1a.data = {'x': [], 'y': [], 'mrn': []}
+        source_ep_time_bound_1a.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+        source_ep_time_patch_1a.data = {'x': [], 'y': []}
 
-        # Normal Test for Red Group
-        if grp2['y']:
-            stat2, pval2 = normaltest(grp2['y'])
-            pval2 = "%0.3f" % pval2
-        else:
-            pval2 = ''
+        source_ep_time_trend_2a.data = {'x': [], 'y': [], 'mrn': []}
+        source_ep_time_bound_2a.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+        source_ep_time_patch_2a.data = {'x': [], 'y': []}
 
-        # t-Test and Rank Sums
-        if grp1['y'] and grp2['y']:
-            statt, pvalt = ttest_ind(grp1['y'], grp2['y'])
-            statr, pvalr = ranksums(grp1['y'], grp2['y'])
-            pvalt = "%0.3f" % pvalt
-            pvalr = "%0.3f" % pvalr
-        else:
-            pvalt = ''
-            pvalr = ''
+        # ep_histogram_normaltest_1_text.text = "Blue Group Normal Test p-value = "
+        # ep_histogram_normaltest_2_text.text = "Red  Group Normal Test p-value = "
+        # ep_histogram_ttest_text.text = "Two Sample t-Test (Blue vs Red) p-value = "
+        # ep_histogram_ranksums_text.text = "Wilcoxon rank-sum (Blue vs Red) p-value = "
 
-        histogram_normaltest_1_text.text = "Blue Group Normal Test p-value = %s" % pval1
-        histogram_normaltest_2_text.text = "Red  Group Normal Test p-value = %s" % pval2
-        histogram_ttest_text.text = "Two Sample t-Test (Blue vs Red) p-value = %s" % pvalt
-        histogram_ranksums_text.text = "Wilcoxon rank-sum (Blue vs Red) p-value = %s" % pvalr
+    source_ep_histogram_1a.data, source_ep_histogram_2a.data = update_histograms(group_1a_ep, group_2a_ep,
+                                                                                 ep_chart_ya.value,
+                                                                                 ep_histogram_radio_group.active,
+                                                                                 ep_histogram_bin_slider.value)
+    source_ep_histogram_1b.data, source_ep_histogram_2b.data = update_histograms(group_1b_ep, group_2b_ep,
+                                                                                 ep_chart_yb.value,
+                                                                                 ep_histogram_radio_group.active,
+                                                                                 ep_histogram_bin_slider.value)
 
+
+def update_trend_chart_trend(s_time, new, avg_len, percentile):
+
+    selected_indices = s_time.selected['1d']['indices']
+
+    if not selected_indices:
+        selected_indices = range(0, len(s_time.data['x']))
+
+    selected = {'x': [], 'y': [], 'color': []}
+    for i in range(0, len(s_time.data['x'])):
+        if i in selected_indices:
+            selected['x'].append(s_time.data['x'][i])
+            selected['y'].append(s_time.data['y'][i])
+            selected['color'].append(s_time.data['color'][i])
+
+    # group data in blue and red groups (group 1 and 2, respectively)
+    grp1 = {'x': [], 'y': []}
+    grp2 = {'x': [], 'y': []}
+    for i in range(0, len(selected['x'])):
+        if selected['color'][i] in {'purple'}:
+            grp1['x'].append(selected['x'][i])
+            grp1['y'].append(selected['y'][i])
+            grp2['x'].append(selected['x'][i])
+            grp2['y'].append(selected['y'][i])
+        elif selected['color'][i] in {'blue'}:
+            grp1['x'].append(selected['x'][i])
+            grp1['y'].append(selected['y'][i])
+        elif selected['color'][i] in {'red'}:
+            grp2['x'].append(selected['x'][i])
+            grp2['y'].append(selected['y'][i])
+
+    # average daily data and keep track of points per day, calculate moving average
+    if grp1['x']:
+        grp1_collapsed = collapse_into_single_dates(grp1['x'], grp1['y'])
+        x_trend_1, moving_avgs_1 = moving_avg(grp1_collapsed, avg_len)
+
+        y_np_1 = np.array(grp1['y'])
+        upper_bound_1 = float(np.percentile(y_np_1, 50. + percentile / 2.))
+        average_1 = float(np.percentile(y_np_1, 50))
+        lower_bound_1 = float(np.percentile(y_np_1, 50. - percentile / 2.))
+        trend_1 = {'x': x_trend_1,
+                   'y': moving_avgs_1,
+                   'mrn': ['Avg'] * len(x_trend_1)}
+        bound_1 = {'x': selected['x'],
+                   'mrn': ['Bound'] * len(selected['x']),
+                   'upper': [upper_bound_1] * len(selected['x']),
+                   'avg': [average_1] * len(selected['x']),
+                   'lower': [lower_bound_1] * len(selected['x'])}
+        patch_1 = {'x': [selected['x'][0], selected['x'][-1], selected['x'][-1], selected['x'][0]],
+                   'y': [upper_bound_1, upper_bound_1, lower_bound_1, lower_bound_1]}
     else:
         trend_1 = {'x': [], 'y': [], 'mrn': []}
         bound_1 = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
         patch_1 = {'x': [], 'y': []}
+    if grp2['x']:
+        grp2_collapsed = collapse_into_single_dates(grp2['x'], grp2['y'])
+        x_trend_2, moving_avgs_2 = moving_avg(grp2_collapsed, avg_len)
 
-        trend_1 = {'x': [], 'y': [], 'mrn': []}
+        y_np_2 = np.array(grp2['y'])
+        upper_bound_2 = float(np.percentile(y_np_2, 50. + percentile / 2.))
+        average_2 = float(np.percentile(y_np_2, 50))
+        lower_bound_2 = float(np.percentile(y_np_2, 50. - percentile / 2.))
+        trend_2 = {'x': x_trend_2,
+                   'y': moving_avgs_2,
+                   'mrn': ['Avg'] * len(x_trend_2)}
+        bound_2 = {'x': selected['x'],
+                   'mrn': ['Bound'] * len(selected['x']),
+                   'upper': [upper_bound_2] * len(selected['x']),
+                   'avg': [average_2] * len(selected['x']),
+                   'lower': [lower_bound_2] * len(selected['x'])}
+        patch_2 = {'x': [selected['x'][0], selected['x'][-1], selected['x'][-1], selected['x'][0]],
+                   'y': [upper_bound_2,  upper_bound_2, lower_bound_2, lower_bound_2]}
+    else:
+        trend_2 = {'x': [], 'y': [], 'mrn': []}
         bound_2 = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
         patch_2 = {'x': [], 'y': []}
-        histogram_normaltest_1_text.text = "Blue Group Normal Test p-value = "
-        histogram_normaltest_2_text.text = "Red  Group Normal Test p-value = "
-        histogram_ttest_text.text = "Two Sample t-Test (Blue vs Red) p-value = "
-        histogram_ranksums_text.text = "Wilcoxon rank-sum (Blue vs Red) p-value = "
+
+    x_var = str(new)
+    if x_var.startswith('DVH Endpoint'):
+        x_var_name = "ep%s" % x_var[-1]
+        units = source_endpoint_names.data[x_var_name][0].split('(')[1][0:-1]
+        if source_endpoint_names.data[x_var_name][0][0] == 'D':
+            ep_histograms.xaxis.axis_label = "Dose (%s)" % units
+        else:
+            ep_histograms.xaxis.axis_label = "Volume (%s)" % units
+    else:
+        if range_categories[x_var]['units']:
+            histograms.xaxis.axis_label = "%s (%s)" % (x_var, range_categories[x_var]['units'])
+        else:
+            histograms.xaxis.axis_label = x_var
+
+    # Normal Test for Blue Group
+    if grp1['y']:
+        stat1, pval1 = normaltest(grp1['y'])
+        pval1 = "%0.3f" % pval1
+    else:
+        pval1 = ''
+
+    # Normal Test for Red Group
+    if grp2['y']:
+        stat2, pval2 = normaltest(grp2['y'])
+        pval2 = "%0.3f" % pval2
+    else:
+        pval2 = ''
+
+    # t-Test and Rank Sums
+    if grp1['y'] and grp2['y']:
+        statt, pvalt = ttest_ind(grp1['y'], grp2['y'])
+        statr, pvalr = ranksums(grp1['y'], grp2['y'])
+        pvalt = "%0.3f" % pvalt
+        pvalr = "%0.3f" % pvalr
+    else:
+        pvalt = ''
+        pvalr = ''
+
+    histogram_normaltest_1_text.text = "Blue Group Normal Test p-value = %s" % pval1
+    histogram_normaltest_2_text.text = "Red  Group Normal Test p-value = %s" % pval2
+    histogram_ttest_text.text = "Two Sample t-Test (Blue vs Red) p-value = %s" % pvalt
+    histogram_ranksums_text.text = "Wilcoxon rank-sum (Blue vs Red) p-value = %s" % pvalr
 
     return grp1, grp2, trend_1, trend_2, bound_1, bound_2, patch_1, patch_2
 
 
 def histograms_ticker(attr, old, new):
-    update_histograms(group_1, group_2, source_histogram_1, source_histogram_2)
+    source_histogram_1.data, source_histogram_2.data = update_histograms(group_1, group_2,
+                                                                         control_chart_y.value,
+                                                                         histogram_radio_group.active,
+                                                                         histogram_bin_slider.value)
+    if histogram_radio_group.active == 1:
+        histograms.yaxis.axis_label = "Relative Frequency"
+    else:
+        histograms.yaxis.axis_label = "Frequency"
 
 
-def update_histograms(grp1, grp2, s_hist_1, s_hist_2):
+def ep_histograms_ticker(attr, old, new):
+    source_ep_histogram_1a.data, source_ep_histogram_2a.data = update_histograms(group_1a_ep, group_2a_ep,
+                                                                                 ep_chart_ya.value,
+                                                                                 ep_histogram_radio_group.active,
+                                                                                 ep_histogram_bin_slider.value)
+    source_ep_histogram_1b.data, source_ep_histogram_2b.data = update_histograms(group_1b_ep, group_2b_ep,
+                                                                                 ep_chart_yb.value,
+                                                                                 ep_histogram_radio_group.active,
+                                                                                 ep_histogram_bin_slider.value)
+    if ep_histogram_radio_group.active == 1:
+        ep_histograms.yaxis.axis_label = "Relative Frequency"
+    else:
+        ep_histograms.yaxis.axis_label = "Frequency"
 
-    if control_chart_y.value != '':
 
-        # Update Histograms
-        bin_size = histogram_bin_slider.value
+def update_histograms(grp1, grp2, new, active, bin_size):
+
+    if new != '':
         width_fraction = 0.9
 
         hist, bins = np.histogram(grp1['y'], bins=bin_size)
-        if histogram_radio_group.active == 1:
+        if active == 1:
             hist = np.divide(hist, np.float(np.max(hist)))
-            histograms.yaxis.axis_label = "Relative Frequency"
-        else:
-            histograms.yaxis.axis_label = "Frequency"
+
         width = [width_fraction * (bins[1] - bins[0])] * bin_size
         center = (bins[:-1] + bins[1:]) / 2.
-        s_hist_1.data = {'x': center, 'top': hist, 'width': width, 'color': ['blue'] * len(center)}
+        s_hist_1_data = {'x': center, 'top': hist, 'width': width, 'color': ['blue'] * len(center)}
 
         hist, bins = np.histogram(grp2['y'], bins=bin_size)
-        if histogram_radio_group.active == 1:
+        if active == 1:
             hist = np.divide(hist, np.float(np.max(hist)))
         width = [width_fraction * (bins[1] - bins[0])] * bin_size
         center = (bins[:-1] + bins[1:]) / 2.
-        s_hist_2.data = {'x': center, 'top': hist, 'width': width, 'color': ['red'] * len(center)}
+        s_hist_2_data = {'x': center, 'top': hist, 'width': width, 'color': ['red'] * len(center)}
     else:
-        s_hist_1.data = {'x': [], 'top': [], 'width': [], 'color': []}
-        s_hist_2.data = {'x': [], 'top': [], 'width': [], 'color': []}
+        s_hist_1_data = {'x': [], 'top': [], 'width': [], 'color': []}
+        s_hist_2_data = {'x': [], 'top': [], 'width': [], 'color': []}
+
+    return s_hist_1_data, s_hist_2_data
 
 
 def update_roi_viewer_mrn():
@@ -2075,7 +2216,6 @@ columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="roi_type", title="ROI Type", width=80),
            TableColumn(field="rx_dose", title="Rx Dose", width=100, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="volume", title="Volume", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="surface_area", title="S Area", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="min_dose", title="Min Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="mean_dose", title="Mean Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="max_dose", title="Max Dose", width=80, formatter=NumberFormatter(format="0.00")),
@@ -2205,11 +2345,6 @@ review_rx.on_change('value', review_rx_ticker)
 review_eud_a_value = TextInput(value='1', title="EUD a-value:", width=170)
 review_eud_a_value.on_change('value', review_eud_a_value_ticker)
 
-# calculate_review_dvh_button = Button(label="Calculate Review DVH",
-#                                      button_type="success",
-#                                      width=180)
-# calculate_review_dvh_button.on_click(calculate_review_dvh)
-
 # Begin defining main row of widgets below figure
 
 # define Update button
@@ -2244,20 +2379,18 @@ main_add_endpoint_button.on_click(button_add_endpoint_row)
 query_row.append(row(update_button, main_add_selector_button, main_add_range_button))
 query_row_type.append('main')
 
-# Control Chart layout
-tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Range Variable Trends layout
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+tools = "pan,wheel_zoom,box_zoom,lasso_select,reset,crosshair,save"
 control_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None,
                        active_drag="box_zoom", x_axis_type='datetime')
 control_chart_data_1 = control_chart.circle('x', 'y', size=10, color='blue', alpha=0.25, source=source_time_1)
 control_chart_data_2 = control_chart.circle('x', 'y', size=10, color='red', alpha=0.25, source=source_time_2)
 control_chart_trend_1 = control_chart.line('x', 'y', color='blue', source=source_time_trend_1)
-# control_chart.line('x', 'upper', color='blue', source=source_time_bound_1, line_dash='dashed')
-control_chart_avg_1 = control_chart.line('x', 'avg', color='blue', source=source_time_bound_1, line_dash='dotted')
-# control_chart.line('x', 'lower', color='blue', source=source_time_bound_1, line_dash='dashed')
 control_chart_trend_2 = control_chart.line('x', 'y', color='red', source=source_time_trend_2)
-# control_chart.line('x', 'upper', color='red', source=source_time_bound_2, line_dash='dashed')
+control_chart_avg_1 = control_chart.line('x', 'avg', color='blue', source=source_time_bound_1, line_dash='dotted')
 control_chart_avg_2 = control_chart.line('x', 'avg', color='red', source=source_time_bound_2, line_dash='dotted')
-# control_chart.line('x', 'lower', color='red', source=source_time_bound_2, line_dash='dashed')
 control_chart_patch_1 = control_chart.patch('x', 'y', color='blue', source=source_time_patch_1, alpha=0.1)
 control_chart_patch_2 = control_chart.patch('x', 'y', color='red', source=source_time_patch_2, alpha=0.1)
 control_chart.add_tools(HoverTool(show_arrow=True,
@@ -2333,6 +2466,117 @@ legend_hist = Legend(items=[("Blue Group", [hist_1]),
 # Add the layout outside the plot, clicking legend item hides the line
 histograms.add_layout(legend_hist, 'right')
 histograms.legend.click_policy = "hide"
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# DVH Endpoint Trending layout
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+tools = "pan,wheel_zoom,box_zoom,lasso_select,reset,crosshair,save"
+ep_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None,
+                  active_drag="box_zoom", x_axis_type='datetime')
+ep_chart_data_1a = ep_chart.circle('x', 'y', size=10, color='blue', alpha=0.25, source=source_ep_time_1a)
+ep_chart_data_1b = ep_chart.triangle('x', 'y', size=10, color='navy', alpha=0.25, source=source_ep_time_1b)
+ep_chart_data_2a = ep_chart.circle('x', 'y', size=10, color='red', alpha=0.25, source=source_ep_time_2a)
+ep_chart_data_2b = ep_chart.triangle('x', 'y', size=10, color='firebrick', alpha=0.25, source=source_ep_time_2b)
+ep_chart_trend_1a = ep_chart.line('x', 'y', color='blue', source=source_ep_time_trend_1a, line_width=2)
+ep_chart_trend_1b = ep_chart.line('x', 'y', color='navy', source=source_ep_time_trend_1b)
+ep_chart_trend_2a = ep_chart.line('x', 'y', color='red', source=source_ep_time_trend_2a, line_width=2)
+ep_chart_trend_2b = ep_chart.line('x', 'y', color='firebrick', source=source_ep_time_trend_2b)
+ep_chart_avg_1a = ep_chart.line('x', 'avg', color='blue', source=source_ep_time_bound_1a, line_dash='dotted', line_width=2)
+ep_chart_avg_1b = ep_chart.line('x', 'avg', color='navy', source=source_ep_time_bound_1b, line_dash='dotted')
+ep_chart_avg_2a = ep_chart.line('x', 'avg', color='red', source=source_ep_time_bound_2a, line_dash='dotted', line_width=2)
+ep_chart_avg_2b = ep_chart.line('x', 'avg', color='firebrick', source=source_ep_time_bound_2b, line_dash='dotted')
+ep_chart_patch_1a = ep_chart.patch('x', 'y', color='blue', source=source_ep_time_patch_1a, alpha=0.1)
+ep_chart_patch_1b = ep_chart.patch('x', 'y', color='navy', source=source_ep_time_patch_1b, alpha=0.1)
+ep_chart_patch_2a = ep_chart.patch('x', 'y', color='red', source=source_ep_time_patch_2a, alpha=0.1)
+ep_chart_patch_2b = ep_chart.patch('x', 'y', color='firebrick', source=source_ep_time_patch_2b, alpha=0.1)
+ep_chart.add_tools(HoverTool(show_arrow=True,
+                             tooltips=[('ID', '@mrn'),
+                                       ('Date', '@x{%F}'),
+                                       ('Value', '@y{0.2f}')],
+                             formatters={'x': 'datetime'}))
+ep_chart.xaxis.axis_label = "Simulation Date"
+ep_chart.yaxis.axis_label = ""
+# Set the legend
+legend_ep_chart = Legend(items=[("Blue Group A", [ep_chart_data_1a]),
+                                ("Blue Group B", [ep_chart_data_1b]),
+                                ("Series Average", [ep_chart_avg_1a]),
+                                ("Series Average", [ep_chart_avg_1b]),
+                                ("Rolling Average", [ep_chart_trend_1a]),
+                                ("Rolling Average", [ep_chart_trend_1b]),
+                                ("Percentile Region", [ep_chart_patch_1a]),
+                                ("Percentile Region", [ep_chart_patch_1b]),
+                                ("Red Group A", [ep_chart_data_2a]),
+                                ("Red Group B", [ep_chart_data_2b]),
+                                ("Series Average", [ep_chart_avg_2a]),
+                                ("Series Average", [ep_chart_avg_2b]),
+                                ("Rolling Average", [ep_chart_trend_2a]),
+                                ("Rolling Average", [ep_chart_trend_2b]),
+                                ("Percentile Region", [ep_chart_patch_2a]),
+                                ("Percentile Region", [ep_chart_patch_2b])],
+                         location=(25, 0),)
+
+# Add the layout outside the plot, clicking legend item hides the line
+ep_chart.add_layout(legend_ep_chart, 'right')
+ep_chart.legend.click_policy = "hide"
+
+ep_chart_options = ['',
+                    'DVH Endpoint 1', 'DVH Endpoint 2', 'DVH Endpoint 3', 'DVH Endpoint 4',
+                    'DVH Endpoint 5', 'DVH Endpoint 6', 'DVH Endpoint 7', 'DVH Endpoint 8']
+ep_chart_ya = Select(value='', options=ep_chart_options, width=200)
+ep_chart_ya.title = "Select a DVH Endpoint A"
+ep_chart_ya.on_change('value', update_ep_chart_ya_ticker)
+ep_chart_yb = Select(value='', options=ep_chart_options, width=200)
+ep_chart_yb.title = "Select a DVH Endpoint B"
+ep_chart_yb.on_change('value', update_ep_chart_yb_ticker)
+
+ep_chart_text_lookback_distance = TextInput(value='1', title="Lookback Distance", width=200)
+ep_chart_text_lookback_distance.on_change('value', update_ep_chart_trend_ticker)
+
+ep_chart_percentile = TextInput(value='90', title="Percentile", width=200)
+ep_chart_percentile.on_change('value', update_ep_chart_trend_ticker)
+
+lookback_units_options = ['Dates with a Sim', 'Days', 'Patients']
+ep_chart_lookback_units = Select(value=lookback_units_options[0], options=lookback_units_options, width=200)
+ep_chart_lookback_units.title = 'Lookback Units'
+ep_chart_lookback_units.on_change('value', update_ep_chart_ticker)
+
+# source_time.on_change('selected', control_chart_update_trend)
+ep_trend_update_button = Button(label="Update Trend", button_type="primary", width=150)
+ep_trend_update_button.on_click(ep_chart_update_trend)
+
+div_horizontal_bar2 = Div(text="<hr>", width=1050)
+
+# histograms
+tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
+ep_histograms = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
+ep_hist_1a = ep_histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_ep_histogram_1a, color='blue', alpha=0.3)
+ep_hist_1b = ep_histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_ep_histogram_1b, color='navy', alpha=0.3)
+ep_hist_2a = ep_histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_ep_histogram_2a, color='red', alpha=0.3)
+ep_hist_2b = ep_histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_ep_histogram_2b, color='firebrick', alpha=0.3)
+ep_histograms.xaxis.axis_label = ""
+ep_histograms.yaxis.axis_label = "Frequency"
+ep_histogram_bin_slider = Slider(start=1, end=100, value=10, step=1, title="Number of Bins")
+ep_histogram_bin_slider.on_change('value', ep_histograms_ticker)
+ep_histogram_radio_group = RadioGroup(labels=["Absolute Y-Axis", "Relative Y-Axis (to Group Max)"], active=0)
+ep_histogram_radio_group.on_change('active', ep_histograms_ticker)
+ep_histogram_normaltest_1_text = Div(text="Blue Group Normal Test p-value = ", width=400)
+ep_histogram_normaltest_2_text = Div(text="Red Group Normal Test p-value = ", width=400)
+ep_histogram_ttest_text = Div(text="Two Sample t-Test (Blue vs Red) p-value = ", width=400)
+ep_histogram_ranksums_text = Div(text="Wilcoxon rank-sum (Blue vs Red) p-value = ", width=400)
+ep_histograms.add_tools(HoverTool(show_arrow=True,
+                                  line_policy='next',
+                                  tooltips=[('x', '@x{0.2f}'),
+                                            ('Counts', '@top')]))
+# Set the legend
+legend_ep_hist = Legend(items=[("Blue Group A", [ep_hist_1a]),
+                               ("Blue Group B", [ep_hist_1b]),
+                               ("Red Group A", [ep_hist_2a]),
+                               ("Red Group B", [ep_hist_2b])],
+                        location=(25, 0))
+
+# Add the layout outside the plot, clicking legend item hides the line
+ep_histograms.add_layout(legend_ep_hist, 'right')
+ep_histograms.legend.click_policy = "hide"
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # ROI Viewer Objects
@@ -2428,13 +2672,23 @@ layout_trending = column(row(control_chart_y, control_chart_lookback_units, cont
                          row(histogram_normaltest_2_text, histogram_ranksums_text),
                          histograms)
 
+layout_ep_trending = column(row(ep_chart_ya, ep_chart_yb, ep_chart_lookback_units, ep_chart_text_lookback_distance,
+                                ep_chart_percentile, ep_trend_update_button),
+                            ep_chart,
+                            div_horizontal_bar2,
+                            row(ep_histogram_bin_slider, ep_histogram_radio_group),
+                            row(ep_histogram_normaltest_1_text, ep_histogram_ttest_text),
+                            row(ep_histogram_normaltest_2_text, ep_histogram_ranksums_text),
+                            ep_histograms)
+
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
 roi_viewer_tab = Panel(child=roi_viewer_layout, title='ROI Viewer')
 planning_data_tab = Panel(child=layout_planning_data, title='Planning Data')
 trending_tab = Panel(child=layout_trending, title='Range-Variable Trending')
+ep_trending_tab = Panel(child=layout_ep_trending, title='DVH Endpoint Trending')
 
-tabs = Tabs(tabs=[query_tab, dvh_tab, roi_viewer_tab, planning_data_tab, trending_tab])
+tabs = Tabs(tabs=[query_tab, dvh_tab, roi_viewer_tab, planning_data_tab, trending_tab, ep_trending_tab])
 
 # go ahead and add a selector row for the user
 button_add_selector_row()
