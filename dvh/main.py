@@ -1443,25 +1443,32 @@ def update_control_chart():
 
             if not skipped[-1]:
                 if range_categories[control_chart_y.value]['source'] == source:
-                    for r in range(0, len(current_dvh.study_instance_uid)):
+                    roi = source.data['roi_name'][v]
 
-                        current_uid = current_dvh.study_instance_uid[r]
-                        current_roi = current_dvh.roi_name[r]
-                        current_r_found = False
+                    found = {'blue': False, 'red': False}
 
-                        for r1 in range(0, len(current_dvh_group_1.study_instance_uid)):
-                            if current_dvh_group_1.study_instance_uid[r1] == current_uid and \
-                                            current_dvh_group_1.roi_name[r1] == current_roi:
-                                colors.append('blue')
-                                current_r_found = True
+                    if current_dvh_group_1:
+                        r1, r1_max = 0, len(current_dvh_group_1.study_instance_uid)
+                        while r1 < r1_max and not found['blue']:
+                            if current_dvh_group_1.study_instance_uid[r1] == uid and \
+                                            current_dvh_group_1.roi_name[r1] == roi:
+                                found['blue'] = True
+                                color = 'blue'
+                            r1 += 1
 
-                        for r2 in range(0, len(current_dvh_group_2.study_instance_uid)):
-                            if current_dvh_group_2.study_instance_uid[r2] == current_uid and \
-                                            current_dvh_group_2.roi_name[r2] == current_roi:
-                                if current_r_found:
-                                    colors[-1] = 'purple'
+                    if current_dvh_group_2:
+                        r2, r2_max = 0, len(current_dvh_group_2.study_instance_uid)
+                        while r2 < r2_max and not found['red']:
+                            if current_dvh_group_2.study_instance_uid[r2] == uid and \
+                                            current_dvh_group_2.roi_name[r2] == roi:
+                                found['red'] = True
+                                if found['blue']:
+                                    color = 'purple'
                                 else:
-                                    colors.append('red')
+                                    color = 'red'
+                            r2 += 1
+
+                    colors.append(color)
                 else:
                     if current_dvh_group_1 and current_dvh_group_2:
                         if uid in current_dvh_group_1.study_instance_uid and uid in current_dvh_group_2.study_instance_uid:
@@ -1520,6 +1527,27 @@ def update_control_chart():
         source_time_2.data = {'x': [], 'y': [], 'mrn': []}
 
     control_chart_update_trend()
+
+
+def get_color_if_source(uid, roi):
+    found = {'blue': False, 'red': False}
+    r1, r1_max = 0, len(current_dvh_group_1.study_instance_uid)
+    while r1 < r1_max and not found['blue']:
+        if current_dvh_group_1.study_instance_uid[r1] == uid and current_dvh_group_1.roi_name[r1] == roi:
+            found['blue'] = True
+            color = 'blue'
+        r1 += 1
+
+    r2, r2_max = 0, len(current_dvh_group_2.study_instance_uid)
+    while r2 < r2_max and not found['red']:
+        if current_dvh_group_2.study_instance_uid[r2] == uid and current_dvh_group_2.roi_name[r2] == roi:
+            found['red'] = True
+            if found['blue']:
+                color = 'purple'
+            else:
+                color = 'red'
+        r2 += 1
+    return color
 
 
 def moving_avg(xyw, avg_len):
