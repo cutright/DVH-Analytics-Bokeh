@@ -7,7 +7,7 @@ if (cb_obj.get('value') == 'anon_dvhs') {
 
     var data = source.data;
     var ep_names = source_endpoint_names.data;
-    filetext = 'DVH Data\npatient#,roi_name,roi_type,rx_dose,volume,min_dose,mean_dose,max_dose,dist_to_ptv_min,dist_to_ptv_mean,dist_to_ptv_median,dist_to_ptv_max,ptv_overlap,';
+    filetext = 'DVH Data\npatient#,roi_name,roi_type,rx_dose,volume,surface_area,min_dose,mean_dose,max_dose,eud,a,dist_to_ptv_min,dist_to_ptv_mean,dist_to_ptv_median,dist_to_ptv_max,ptv_overlap,';
     ep_names_string = [ep_names['ep1'][0].toString(),
                        ep_names['ep2'][0].toString(),
                        ep_names['ep3'][0].toString(),
@@ -25,9 +25,12 @@ if (cb_obj.get('value') == 'anon_dvhs') {
                        data['roi_type'][i].toString(),
                        data['rx_dose'][i].toString(),
                        data['volume'][i].toString(),
+                       data['surface_area'][i].toString(),
                        data['min_dose'][i].toString(),
                        data['mean_dose'][i].toString(),
                        data['max_dose'][i].toString(),
+                       data['eud'][i].toString(),
+                       data['eud_a_value'][i].toString(),
                        data['dist_to_ptv_min'][i].toString(),
                        data['dist_to_ptv_mean'][i].toString(),
                        data['dist_to_ptv_median'][i].toString(),
@@ -41,6 +44,26 @@ if (cb_obj.get('value') == 'anon_dvhs') {
                        data['ep6'][i].toString(),
                        data['ep7'][i].toString(),
                        data['ep8'][i].toString().concat('\n')];
+
+        var joined = currRow.join();
+        filetext = filetext.concat(joined);
+    }
+
+    var data = source_rxs.data;
+    filetext = filetext.concat('\n\nRx Data\npatient#,plan_name,fx_dose,rx_percent,fxs,rx_dose,fx_grp_count,fx_grp_name,');
+    filetext = filetext.concat('fx_grp_number,normalization_method,normalization_object\n');
+    for (i=0; i < data['mrn'].length; i++) {
+        var currRow = [data['anon_id'][i].toString(),
+                       data['plan_name'][i].toString(),
+                       data['fx_dose'][i].toString(),
+                       data['rx_percent'][i].toString(),
+                       data['fxs'][i].toString(),
+                       data['rx_dose'][i].toString(),
+                       data['fx_grp_count'][i].toString(),
+                       data['fx_grp_name'][i].toString(),
+                       data['fx_grp_number'][i].toString(),
+                       data['normalization_method'][i].toString(),
+                       data['normalization_object'][i].toString().concat('\n')];
 
         var joined = currRow.join();
         filetext = filetext.concat(joined);
