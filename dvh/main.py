@@ -33,7 +33,6 @@ colors = itertools.cycle(palette)
 current_dvh = []
 current_dvh_group_1 = []
 current_dvh_group_2 = []
-group_1, group_2 = [], []
 update_warning = True
 query_row = []
 query_row_type = []
@@ -879,7 +878,8 @@ def update_dvh_data(dvh):
         if mrn not in anon_id_map.keys():
             anon_id_map[mrn] = counter
             counter += 1
-        anon_id.append(anon_id_map[mrn])
+    for i in range(0, len(dvh.mrn)):
+        anon_id.append(anon_id_map[dvh.mrn[i]])
 
     print(str(datetime.now()), 'writing source.data', sep=' ')
     source.data = {'mrn': dvh.mrn,
@@ -934,7 +934,12 @@ def update_beam_data(uids):
 
     groups = get_group_list(beam_data.study_instance_uid)
 
+    anon_id = []
+    for i in range(0, len(beam_data.mrn)):
+        anon_id.append(anon_id_map[beam_data.mrn[i]])
+
     source_beams.data = {'mrn': beam_data.mrn,
+                         'anon_id': anon_id,
                          'group': groups,
                          'uid': beam_data.study_instance_uid,
                          'beam_dose': beam_data.beam_dose,
@@ -984,7 +989,12 @@ def update_plan_data(uids):
     # Determine Groups
     groups = get_group_list(plan_data.study_instance_uid)
 
+    anon_id = []
+    for i in range(0, len(plan_data.mrn)):
+        anon_id.append(anon_id_map[plan_data.mrn[i]])
+
     source_plans.data = {'mrn': plan_data.mrn,
+                         'anon_id': anon_id,
                          'uid': plan_data.study_instance_uid,
                          'group': groups,
                          'age': plan_data.age,
@@ -1011,7 +1021,12 @@ def update_rx_data(uids):
 
     groups = get_group_list(rx_data.study_instance_uid)
 
+    anon_id = []
+    for i in range(0, len(rx_data.mrn)):
+        anon_id.append(anon_id_map[rx_data.mrn[i]])
+
     source_rxs.data = {'mrn': rx_data.mrn,
+                       'anon_id': anon_id,
                        'uid': rx_data.study_instance_uid,
                        'group': groups,
                        'plan_name': rx_data.plan_name,
@@ -1526,35 +1541,25 @@ def moving_avg(xyw, avg_len):
 
 
 def control_chart_update_trend():
-    global group_1, group_2
     if control_chart_y.value:
-        selected_indices = source_time.selected['1d']['indices']
+        selected_indices_1 = source_time_1.selected['1d']['indices']
+        selected_indices_2 = source_time_2.selected['1d']['indices']
 
-        if not selected_indices:
-            selected_indices = range(0, len(source_time.data['x']))
+        if not selected_indices_1:
+            selected_indices_1 = range(0, len(source_time_1.data['x']))
+        if not selected_indices_2:
+            selected_indices_2 = range(0, len(source_time_2.data['x']))
 
-        selected = {'x': [], 'y': [], 'color': []}
-        for i in range(0, len(source_time.data['x'])):
-            if i in selected_indices:
-                selected['x'].append(source_time.data['x'][i])
-                selected['y'].append(source_time.data['y'][i])
-                selected['color'].append(source_time.data['color'][i])
-
-        # group data in blue and red groups (group 1 and 2, respectively)
         group_1 = {'x': [], 'y': []}
         group_2 = {'x': [], 'y': []}
-        for i in range(0, len(selected['x'])):
-            if selected['color'][i] in {'purple'}:
-                group_1['x'].append(selected['x'][i])
-                group_1['y'].append(selected['y'][i])
-                group_2['x'].append(selected['x'][i])
-                group_2['y'].append(selected['y'][i])
-            elif selected['color'][i] in {'blue'}:
-                group_1['x'].append(selected['x'][i])
-                group_1['y'].append(selected['y'][i])
-            elif selected['color'][i] in {'red'}:
-                group_2['x'].append(selected['x'][i])
-                group_2['y'].append(selected['y'][i])
+        for i in range(0, len(source_time_1.data['x'])):
+            if i in selected_indices_1:
+                group_1['x'].append(source_time_1.data['x'][i])
+                group_1['y'].append(source_time_1.data['y'][i])
+        for i in range(0, len(source_time_2.data['x'])):
+            if i in selected_indices_2:
+                group_2['x'].append(source_time_2.data['x'][i])
+                group_2['y'].append(source_time_2.data['y'][i])
 
         try:
             avg_len = int(control_chart_text_lookback_distance.value)
@@ -1578,12 +1583,12 @@ def control_chart_update_trend():
             source_time_trend_1.data = {'x': x_trend_1,
                                         'y': moving_avgs_1,
                                         'mrn': ['Avg'] * len(x_trend_1)}
-            source_time_bound_1.data = {'x': selected['x'],
-                                        'mrn': ['Bound'] * len(selected['x']),
-                                        'upper': [upper_bound_1] * len(selected['x']),
-                                        'avg': [average_1] * len(selected['x']),
-                                        'lower': [lower_bound_1] * len(selected['x'])}
-            source_time_patch_1.data = {'x': [selected['x'][0], selected['x'][-1], selected['x'][-1], selected['x'][0]],
+            source_time_bound_1.data = {'x': group_1['x'],
+                                        'mrn': ['Bound'] * len(group_1['x']),
+                                        'upper': [upper_bound_1] * len(group_1['x']),
+                                        'avg': [average_1] * len(group_1['x']),
+                                        'lower': [lower_bound_1] * len(group_1['x'])}
+            source_time_patch_1.data = {'x': [group_1['x'][0], group_1['x'][-1], group_1['x'][-1], group_1['x'][0]],
                                         'y': [upper_bound_1, upper_bound_1, lower_bound_1, lower_bound_1]}
         else:
             source_time_trend_1.data = {'x': [],
@@ -1607,12 +1612,13 @@ def control_chart_update_trend():
             source_time_trend_2.data = {'x': x_trend_2,
                                         'y': moving_avgs_2,
                                         'mrn': ['Avg'] * len(x_trend_2)}
-            source_time_bound_2.data = {'x': selected['x'],
-                                        'mrn': ['Bound'] * len(selected['x']),
-                                        'upper': [upper_bound_2] * len(selected['x']),
-                                        'avg': [average_2] * len(selected['x']),
-                                        'lower': [lower_bound_2] * len(selected['x'])}
-            source_time_patch_2.data = {'x': [selected['x'][0], selected['x'][-1], selected['x'][-1], selected['x'][0]],
+            source_time_bound_2.data = {'x': group_2['x'],
+                                        'mrn': ['Bound'] * len(group_2['x']),
+                                        'upper': [upper_bound_2] * len(group_2['x']),
+                                        'avg': [average_2] * len(group_2['x']),
+                                        'lower': [lower_bound_2] * len(group_2['x'])}
+            source_time_patch_2.data = {'x': [group_2['x'][0], group_2['x'][-1],
+                                              group_2['x'][-1], group_2['x'][0]],
                                         'y': [upper_bound_2,  upper_bound_2, lower_bound_2, lower_bound_2]}
         else:
             source_time_trend_2.data = {'x': [],
@@ -1699,7 +1705,6 @@ def histograms_ticker(attr, old, new):
 
 
 def update_histograms():
-    global group_1, group_2
 
     if control_chart_y.value != '':
 
@@ -1707,7 +1712,7 @@ def update_histograms():
         bin_size = histogram_bin_slider.value
         width_fraction = 0.9
 
-        hist, bins = np.histogram(group_1['y'], bins=bin_size)
+        hist, bins = np.histogram(source_time_1.data['y'], bins=bin_size)
         if histogram_radio_group.active == 1:
             hist = np.divide(hist, np.float(np.max(hist)))
             histograms.yaxis.axis_label = "Relative Frequency"
@@ -1720,7 +1725,7 @@ def update_histograms():
                                    'width': width,
                                    'color': ['blue'] * len(center)}
 
-        hist, bins = np.histogram(group_2['y'], bins=bin_size)
+        hist, bins = np.histogram(source_time_2.data['y'], bins=bin_size)
         if histogram_radio_group.active == 1:
             hist = np.divide(hist, np.float(np.max(hist)))
         width = [width_fraction * (bins[1] - bins[0])] * bin_size
