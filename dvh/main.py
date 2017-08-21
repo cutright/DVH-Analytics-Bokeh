@@ -76,7 +76,6 @@ source_plans = ColumnDataSource(data=dict())
 source_rxs = ColumnDataSource(data=dict())
 source_endpoint_names = ColumnDataSource(data=dict(ep1=[], ep2=[], ep3=[], ep4=[], ep5=[], ep6=[], ep7=[], ep8=[]))
 source_endpoints = ColumnDataSource(data=dict())
-source_time = ColumnDataSource(data=dict(x=[], y=[], mrn=[], color=[]))
 source_time_1 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
 source_time_2 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
 source_time_trend_1 = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
@@ -1396,7 +1395,8 @@ def update_control_chart():
         selected = {'0d': {'glyph': None, 'indices': []},
                     '1d': {'indices': []},
                     '2d': {'indices': {}}}
-        source_time.selected = selected
+        source_time_1.selected = selected
+        source_time_2.selected = selected
 
         if new.startswith('DVH Endpoint'):
             y_var_name = 'ep' + str(new[-1])
@@ -1511,18 +1511,9 @@ def update_control_chart():
                 source_time_2_data['y'].append(y_values_sorted[i])
                 source_time_2_data['mrn'].append(y_mrns_sorted[i])
 
-        source_time.data = {'x': x_values_sorted,
-                            'y': y_values_sorted,
-                            'mrn': y_mrns_sorted,
-                            'color': colors_sorted}
         source_time_1.data = source_time_1_data
         source_time_2.data = source_time_2_data
     else:
-        source_time.data = {'x': [],
-                            'y': [],
-                            'mrn': [],
-                            'color': [],
-                            'avg': []}
         source_time_1.data = {'x': [], 'y': [], 'mrn': []}
         source_time_2.data = {'x': [], 'y': [], 'mrn': []}
 
@@ -2301,13 +2292,9 @@ control_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None,
 control_chart_data_1 = control_chart.circle('x', 'y', size=10, color='blue', alpha=0.25, source=source_time_1)
 control_chart_data_2 = control_chart.circle('x', 'y', size=10, color='red', alpha=0.25, source=source_time_2)
 control_chart_trend_1 = control_chart.line('x', 'y', color='blue', source=source_time_trend_1)
-# control_chart.line('x', 'upper', color='blue', source=source_time_bound_1, line_dash='dashed')
 control_chart_avg_1 = control_chart.line('x', 'avg', color='blue', source=source_time_bound_1, line_dash='dotted')
-# control_chart.line('x', 'lower', color='blue', source=source_time_bound_1, line_dash='dashed')
 control_chart_trend_2 = control_chart.line('x', 'y', color='red', source=source_time_trend_2)
-# control_chart.line('x', 'upper', color='red', source=source_time_bound_2, line_dash='dashed')
 control_chart_avg_2 = control_chart.line('x', 'avg', color='red', source=source_time_bound_2, line_dash='dotted')
-# control_chart.line('x', 'lower', color='red', source=source_time_bound_2, line_dash='dashed')
 control_chart_patch_1 = control_chart.patch('x', 'y', color='blue', source=source_time_patch_1, alpha=0.1)
 control_chart_patch_2 = control_chart.patch('x', 'y', color='red', source=source_time_patch_2, alpha=0.1)
 control_chart.add_tools(HoverTool(show_arrow=True,
