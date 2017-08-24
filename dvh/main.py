@@ -25,8 +25,7 @@ from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, Pa
     NumberFormatter, RadioButtonGroup, TextInput, RadioGroup, CheckboxButtonGroup, Dropdown, CheckboxGroup
 from dicompylercore import dicomparser, dvhcalc
 from bokeh import events
-from scipy.stats import ttest_ind, ranksums, normaltest
-# import time
+from scipy.stats import ttest_ind, ranksums, normaltest, pearsonr
 
 # Declare variables
 colors = itertools.cycle(palette)
@@ -93,6 +92,7 @@ source_roi5_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_tv = ColumnDataSource(data=dict(x=[], y=[]))
 source_histogram_1 = ColumnDataSource(data=dict(x=[], top=[], width=[], color=[]))
 source_histogram_2 = ColumnDataSource(data=dict(x=[], top=[], width=[], color=[]))
+source_correlation = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[], color=[], alpha=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -156,6 +156,13 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
                     'Scan Spots': {'var_name': 'scan_spot_count', 'table': 'Beams', 'units': '', 'source': source_beams},
                     'Beam MU per deg': {'var_name': 'beam_mu_per_deg', 'table': 'Beams', 'units': '', 'source': source_beams},
                     'Beam MU per control point': {'var_name': 'beam_mu_per_cp', 'table': 'Beams', 'units': '', 'source': source_beams}}
+
+# correlation variable names
+correlation_variables = []
+for key in range_categories.keys():
+    var_name = range_categories[key]['var_name']
+    if var_name in {'volume', 'min_dose', 'mean_dose', 'max_dose', 'ptv_overlap'} or var_name.startswith('dist_to_ptv'):
+        correlation_variables.append(var_name)
 
 
 # Functions that add widget rows
@@ -257,6 +264,7 @@ def update_data():
     update_button.button_type = old_update_button_type
     control_chart_y.value = ''
     update_roi_viewer_mrn()
+    update_correlation()
     # Use this code once we track down where empty queries fail
     #     print(str(datetime.now()), 'Query returned no results ', current_dvh.query, sep=' ')
     #     update_button.label = 'No results match query'
@@ -2041,7 +2049,76 @@ def roi_viewer_wheel_event(event):
             roi_viewer_go_to_previous_slice()
 
 
+def update_correlation():
+
+    correlation = {}
+
+    # remove review and stats from source
+    group_1_count, group_2_count = group_count()
+    if group_1_count > 0 and group_2_count > 0:
+        extra_rows = 12
+    elif group_1_count > 0 or group_2_count > 0:
+        extra_rows = 6
+    else:
+        extra_rows = 0
+    include = [True] * (len(source.data['uid']) - extra_rows)
+    include[0] = False
+    include.extend([False] * extra_rows)
+
+    for key in range_categories.keys():
+        src = range_categories[key]['source']
+        curr_var = range_categories[key]['var_name']
+        table = range_categories[key]['table']
+
+        if curr_var in correlation_variables:
+
+            if table in {'DVHs'}:
+                uids_dvh = []
+                data_dvh = []
+                for i in range(0, len(src.data['uid'])):
+                    if include[i]:
+                        uids_dvh.append(src.data['uid'][i] + '_' + src.data['roi_name'][i])
+                        data_dvh.append(src.data[curr_var][i])
+                correlation[key] = {'uid': uids_dvh, 'data': data_dvh}
+
+    # correlation_sorted = {}
+    # for key in correlation.keys():
+    #     item = correlation[key]
+    #     sort_index = sorted(range(len(item['uid'])), key=lambda k: item['uid'][k])
+    #     uids_sorted, data_sorted = [], []
+    #     for i in range(0, len(item['uid'])):
+    #         uids_sorted.append(item['uid'][sort_index[i]])
+    #         data_sorted.append(item['data'][sort_index[i]])
+    #     correlation_sorted[key] = {'uid': uids_sorted, 'data': data_sorted}
+
+    var_names = correlation.keys()
+    var_names.sort()
+    var_names_count = len(var_names)
+
+    s_x, s_y, s_color, s_alpha, s_x_name, s_y_name = [], [], [], [], [], []
+    for x in range(0, var_names_count):
+        x_data = correlation[var_names[x]]['data']
+        for y in range(0, var_names_count):
+            y_data = correlation[var_names[y]]['data']
+            r, p_value = pearsonr(x_data, y_data)
+
+            s_x.append(x)
+            s_y.append(y)
+            if r >= 0:
+                s_color.append('blue')
+            else:
+                s_color.append('red')
+            s_alpha.append(abs(r))
+            s_x_name.append(var_names[x])
+            s_y_name.append(var_names[y])
+
+    source_correlation.data = {'x': s_x, 'y': s_y, 'x_name': s_x_name, 'y_name': s_y_name,
+                               'color': s_color, 'alpha': s_alpha}
+
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!
 # set up layout
+# !!!!!!!!!!!!!!!!!!!!!!!!!
 
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
 dvh_plots = figure(plot_width=1050, plot_height=500, tools=tools, logo=None, active_drag="box_zoom")
@@ -2421,6 +2498,42 @@ roi_viewer.yaxis.axis_label = "Anterior/Posterior DICOM Coordinate (mm)"
 roi_viewer.on_event(events.MouseWheel, roi_viewer_wheel_event)
 roi_viewer_scrolling = CheckboxGroup(labels=["Enable Slice Scrolling with Mouse Wheel"], active=[0])
 
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Correlation
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Plot
+corr_fig = figure(plot_width=700, plot_height=700,
+                  x_axis_location="above",
+                  title="Correlation Matrix",
+                  tools="pan, ywheel_zoom, reset",
+                  logo=None)
+corr_fig.toolbar.active_scroll = "auto"
+corr_fig.title.align = 'center'
+corr_fig.title.text_font_style = "italic"
+corr_fig.xaxis.axis_line_color = None
+corr_fig.xaxis.major_tick_line_color = None
+corr_fig.xaxis.minor_tick_line_color = None
+corr_fig.xaxis.major_label_text_font_size = "15pt"
+corr_fig.xgrid.grid_line_color = None
+corr_fig.ygrid.grid_line_color = None
+corr_fig.yaxis.axis_line_color = None
+corr_fig.yaxis.major_tick_line_color = None
+corr_fig.yaxis.minor_tick_line_color = None
+corr_fig.yaxis.major_label_text_font_size = "15pt"
+corr_fig.outline_line_color = None
+corr_fig.square(x='x', y='y', color='color', alpha='alpha', size=60, source=source_correlation)
+corr_fig.add_tools(HoverTool(show_arrow=True,
+                             line_policy='next',
+                             tooltips=[('x', '@x_name'),
+                                       ('y', '@y_name'),
+                                       ('r', '@alpha')]))
+
+source_correlation_labels = ColumnDataSource(data=dict(id=range(0, len(correlation_variables)),
+                                                       name=correlation_variables))
+columns = [TableColumn(field="id", title="ID"),
+           TableColumn(field="name", title="Variable")]
+data_table_corr = DataTable(source=source_correlation_labels, columns=columns, width=250)
+
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # define main layout to pass to curdoc()
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2467,13 +2580,16 @@ layout_trending = column(row(control_chart_y, control_chart_lookback_units, cont
                          row(histogram_normaltest_2_text, histogram_ranksums_text),
                          histograms)
 
+layout_correlation = column(row(corr_fig, data_table_corr))
+
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
 roi_viewer_tab = Panel(child=roi_viewer_layout, title='ROI Viewer')
 planning_data_tab = Panel(child=layout_planning_data, title='Planning Data')
-trending_tab = Panel(child=layout_trending, title='Range-Variable Trending')
+trending_tab = Panel(child=layout_trending, title='Trends')
+correlation_tab = Panel(child=layout_correlation, title='Correlations')
 
-tabs = Tabs(tabs=[query_tab, dvh_tab, roi_viewer_tab, planning_data_tab, trending_tab])
+tabs = Tabs(tabs=[query_tab, dvh_tab, roi_viewer_tab, planning_data_tab, trending_tab, correlation_tab])
 
 # go ahead and add a selector row for the user
 button_add_selector_row()
