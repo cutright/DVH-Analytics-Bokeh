@@ -2163,8 +2163,8 @@ def update_correlation():
 
                 x_norm, x_p = normaltest(x_data)
                 y_norm, y_p = normaltest(y_data)
-                s[k]['x_normality'].append(round(x_p, 3))
-                s[k]['y_normality'].append(round(y_p, 3))
+                s[k]['x_normality'].append(x_p)
+                s[k]['y_normality'].append(y_p)
 
     source_correlation_1_pos.data = s['1_pos']
     source_correlation_1_neg.data = s['1_neg']
@@ -2593,8 +2593,8 @@ corr_fig.add_tools(HoverTool(show_arrow=True,
                                        ('y', '@y_name'),
                                        ('r', '@r'),
                                        ('p', '@p'),
-                                       ('Norm p-value x', '@x_normality'),
-                                       ('Norm p-value y', '@y_normality')],))
+                                       ('Norm p-value x', '@x_normality{0.3f}'),
+                                       ('Norm p-value y', '@y_normality{0.3f}')],))
 corr_fig.line(x=[1, len(correlation_variables)], y=[len(correlation_variables), 1],
               line_width=3, line_dash='dotted', color='black', alpha=0.8)
 # Set the legend
