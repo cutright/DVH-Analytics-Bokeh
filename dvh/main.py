@@ -2593,8 +2593,8 @@ corr_fig.add_tools(HoverTool(show_arrow=True,
                                        ('y', '@y_name'),
                                        ('r', '@r'),
                                        ('p', '@p'),
-                                       ('Norm p-value x', '@x_normality{0.3f}'),
-                                       ('Norm p-value y', '@y_normality{0.3f}')],))
+                                       ('Norm p-value x', '@x_normality{0.4f}'),
+                                       ('Norm p-value y', '@y_normality{0.4f}')],))
 corr_fig.line(x=[1, len(correlation_variables)], y=[len(correlation_variables), 1],
               line_width=3, line_dash='dotted', color='black', alpha=0.8)
 # Set the legend
