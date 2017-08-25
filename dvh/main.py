@@ -17,7 +17,7 @@ import itertools
 from datetime import datetime
 from os.path import dirname, join
 from bokeh.layouts import layout, column, row
-from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider
+from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider, Range1d
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
@@ -26,6 +26,7 @@ from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, Pa
 from dicompylercore import dicomparser, dvhcalc
 from bokeh import events
 from scipy.stats import ttest_ind, ranksums, normaltest, pearsonr
+from math import pi
 
 # Declare variables
 colors = itertools.cycle(palette)
@@ -92,7 +93,14 @@ source_roi5_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_tv = ColumnDataSource(data=dict(x=[], y=[]))
 source_histogram_1 = ColumnDataSource(data=dict(x=[], top=[], width=[], color=[]))
 source_histogram_2 = ColumnDataSource(data=dict(x=[], top=[], width=[], color=[]))
-source_correlation = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[], color=[], alpha=[]))
+source_correlation_1_pos = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[],
+                                                      color=[], alpha=[], r=[], p=[], group=[], size=[]))
+source_correlation_1_neg = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[],
+                                                      color=[], alpha=[], r=[], p=[], group=[], size=[]))
+source_correlation_2_pos = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[],
+                                                      color=[], alpha=[], r=[], p=[], group=[], size=[]))
+source_correlation_2_neg = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[],
+                                                      color=[], alpha=[], r=[], p=[], group=[], size=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -148,10 +156,10 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
                     'ROI Mean Dose': {'var_name': 'mean_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
                     'ROI Max Dose': {'var_name': 'max_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
                     'ROI Volume': {'var_name': 'volume', 'table': 'DVHs', 'units': 'cc', 'source': source},
-                    'Distance to PTV Min': {'var_name': 'dist_to_ptv_min', 'table': 'DVHs', 'units': 'cm', 'source': source},
-                    'Distance to PTV Mean': {'var_name': 'dist_to_ptv_mean', 'table': 'DVHs', 'units': 'cm', 'source': source},
-                    'Distance to PTV Median': {'var_name': 'dist_to_ptv_median', 'table': 'DVHs', 'units': 'cm', 'source': source},
-                    'Distance to PTV Max': {'var_name': 'dist_to_ptv_max', 'table': 'DVHs', 'units': 'cm', 'source': source},
+                    'PTV Distance (Min)': {'var_name': 'dist_to_ptv_min', 'table': 'DVHs', 'units': 'cm', 'source': source},
+                    'PTV Distance (Mean)': {'var_name': 'dist_to_ptv_mean', 'table': 'DVHs', 'units': 'cm', 'source': source},
+                    'PTV Distance (Median)': {'var_name': 'dist_to_ptv_median', 'table': 'DVHs', 'units': 'cm', 'source': source},
+                    'PTV Distance (Max)': {'var_name': 'dist_to_ptv_max', 'table': 'DVHs', 'units': 'cm', 'source': source},
                     'PTV Overlap': {'var_name': 'ptv_overlap', 'table': 'DVHs', 'units': 'cc', 'source': source},
                     'Scan Spots': {'var_name': 'scan_spot_count', 'table': 'Beams', 'units': '', 'source': source_beams},
                     'Beam MU per deg': {'var_name': 'beam_mu_per_deg', 'table': 'Beams', 'units': '', 'source': source_beams},
@@ -159,10 +167,11 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
 
 # correlation variable names
 correlation_variables = []
+correlation_names = []
 for key in range_categories.keys():
-    var_name = range_categories[key]['var_name']
-    if var_name in {'volume', 'min_dose', 'mean_dose', 'max_dose', 'ptv_overlap'} or var_name.startswith('dist_to_ptv'):
-        correlation_variables.append(var_name)
+    if key.startswith('ROI') or key.startswith('PTV'):
+        correlation_variables.append(key)
+correlation_variables.sort()
 
 
 # Functions that add widget rows
@@ -2051,7 +2060,8 @@ def roi_viewer_wheel_event(event):
 
 def update_correlation():
 
-    correlation = {}
+    correlation_1 = {}
+    correlation_2 = {}
 
     # remove review and stats from source
     group_1_count, group_2_count = group_count()
@@ -2070,16 +2080,20 @@ def update_correlation():
         curr_var = range_categories[key]['var_name']
         table = range_categories[key]['table']
 
-        if curr_var in correlation_variables:
+        if key in correlation_variables:
 
             if table in {'DVHs'}:
-                uids_dvh = []
-                data_dvh = []
+                uids_dvh_1, data_dvh_1, uids_dvh_2, data_dvh_2 = [], [], [], []
                 for i in range(0, len(src.data['uid'])):
                     if include[i]:
-                        uids_dvh.append(src.data['uid'][i] + '_' + src.data['roi_name'][i])
-                        data_dvh.append(src.data[curr_var][i])
-                correlation[key] = {'uid': uids_dvh, 'data': data_dvh}
+                        if src.data['group'][i] in {'Blue', 'Blue & Red'}:
+                            uids_dvh_1.append(src.data['uid'][i] + '_' + src.data['roi_name'][i])
+                            data_dvh_1.append(src.data[curr_var][i])
+                        if src.data['group'][i] in {'Red', 'Blue & Red'}:
+                            uids_dvh_2.append(src.data['uid'][i] + '_' + src.data['roi_name'][i])
+                            data_dvh_2.append(src.data[curr_var][i])
+                correlation_1[key] = {'uid': uids_dvh_1, 'data': data_dvh_1}
+                correlation_2[key] = {'uid': uids_dvh_2, 'data': data_dvh_2}
 
     # correlation_sorted = {}
     # for key in correlation.keys():
@@ -2091,29 +2105,60 @@ def update_correlation():
     #         data_sorted.append(item['data'][sort_index[i]])
     #     correlation_sorted[key] = {'uid': uids_sorted, 'data': data_sorted}
 
-    var_names = correlation.keys()
-    var_names.sort()
-    var_names_count = len(var_names)
+    categories = correlation_1.keys()
+    categories.sort()
+    categories_count = len(categories)
 
-    s_x, s_y, s_color, s_alpha, s_x_name, s_y_name = [], [], [], [], [], []
-    for x in range(0, var_names_count):
-        x_data = correlation[var_names[x]]['data']
-        for y in range(0, var_names_count):
-            y_data = correlation[var_names[y]]['data']
-            r, p_value = pearsonr(x_data, y_data)
+    s = {'1_pos': {'x': [], 'y': [], 'x_name': [], 'y_name': [], 'color': [],
+                   'alpha': [], 'r': [], 'p': [], 'group': [], 'size': []},
+         '1_neg': {'x': [], 'y': [], 'x_name': [], 'y_name': [], 'color': [],
+                   'alpha': [], 'r': [], 'p': [], 'group': [], 'size': []},
+         '2_pos': {'x': [], 'y': [], 'x_name': [], 'y_name': [], 'color': [],
+                   'alpha': [], 'r': [], 'p': [], 'group': [], 'size': []},
+         '2_neg': {'x': [], 'y': [], 'x_name': [], 'y_name': [], 'color': [],
+                   'alpha': [], 'r': [], 'p': [], 'group': [], 'size': []}}
 
-            s_x.append(x)
-            s_y.append(y)
-            if r >= 0:
-                s_color.append('blue')
-            else:
-                s_color.append('red')
-            s_alpha.append(abs(r))
-            s_x_name.append(var_names[x])
-            s_y_name.append(var_names[y])
+    max_size = 45
+    for x in range(0, categories_count):
+        for y in range(0, categories_count):
+            if x != y:
+                if x > y:
+                    x_data = correlation_1[categories[x]]['data']
+                    y_data = correlation_1[categories[y]]['data']
+                    r, p_value = pearsonr(x_data, y_data)
+                    if r >= 0:
+                        k = '1_pos'
+                        s[k]['color'].append('blue')
+                        s[k]['group'].append('Blue')
+                    else:
+                        k = '1_neg'
+                        s[k]['color'].append('green')
+                        s[k]['group'].append('Blue')
+                else:
+                    x_data = correlation_2[categories[x]]['data']
+                    y_data = correlation_2[categories[y]]['data']
+                    r, p_value = pearsonr(x_data, y_data)
+                    if r >= 0:
+                        k = '2_pos'
+                        s[k]['color'].append('red')
+                        s[k]['group'].append('Red')
+                    else:
+                        k = '2_neg'
+                        s[k]['color'].append('purple')
+                        s[k]['group'].append('Red')
+                s[k]['r'].append(r)
+                s[k]['p'].append(p_value)
+                s[k]['alpha'].append(abs(r))
+                s[k]['size'].append(max_size * abs(r))
+                s[k]['x'].append(x + 1)
+                s[k]['y'].append(categories_count - y)
+                s[k]['x_name'].append(categories[x])
+                s[k]['y_name'].append(categories[y])
 
-    source_correlation.data = {'x': s_x, 'y': s_y, 'x_name': s_x_name, 'y_name': s_y_name,
-                               'color': s_color, 'alpha': s_alpha}
+    source_correlation_1_pos.data = s['1_pos']
+    source_correlation_1_neg.data = s['1_neg']
+    source_correlation_2_pos.data = s['2_pos']
+    source_correlation_2_neg.data = s['2_neg']
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2502,37 +2547,50 @@ roi_viewer_scrolling = CheckboxGroup(labels=["Enable Slice Scrolling with Mouse 
 # Correlation
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Plot
-corr_fig = figure(plot_width=700, plot_height=700,
+corr_fig = figure(plot_width=900, plot_height=700,
+                  x_range=correlation_variables,
+                  y_range=correlation_variables[::-1],
                   x_axis_location="above",
-                  title="Correlation Matrix",
-                  tools="pan, ywheel_zoom, reset",
+                  tools="pan, wheel_zoom, reset",
                   logo=None)
+corr_fig.xaxis.major_label_orientation = pi / 4
 corr_fig.toolbar.active_scroll = "auto"
 corr_fig.title.align = 'center'
 corr_fig.title.text_font_style = "italic"
 corr_fig.xaxis.axis_line_color = None
 corr_fig.xaxis.major_tick_line_color = None
 corr_fig.xaxis.minor_tick_line_color = None
-corr_fig.xaxis.major_label_text_font_size = "15pt"
+corr_fig.xaxis.major_label_text_font_size = "12pt"
 corr_fig.xgrid.grid_line_color = None
 corr_fig.ygrid.grid_line_color = None
 corr_fig.yaxis.axis_line_color = None
 corr_fig.yaxis.major_tick_line_color = None
 corr_fig.yaxis.minor_tick_line_color = None
-corr_fig.yaxis.major_label_text_font_size = "15pt"
+corr_fig.yaxis.major_label_text_font_size = "12pt"
 corr_fig.outline_line_color = None
-corr_fig.square(x='x', y='y', color='color', alpha='alpha', size=60, source=source_correlation)
+corr_1_pos = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=source_correlation_1_pos)
+corr_1_neg = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=source_correlation_1_neg)
+corr_2_pos = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=source_correlation_2_pos)
+corr_2_neg = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=source_correlation_2_neg)
 corr_fig.add_tools(HoverTool(show_arrow=True,
                              line_policy='next',
-                             tooltips=[('x', '@x_name'),
+                             tooltips=[('Group', '@group'),
+                                       ('x', '@x_name'),
                                        ('y', '@y_name'),
-                                       ('r', '@alpha')]))
+                                       ('r', '@r'),
+                                       ('p', '@p')]))
+corr_fig.line(x=[1, len(correlation_variables)], y=[len(correlation_variables), 1],
+              line_width=3, line_dash='dotted', color='black', alpha=0.8)
+# Set the legend
+legend_corr = Legend(items=[("+r Blue Group", [corr_1_pos]),
+                            ("-r Blue Group", [corr_1_neg]),
+                            ("+r Red Group", [corr_2_pos]),
+                            ("-r Red Group", [corr_2_neg])],
+                     location=(0, -575))
 
-source_correlation_labels = ColumnDataSource(data=dict(id=range(0, len(correlation_variables)),
-                                                       name=correlation_variables))
-columns = [TableColumn(field="id", title="ID"),
-           TableColumn(field="name", title="Variable")]
-data_table_corr = DataTable(source=source_correlation_labels, columns=columns, width=250)
+# Add the layout outside the plot, clicking legend item hides the line
+corr_fig.add_layout(legend_corr, 'right')
+corr_fig.legend.click_policy = "hide"
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # define main layout to pass to curdoc()
@@ -2580,7 +2638,7 @@ layout_trending = column(row(control_chart_y, control_chart_lookback_units, cont
                          row(histogram_normaltest_2_text, histogram_ranksums_text),
                          histograms)
 
-layout_correlation = column(row(corr_fig, data_table_corr))
+layout_correlation = corr_fig
 
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
