@@ -93,14 +93,14 @@ source_roi5_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_tv = ColumnDataSource(data=dict(x=[], y=[]))
 source_histogram_1 = ColumnDataSource(data=dict(x=[], top=[], width=[], color=[]))
 source_histogram_2 = ColumnDataSource(data=dict(x=[], top=[], width=[], color=[]))
-source_correlation_1_pos = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[],
-                                                      color=[], alpha=[], r=[], p=[], group=[], size=[]))
-source_correlation_1_neg = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[],
-                                                      color=[], alpha=[], r=[], p=[], group=[], size=[]))
-source_correlation_2_pos = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[],
-                                                      color=[], alpha=[], r=[], p=[], group=[], size=[]))
-source_correlation_2_neg = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[],
-                                                      color=[], alpha=[], r=[], p=[], group=[], size=[]))
+source_correlation_1_pos = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[], color=[], alpha=[], r=[], p=[],
+                                                      group=[], size=[], x_normality=[], y_normality=[]))
+source_correlation_1_neg = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[], color=[], alpha=[], r=[], p=[],
+                                                      group=[], size=[], x_normality=[], y_normality=[]))
+source_correlation_2_pos = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[], color=[], alpha=[], r=[], p=[],
+                                                      group=[], size=[], x_normality=[], y_normality=[]))
+source_correlation_2_neg = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[], color=[], alpha=[], r=[], p=[],
+                                                      group=[], size=[], x_normality=[], y_normality=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -2110,13 +2110,13 @@ def update_correlation():
     categories_count = len(categories)
 
     s = {'1_pos': {'x': [], 'y': [], 'x_name': [], 'y_name': [], 'color': [],
-                   'alpha': [], 'r': [], 'p': [], 'group': [], 'size': []},
+                   'alpha': [], 'r': [], 'p': [], 'group': [], 'size': [], 'x_normality': [], 'y_normality': []},
          '1_neg': {'x': [], 'y': [], 'x_name': [], 'y_name': [], 'color': [],
-                   'alpha': [], 'r': [], 'p': [], 'group': [], 'size': []},
+                   'alpha': [], 'r': [], 'p': [], 'group': [], 'size': [], 'x_normality': [], 'y_normality': []},
          '2_pos': {'x': [], 'y': [], 'x_name': [], 'y_name': [], 'color': [],
-                   'alpha': [], 'r': [], 'p': [], 'group': [], 'size': []},
+                   'alpha': [], 'r': [], 'p': [], 'group': [], 'size': [], 'x_normality': [], 'y_normality': []},
          '2_neg': {'x': [], 'y': [], 'x_name': [], 'y_name': [], 'color': [],
-                   'alpha': [], 'r': [], 'p': [], 'group': [], 'size': []}}
+                   'alpha': [], 'r': [], 'p': [], 'group': [], 'size': [], 'x_normality': [], 'y_normality': []}}
 
     max_size = 45
     for x in range(0, categories_count):
@@ -2125,7 +2125,10 @@ def update_correlation():
                 if x > y:
                     x_data = correlation_1[categories[x]]['data']
                     y_data = correlation_1[categories[y]]['data']
-                    r, p_value = pearsonr(x_data, y_data)
+                    if x_data:
+                        r, p_value = pearsonr(x_data, y_data)
+                    else:
+                        r, p_value = 0, 0
                     if r >= 0:
                         k = '1_pos'
                         s[k]['color'].append('blue')
@@ -2137,7 +2140,10 @@ def update_correlation():
                 else:
                     x_data = correlation_2[categories[x]]['data']
                     y_data = correlation_2[categories[y]]['data']
-                    r, p_value = pearsonr(x_data, y_data)
+                    if x_data:
+                        r, p_value = pearsonr(x_data, y_data)
+                    else:
+                        r, p_value = 0, 0
                     if r >= 0:
                         k = '2_pos'
                         s[k]['color'].append('red')
@@ -2155,10 +2161,18 @@ def update_correlation():
                 s[k]['x_name'].append(categories[x])
                 s[k]['y_name'].append(categories[y])
 
+                x_norm, x_p = normaltest(x_data)
+                y_norm, y_p = normaltest(y_data)
+                s[k]['x_normality'].append(round(x_p, 3))
+                s[k]['y_normality'].append(round(y_p, 3))
+
     source_correlation_1_pos.data = s['1_pos']
     source_correlation_1_neg.data = s['1_neg']
     source_correlation_2_pos.data = s['2_pos']
     source_correlation_2_neg.data = s['2_neg']
+
+    corr_fig_text_1.text = "Blue Group: %d" % len(correlation_1[correlation_1.keys()[0]]['uid'])
+    corr_fig_text_2.text = "Red Group: %d" % len(correlation_1[correlation_1.keys()[0]]['uid'])
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2578,7 +2592,9 @@ corr_fig.add_tools(HoverTool(show_arrow=True,
                                        ('x', '@x_name'),
                                        ('y', '@y_name'),
                                        ('r', '@r'),
-                                       ('p', '@p')]))
+                                       ('p', '@p'),
+                                       ('Norm p-value x', '@x_normality'),
+                                       ('Norm p-value y', '@y_normality')],))
 corr_fig.line(x=[1, len(correlation_variables)], y=[len(correlation_variables), 1],
               line_width=3, line_dash='dotted', color='black', alpha=0.8)
 # Set the legend
@@ -2591,6 +2607,10 @@ legend_corr = Legend(items=[("+r Blue Group", [corr_1_pos]),
 # Add the layout outside the plot, clicking legend item hides the line
 corr_fig.add_layout(legend_corr, 'right')
 corr_fig.legend.click_policy = "hide"
+
+corr_fig_text = Div(text="<b>Sample Sizes</b>", width=100)
+corr_fig_text_1 = Div(text="Blue Group:", width=110)
+corr_fig_text_2 = Div(text="Red Group:", width=110)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # define main layout to pass to curdoc()
@@ -2638,7 +2658,8 @@ layout_trending = column(row(control_chart_y, control_chart_lookback_units, cont
                          row(histogram_normaltest_2_text, histogram_ranksums_text),
                          histograms)
 
-layout_correlation = corr_fig
+layout_correlation = column(row(corr_fig_text, corr_fig_text_1, corr_fig_text_2),
+                            corr_fig)
 
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
