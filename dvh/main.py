@@ -33,6 +33,8 @@ colors = itertools.cycle(palette)
 current_dvh = []
 current_dvh_group_1 = []
 current_dvh_group_2 = []
+correlation_1 = {}
+correlation_2 = {}
 update_warning = True
 query_row = []
 query_row_type = []
@@ -101,6 +103,8 @@ source_correlation_2_pos = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_n
                                                       group=[], size=[], x_normality=[], y_normality=[]))
 source_correlation_2_neg = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[], color=[], alpha=[], r=[], p=[],
                                                       group=[], size=[], x_normality=[], y_normality=[]))
+source_corr_chart_1 = ColumnDataSource(data=dict(x=[], y=[]))
+source_corr_chart_2 = ColumnDataSource(data=dict(x=[], y=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -2068,8 +2072,7 @@ def roi_viewer_wheel_event(event):
 
 def update_correlation():
 
-    correlation_1 = {}
-    correlation_2 = {}
+    global correlation_1, correlation_2
 
     # remove review and stats from source
     group_1_count, group_2_count = group_count()
@@ -2168,7 +2171,6 @@ def update_correlation():
                                                                        'data': beam_data_1[stat]}
                 correlation_2["%s (%s)" % (key, stat.capitalize())] = {'uid': beam_data_2['uid'],
                                                                        'data': beam_data_2[stat]}
-            print(len(correlation_1['Beam Dose (Max)']['uid']), len(correlation_1['Beam Dose (Max)']['data']), sep=' ')
 
     categories = correlation_1.keys()
     categories.sort()
@@ -2242,6 +2244,20 @@ def update_correlation():
 
     corr_fig_text_1.text = "Blue Group: %d" % len(correlation_1['ROI Max Dose']['uid'])
     corr_fig_text_2.text = "Red Group: %d" % len(correlation_1['ROI Max Dose']['uid'])
+
+    corr_chart_x.options = [''] + categories
+    corr_chart_y.options = [''] + categories
+
+
+def update_corr_chart_ticker(attr, old, new):
+    update_corr_chart()
+
+
+def update_corr_chart():
+    source_corr_chart_1.data = {'x': correlation_1[corr_chart_x.value]['data'],
+                                'y': correlation_1[corr_chart_y.value]['data']}
+    source_corr_chart_2.data = {'x': correlation_2[corr_chart_x.value]['data'],
+                                'y': correlation_2[corr_chart_y.value]['data']}
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2321,7 +2337,6 @@ columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="roi_type", title="ROI Type", width=80),
            TableColumn(field="rx_dose", title="Rx Dose", width=100, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="volume", title="Volume", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="surface_area", title="S Area", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="min_dose", title="Min Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="mean_dose", title="Mean Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="max_dose", title="Max Dose", width=80, formatter=NumberFormatter(format="0.00")),
@@ -2681,6 +2696,34 @@ corr_fig_text = Div(text="<b>Sample Sizes</b>", width=100)
 corr_fig_text_1 = Div(text="Blue Group:", width=110)
 corr_fig_text_2 = Div(text="Red Group:", width=110)
 
+# Control Chart layout
+tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
+corr_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
+corr_chart_data_1 = corr_chart.circle('x', 'y', size=10, color='blue', alpha=0.5, source=source_corr_chart_1)
+corr_chart_data_2 = corr_chart.circle('x', 'y', size=10, color='red', alpha=0.5, source=source_corr_chart_2)
+corr_chart.add_tools(HoverTool(show_arrow=True,
+                               tooltips=[('ID', '@mrn'),
+                                         ('Date', '@x{%F}'),
+                                         ('Value', '@y{0.2f}')],
+                               formatters={'x': 'datetime'}))
+
+# Set the legend
+legend_corr_chart = Legend(items=[("Blue Group", [corr_chart_data_1]),
+                                  ("Red Group", [corr_chart_data_2])],
+                           location=(25, 0),)
+
+# Add the layout outside the plot, clicking legend item hides the line
+corr_chart.add_layout(legend_corr_chart, 'right')
+corr_chart.legend.click_policy = "hide"
+
+corr_chart_x = Select(value='', options=[''], width=300)
+corr_chart_x.title = "Select an Independent Variable"
+corr_chart_x.on_change('value', update_corr_chart_ticker)
+
+corr_chart_y = Select(value='', options=[''], width=300)
+corr_chart_y.title = "Select a Dependent Variable"
+corr_chart_y.on_change('value', update_corr_chart_ticker)
+
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # define main layout to pass to curdoc()
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2727,17 +2770,22 @@ layout_trending = column(row(control_chart_y, control_chart_lookback_units, cont
                          row(histogram_normaltest_2_text, histogram_ranksums_text),
                          histograms)
 
-layout_correlation = column(row(corr_fig_text, corr_fig_text_1, corr_fig_text_2),
-                            corr_fig)
+layout_correlation_matrix = column(row(corr_fig_text, corr_fig_text_1, corr_fig_text_2),
+                                   corr_fig)
+
+layout_correlation = column(row(corr_chart_x, corr_chart_y),
+                            corr_chart)
 
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
 roi_viewer_tab = Panel(child=roi_viewer_layout, title='ROI Viewer')
 planning_data_tab = Panel(child=layout_planning_data, title='Planning Data')
 trending_tab = Panel(child=layout_trending, title='Trends')
-correlation_tab = Panel(child=layout_correlation, title='Correlations')
+correlation_matrix_tab = Panel(child=layout_correlation_matrix, title='Correlation Matrix')
+correlation_tab = Panel(child=layout_correlation, title='Correlation Scatter Plot')
 
-tabs = Tabs(tabs=[query_tab, dvh_tab, roi_viewer_tab, planning_data_tab, trending_tab, correlation_tab])
+tabs = Tabs(tabs=[query_tab, dvh_tab, roi_viewer_tab, planning_data_tab,
+                  trending_tab, correlation_matrix_tab, correlation_tab])
 
 # go ahead and add a selector row for the user
 button_add_selector_row()
