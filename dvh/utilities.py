@@ -140,7 +140,34 @@ def recalculate_ages(*custom_condition):
         except:
             print("Update Failed for", mrn, "sim date:", sim_study_date, "birthdate", birth_date, sep=' ')
 
-    cnx.cnx.close()
+    cnx.close()
+
+
+def recalculate_total_mu(*custom_condition):
+
+    if custom_condition:
+        custom_condition = " AND " + custom_condition[0]
+    else:
+        custom_condition = ''
+
+    # Get entire table
+    beam_data = QuerySQL('Beams', "mrn != ''" + custom_condition)
+    cnx = DVH_SQL()
+
+    plan_mus = {}
+    for i in range(0, len(beam_data.study_instance_uid)):
+        uid = beam_data.study_instance_uid[i]
+        beam_mu = beam_data.beam_mu[i]
+        fxs = float(beam_data.fx_count[i])
+        if uid not in plan_mus.keys():
+            plan_mus[uid] = 0.
+
+        plan_mus[uid] += beam_mu * fxs
+
+    for uid in plan_mus.keys():
+        cnx.update('Plans', 'total_mu', str(round(plan_mus[uid], 1)), "study_instance_uid = '%s'" % uid)
+
+    cnx.close()
 
 
 def datetime_str_to_obj(datetime_str):
