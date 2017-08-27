@@ -124,9 +124,11 @@ class PlanRow:
         # Note these are total fxs, not treatment days
         for fx_grp in fx_grp_seq:
             fxs += fx_grp.NumberOfFractionsPlanned
+            fx_mu = 0
             for Beam in range(0, fx_grp.NumberOfBeams):
                 if hasattr(fx_grp.ReferencedBeamSequence[Beam], 'BeamMeterset'):
-                    total_mu += fx_grp.ReferencedBeamSequence[Beam].BeamMeterset
+                    fx_mu += fx_grp.ReferencedBeamSequence[Beam].BeamMeterset
+            total_mu += fx_grp.NumberOfFractionsPlanned * fx_mu
         total_mu = round(total_mu, 1)
 
         # This UID must be in all DICOM files associated with this sim study
