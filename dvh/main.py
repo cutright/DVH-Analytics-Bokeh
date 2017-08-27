@@ -168,10 +168,18 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
 # correlation variable names
 correlation_variables = []
 correlation_names = []
+correlation_variables_beam = ['Beam Dose', 'Beam MU', 'Control Point Count', 'Gantry Range',
+                              'SSD', 'Beam MU per control point']
 for key in range_categories.keys():
-    if key.startswith('ROI') or key.startswith('PTV'):
+    if key.startswith('ROI') or key.startswith('PTV') or key in {'Total Plan MU', 'Rx Dose'}:
         correlation_variables.append(key)
+        correlation_names.append(key)
+    if key in correlation_variables_beam:
+        correlation_variables.append(key)
+        for stat in ['Min', 'Mean', 'Median', 'Max']:
+            correlation_names.append("%s (%s)" % (key, stat))
 correlation_variables.sort()
+correlation_names.sort()
 
 
 # Functions that add widget rows
@@ -2075,35 +2083,92 @@ def update_correlation():
     include[0] = False
     include.extend([False] * extra_rows)
 
-    for key in range_categories.keys():
+    for key in correlation_variables:
         src = range_categories[key]['source']
         curr_var = range_categories[key]['var_name']
         table = range_categories[key]['table']
 
-        if key in correlation_variables:
+        if table in {'DVHs'}:
+            uids_dvh_1, data_dvh_1, uids_dvh_2, data_dvh_2 = [], [], [], []
+            for i in range(0, len(src.data['uid'])):
+                if include[i]:
+                    if src.data['group'][i] in {'Blue', 'Blue & Red'}:
+                        uids_dvh_1.append(src.data['uid'][i])
+                        data_dvh_1.append(src.data[curr_var][i])
+                    if src.data['group'][i] in {'Red', 'Blue & Red'}:
+                        uids_dvh_2.append(src.data['uid'][i])
+                        data_dvh_2.append(src.data[curr_var][i])
+            correlation_1[key] = {'uid': uids_dvh_1, 'data': data_dvh_1}
+            correlation_2[key] = {'uid': uids_dvh_2, 'data': data_dvh_2}
 
-            if table in {'DVHs'}:
-                uids_dvh_1, data_dvh_1, uids_dvh_2, data_dvh_2 = [], [], [], []
-                for i in range(0, len(src.data['uid'])):
-                    if include[i]:
-                        if src.data['group'][i] in {'Blue', 'Blue & Red'}:
-                            uids_dvh_1.append(src.data['uid'][i] + '_' + src.data['roi_name'][i])
-                            data_dvh_1.append(src.data[curr_var][i])
-                        if src.data['group'][i] in {'Red', 'Blue & Red'}:
-                            uids_dvh_2.append(src.data['uid'][i] + '_' + src.data['roi_name'][i])
-                            data_dvh_2.append(src.data[curr_var][i])
-                correlation_1[key] = {'uid': uids_dvh_1, 'data': data_dvh_1}
-                correlation_2[key] = {'uid': uids_dvh_2, 'data': data_dvh_2}
+    uid_list_1 = correlation_1['ROI Max Dose']['uid']
+    uid_list_2 = correlation_2['ROI Max Dose']['uid']
+    for key in correlation_variables:
+        src = range_categories[key]['source']
+        curr_var = range_categories[key]['var_name']
+        table = range_categories[key]['table']
+        if table in {'Plans'}:
+            uids_plans_1, data_plans_1 = [], []
+            for i in range(0, len(uid_list_1)):
+                uid = uid_list_1[i]
+                uid_index = src.data['uid'].index(uid)
+                plan_value = src.data[curr_var][uid_index]
+                uids_plans_1.append(uid)
+                data_plans_1.append(plan_value)
 
-    # correlation_sorted = {}
-    # for key in correlation.keys():
-    #     item = correlation[key]
-    #     sort_index = sorted(range(len(item['uid'])), key=lambda k: item['uid'][k])
-    #     uids_sorted, data_sorted = [], []
-    #     for i in range(0, len(item['uid'])):
-    #         uids_sorted.append(item['uid'][sort_index[i]])
-    #         data_sorted.append(item['data'][sort_index[i]])
-    #     correlation_sorted[key] = {'uid': uids_sorted, 'data': data_sorted}
+            uids_plans_2, data_plans_2 = [], []
+            for i in range(0, len(uid_list_2)):
+                uid = uid_list_2[i]
+                uid_index = src.data['uid'].index(uid)
+                plan_value = src.data[curr_var][uid_index]
+                uids_plans_2.append(uid)
+                data_plans_2.append(plan_value)
+
+            correlation_1[key] = {'uid': uids_plans_1, 'data': data_plans_1}
+            correlation_2[key] = {'uid': uids_plans_2, 'data': data_plans_2}
+
+    for key in correlation_variables:
+
+        src = range_categories[key]['source']
+        curr_var = range_categories[key]['var_name']
+        table = range_categories[key]['table']
+        if table in {'Beams'}:
+            beam_data_1 = {'min': [], 'mean': [], 'median': [], 'max': [], 'uid': []}
+            beam_data_2 = {'min': [], 'mean': [], 'median': [], 'max': [], 'uid': []}
+            for i in range(0, len(uid_list_1)):
+                uid = uid_list_1[i]
+                uid_indices = [j for j, x in enumerate(uid_list_1) if x == uid]
+                plan_values = []
+
+                for j in uid_indices:
+                    plan_values.append(src.data[curr_var][j])
+
+                beam_data_1['min'].append(np.min(plan_values))
+                beam_data_1['mean'].append(np.mean(plan_values))
+                beam_data_1['median'].append(np.median(plan_values))
+                beam_data_1['max'].append(np.max(plan_values))
+                beam_data_1['uid'].append(uid)
+
+            for i in range(0, len(uid_list_2)):
+                uid = uid_list_2[i]
+                uid_indices = [j for j, x in enumerate(uid_list_2) if x == uid]
+                plan_values = []
+
+                for j in uid_indices:
+                    plan_values.append(src.data[curr_var][j])
+
+                beam_data_2['min'].append(np.min(plan_values))
+                beam_data_2['mean'].append(np.mean(plan_values))
+                beam_data_2['median'].append(np.median(plan_values))
+                beam_data_2['max'].append(np.max(plan_values))
+                beam_data_2['uid'].append(uid)
+
+            for stat in ['min', 'mean', 'median', 'max']:
+                correlation_1["%s (%s)" % (key, stat.capitalize())] = {'uid': beam_data_1['uid'],
+                                                                       'data': beam_data_1[stat]}
+                correlation_2["%s (%s)" % (key, stat.capitalize())] = {'uid': beam_data_2['uid'],
+                                                                       'data': beam_data_2[stat]}
+            print(len(correlation_1['Beam Dose (Max)']['uid']), len(correlation_1['Beam Dose (Max)']['data']), sep=' ')
 
     categories = correlation_1.keys()
     categories.sort()
@@ -2152,6 +2217,10 @@ def update_correlation():
                         k = '2_neg'
                         s[k]['color'].append('purple')
                         s[k]['group'].append('Red')
+
+                if np.isnan(r):
+                    r = 0
+
                 s[k]['r'].append(r)
                 s[k]['p'].append(p_value)
                 s[k]['alpha'].append(abs(r))
@@ -2171,8 +2240,8 @@ def update_correlation():
     source_correlation_2_pos.data = s['2_pos']
     source_correlation_2_neg.data = s['2_neg']
 
-    corr_fig_text_1.text = "Blue Group: %d" % len(correlation_1[correlation_1.keys()[0]]['uid'])
-    corr_fig_text_2.text = "Red Group: %d" % len(correlation_1[correlation_1.keys()[0]]['uid'])
+    corr_fig_text_1.text = "Blue Group: %d" % len(correlation_1['ROI Max Dose']['uid'])
+    corr_fig_text_2.text = "Red Group: %d" % len(correlation_1['ROI Max Dose']['uid'])
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2562,10 +2631,10 @@ roi_viewer_scrolling = CheckboxGroup(labels=["Enable Slice Scrolling with Mouse 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Plot
 corr_fig = figure(plot_width=900, plot_height=700,
-                  x_range=correlation_variables,
-                  y_range=correlation_variables[::-1],
+                  x_range=correlation_names,
+                  y_range=correlation_names[::-1],
                   x_axis_location="above",
-                  tools="pan, wheel_zoom, reset",
+                  tools="pan, box_zoom, wheel_zoom, reset",
                   logo=None)
 corr_fig.xaxis.major_label_orientation = pi / 4
 corr_fig.toolbar.active_scroll = "auto"
@@ -2595,7 +2664,7 @@ corr_fig.add_tools(HoverTool(show_arrow=True,
                                        ('p', '@p'),
                                        ('Norm p-value x', '@x_normality{0.4f}'),
                                        ('Norm p-value y', '@y_normality{0.4f}')],))
-corr_fig.line(x=[1, len(correlation_variables)], y=[len(correlation_variables), 1],
+corr_fig.line(x=[1, len(correlation_names)], y=[len(correlation_names), 1],
               line_width=3, line_dash='dotted', color='black', alpha=0.8)
 # Set the legend
 legend_corr = Legend(items=[("+r Blue Group", [corr_1_pos]),
