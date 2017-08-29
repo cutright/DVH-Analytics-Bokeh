@@ -2768,8 +2768,8 @@ corr_chart.add_tools(HoverTool(show_arrow=True,
 
 # Set the legend
 legend_corr_chart = Legend(items=[("Blue Group", [corr_chart_data_1]),
-                                  ("Red Group", [corr_chart_data_2]),
                                   ("Lin Reg", [corr_chart_trend_1]),
+                                  ("Red Group", [corr_chart_data_2]),
                                   ("Lin Reg", [corr_chart_trend_2])],
                            location=(25, 0),)
 
