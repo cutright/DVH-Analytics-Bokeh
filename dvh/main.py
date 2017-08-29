@@ -2748,6 +2748,9 @@ legend_corr = Legend(items=[("+r Blue Group", [corr_1_pos]),
 corr_fig.add_layout(legend_corr, 'right')
 corr_fig.legend.click_policy = "hide"
 
+corr_fig_update_button = Button(label="Update Matrix", button_type="primary", width=150)
+corr_fig_update_button.on_click(update_correlation_matrix)
+
 corr_fig_text = Div(text="<b>Sample Sizes</b>", width=100)
 corr_fig_text_1 = Div(text="Blue Group:", width=110)
 corr_fig_text_2 = Div(text="Red Group:", width=110)
@@ -2759,7 +2762,7 @@ corr_chart_data_1 = corr_chart.circle('x', 'y', size=10, color='blue', alpha=0.5
 corr_chart_data_2 = corr_chart.circle('x', 'y', size=10, color='red', alpha=0.5, source=source_corr_chart_2)
 corr_chart_trend_1 = corr_chart.line('x', 'y', line_width=2, color='blue', line_dash='dashed',
                                      source=source_corr_trend_1)
-corr_chart_trend_2 = corr_chart.line('x', 'y', line_width=2, color='red', line_dash='dashed',
+corr_chart_trend_2 = corr_chart.line('x', 'y', line_width=2, color='red', line_dash='dashed', alpha=0.25,
                                      source=source_corr_trend_2)
 corr_chart.add_tools(HoverTool(show_arrow=True,
                                tooltips=[('MRN', '@mrn'),
@@ -2793,7 +2796,6 @@ layout_query = column(row(main_add_selector_button,
                           main_add_endpoint_button,
                           update_button,
                           download_dropdown))
-
 
 layout_dvhs = column(row(radio_group_dose, radio_group_volume),
                      row(select_reviewed_mrn, select_reviewed_dvh, review_rx, review_eud_a_value),
@@ -2831,7 +2833,8 @@ layout_trending = column(row(control_chart_y, control_chart_lookback_units, cont
                          row(histogram_normaltest_2_text, histogram_ranksums_text),
                          histograms)
 
-layout_correlation_matrix = column(row(corr_fig_text, corr_fig_text_1, corr_fig_text_2),
+layout_correlation_matrix = column(corr_fig_update_button,
+                                   row(corr_fig_text, corr_fig_text_1, corr_fig_text_2),
                                    corr_fig)
 
 layout_correlation = column(row(corr_chart_x, corr_chart_y),
