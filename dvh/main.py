@@ -2154,7 +2154,7 @@ def update_correlation():
             beam_data_2 = {'min': [], 'mean': [], 'median': [], 'max': [], 'uid': [], 'mrn': []}
             for i in range(0, len(uid_list_1)):
                 uid = uid_list_1[i]
-                uid_indices = [j for j, x in enumerate(uid_list_1) if x == uid]
+                uid_indices = [j for j, x in enumerate(src.data['uid']) if x == uid]
                 plan_values = []
                 mrn = src.data['mrn'][uid_indices[0]]
 
@@ -2170,7 +2170,7 @@ def update_correlation():
 
             for i in range(0, len(uid_list_2)):
                 uid = uid_list_2[i]
-                uid_indices = [j for j, x in enumerate(uid_list_2) if x == uid]
+                uid_indices = [j for j, x in enumerate(src.data['uid']) if x == uid]
                 plan_values = []
                 mrn = src.data['mrn'][uid_indices[0]]
 
@@ -2289,7 +2289,7 @@ def update_corr_chart():
         y_units = correlation_1[corr_chart_y.value]['units']
         x_1, y_1 = correlation_1[corr_chart_x.value]['data'], correlation_1[corr_chart_y.value]['data']
         x_2, y_2 = correlation_2[corr_chart_x.value]['data'], correlation_2[corr_chart_y.value]['data']
-        mrn_1, mrn_2 = correlation_1[corr_chart_x.value]['mrn'], correlation_1[corr_chart_x.value]['mrn']
+        mrn_1, mrn_2 = correlation_1[corr_chart_x.value]['mrn'], correlation_2[corr_chart_x.value]['mrn']
         if x_units:
             corr_chart.xaxis.axis_label = "%s (%s)" % (corr_chart_x.value, x_units)
         else:
@@ -2306,14 +2306,14 @@ def update_corr_chart():
             x_trend = [min(x_1), max(x_1)]
             source_corr_trend_1.data = {'x': x_trend, 'y': np.add(np.multiply(x_trend, slope), intercept)}
         else:
-            source_corr_trend_1.data = {'x': [], 'y': [], 'mrn': []}
+            source_corr_trend_1.data = {'x': [], 'y': []}
 
         if x_2:
             slope, intercept, r_value, p_value, std_err = linregress(x_2, y_2)
             x_trend = [min(x_2), max(x_2)]
             source_corr_trend_2.data = {'x': x_trend, 'y': np.add(np.multiply(x_trend, slope), intercept)}
         else:
-            source_corr_trend_2.data = {'x': [], 'y': [], 'mrn': []}
+            source_corr_trend_2.data = {'x': [], 'y': []}
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!
