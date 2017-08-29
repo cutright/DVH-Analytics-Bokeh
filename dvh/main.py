@@ -25,7 +25,7 @@ from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, Pa
     NumberFormatter, RadioButtonGroup, TextInput, RadioGroup, CheckboxButtonGroup, Dropdown, CheckboxGroup
 from dicompylercore import dicomparser, dvhcalc
 from bokeh import events
-from scipy.stats import ttest_ind, ranksums, normaltest, pearsonr
+from scipy.stats import ttest_ind, ranksums, normaltest, pearsonr, linregress
 from math import pi
 
 # Declare variables
@@ -103,8 +103,10 @@ source_correlation_2_pos = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_n
                                                       group=[], size=[], x_normality=[], y_normality=[]))
 source_correlation_2_neg = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[], color=[], alpha=[], r=[], p=[],
                                                       group=[], size=[], x_normality=[], y_normality=[]))
-source_corr_chart_1 = ColumnDataSource(data=dict(x=[], y=[]))
-source_corr_chart_2 = ColumnDataSource(data=dict(x=[], y=[]))
+source_corr_chart_1 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
+source_corr_chart_2 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
+source_corr_trend_1 = ColumnDataSource(data=dict(x=[], y=[]))
+source_corr_trend_2 = ColumnDataSource(data=dict(x=[], y=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -1756,7 +1758,7 @@ def histograms_ticker(attr, old, new):
 def update_histograms():
 
     if control_chart_y.value != '':
-        
+
         # Update Histograms
         bin_size = histogram_bin_slider.value
         width_fraction = 0.9
@@ -2092,19 +2094,22 @@ def update_correlation():
         src = range_categories[key]['source']
         curr_var = range_categories[key]['var_name']
         table = range_categories[key]['table']
+        units = range_categories[key]['units']
 
         if table in {'DVHs'}:
-            uids_dvh_1, data_dvh_1, uids_dvh_2, data_dvh_2 = [], [], [], []
+            uids_dvh_1, mrns_dvh_1, data_dvh_1, uids_dvh_2, mrns_dvh_2, data_dvh_2 = [], [], [], [], [], []
             for i in range(0, len(src.data['uid'])):
                 if include[i]:
                     if src.data['group'][i] in {'Blue', 'Blue & Red'}:
                         uids_dvh_1.append(src.data['uid'][i])
+                        mrns_dvh_1.append(src.data['mrn'][i])
                         data_dvh_1.append(src.data[curr_var][i])
                     if src.data['group'][i] in {'Red', 'Blue & Red'}:
                         uids_dvh_2.append(src.data['uid'][i])
+                        mrns_dvh_2.append(src.data['mrn'][i])
                         data_dvh_2.append(src.data[curr_var][i])
-            correlation_1[key] = {'uid': uids_dvh_1, 'data': data_dvh_1}
-            correlation_2[key] = {'uid': uids_dvh_2, 'data': data_dvh_2}
+            correlation_1[key] = {'uid': uids_dvh_1, 'mrn': mrns_dvh_1, 'data': data_dvh_1, 'units': units}
+            correlation_2[key] = {'uid': uids_dvh_2, 'mrn': mrns_dvh_2, 'data': data_dvh_2, 'units': units}
 
     uid_list_1 = correlation_1['ROI Max Dose']['uid']
     uid_list_2 = correlation_2['ROI Max Dose']['uid']
@@ -2112,38 +2117,46 @@ def update_correlation():
         src = range_categories[key]['source']
         curr_var = range_categories[key]['var_name']
         table = range_categories[key]['table']
+        units = range_categories[key]['units']
+
         if table in {'Plans'}:
-            uids_plans_1, data_plans_1 = [], []
+            uids_plans_1, mrns_plans_1, data_plans_1 = [], [], []
             for i in range(0, len(uid_list_1)):
                 uid = uid_list_1[i]
                 uid_index = src.data['uid'].index(uid)
+                mrn = src.data['mrn'][uid_index]
                 plan_value = src.data[curr_var][uid_index]
                 uids_plans_1.append(uid)
+                mrns_plans_1.append(mrn)
                 data_plans_1.append(plan_value)
 
-            uids_plans_2, data_plans_2 = [], []
+            uids_plans_2, mrns_plans_2, data_plans_2 = [], [], []
             for i in range(0, len(uid_list_2)):
                 uid = uid_list_2[i]
                 uid_index = src.data['uid'].index(uid)
+                mrn = src.data['mrn'][uid_index]
                 plan_value = src.data[curr_var][uid_index]
                 uids_plans_2.append(uid)
+                mrns_plans_2.append(mrn)
                 data_plans_2.append(plan_value)
 
-            correlation_1[key] = {'uid': uids_plans_1, 'data': data_plans_1}
-            correlation_2[key] = {'uid': uids_plans_2, 'data': data_plans_2}
+            correlation_1[key] = {'uid': uids_plans_1, 'mrn': mrns_plans_1, 'data': data_plans_1, 'units': units}
+            correlation_2[key] = {'uid': uids_plans_2, 'mrn': mrns_plans_2, 'data': data_plans_2, 'units': units}
 
     for key in correlation_variables:
 
         src = range_categories[key]['source']
         curr_var = range_categories[key]['var_name']
         table = range_categories[key]['table']
+        units = range_categories[key]['units']
         if table in {'Beams'}:
-            beam_data_1 = {'min': [], 'mean': [], 'median': [], 'max': [], 'uid': []}
-            beam_data_2 = {'min': [], 'mean': [], 'median': [], 'max': [], 'uid': []}
+            beam_data_1 = {'min': [], 'mean': [], 'median': [], 'max': [], 'uid': [], 'mrn': []}
+            beam_data_2 = {'min': [], 'mean': [], 'median': [], 'max': [], 'uid': [], 'mrn': []}
             for i in range(0, len(uid_list_1)):
                 uid = uid_list_1[i]
                 uid_indices = [j for j, x in enumerate(uid_list_1) if x == uid]
                 plan_values = []
+                mrn = src.data['mrn'][uid_indices[0]]
 
                 for j in uid_indices:
                     plan_values.append(src.data[curr_var][j])
@@ -2153,11 +2166,13 @@ def update_correlation():
                 beam_data_1['median'].append(np.median(plan_values))
                 beam_data_1['max'].append(np.max(plan_values))
                 beam_data_1['uid'].append(uid)
+                beam_data_1['mrn'].append(mrn)
 
             for i in range(0, len(uid_list_2)):
                 uid = uid_list_2[i]
                 uid_indices = [j for j, x in enumerate(uid_list_2) if x == uid]
                 plan_values = []
+                mrn = src.data['mrn'][uid_indices[0]]
 
                 for j in uid_indices:
                     plan_values.append(src.data[curr_var][j])
@@ -2167,12 +2182,22 @@ def update_correlation():
                 beam_data_2['median'].append(np.median(plan_values))
                 beam_data_2['max'].append(np.max(plan_values))
                 beam_data_2['uid'].append(uid)
+                beam_data_2['mrn'].append(mrn)
 
             for stat in ['min', 'mean', 'median', 'max']:
                 correlation_1["%s (%s)" % (key, stat.capitalize())] = {'uid': beam_data_1['uid'],
-                                                                       'data': beam_data_1[stat]}
+                                                                       'mrn': beam_data_1['mrn'],
+                                                                       'data': beam_data_1[stat],
+                                                                       'units': units}
                 correlation_2["%s (%s)" % (key, stat.capitalize())] = {'uid': beam_data_2['uid'],
-                                                                       'data': beam_data_2[stat]}
+                                                                       'mrn': beam_data_2['mrn'],
+                                                                       'data': beam_data_2[stat],
+                                                                       'units': units}
+
+    categories = correlation_1.keys()
+    categories.sort()
+    corr_chart_x.options = [''] + categories
+    corr_chart_y.options = [''] + categories
 
 
 def update_correlation_matrix():
@@ -2253,19 +2278,42 @@ def update_correlation_matrix():
     corr_fig_text_1.text = "Blue Group: %d" % len(correlation_1['ROI Max Dose']['uid'])
     corr_fig_text_2.text = "Red Group: %d" % len(correlation_1['ROI Max Dose']['uid'])
 
-    corr_chart_x.options = [''] + categories
-    corr_chart_y.options = [''] + categories
-
 
 def update_corr_chart_ticker(attr, old, new):
     update_corr_chart()
 
 
 def update_corr_chart():
-    source_corr_chart_1.data = {'x': correlation_1[corr_chart_x.value]['data'],
-                                'y': correlation_1[corr_chart_y.value]['data']}
-    source_corr_chart_2.data = {'x': correlation_2[corr_chart_x.value]['data'],
-                                'y': correlation_2[corr_chart_y.value]['data']}
+    if corr_chart_x.value and corr_chart_y.value:
+        x_units = correlation_1[corr_chart_x.value]['units']
+        y_units = correlation_1[corr_chart_y.value]['units']
+        x_1, y_1 = correlation_1[corr_chart_x.value]['data'], correlation_1[corr_chart_y.value]['data']
+        x_2, y_2 = correlation_2[corr_chart_x.value]['data'], correlation_2[corr_chart_y.value]['data']
+        mrn_1, mrn_2 = correlation_1[corr_chart_x.value]['mrn'], correlation_1[corr_chart_x.value]['mrn']
+        if x_units:
+            corr_chart.xaxis.axis_label = "%s (%s)" % (corr_chart_x.value, x_units)
+        else:
+            corr_chart.xaxis.axis_label = corr_chart_x.value
+        if y_units:
+            corr_chart.yaxis.axis_label = "%s (%s)" % (corr_chart_y.value, y_units)
+        else:
+            corr_chart.xaxis.axis_label = corr_chart_y.value
+        source_corr_chart_1.data = {'x': x_1, 'y': y_1, 'mrn': mrn_1}
+        source_corr_chart_2.data = {'x': x_2, 'y': y_2, 'mrn': mrn_2}
+
+        if x_1:
+            slope, intercept, r_value, p_value, std_err = linregress(x_1, y_1)
+            x_trend = [min(x_1), max(x_1)]
+            source_corr_trend_1.data = {'x': x_trend, 'y': np.add(np.multiply(x_trend, slope), intercept)}
+        else:
+            source_corr_trend_1.data = {'x': [], 'y': [], 'mrn': []}
+
+        if x_2:
+            slope, intercept, r_value, p_value, std_err = linregress(x_2, y_2)
+            x_trend = [min(x_2), max(x_2)]
+            source_corr_trend_2.data = {'x': x_trend, 'y': np.add(np.multiply(x_trend, slope), intercept)}
+        else:
+            source_corr_trend_2.data = {'x': [], 'y': [], 'mrn': []}
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2709,15 +2757,20 @@ tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
 corr_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
 corr_chart_data_1 = corr_chart.circle('x', 'y', size=10, color='blue', alpha=0.5, source=source_corr_chart_1)
 corr_chart_data_2 = corr_chart.circle('x', 'y', size=10, color='red', alpha=0.5, source=source_corr_chart_2)
+corr_chart_trend_1 = corr_chart.line('x', 'y', line_width=2, color='blue', line_dash='dashed', alpha=0.25,
+                                     source=source_corr_trend_1)
+corr_chart_trend_2 = corr_chart.line('x', 'y', line_width=2, color='red', line_dash='dashed', alpha=0.25,
+                                     source=source_corr_trend_2)
 corr_chart.add_tools(HoverTool(show_arrow=True,
-                               tooltips=[('ID', '@mrn'),
-                                         ('Date', '@x{%F}'),
-                                         ('Value', '@y{0.2f}')],
-                               formatters={'x': 'datetime'}))
+                               tooltips=[('MRN', '@mrn'),
+                                         ('x', '@x{0.2f}'),
+                                         ('y', '@y{0.2f}')]))
 
 # Set the legend
 legend_corr_chart = Legend(items=[("Blue Group", [corr_chart_data_1]),
-                                  ("Red Group", [corr_chart_data_2])],
+                                  ("Red Group", [corr_chart_data_2]),
+                                  ("Lin Reg", [corr_chart_trend_1]),
+                                  ("Lin Reg", [corr_chart_trend_2])],
                            location=(25, 0),)
 
 # Add the layout outside the plot, clicking legend item hides the line
