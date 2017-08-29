@@ -687,5 +687,14 @@ class RxTable:
                 setattr(self, attr, new_list)
 
 
+def get_tables(structure_file, dose_file, plan_file):
+    dvh_table = DVHTable(structure_file, dose_file)
+    plan_table = PlanRow(plan_file, structure_file, dose_file)
+    rx_table = RxTable(plan_file, structure_file)
+    beam_table = BeamTable(plan_file)
+
+    return dvh_table, plan_table, rx_table, beam_table
+
+
 if __name__ == '__main__':
     pass
