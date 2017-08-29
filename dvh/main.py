@@ -2757,9 +2757,9 @@ tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
 corr_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
 corr_chart_data_1 = corr_chart.circle('x', 'y', size=10, color='blue', alpha=0.5, source=source_corr_chart_1)
 corr_chart_data_2 = corr_chart.circle('x', 'y', size=10, color='red', alpha=0.5, source=source_corr_chart_2)
-corr_chart_trend_1 = corr_chart.line('x', 'y', line_width=2, color='blue', line_dash='dashed', alpha=0.25,
+corr_chart_trend_1 = corr_chart.line('x', 'y', line_width=2, color='blue', line_dash='dashed',
                                      source=source_corr_trend_1)
-corr_chart_trend_2 = corr_chart.line('x', 'y', line_width=2, color='red', line_dash='dashed', alpha=0.25,
+corr_chart_trend_2 = corr_chart.line('x', 'y', line_width=2, color='red', line_dash='dashed',
                                      source=source_corr_trend_2)
 corr_chart.add_tools(HoverTool(show_arrow=True,
                                tooltips=[('MRN', '@mrn'),
