@@ -30,19 +30,16 @@ from math import pi
 
 # Declare variables
 colors = itertools.cycle(palette)
-current_dvh = []
-current_dvh_group_1 = []
-current_dvh_group_2 = []
-correlation_1 = {}
-correlation_2 = {}
+current_dvh, current_dvh_group_1, current_dvh_group_2 = [], [], []
+correlation_1, correlation_2 = {}, {}
+correlation_1, correlation_2 = {}, {}
 update_warning = True
 query_row = []
 query_row_type = []
 anon_id_map = {}
 endpoint_columns = {}
 endpoint_data = {'ep1': [], 'ep2': [], 'ep3': [], 'ep4': [], 'ep5': [], 'ep6': [], 'ep7': [], 'ep8': []}
-x = []
-y = []
+x, y = [], []
 uids_1, uids_2 = [], []
 eud_a_values = get_eud_a_values()
 widget_row_start = 0
@@ -59,11 +56,7 @@ if dvh_review_mrns[0] != '':
 else:
     dvh_review_rois = ['']
 
-roi_viewer_data = {}
-roi2_viewer_data = {}
-roi3_viewer_data = {}
-roi4_viewer_data = {}
-roi5_viewer_data = {}
+roi_viewer_data, roi2_viewer_data, roi3_viewer_data, roi4_viewer_data, roi5_viewer_data = {}, {}, {}, {}, {}
 tv_data = {}
 
 # Initialize ColumnDataSource variables

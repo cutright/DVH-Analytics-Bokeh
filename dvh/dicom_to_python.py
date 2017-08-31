@@ -13,8 +13,7 @@ from dicompylercore import dicomparser, dvhcalc
 from datetime import datetime
 from dateutil.relativedelta import relativedelta  # python-dateutil
 from roi_name_manager import DatabaseROIs, clean_name
-from utilities import datetime_str_to_obj, dicompyler_roi_coord_to_db_string, change_angle_origin,\
-    surface_area_of_roi, calc_volume, get_planes_from_string
+from utilities import datetime_str_to_obj, dicompyler_roi_coord_to_db_string, change_angle_origin, surface_area_of_roi
 import numpy as np
 
 
