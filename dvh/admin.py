@@ -9,6 +9,7 @@ from __future__ import print_function
 from utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection, \
     recalculate_ages, update_min_distances_in_db, update_treatment_volume_overlap_in_db, update_volumes_in_db
 import os
+from os.path import dirname, join
 import datetime
 from roi_name_manager import DatabaseROIs, clean_name
 from sql_connector import DVH_SQL
@@ -17,7 +18,7 @@ from bokeh.models.widgets import Select, Button, Tabs, Panel, TextInput, RadioBu
 from bokeh.layouts import layout
 from bokeh.plotting import figure
 from bokeh.io import curdoc
-from bokeh.models import ColumnDataSource, LabelSet, Range1d, Slider
+from bokeh.models import ColumnDataSource, LabelSet, Range1d, Slider, CustomJS
 
 
 query_source = ColumnDataSource(data=dict())
@@ -1298,7 +1299,7 @@ update_db_button.on_click(update_db)
 update_query_columns()
 update_update_db_column()
 
-data_table_rxs = DataTable(source=query_source, columns=[], width=1000)
+query_data_table = DataTable(source=query_source, columns=[], width=1000)
 
 delete_from_db_title = Div(text="<b>Delete all data with mrn or study_instance_uid</b>", width=1000)
 delete_from_db_column = Select(value='mrn', options=['mrn', 'study_instance_uid'], width=200, height=100,
@@ -1326,6 +1327,10 @@ calculate_tv_overlap_button.on_click(calculate_ptv_overlap)
 calculate_ages_button = Button(label='Calc Patient Ages', button_type='primary', width=150)
 calculate_ages_button.on_click(calculate_ages_click)
 
+download = Button(label="Download Table", button_type="default", width=150)
+download.callback = CustomJS(args=dict(source=query_source),
+                             code=open(join(dirname(__file__), "download_admin_query.js")).read())
+
 db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [query_title],
                            [query_table, query_columns, query_condition, table_slider, query_button],
@@ -1337,8 +1342,9 @@ db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [change_mrn_uid_column, change_mrn_uid_old_value,
                             change_mrn_uid_new_value, change_mrn_uid_button],
                            [calculations_title],
-                           [calculate_condition, calculate_ptv_dist_button, calculate_tv_overlap_button, calculate_ages_button],
-                           [data_table_rxs]])
+                           [calculate_condition, calculate_ptv_dist_button, calculate_tv_overlap_button,
+                            calculate_ages_button, download],
+                           [query_data_table]])
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Baseline Objects
