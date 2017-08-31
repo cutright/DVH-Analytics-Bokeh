@@ -17,7 +17,7 @@ import itertools
 from datetime import datetime
 from os.path import dirname, join
 from bokeh.layouts import layout, column, row
-from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider, Range1d
+from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
@@ -2305,15 +2305,23 @@ def update_corr_chart():
             slope, intercept, r_value, p_value, std_err = linregress(x_1, y_1)
             x_trend = [min(x_1), max(x_1)]
             source_corr_trend_1.data = {'x': x_trend, 'y': np.add(np.multiply(x_trend, slope), intercept)}
+            corr_chart_text_1.text = \
+                "<b>Blue Group</b>: slope =  %0.2f, intercept = %0.2f, R^2 = %0.3f, p = %0.3f, sigma = %0.2f" % \
+                (slope, intercept, r_value**2, p_value, std_err)
         else:
             source_corr_trend_1.data = {'x': [], 'y': []}
+            corr_chart_text_1.text = "<b>Blue Group</b>:"
 
         if x_2:
             slope, intercept, r_value, p_value, std_err = linregress(x_2, y_2)
             x_trend = [min(x_2), max(x_2)]
             source_corr_trend_2.data = {'x': x_trend, 'y': np.add(np.multiply(x_trend, slope), intercept)}
+            corr_chart_text_2.text = \
+                "<b>Red Group</b>: slope =  %0.2f, intercept = %0.2f, R^2 = %0.3f, p = %0.3f, sigma = %0.2f" % \
+                (slope, intercept, r_value**2, p_value, std_err)
         else:
             source_corr_trend_2.data = {'x': [], 'y': []}
+            corr_chart_text_2.text = "<b>Red Group</b>:"
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2762,7 +2770,7 @@ corr_chart_data_1 = corr_chart.circle('x', 'y', size=10, color='blue', alpha=0.5
 corr_chart_data_2 = corr_chart.circle('x', 'y', size=10, color='red', alpha=0.5, source=source_corr_chart_2)
 corr_chart_trend_1 = corr_chart.line('x', 'y', line_width=2, color='blue', line_dash='dashed',
                                      source=source_corr_trend_1)
-corr_chart_trend_2 = corr_chart.line('x', 'y', line_width=2, color='red', line_dash='dashed', alpha=0.25,
+corr_chart_trend_2 = corr_chart.line('x', 'y', line_width=2, color='red', line_dash='dashed',
                                      source=source_corr_trend_2)
 corr_chart.add_tools(HoverTool(show_arrow=True,
                                tooltips=[('MRN', '@mrn'),
@@ -2787,6 +2795,9 @@ corr_chart_x.on_change('value', update_corr_chart_ticker)
 corr_chart_y = Select(value='', options=[''], width=300)
 corr_chart_y.title = "Select a Dependent Variable"
 corr_chart_y.on_change('value', update_corr_chart_ticker)
+
+corr_chart_text_1 = Div(text="<b>Blue Group</b>:", width=1050)
+corr_chart_text_2 = Div(text="<b>Red Group</b>:", width=1050)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # define main layout to pass to curdoc()
@@ -2838,7 +2849,9 @@ layout_correlation_matrix = column(corr_fig_update_button,
                                    corr_fig)
 
 layout_correlation = column(row(corr_chart_x, corr_chart_y),
-                            corr_chart)
+                            corr_chart,
+                            corr_chart_text_1,
+                            corr_chart_text_2)
 
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
