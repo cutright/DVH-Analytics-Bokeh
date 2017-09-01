@@ -17,7 +17,7 @@ import itertools
 from datetime import datetime
 from os.path import dirname, join
 from bokeh.layouts import layout, column, row
-from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider
+from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider, DataRange
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
@@ -82,6 +82,7 @@ source_roi5_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_tv = ColumnDataSource(data=dict(x=[], y=[]))
 source_histogram_1 = ColumnDataSource(data=dict(x=[], top=[], width=[], color=[]))
 source_histogram_2 = ColumnDataSource(data=dict(x=[], top=[], width=[], color=[]))
+source_corr_matrix_line = ColumnDataSource(data=dict(x=[], y=[]))
 source_correlation_1_pos = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[], color=[], alpha=[], r=[], p=[],
                                                       group=[], size=[], x_normality=[], y_normality=[]))
 source_correlation_1_neg = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[], color=[], alpha=[], r=[], p=[],
@@ -94,7 +95,9 @@ source_corr_chart_1 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
 source_corr_chart_2 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
 source_corr_trend_1 = ColumnDataSource(data=dict(x=[], y=[]))
 source_corr_trend_2 = ColumnDataSource(data=dict(x=[], y=[]))
-
+corr_chart_stats_row_names = ['slope', 'y-intercept', 'R^2', 'p-value', 'std. dev.']
+source_corr_chart_stats = ColumnDataSource(data=dict(stat=corr_chart_stats_row_names,
+                                                     group_1=[''] * 5, group_2=[''] * 5))
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
 selector_categories = {'ROI Institutional Category': {'var_name': 'institutional_roi', 'table': 'DVHs'},
@@ -2174,6 +2177,12 @@ def update_correlation():
                                                                        'data': beam_data_2[stat],
                                                                        'units': units}
 
+    # declare space to tag variables to be used for multi variable regression
+    for key in correlation_1.keys():
+        correlation_1[key]['include'] = [False] * len(correlation_1[key]['uid'])
+    for key in correlation_2.keys():
+        correlation_2[key]['include'] = [False] * len(correlation_2[key]['uid'])
+
     categories = correlation_1.keys()
     categories.sort()
     corr_chart_x.options = [''] + categories
@@ -2181,10 +2190,9 @@ def update_correlation():
 
 
 def update_correlation_matrix():
-
-    categories = correlation_1.keys()
-    categories.sort()
+    categories = [key for index, key in enumerate(correlation_names) if index in corr_fig_include.active]
     categories_count = len(categories)
+    source_corr_matrix_line.data = {'x': [1, len(categories)], 'y': [len(categories), 1]}
 
     s = {'1_pos': {'x': [], 'y': [], 'x_name': [], 'y_name': [], 'color': [],
                    'alpha': [], 'r': [], 'p': [], 'group': [], 'size': [], 'x_normality': [], 'y_normality': []},
@@ -2283,25 +2291,65 @@ def update_corr_chart():
 
         if x_1:
             slope, intercept, r_value, p_value, std_err = linregress(x_1, y_1)
+            group_1_stats = [slope, intercept, r_value**2, p_value, std_err]
             x_trend = [min(x_1), max(x_1)]
             source_corr_trend_1.data = {'x': x_trend, 'y': np.add(np.multiply(x_trend, slope), intercept)}
-            corr_chart_text_1.text = \
-                "<b>Blue Group</b>: slope =  %0.2f, intercept = %0.2f, R^2 = %0.3f, p = %0.3f, sigma = %0.2f" % \
-                (slope, intercept, r_value**2, p_value, std_err)
         else:
+            group_1_stats = [''] * 5
             source_corr_trend_1.data = {'x': [], 'y': []}
-            corr_chart_text_1.text = "<b>Blue Group</b>:"
 
         if x_2:
             slope, intercept, r_value, p_value, std_err = linregress(x_2, y_2)
+            group_2_stats = [slope, intercept, r_value**2, p_value, std_err]
             x_trend = [min(x_2), max(x_2)]
             source_corr_trend_2.data = {'x': x_trend, 'y': np.add(np.multiply(x_trend, slope), intercept)}
-            corr_chart_text_2.text = \
-                "<b>Red Group</b>: slope =  %0.2f, intercept = %0.2f, R^2 = %0.3f, p = %0.3f, sigma = %0.2f" % \
-                (slope, intercept, r_value**2, p_value, std_err)
         else:
+            group_2_stats = [''] * 5
             source_corr_trend_2.data = {'x': [], 'y': []}
-            corr_chart_text_2.text = "<b>Red Group</b>:"
+
+        source_corr_chart_stats.data = {'stat': corr_chart_stats_row_names,
+                                        'group_1': group_1_stats,
+                                        'group_2': group_2_stats}
+    else:
+        source_corr_chart_stats.data = {'stat': corr_chart_stats_row_names,
+                                        'group_1': [''] * 5,
+                                        'group_2': [''] * 5}
+        source_corr_chart_1.data = {'x': [], 'y': [], 'mrn': []}
+        source_corr_chart_2.data = {'x': [], 'y': [], 'mrn': []}
+        source_corr_trend_1.data = {'x': [], 'y': []}
+        source_corr_trend_2.data = {'x': [], 'y': []}
+
+
+def corr_chart_x_prev_ticker():
+    current_index = corr_chart_x.options.index(corr_chart_x.value)
+    corr_chart_x.value = corr_chart_x.options[current_index - 1]
+
+
+def corr_chart_y_prev_ticker():
+    current_index = corr_chart_y.options.index(corr_chart_y.value)
+    corr_chart_y.value = corr_chart_y.options[current_index - 1]
+
+
+def corr_chart_x_next_ticker():
+    current_index = corr_chart_x.options.index(corr_chart_x.value)
+    if current_index == len(corr_chart_x.options) - 1:
+        new_index = 0
+    else:
+        new_index = current_index + 1
+    corr_chart_x.value = corr_chart_x.options[new_index]
+
+
+def corr_chart_y_next_ticker():
+    current_index = corr_chart_y.options.index(corr_chart_y.value)
+    if current_index == len(corr_chart_y.options) - 1:
+        new_index = 0
+    else:
+        new_index = current_index + 1
+    corr_chart_y.value = corr_chart_y.options[new_index]
+
+
+def corr_chart_x_include_ticker(attr, old, new):
+    pass
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2667,8 +2715,6 @@ roi_viewer_scrolling = CheckboxGroup(labels=["Enable Slice Scrolling with Mouse 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Plot
 corr_fig = figure(plot_width=900, plot_height=700,
-                  x_range=correlation_names,
-                  y_range=correlation_names[::-1],
                   x_axis_location="above",
                   tools="pan, box_zoom, wheel_zoom, reset",
                   logo=None)
@@ -2700,7 +2746,7 @@ corr_fig.add_tools(HoverTool(show_arrow=True,
                                        ('p', '@p'),
                                        ('Norm p-value x', '@x_normality{0.4f}'),
                                        ('Norm p-value y', '@y_normality{0.4f}')],))
-corr_fig.line(x=[1, len(correlation_names)], y=[len(correlation_names), 1],
+corr_fig.line(x='x', y='y', source=source_corr_matrix_line,
               line_width=3, line_dash='dotted', color='black', alpha=0.8)
 # Set the legend
 legend_corr = Legend(items=[("+r Blue Group", [corr_1_pos]),
@@ -2719,6 +2765,8 @@ corr_fig_update_button.on_click(update_correlation_matrix)
 corr_fig_text = Div(text="<b>Sample Sizes</b>", width=100)
 corr_fig_text_1 = Div(text="Blue Group:", width=110)
 corr_fig_text_2 = Div(text="Red Group:", width=110)
+
+corr_fig_include = CheckboxGroup(labels=correlation_names, active=[])
 
 # Control Chart layout
 tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
@@ -2745,16 +2793,32 @@ legend_corr_chart = Legend(items=[("Blue Group", [corr_chart_data_1]),
 corr_chart.add_layout(legend_corr_chart, 'right')
 corr_chart.legend.click_policy = "hide"
 
+corr_chart_x_include = CheckboxGroup(labels=["Include this ind. var. in regression"], active=[])
+corr_chart_x_prev = Button(label="<", button_type="primary", width=50)
+corr_chart_x_next = Button(label=">", button_type="primary", width=50)
+corr_chart_y_prev = Button(label="<", button_type="primary", width=50)
+corr_chart_y_next = Button(label=">", button_type="primary", width=50)
+corr_chart_x_prev.on_click(corr_chart_x_prev_ticker)
+corr_chart_x_next.on_click(corr_chart_x_next_ticker)
+corr_chart_y_prev.on_click(corr_chart_y_prev_ticker)
+corr_chart_y_next.on_click(corr_chart_y_next_ticker)
+corr_chart_x_include.on_change('active', corr_chart_x_include_ticker)
+
 corr_chart_x = Select(value='', options=[''], width=300)
-corr_chart_x.title = "Select an Independent Variable"
+corr_chart_x.title = "Select an Independent Variable (x-axis)"
 corr_chart_x.on_change('value', update_corr_chart_ticker)
 
 corr_chart_y = Select(value='', options=[''], width=300)
-corr_chart_y.title = "Select a Dependent Variable"
+corr_chart_y.title = "Select a Dependent Variable (y-axis)"
 corr_chart_y.on_change('value', update_corr_chart_ticker)
 
 corr_chart_text_1 = Div(text="<b>Blue Group</b>:", width=1050)
 corr_chart_text_2 = Div(text="<b>Red Group</b>:", width=1050)
+
+columns = [TableColumn(field="stat", title="Stat", width=100),
+           TableColumn(field="group_1", title="Blue Group", width=60, formatter=NumberFormatter(format="0.000")),
+           TableColumn(field="group_2", title="Red Group", width=60, formatter=NumberFormatter(format="0.000"))]
+data_table_corr_chart = DataTable(source=source_corr_chart_stats, columns=columns, editable=True, height=175, width=300)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # define main layout to pass to curdoc()
@@ -2803,12 +2867,13 @@ layout_trending = column(row(control_chart_y, control_chart_lookback_units, cont
 
 layout_correlation_matrix = column(corr_fig_update_button,
                                    row(corr_fig_text, corr_fig_text_1, corr_fig_text_2),
-                                   corr_fig)
+                                   row(corr_fig, corr_fig_include))
 
-layout_correlation = column(row(corr_chart_x, corr_chart_y),
-                            corr_chart,
-                            corr_chart_text_1,
-                            corr_chart_text_2)
+layout_correlation = column(row(column(corr_chart_x_include,
+                                       row(corr_chart_x, corr_chart_x_prev, corr_chart_x_next),
+                                       row(corr_chart_y, corr_chart_y_prev, corr_chart_y_next)),
+                                data_table_corr_chart),
+                            corr_chart)
 
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
