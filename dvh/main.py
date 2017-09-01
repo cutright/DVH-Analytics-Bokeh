@@ -30,40 +30,27 @@ from math import pi
 
 # Declare variables
 colors = itertools.cycle(palette)
-current_dvh = []
-current_dvh_group_1 = []
-current_dvh_group_2 = []
-correlation_1 = {}
-correlation_2 = {}
+current_dvh, current_dvh_group_1, current_dvh_group_2 = [], [], []
+correlation_1, correlation_2 = {}, {}
 update_warning = True
-query_row = []
-query_row_type = []
+query_row, query_row_type = [], []
 anon_id_map = {}
-endpoint_columns = {}
 endpoint_data = {'ep1': [], 'ep2': [], 'ep3': [], 'ep4': [], 'ep5': [], 'ep6': [], 'ep7': [], 'ep8': []}
-x = []
-y = []
+endpoint_columns = {i: '' for i in range(0, 10)}
+x, y = [], []
 uids_1, uids_2 = [], []
 eud_a_values = get_eud_a_values()
 widget_row_start = 0
-
-for i in range(0, 10):
-    endpoint_columns[i] = ''
 
 temp_dvh_info = Temp_DICOM_FileSet()
 dvh_review_mrns = temp_dvh_info.mrn
 if dvh_review_mrns[0] != '':
     dvh_review_rois = temp_dvh_info.get_roi_names(dvh_review_mrns[0]).values()
     dvh_review_mrns.append('')
-
 else:
     dvh_review_rois = ['']
 
-roi_viewer_data = {}
-roi2_viewer_data = {}
-roi3_viewer_data = {}
-roi4_viewer_data = {}
-roi5_viewer_data = {}
+roi_viewer_data, roi2_viewer_data, roi3_viewer_data, roi4_viewer_data, roi5_viewer_data = {}, {}, {}, {}, {}
 tv_data = {}
 
 # Initialize ColumnDataSource variables
@@ -172,8 +159,7 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
                     'Beam MU per control point': {'var_name': 'beam_mu_per_cp', 'table': 'Beams', 'units': '', 'source': source_beams}}
 
 # correlation variable names
-correlation_variables = []
-correlation_names = []
+correlation_variables, correlation_names = [], []
 correlation_variables_beam = ['Beam Dose', 'Beam MU', 'Control Point Count', 'Gantry Range',
                               'SSD', 'Beam MU per control point']
 for key in range_categories.keys():
@@ -2155,11 +2141,8 @@ def update_correlation():
             for i in range(0, len(uid_list_1)):
                 uid = uid_list_1[i]
                 uid_indices = [j for j, x in enumerate(src.data['uid']) if x == uid]
-                plan_values = []
+                plan_values = [src.data[curr_var][j] for j in uid_indices]
                 mrn = src.data['mrn'][uid_indices[0]]
-
-                for j in uid_indices:
-                    plan_values.append(src.data[curr_var][j])
 
                 beam_data_1['min'].append(np.min(plan_values))
                 beam_data_1['mean'].append(np.mean(plan_values))
@@ -2171,11 +2154,8 @@ def update_correlation():
             for i in range(0, len(uid_list_2)):
                 uid = uid_list_2[i]
                 uid_indices = [j for j, x in enumerate(src.data['uid']) if x == uid]
-                plan_values = []
+                plan_values = [src.data[curr_var][j] for j in uid_indices]
                 mrn = src.data['mrn'][uid_indices[0]]
-
-                for j in uid_indices:
-                    plan_values.append(src.data[curr_var][j])
 
                 beam_data_2['min'].append(np.min(plan_values))
                 beam_data_2['mean'].append(np.mean(plan_values))
@@ -2220,7 +2200,7 @@ def update_correlation_matrix():
         for y in range(0, categories_count):
             if x != y:
                 data_to_enter = False
-                if x > y and correlation_1:
+                if x > y and correlation_1[categories[0]]['uid']:
                     x_data = correlation_1[categories[x]]['data']
                     y_data = correlation_1[categories[y]]['data']
                     if x_data:
@@ -2236,7 +2216,7 @@ def update_correlation_matrix():
                         s[k]['color'].append('green')
                         s[k]['group'].append('Blue')
                     data_to_enter = True
-                elif x < y and correlation_2:
+                elif x < y and correlation_2[categories[0]]['uid']:
                     x_data = correlation_2[categories[x]]['data']
                     y_data = correlation_2[categories[y]]['data']
                     if x_data:
@@ -2253,9 +2233,9 @@ def update_correlation_matrix():
                         s[k]['group'].append('Red')
                     data_to_enter = True
 
-                if np.isnan(r):
-                    r = 0
                 if data_to_enter:
+                    if np.isnan(r):
+                        r = 0
                     s[k]['r'].append(r)
                     s[k]['p'].append(p_value)
                     s[k]['alpha'].append(abs(r))
@@ -2330,47 +2310,24 @@ def update_corr_chart():
 
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
 dvh_plots = figure(plot_width=1050, plot_height=500, tools=tools, logo=None, active_drag="box_zoom")
-dvh_plots.add_tools(HoverTool(show_arrow=False,
-                              line_policy='next',
+dvh_plots.add_tools(HoverTool(show_arrow=False, line_policy='next',
                               tooltips=[('Label', '@mrn @roi_name'),
                                         ('Dose', '$x'),
                                         ('Volume', '$y')]))
 
 # Add statistical plots to figure
-stats_median_1 = dvh_plots.line('x', 'median',
-                                source=source_stats_1,
-                                line_width=1,
-                                color='blue',
-                                line_dash='solid',
-                                alpha=0.6)
-stats_mean_1 = dvh_plots.line('x', 'mean',
-                              source=source_stats_1,
-                              line_width=2,
-                              color='blue',
-                              line_dash='dashed',
-                              alpha=0.5)
-stats_median_2 = dvh_plots.line('x', 'median',
-                                source=source_stats_2,
-                                line_width=1,
-                                color='red',
-                                line_dash='solid',
-                                alpha=0.6)
-stats_mean_2 = dvh_plots.line('x', 'mean',
-                              source=source_stats_2,
-                              line_width=2,
-                              color='red',
-                              line_dash='dashed',
-                              alpha=0.5)
+stats_median_1 = dvh_plots.line('x', 'median', source=source_stats_1,
+                                line_width=1, color='blue', line_dash='solid', alpha=0.6)
+stats_mean_1 = dvh_plots.line('x', 'mean', source=source_stats_1,
+                              line_width=2, color='blue', line_dash='dashed', alpha=0.5)
+stats_median_2 = dvh_plots.line('x', 'median', source=source_stats_2,
+                                line_width=1, color='red', line_dash='solid', alpha=0.6)
+stats_mean_2 = dvh_plots.line('x', 'mean', source=source_stats_2,
+                              line_width=2, color='red', line_dash='dashed', alpha=0.5)
 
 # Add all DVHs, but hide them until selected
-dvh_plots.multi_line('x', 'y',
-                     source=source,
-                     selection_color='color',
-                     line_width=2,
-                     alpha=0,
-                     nonselection_alpha=0,
-                     selection_alpha=1)
-
+dvh_plots.multi_line('x', 'y', source=source,
+                     selection_color='color', line_width=2, alpha=0, nonselection_alpha=0, selection_alpha=1)
 
 # Shaded region between Q1 and Q3
 iqr_1 = dvh_plots.patch('x_patch', 'y_patch', source=source_patch_1, alpha=0.075, color='blue')
