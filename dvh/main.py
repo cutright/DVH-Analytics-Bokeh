@@ -17,7 +17,7 @@ import itertools
 from datetime import datetime
 from os.path import dirname, join
 from bokeh.layouts import layout, column, row
-from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider, DataRange
+from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider, Spacer
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
@@ -95,9 +95,10 @@ source_corr_chart_1 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
 source_corr_chart_2 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
 source_corr_trend_1 = ColumnDataSource(data=dict(x=[], y=[]))
 source_corr_trend_2 = ColumnDataSource(data=dict(x=[], y=[]))
-corr_chart_stats_row_names = ['slope', 'y-intercept', 'R^2', 'p-value', 'std. dev.']
+corr_chart_stats_row_names = ['slope', 'y-intercept', 'R^2', 'p-value', 'std. err.']
 source_corr_chart_stats = ColumnDataSource(data=dict(stat=corr_chart_stats_row_names,
                                                      group_1=[''] * 5, group_2=[''] * 5))
+source_multi_var_include = ColumnDataSource(data=dict(var_name=[]))
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
 selector_categories = {'ROI Institutional Category': {'var_name': 'institutional_roi', 'table': 'DVHs'},
@@ -175,6 +176,7 @@ for key in range_categories.keys():
             correlation_names.append("%s (%s)" % (key, stat))
 correlation_variables.sort()
 correlation_names.sort()
+multi_var_reg_list = {name: False for name in correlation_names}
 
 
 # Functions that add widget rows
@@ -292,12 +294,8 @@ def update_data():
 def update_update_button_status():
     uids, dvh_query_str = get_query()
     count = DVH_SQL().get_roi_count_from_query(dvh_condition=dvh_query_str, uid=uids)
-    if count > 50:
-        update_button.button_type = "warning"
-        update_button.label = "Large Update (" + str(count) + ")"
-    else:
-        update_button.button_type = "success"
-        update_button.label = "Perform Query"
+    update_button.button_type = "success"
+    update_button.label = "Query (DVH Count: %d)" % count
 
 
 # Ticker function for abs/rel dose radio buttons
@@ -666,8 +664,7 @@ def update_dvh_data(dvh):
 
     global uids_1, uids_2, anon_id_map
 
-    dvh_group_1 = []
-    dvh_group_2 = []
+    dvh_group_1, dvh_group_2 = [], []
 
     group_1_count, group_2_count = group_count()
     if group_1_count > 0 and group_2_count > 0:
@@ -892,15 +889,8 @@ def update_dvh_data(dvh):
     y_data.insert(0, [0])
 
     # anonymize ids
-    anon_id_map = {}
-    anon_id = []
-    counter = 1
-    for mrn in dvh.mrn:
-        if mrn not in anon_id_map.keys():
-            anon_id_map[mrn] = counter
-            counter += 1
-    for i in range(0, len(dvh.mrn)):
-        anon_id.append(anon_id_map[dvh.mrn[i]])
+    anon_id_map = {mrn: i for i, mrn in enumerate(list(set(dvh.mrn)))}
+    anon_id = [anon_id_map[dvh.mrn[i]] for i in range(0, len(dvh.mrn))]
 
     print(str(datetime.now()), 'writing source.data', sep=' ')
     source.data = {'mrn': dvh.mrn,
@@ -955,9 +945,7 @@ def update_beam_data(uids):
 
     groups = get_group_list(beam_data.study_instance_uid)
 
-    anon_id = []
-    for i in range(0, len(beam_data.mrn)):
-        anon_id.append(anon_id_map[beam_data.mrn[i]])
+    anon_id = [anon_id_map[beam_data.mrn[i]] for i in range(0, len(beam_data.mrn))]
 
     source_beams.data = {'mrn': beam_data.mrn,
                          'anon_id': anon_id,
@@ -1010,9 +998,7 @@ def update_plan_data(uids):
     # Determine Groups
     groups = get_group_list(plan_data.study_instance_uid)
 
-    anon_id = []
-    for i in range(0, len(plan_data.mrn)):
-        anon_id.append(anon_id_map[plan_data.mrn[i]])
+    anon_id = [anon_id_map[plan_data.mrn[i]] for i in range(0, len(plan_data.mrn))]
 
     source_plans.data = {'mrn': plan_data.mrn,
                          'anon_id': anon_id,
@@ -1042,9 +1028,7 @@ def update_rx_data(uids):
 
     groups = get_group_list(rx_data.study_instance_uid)
 
-    anon_id = []
-    for i in range(0, len(rx_data.mrn)):
-        anon_id.append(anon_id_map[rx_data.mrn[i]])
+    anon_id = [anon_id_map[rx_data.mrn[i]] for i in range(0, len(rx_data.mrn))]
 
     source_rxs.data = {'mrn': rx_data.mrn,
                        'anon_id': anon_id,
@@ -1076,11 +1060,8 @@ def update_endpoint_data(dvh, dvh_group_1, dvh_group_2):
         extra_rows = 0
 
     global query_row, query_row_type, endpoint_columns
-    for i in range(0, 8):
-        endpoint_columns[i] = ''
-    endpoints_map = {}
-    endpoints_map_1 = {}
-    endpoints_map_2 = {}
+    endpoint_columns = [''] * 8
+    endpoints_map, endpoints_map_1, endpoints_map_2 = {}, {}, {}
 
     counter = 0
     for i in range(0, len(query_row)):
@@ -1787,9 +1768,7 @@ def update_histograms():
 
 
 def update_roi_viewer_mrn():
-    options = []
-    for mrn in source_plans.data['mrn']:
-        options.append(mrn)
+    options = [mrn for mrn in source_plans.data['mrn']]
     if options:
         options.sort()
         roi_viewer_mrn_select.options = options
@@ -1970,9 +1949,7 @@ def update_tv_data():
 
     if ptv_coordinates_strings:
 
-        ptvs = []
-        for ptv in ptv_coordinates_strings:
-            ptvs.append(get_planes_from_string(ptv[0]))
+        ptvs = [get_planes_from_string(ptv[0]) for ptv in ptv_coordinates_strings]
         tv_planes = get_union(ptvs)
 
     for z_plane in tv_planes.keys():
@@ -2267,7 +2244,15 @@ def update_correlation_matrix():
     corr_fig_text_2.text = "Red Group: %d" % len(correlation_1['ROI Max Dose']['uid'])
 
 
-def update_corr_chart_ticker(attr, old, new):
+def update_corr_chart_ticker_x(attr, old, new):
+    if multi_var_reg_list[corr_chart_x.value]:
+        corr_chart_x_include.active = [0]
+    else:
+        corr_chart_x_include.active = []
+    update_corr_chart()
+
+
+def update_corr_chart_ticker_y(attr, old, new):
     update_corr_chart()
 
 
@@ -2293,16 +2278,18 @@ def update_corr_chart():
             slope, intercept, r_value, p_value, std_err = linregress(x_1, y_1)
             group_1_stats = [slope, intercept, r_value**2, p_value, std_err]
             x_trend = [min(x_1), max(x_1)]
-            source_corr_trend_1.data = {'x': x_trend, 'y': np.add(np.multiply(x_trend, slope), intercept)}
+            y_trend = np.add(np.multiply(x_trend, slope), intercept)
+            source_corr_trend_1.data = {'x': x_trend, 'y': y_trend}
         else:
             group_1_stats = [''] * 5
             source_corr_trend_1.data = {'x': [], 'y': []}
 
         if x_2:
             slope, intercept, r_value, p_value, std_err = linregress(x_2, y_2)
-            group_2_stats = [slope, intercept, r_value**2, p_value, std_err]
+            group_2_stats = [slope, intercept, r_value ** 2, p_value, std_err]
             x_trend = [min(x_2), max(x_2)]
-            source_corr_trend_2.data = {'x': x_trend, 'y': np.add(np.multiply(x_trend, slope), intercept)}
+            y_trend = np.add(np.multiply(x_trend, slope), intercept)
+            source_corr_trend_2.data = {'x': x_trend, 'y': y_trend}
         else:
             group_2_stats = [''] * 5
             source_corr_trend_2.data = {'x': [], 'y': []}
@@ -2349,7 +2336,13 @@ def corr_chart_y_next_ticker():
 
 
 def corr_chart_x_include_ticker(attr, old, new):
-    pass
+    if new and not multi_var_reg_list[corr_chart_x.value]:
+        multi_var_reg_list[corr_chart_x.value] = True
+    if not new and multi_var_reg_list[corr_chart_x.value]:
+        multi_var_reg_list[corr_chart_x.value] = False
+    included_vars = [key for key in multi_var_reg_list.keys() if multi_var_reg_list[key]]
+    included_vars.sort()
+    source_multi_var_include.data = {'var_name': included_vars}
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2806,11 +2799,11 @@ corr_chart_x_include.on_change('active', corr_chart_x_include_ticker)
 
 corr_chart_x = Select(value='', options=[''], width=300)
 corr_chart_x.title = "Select an Independent Variable (x-axis)"
-corr_chart_x.on_change('value', update_corr_chart_ticker)
+corr_chart_x.on_change('value', update_corr_chart_ticker_x)
 
 corr_chart_y = Select(value='', options=[''], width=300)
 corr_chart_y.title = "Select a Dependent Variable (y-axis)"
-corr_chart_y.on_change('value', update_corr_chart_ticker)
+corr_chart_y.on_change('value', update_corr_chart_ticker_y)
 
 corr_chart_text_1 = Div(text="<b>Blue Group</b>:", width=1050)
 corr_chart_text_2 = Div(text="<b>Red Group</b>:", width=1050)
@@ -2818,7 +2811,14 @@ corr_chart_text_2 = Div(text="<b>Red Group</b>:", width=1050)
 columns = [TableColumn(field="stat", title="Stat", width=100),
            TableColumn(field="group_1", title="Blue Group", width=60, formatter=NumberFormatter(format="0.000")),
            TableColumn(field="group_2", title="Red Group", width=60, formatter=NumberFormatter(format="0.000"))]
-data_table_corr_chart = DataTable(source=source_corr_chart_stats, columns=columns, editable=True, height=175, width=300)
+data_table_corr_chart = DataTable(source=source_corr_chart_stats, columns=columns, editable=True,
+                                  height=175, width=275, row_headers=False)
+
+columns = [TableColumn(field="var_name", title="Variables for Regression", width=100)]
+data_table_multi_var_include = DataTable(source=source_multi_var_include, columns=columns,
+                                         height=175, width=275, row_headers=False)
+spacer_1 = Spacer(width=10, height=175)
+spacer_2 = Spacer(width=10, height=175)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # define main layout to pass to curdoc()
@@ -2856,14 +2856,14 @@ layout_planning_data = column(rxs_table_title,
                               beam_table_title2,
                               data_table_beams2)
 
-layout_trending = column(row(control_chart_y, control_chart_lookback_units, control_chart_text_lookback_distance,
-                             control_chart_percentile, trend_update_button),
-                         control_chart,
-                         div_horizontal_bar,
-                         row(histogram_bin_slider, histogram_radio_group),
-                         row(histogram_normaltest_1_text, histogram_ttest_text),
-                         row(histogram_normaltest_2_text, histogram_ranksums_text),
-                         histograms)
+layout_time_series = column(row(control_chart_y, control_chart_lookback_units, control_chart_text_lookback_distance,
+                                control_chart_percentile, trend_update_button),
+                            control_chart,
+                            div_horizontal_bar,
+                            row(histogram_bin_slider, histogram_radio_group),
+                            row(histogram_normaltest_1_text, histogram_ttest_text),
+                            row(histogram_normaltest_2_text, histogram_ranksums_text),
+                            histograms)
 
 layout_correlation_matrix = column(corr_fig_update_button,
                                    row(corr_fig_text, corr_fig_text_1, corr_fig_text_2),
@@ -2872,14 +2872,17 @@ layout_correlation_matrix = column(corr_fig_update_button,
 layout_correlation = column(row(column(corr_chart_x_include,
                                        row(corr_chart_x, corr_chart_x_prev, corr_chart_x_next),
                                        row(corr_chart_y, corr_chart_y_prev, corr_chart_y_next)),
-                                data_table_corr_chart),
+                                spacer_1,
+                                data_table_corr_chart,
+                                spacer_2,
+                                data_table_multi_var_include),
                             corr_chart)
 
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
 roi_viewer_tab = Panel(child=roi_viewer_layout, title='ROI Viewer')
 planning_data_tab = Panel(child=layout_planning_data, title='Planning Data')
-trending_tab = Panel(child=layout_trending, title='Time-Series')
+trending_tab = Panel(child=layout_time_series, title='Time-Series')
 correlation_matrix_tab = Panel(child=layout_correlation_matrix, title='Correlation Matrix')
 correlation_tab = Panel(child=layout_correlation, title='Trending')
 
