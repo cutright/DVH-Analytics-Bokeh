@@ -3002,8 +3002,8 @@ dvh_tab = Panel(child=layout_dvhs, title='DVHs')
 roi_viewer_tab = Panel(child=roi_viewer_layout, title='ROI Viewer')
 planning_data_tab = Panel(child=layout_planning_data, title='Planning Data')
 trending_tab = Panel(child=layout_time_series, title='Time-Series')
-correlation_matrix_tab = Panel(child=layout_correlation_matrix, title='Correlation Matrix')
-correlation_tab = Panel(child=layout_correlation, title='Trending')
+correlation_matrix_tab = Panel(child=layout_correlation_matrix, title='Correlation')
+correlation_tab = Panel(child=layout_correlation, title='Multi-Variable Regression')
 
 tabs = Tabs(tabs=[query_tab, dvh_tab, roi_viewer_tab, planning_data_tab,
                   trending_tab, correlation_matrix_tab, correlation_tab])
