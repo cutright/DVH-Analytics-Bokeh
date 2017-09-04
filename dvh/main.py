@@ -616,19 +616,27 @@ class EndPointRow:
         self.units_out.labels = self.unit_labels[old]
         if self.text_input.value != '':
             update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
+            if current_dvh:
+                update_endpoints_in_correlation()
 
     def endpoint_calc_ticker(self, attrname, old, new):
         if self.text_input.value != '':
             update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
+            if current_dvh:
+                update_endpoints_in_correlation()
 
     def endpoint_units_ticker(self, attrname, old, new):
         self.update_text_input_title()
         if self.text_input.value != '':
             update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
+            if current_dvh:
+                update_endpoints_in_correlation()
 
     def endpoint_units_out_ticker(self, attrname, old, new):
         if self.text_input.value != '':
             update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
+            if current_dvh:
+                update_endpoints_in_correlation()
 
     def delete_row(self):
         self.delete_last_row.button_type = 'danger'
@@ -638,6 +646,8 @@ class EndPointRow:
         query_row.pop(self.id)
         update_query_row_ids()
         update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
+        if current_dvh:
+            update_endpoints_in_correlation()
 
     def update_text_input_title(self):
         if self.select_category.active == 0:
@@ -2171,6 +2181,61 @@ def update_correlation():
     categories.sort()
     corr_chart_x.options = [''] + categories
     corr_chart_y.options = [''] + categories
+
+
+def update_endpoints_in_correlation():
+    global correlation_1, correlation_2
+
+    # remove review and stats from source
+    group_1_count, group_2_count = group_count()
+    if group_1_count > 0 and group_2_count > 0:
+        extra_rows = 12
+    elif group_1_count > 0 or group_2_count > 0:
+        extra_rows = 6
+    else:
+        extra_rows = 0
+    include = [True] * (len(source.data['uid']) - extra_rows)
+    include[0] = False
+    include.extend([False] * extra_rows)
+
+    # Get data from DVH Endpoints
+    endpoints = ["ep%d" % i for i in range(1, 9)]
+    src = source
+    for ep in endpoints:
+        key = "DVH Endpoint %s" % ep[-1]
+        if endpoint_data[ep][0] != '':
+            units = source_endpoint_names.data[ep][0]
+
+            uids_ep_1, mrns_ep_1, data_ep_1, uids_ep_2, mrns_ep_2, data_ep_2 = [], [], [], [], [], []
+            for i in range(0, len(src.data['uid'])):
+                if include[i]:
+                    if src.data['group'][i] in {'Blue', 'Blue & Red'}:
+                        uids_ep_1.append(src.data['uid'][i])
+                        mrns_ep_1.append(src.data['mrn'][i])
+                        data_ep_1.append(endpoint_data[ep][i])
+                    if src.data['group'][i] in {'Red', 'Blue & Red'}:
+                        uids_ep_2.append(src.data['uid'][i])
+                        mrns_ep_2.append(src.data['mrn'][i])
+                        data_ep_2.append(endpoint_data[ep][i])
+            correlation_1[key] = {'uid': uids_ep_1, 'mrn': mrns_ep_1, 'data': data_ep_1, 'units': units}
+            correlation_2[key] = {'uid': uids_ep_2, 'mrn': mrns_ep_2, 'data': data_ep_2, 'units': units}
+        else:
+            correlation_1.pop(key, None)
+            correlation_2.pop(key, None)
+
+    # declare space to tag variables to be used for multi variable regression
+    for key in correlation_1.keys():
+        correlation_1[key]['include'] = [False] * len(correlation_1[key]['uid'])
+    for key in correlation_2.keys():
+        correlation_2[key]['include'] = [False] * len(correlation_2[key]['uid'])
+
+    categories = correlation_1.keys()
+    categories.sort()
+    corr_chart_x.options = [''] + categories
+    corr_chart_y.options = [''] + categories
+
+    update_correlation_matrix()
+    update_corr_chart()
 
 
 def update_correlation_matrix():
