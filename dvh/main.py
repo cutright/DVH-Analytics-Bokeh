@@ -180,7 +180,8 @@ for key in range_categories.keys():
             correlation_names.append("%s (%s)" % (key, stat))
 correlation_variables.sort()
 correlation_names.sort()
-multi_var_reg_vars = {name: False for name in correlation_names}
+multi_var_reg_var_names = correlation_names + ["DVH Endpoint %d" % i for i in range(1, 9)]
+multi_var_reg_vars = {name: False for name in multi_var_reg_var_names}
 
 
 # Functions that add widget rows
@@ -2427,7 +2428,6 @@ def multi_var_linear_regression():
                                            'mean_sq_err': [], 'mean_sq_err_str': []}
     else:
         print(str(datetime.now()), 'Performing multivariable regression', sep=' ')
-
         x_count = len(correlation_1[correlation_1.keys()[0]]['data'])
         included_vars = [k for k in correlation_1.keys() if multi_var_reg_vars[k]]
         x = []
@@ -2935,7 +2935,7 @@ columns = [TableColumn(field="intercept_str", title="intercept", width=150),
            TableColumn(field="score_str", title="Variance Score", width=150),
            TableColumn(field="mean_sq_err_str", title="Mean Sq. Err.", width=150)]
 data_table_multi_var_2 = DataTable(source=source_multi_var_results_2, columns=columns, editable=True,
-                                   height=50, row_headers=False)
+                                   height=60, row_headers=False)
 
 spacer_1 = Spacer(width=10, height=175)
 spacer_2 = Spacer(width=10, height=175)
