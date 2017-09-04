@@ -27,6 +27,7 @@ from dicompylercore import dicomparser, dvhcalc
 from bokeh import events
 from scipy.stats import ttest_ind, ranksums, normaltest, pearsonr, linregress
 from math import pi
+from sklearn.linear_model import LinearRegression
 
 # Declare variables
 colors = itertools.cycle(palette)
@@ -35,7 +36,7 @@ correlation_1, correlation_2 = {}, {}
 update_warning = True
 query_row, query_row_type = [], []
 anon_id_map = {}
-endpoint_data = {'ep1': [], 'ep2': [], 'ep3': [], 'ep4': [], 'ep5': [], 'ep6': [], 'ep7': [], 'ep8': []}
+endpoint_data = {"ep%d" % i: [] for i in range(1, 9)}
 endpoint_columns = {i: '' for i in range(0, 10)}
 x, y = [], []
 uids_1, uids_2 = [], []
@@ -99,6 +100,9 @@ corr_chart_stats_row_names = ['slope', 'y-intercept', 'R^2', 'p-value', 'std. er
 source_corr_chart_stats = ColumnDataSource(data=dict(stat=corr_chart_stats_row_names,
                                                      group_1=[''] * 5, group_2=[''] * 5))
 source_multi_var_include = ColumnDataSource(data=dict(var_name=[]))
+source_multi_var_results_1 = ColumnDataSource(data=dict(var_name=[], coeff=[], coeff_str=[], p=[], p_str=[]))
+source_multi_var_results_2 = ColumnDataSource(data=dict(intercept=[], intercept_str=[], score=[], score_str=[],
+                                                        mean_sq_err=[], mean_sq_err_str=[]))
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
 selector_categories = {'ROI Institutional Category': {'var_name': 'institutional_roi', 'table': 'DVHs'},
@@ -176,7 +180,7 @@ for key in range_categories.keys():
             correlation_names.append("%s (%s)" % (key, stat))
 correlation_variables.sort()
 correlation_names.sort()
-multi_var_reg_list = {name: False for name in correlation_names}
+multi_var_reg_vars = {name: False for name in correlation_names}
 
 
 # Functions that add widget rows
@@ -475,7 +479,7 @@ class SelectorRow:
                        self.delete_last_row)
 
     def update_selector_values(self, attrname, old, new):
-        table_new = selector_categories[self.select_category.value]['table']
+        table_new = selector_categories[new]['table']
         var_name_new = selector_categories[new]['var_name']
         if var_name_new == 'physician_roi':
             physicians = []
@@ -675,9 +679,7 @@ def update_dvh_data(dvh):
         extra_rows = 0
 
     print(str(datetime.now()), 'updating dvh data', sep=' ')
-    line_colors = []
-    for j, color in itertools.izip(range(0, dvh.count + extra_rows), colors):
-        line_colors.append(color)
+    line_colors = [color for j, color in itertools.izip(range(0, dvh.count + extra_rows), colors)]
 
     x_axis = np.round(np.add(np.linspace(0, dvh.bin_count, dvh.bin_count) / 100., 0.005), 3)
 
@@ -778,8 +780,7 @@ def update_dvh_data(dvh):
 
     new_endpoint_columns = [''] * (dvh.count + extra_rows + 1)
 
-    x_data = []
-    y_data = []
+    x_data, y_data = [], []
     for n in range(0, dvh.count):
         if radio_group_dose.active == 0:
             x_data.append(x_axis.tolist())
@@ -1692,27 +1693,14 @@ def control_chart_update_trend():
         histogram_ranksums_text.text = "Wilcoxon rank-sum (Blue vs Red) p-value = %s" % pr
 
     else:
-        source_time_trend_1.data = {'x': [],
-                                    'y': [],
-                                    'mrn': []}
-        source_time_bound_1.data = {'x': [],
-                                    'mrn': [],
-                                    'upper': [],
-                                    'avg': [],
-                                    'lower': []}
-        source_time_patch_1.data = {'x': [],
-                                    'y': []}
+        source_time_trend_1.data = {'x': [], 'y': [], 'mrn': []}
+        source_time_bound_1.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+        source_time_patch_1.data = {'x': [], 'y': []}
 
-        source_time_trend_2.data = {'x': [],
-                                    'y': [],
-                                    'mrn': []}
-        source_time_bound_2.data = {'x': [],
-                                    'mrn': [],
-                                    'upper': [],
-                                    'avg': [],
-                                    'lower': []}
-        source_time_patch_2.data = {'x': [],
-                                    'y': []}
+        source_time_trend_2.data = {'x': [], 'y': [], 'mrn': []}
+        source_time_bound_2.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+        source_time_patch_2.data = {'x': [], 'y': []}
+
         histogram_normaltest_1_text.text = "Blue Group Normal Test p-value = "
         histogram_normaltest_2_text.text = "Red  Group Normal Test p-value = "
         histogram_ttest_text.text = "Two Sample t-Test (Blue vs Red) p-value = "
@@ -1756,15 +1744,8 @@ def update_histograms():
                                    'width': width,
                                    'color': ['red'] * len(center)}
     else:
-        source_histogram_1.data = {'x': [],
-                                   'top': [],
-                                   'width': [],
-                                   'color': []}
-
-        source_histogram_2.data = {'x': [],
-                                   'top': [],
-                                   'width': [],
-                                   'color': []}
+        source_histogram_1.data = {'x': [], 'top': [], 'width': [], 'color': []}
+        source_histogram_2.data = {'x': [], 'top': [], 'width': [], 'color': []}
 
 
 def update_roi_viewer_mrn():
@@ -2056,6 +2037,7 @@ def update_correlation():
     include[0] = False
     include.extend([False] * extra_rows)
 
+    # Get data from DVHs table
     for key in correlation_variables:
         src = range_categories[key]['source']
         curr_var = range_categories[key]['var_name']
@@ -2079,6 +2061,8 @@ def update_correlation():
 
     uid_list_1 = correlation_1['ROI Max Dose']['uid']
     uid_list_2 = correlation_2['ROI Max Dose']['uid']
+
+    # Get Data from Plans table
     for key in correlation_variables:
         src = range_categories[key]['source']
         curr_var = range_categories[key]['var_name']
@@ -2109,6 +2093,7 @@ def update_correlation():
             correlation_1[key] = {'uid': uids_plans_1, 'mrn': mrns_plans_1, 'data': data_plans_1, 'units': units}
             correlation_2[key] = {'uid': uids_plans_2, 'mrn': mrns_plans_2, 'data': data_plans_2, 'units': units}
 
+    # Get data from Beams table
     for key in correlation_variables:
 
         src = range_categories[key]['source']
@@ -2154,6 +2139,28 @@ def update_correlation():
                                                                        'data': beam_data_2[stat],
                                                                        'units': units}
 
+    # Get data from DVH Endpoints
+    endpoints = ["ep%d" % i for i in range(1, 9)]
+    src = source
+    for ep in endpoints:
+        key = "DVH Endpoint %s" % ep[-1]
+        if endpoint_data[ep][0] != '':
+            units = source_endpoint_names.data[ep][0]
+
+            uids_ep_1, mrns_ep_1, data_ep_1, uids_ep_2, mrns_ep_2, data_ep_2 = [], [], [], [], [], []
+            for i in range(0, len(src.data['uid'])):
+                if include[i]:
+                    if src.data['group'][i] in {'Blue', 'Blue & Red'}:
+                        uids_ep_1.append(src.data['uid'][i])
+                        mrns_ep_1.append(src.data['mrn'][i])
+                        data_ep_1.append(endpoint_data[ep][i])
+                    if src.data['group'][i] in {'Red', 'Blue & Red'}:
+                        uids_ep_2.append(src.data['uid'][i])
+                        mrns_ep_2.append(src.data['mrn'][i])
+                        data_ep_2.append(endpoint_data[ep][i])
+            correlation_1[key] = {'uid': uids_ep_1, 'mrn': mrns_ep_1, 'data': data_ep_1, 'units': units}
+            correlation_2[key] = {'uid': uids_ep_2, 'mrn': mrns_ep_2, 'data': data_ep_2, 'units': units}
+
     # declare space to tag variables to be used for multi variable regression
     for key in correlation_1.keys():
         correlation_1[key]['include'] = [False] * len(correlation_1[key]['uid'])
@@ -2168,6 +2175,9 @@ def update_correlation():
 
 def update_correlation_matrix():
     categories = [key for index, key in enumerate(correlation_names) if index in corr_fig_include.active]
+    eps_calced = [i for i in range(0, 8) if endpoint_data["ep%d" % (i+1)][0] != '']
+    endpoint_names = ["DVH Endpoint %d" % (i+1) for i in range(0, 8) if i in corr_fig_include_2.active and eps_calced]
+    categories.extend(endpoint_names)
     categories_count = len(categories)
     source_corr_matrix_line.data = {'x': [1, len(categories)], 'y': [len(categories), 1]}
 
@@ -2245,7 +2255,7 @@ def update_correlation_matrix():
 
 
 def update_corr_chart_ticker_x(attr, old, new):
-    if multi_var_reg_list[corr_chart_x.value]:
+    if multi_var_reg_vars[corr_chart_x.value]:
         corr_chart_x_include.active = [0]
     else:
         corr_chart_x_include.active = []
@@ -2336,13 +2346,43 @@ def corr_chart_y_next_ticker():
 
 
 def corr_chart_x_include_ticker(attr, old, new):
-    if new and not multi_var_reg_list[corr_chart_x.value]:
-        multi_var_reg_list[corr_chart_x.value] = True
-    if not new and multi_var_reg_list[corr_chart_x.value]:
-        multi_var_reg_list[corr_chart_x.value] = False
-    included_vars = [key for key in multi_var_reg_list.keys() if multi_var_reg_list[key]]
+    if new and not multi_var_reg_vars[corr_chart_x.value]:
+        multi_var_reg_vars[corr_chart_x.value] = True
+    if not new and multi_var_reg_vars[corr_chart_x.value]:
+        multi_var_reg_vars[corr_chart_x.value] = False
+    included_vars = [key for key in multi_var_reg_vars.keys() if multi_var_reg_vars[key]]
     included_vars.sort()
     source_multi_var_include.data = {'var_name': included_vars}
+
+
+def multi_var_linear_regression():
+    if '' in {corr_chart_x.value, corr_chart_y.value}:
+        source_multi_var_results_1.data = {'var_name': [], 'coeff': [], 'coeff_str': [], 'p': [], 'p_str': []}
+        source_multi_var_results_2.data = {'intercept': [], 'intercept_str': [], 'score': [], 'score_str': [],
+                                           'mean_sq_err': [], 'mean_sq_err_str': []}
+    else:
+        print(str(datetime.now()), 'Performing multivariable regression', sep=' ')
+
+        x_count = len(correlation_1[correlation_1.keys()[0]]['data'])
+        included_vars = [k for k in correlation_1.keys() if multi_var_reg_vars[k]]
+        x = []
+        for i in range(0, x_count):
+            x.append([correlation_1[k]['data'][i] for k in included_vars])
+        y = correlation_1[corr_chart_y.value]['data']
+
+        regr = LinearRegression()
+        regr.fit(x, correlation_1[corr_chart_y.value]['data'])
+        print(str(datetime.now()), 'Multivariable regression complete', sep=' ')
+
+        # scores, p_values = chi2(x, y)
+
+        source_multi_var_results_1.data = {'var_name': included_vars,
+                                           'coeff': regr.coef_,  'coeff_str': ["%0.2E" % c for c in regr.coef_],
+                                           'p': [0] * len(included_vars), 'p_str': [0] * len(included_vars)}
+        source_multi_var_results_2.data = {'intercept': [regr.intercept_], 'intercept_str': ["%0.2E" % regr.intercept_],
+                                           'score': [regr.score(x, y)], 'score_str': ["%0.2E" % regr.score(x, y)],
+                                           'mean_sq_err': [np.mean((regr.predict(x) - y) ** 2)],
+                                           'mean_sq_err_str': ["%0.2E" % np.mean((regr.predict(x) - y) ** 2)]}
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2595,15 +2635,13 @@ legend_control_chart = Legend(items=[("Blue Group", [control_chart_data_1]),
                                      ("Series Average", [control_chart_avg_2]),
                                      ("Rolling Average", [control_chart_trend_2]),
                                      ("Percentile Region", [control_chart_patch_2]),],
-                              location=(25, 0),)
+                              location=(25, 0))
 
 # Add the layout outside the plot, clicking legend item hides the line
 control_chart.add_layout(legend_control_chart, 'right')
 control_chart.legend.click_policy = "hide"
 
-control_chart_options = range_categories.keys() + ['DVH Endpoint 1', 'DVH Endpoint 2', 'DVH Endpoint 3',
-                                                   'DVH Endpoint 4', 'DVH Endpoint 5', 'DVH Endpoint 6',
-                                                   'DVH Endpoint 7', 'DVH Endpoint 8']
+control_chart_options = range_categories.keys() + ["DVH Endpoint %d" % i for i in range(1, 9)]
 control_chart_options.sort()
 control_chart_options.append('')
 control_chart_y = Select(value=control_chart_options[-1], options=control_chart_options, width=300)
@@ -2701,7 +2739,7 @@ roi_viewer.patch('x', 'y', source=source_tv, color='black', alpha=0.5)
 roi_viewer.xaxis.axis_label = "Lateral DICOM Coordinate (mm)"
 roi_viewer.yaxis.axis_label = "Anterior/Posterior DICOM Coordinate (mm)"
 roi_viewer.on_event(events.MouseWheel, roi_viewer_wheel_event)
-roi_viewer_scrolling = CheckboxGroup(labels=["Enable Slice Scrolling with Mouse Wheel"], active=[0])
+roi_viewer_scrolling = CheckboxGroup(labels=["Enable Slice Scrolling with Mouse Wheel"], active=[])
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Correlation
@@ -2760,9 +2798,10 @@ corr_fig_text_1 = Div(text="Blue Group:", width=110)
 corr_fig_text_2 = Div(text="Red Group:", width=110)
 
 corr_fig_include = CheckboxGroup(labels=correlation_names, active=[])
+corr_fig_include_2 = CheckboxGroup(labels=["DVH Endpoint %d" % i for i in range(1, 9)], active=[])
 
 # Control Chart layout
-tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
+tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
 corr_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
 corr_chart_data_1 = corr_chart.circle('x', 'y', size=10, color='blue', alpha=0.5, source=source_corr_chart_1)
 corr_chart_data_2 = corr_chart.circle('x', 'y', size=10, color='red', alpha=0.5, source=source_corr_chart_2)
@@ -2780,13 +2819,13 @@ legend_corr_chart = Legend(items=[("Blue Group", [corr_chart_data_1]),
                                   ("Lin Reg", [corr_chart_trend_1]),
                                   ("Red Group", [corr_chart_data_2]),
                                   ("Lin Reg", [corr_chart_trend_2])],
-                           location=(25, 0),)
+                           location=(25, 0))
 
 # Add the layout outside the plot, clicking legend item hides the line
 corr_chart.add_layout(legend_corr_chart, 'right')
 corr_chart.legend.click_policy = "hide"
 
-corr_chart_x_include = CheckboxGroup(labels=["Include this ind. var. in regression"], active=[])
+corr_chart_x_include = CheckboxGroup(labels=["Include this ind. var. in multi-var regression"], active=[], width=400)
 corr_chart_x_prev = Button(label="<", button_type="primary", width=50)
 corr_chart_x_next = Button(label=">", button_type="primary", width=50)
 corr_chart_y_prev = Button(label="<", button_type="primary", width=50)
@@ -2796,6 +2835,9 @@ corr_chart_x_next.on_click(corr_chart_x_next_ticker)
 corr_chart_y_prev.on_click(corr_chart_y_prev_ticker)
 corr_chart_y_next.on_click(corr_chart_y_next_ticker)
 corr_chart_x_include.on_change('active', corr_chart_x_include_ticker)
+
+corr_chart_do_reg_button = Button(label="Perform Regression", button_type="primary", width=150)
+corr_chart_do_reg_button.on_click(multi_var_linear_regression)
 
 corr_chart_x = Select(value='', options=[''], width=300)
 corr_chart_x.title = "Select an Independent Variable (x-axis)"
@@ -2817,8 +2859,23 @@ data_table_corr_chart = DataTable(source=source_corr_chart_stats, columns=column
 columns = [TableColumn(field="var_name", title="Variables for Regression", width=100)]
 data_table_multi_var_include = DataTable(source=source_multi_var_include, columns=columns,
                                          height=175, width=275, row_headers=False)
+
+div_horizontal_bar_2 = Div(text="<hr>", width=1050)
+columns = [TableColumn(field="var_name", title="Variable", width=300),
+           TableColumn(field="coeff_str", title="coeff",  width=150),
+           TableColumn(field="p_str", title="p-value", width=150)]
+data_table_multi_var = DataTable(source=source_multi_var_results_1, columns=columns, editable=True,
+                                 height=200, row_headers=False)
+columns = [TableColumn(field="intercept_str", title="intercept", width=150),
+           TableColumn(field="score_str", title="Variance Score", width=150),
+           TableColumn(field="mean_sq_err_str", title="Mean Sq. Err.", width=150)]
+data_table_multi_var_2 = DataTable(source=source_multi_var_results_2, columns=columns, editable=True,
+                                   height=50, row_headers=False)
+
 spacer_1 = Spacer(width=10, height=175)
 spacer_2 = Spacer(width=10, height=175)
+spacer_3 = Spacer(width=10)
+spacer_4 = Spacer(width=10)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # define main layout to pass to curdoc()
@@ -2847,14 +2904,9 @@ roi_viewer_layout = layout([[roi_viewer_mrn_select, roi_viewer_study_date_select
                             [roi_viewer_scrolling],
                             [roi_viewer]])
 
-layout_planning_data = column(rxs_table_title,
-                              data_table_rxs,
-                              plans_table_title,
-                              data_table_plans,
-                              beam_table_title,
-                              data_table_beams,
-                              beam_table_title2,
-                              data_table_beams2)
+layout_planning_data = column(rxs_table_title, data_table_rxs,
+                              plans_table_title, data_table_plans,
+                              beam_table_title, data_table_beams, beam_table_title2, data_table_beams2)
 
 layout_time_series = column(row(control_chart_y, control_chart_lookback_units, control_chart_text_lookback_distance,
                                 control_chart_percentile, trend_update_button),
@@ -2867,16 +2919,18 @@ layout_time_series = column(row(control_chart_y, control_chart_lookback_units, c
 
 layout_correlation_matrix = column(corr_fig_update_button,
                                    row(corr_fig_text, corr_fig_text_1, corr_fig_text_2),
-                                   row(corr_fig, corr_fig_include))
+                                   row(corr_fig, corr_fig_include, corr_fig_include_2))
 
 layout_correlation = column(row(column(corr_chart_x_include,
-                                       row(corr_chart_x, corr_chart_x_prev, corr_chart_x_next),
-                                       row(corr_chart_y, corr_chart_y_prev, corr_chart_y_next)),
-                                spacer_1,
-                                data_table_corr_chart,
-                                spacer_2,
-                                data_table_multi_var_include),
-                            corr_chart)
+                                       row(corr_chart_x_prev, corr_chart_x_next, spacer_3, corr_chart_x),
+                                       row(corr_chart_y_prev, corr_chart_y_next, spacer_4, corr_chart_y)),
+                                spacer_1, data_table_corr_chart,
+                                spacer_2, data_table_multi_var_include),
+                            corr_chart,
+                            div_horizontal_bar_2,
+                            corr_chart_do_reg_button,
+                            data_table_multi_var_2,
+                            data_table_multi_var)
 
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
