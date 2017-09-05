@@ -2458,9 +2458,9 @@ def multi_var_linear_regression():
             model_p = fit.f_pvalue
 
             coeff_str = ["%0.3E" % i for i in coeff]
-            coeff_p_str = ["%0.3E" % i for i in coeff_p]
-            r_sq_str = ["%0.3E" % r_sq]
-            model_p_str = ["%0.3E" % model_p]
+            coeff_p_str = ["%0.3f" % i for i in coeff_p]
+            r_sq_str = ["%0.3f" % r_sq]
+            model_p_str = ["%0.3f" % model_p]
 
             source_multi_var_coeff_results_1.data = {'var_name': included_vars, 'coeff': coeff, 'coeff_str': coeff_str,
                                                      'p': coeff_p, 'p_str': coeff_p_str}
@@ -2491,9 +2491,9 @@ def multi_var_linear_regression():
             model_p = fit.f_pvalue
 
             coeff_str = ["%0.3E" % i for i in coeff]
-            coeff_p_str = ["%0.3E" % i for i in coeff_p]
-            r_sq_str = ["%0.3E" % r_sq]
-            model_p_str = ["%0.3E" % model_p]
+            coeff_p_str = ["%0.3f" % i for i in coeff_p]
+            r_sq_str = ["%0.3f" % r_sq]
+            model_p_str = ["%0.3f" % model_p]
 
             source_multi_var_coeff_results_2.data = {'var_name': included_vars, 'coeff': coeff, 'coeff_str': coeff_str,
                                                      'p': coeff_p, 'p_str': coeff_p_str}
