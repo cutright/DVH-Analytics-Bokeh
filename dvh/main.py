@@ -27,7 +27,7 @@ from dicompylercore import dicomparser, dvhcalc
 from bokeh import events
 from scipy.stats import ttest_ind, ranksums, normaltest, pearsonr, linregress
 from math import pi
-from sklearn.linear_model import LinearRegression
+import statsmodels.api as sm
 
 # Declare variables
 colors = itertools.cycle(palette)
@@ -100,9 +100,13 @@ corr_chart_stats_row_names = ['slope', 'y-intercept', 'R^2', 'p-value', 'std. er
 source_corr_chart_stats = ColumnDataSource(data=dict(stat=corr_chart_stats_row_names,
                                                      group_1=[''] * 5, group_2=[''] * 5))
 source_multi_var_include = ColumnDataSource(data=dict(var_name=[]))
-source_multi_var_results_1 = ColumnDataSource(data=dict(var_name=[], coeff=[], coeff_str=[], p=[], p_str=[]))
-source_multi_var_results_2 = ColumnDataSource(data=dict(intercept=[], intercept_str=[], score=[], score_str=[],
-                                                        mean_sq_err=[], mean_sq_err_str=[]))
+source_multi_var_coeff_results_1 = ColumnDataSource(data=dict(var_name=[], coeff=[], coeff_str=[], p=[], p_str=[]))
+source_multi_var_model_results_1 = ColumnDataSource(data=dict(model_p=[], model_p_str=[],
+                                                              r_sq=[], r_sq_str=[], y_var=[]))
+source_multi_var_coeff_results_2 = ColumnDataSource(data=dict(var_name=[], coeff=[], coeff_str=[], p=[], p_str=[]))
+source_multi_var_model_results_2 = ColumnDataSource(data=dict(model_p=[], model_p_str=[],
+                                                              r_sq=[], r_sq_str=[], y_var=[]))
+
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
 selector_categories = {'ROI Institutional Category': {'var_name': 'institutional_roi', 'table': 'DVHs'},
@@ -2423,31 +2427,84 @@ def corr_chart_x_include_ticker(attr, old, new):
 
 def multi_var_linear_regression():
     if '' in {corr_chart_x.value, corr_chart_y.value}:
-        source_multi_var_results_1.data = {'var_name': [], 'coeff': [], 'coeff_str': [], 'p': [], 'p_str': []}
-        source_multi_var_results_2.data = {'intercept': [], 'intercept_str': [], 'score': [], 'score_str': [],
-                                           'mean_sq_err': [], 'mean_sq_err_str': []}
+        source_multi_var_coeff_results_1.data = {'var_name': [], 'coeff': [], 'coeff_str': [], 'p': [], 'p_str': []}
+        source_multi_var_model_results_1.data = {'model_p': [], 'model_p_str': [],
+                                               'intercept': [], 'intercept_str': [],
+                                               'intercept_p': [], 'intercept_p_str': [],
+                                               'r_sq': [], 'r_sq_str': []}
+
     else:
         print(str(datetime.now()), 'Performing multivariable regression', sep=' ')
         x_count = len(correlation_1[correlation_1.keys()[0]]['data'])
+
         included_vars = [k for k in correlation_1.keys() if multi_var_reg_vars[k]]
-        x = []
-        for i in range(0, x_count):
-            x.append([correlation_1[k]['data'][i] for k in included_vars])
-        y = correlation_1[corr_chart_y.value]['data']
+        included_vars.sort()
 
-        regr = LinearRegression()
-        regr.fit(x, correlation_1[corr_chart_y.value]['data'])
-        print(str(datetime.now()), 'Multivariable regression complete', sep=' ')
+        # Blue Group
+        if current_dvh_group_1:
+            x = []
+            for i in range(0, x_count):
+                current_x = []
+                for k in included_vars:
+                    current_x.append(correlation_1[k]['data'][i])
+                x.append(current_x)
+            y = correlation_1[corr_chart_y.value]['data']
 
-        # scores, p_values = chi2(x, y)
+            fit = sm.OLS(y, x).fit()
 
-        source_multi_var_results_1.data = {'var_name': included_vars,
-                                           'coeff': regr.coef_,  'coeff_str': ["%0.2E" % c for c in regr.coef_],
-                                           'p': [0] * len(included_vars), 'p_str': [0] * len(included_vars)}
-        source_multi_var_results_2.data = {'intercept': [regr.intercept_], 'intercept_str': ["%0.2E" % regr.intercept_],
-                                           'score': [regr.score(x, y)], 'score_str': ["%0.2E" % regr.score(x, y)],
-                                           'mean_sq_err': [np.mean((regr.predict(x) - y) ** 2)],
-                                           'mean_sq_err_str': ["%0.2E" % np.mean((regr.predict(x) - y) ** 2)]}
+            coeff = fit.params
+            coeff_p = fit.pvalues
+            r_sq = fit.rsquared
+            model_p = fit.f_pvalue
+
+            coeff_str = ["%0.3E" % i for i in coeff]
+            coeff_p_str = ["%0.3E" % i for i in coeff_p]
+            r_sq_str = ["%0.3E" % r_sq]
+            model_p_str = ["%0.3E" % model_p]
+
+            source_multi_var_coeff_results_1.data = {'var_name': included_vars, 'coeff': coeff, 'coeff_str': coeff_str,
+                                                     'p': coeff_p, 'p_str': coeff_p_str}
+            source_multi_var_model_results_1.data = {'model_p': [model_p], 'model_p_str': model_p_str,
+                                                     'r_sq': [r_sq], 'r_sq_str': r_sq_str,
+                                                     'y_var': [corr_chart_y.value]}
+        else:
+            source_multi_var_coeff_results_1.data = {'var_name': [], 'coeff': [],
+                                                     'coeff_str': [], 'p': [], 'p_str': []}
+            source_multi_var_model_results_1.data = {'model_p': [], 'model_p_str': [],
+                                                     'r_sq': [], 'r_sq_str': [], 'y_var': []}
+
+        # Red Group
+        if current_dvh_group_2:
+            x = []
+            for i in range(0, x_count):
+                current_x = []
+                for k in included_vars:
+                    current_x.append(correlation_2[k]['data'][i])
+                x.append(current_x)
+            y = correlation_2[corr_chart_y.value]['data']
+
+            fit = sm.OLS(y, x).fit()
+
+            coeff = fit.params
+            coeff_p = fit.pvalues
+            r_sq = fit.rsquared
+            model_p = fit.f_pvalue
+
+            coeff_str = ["%0.3E" % i for i in coeff]
+            coeff_p_str = ["%0.3E" % i for i in coeff_p]
+            r_sq_str = ["%0.3E" % r_sq]
+            model_p_str = ["%0.3E" % model_p]
+
+            source_multi_var_coeff_results_2.data = {'var_name': included_vars, 'coeff': coeff, 'coeff_str': coeff_str,
+                                                     'p': coeff_p, 'p_str': coeff_p_str}
+            source_multi_var_model_results_2.data = {'model_p': [model_p], 'model_p_str': model_p_str,
+                                                     'r_sq': [r_sq], 'r_sq_str': r_sq_str,
+                                                     'y_var': [corr_chart_y.value]}
+        else:
+            source_multi_var_coeff_results_2.data = {'var_name': [], 'coeff': [],
+                                                     'coeff_str': [], 'p': [], 'p_str': []}
+            source_multi_var_model_results_2.data = {'model_p': [], 'model_p_str': [],
+                                                     'r_sq': [], 'r_sq_str': [], 'y_var': []}
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2926,21 +2983,36 @@ data_table_multi_var_include = DataTable(source=source_multi_var_include, column
                                          height=175, width=275, row_headers=False)
 
 div_horizontal_bar_2 = Div(text="<hr>", width=1050)
-columns = [TableColumn(field="var_name", title="Variable", width=300),
-           TableColumn(field="coeff_str", title="coeff",  width=150),
+
+multi_var_text_1 = Div(text="<b>Blue Group</b>", width=500)
+columns = [TableColumn(field="var_name", title="Independent Variable", width=300),
+           TableColumn(field="coeff_str", title="coefficient",  width=150),
            TableColumn(field="p_str", title="p-value", width=150)]
-data_table_multi_var = DataTable(source=source_multi_var_results_1, columns=columns, editable=True,
-                                 height=200, row_headers=False)
-columns = [TableColumn(field="intercept_str", title="intercept", width=150),
-           TableColumn(field="score_str", title="Variance Score", width=150),
-           TableColumn(field="mean_sq_err_str", title="Mean Sq. Err.", width=150)]
-data_table_multi_var_2 = DataTable(source=source_multi_var_results_2, columns=columns, editable=True,
-                                   height=60, row_headers=False)
+data_table_multi_var_model_1 = DataTable(source=source_multi_var_coeff_results_1, columns=columns, editable=True,
+                                         height=200, row_headers=False)
+columns = [TableColumn(field="y_var", title="Dependent Variable", width=150),
+           TableColumn(field="r_sq_str", title="R-squared", width=150),
+           TableColumn(field="model_p_str", title="Prob for F-statistic", width=150)]
+data_table_multi_var_coeff_1 = DataTable(source=source_multi_var_model_results_1, columns=columns, editable=True,
+                                         height=60, row_headers=False)
+
+multi_var_text_2 = Div(text="<b>Red Group</b>", width=500)
+columns = [TableColumn(field="var_name", title="Independent Variable", width=300),
+           TableColumn(field="coeff_str", title="coefficient",  width=150),
+           TableColumn(field="p_str", title="p-value", width=150)]
+data_table_multi_var_model_2 = DataTable(source=source_multi_var_coeff_results_2, columns=columns, editable=True,
+                                         height=200, row_headers=False)
+columns = [TableColumn(field="y_var", title="Dependent Variable", width=150),
+           TableColumn(field="r_sq_str", title="R-squared", width=150),
+           TableColumn(field="model_p_str", title="Prob for F-statistic", width=150)]
+data_table_multi_var_coeff_2 = DataTable(source=source_multi_var_model_results_2, columns=columns, editable=True,
+                                         height=60, row_headers=False)
 
 spacer_1 = Spacer(width=10, height=175)
 spacer_2 = Spacer(width=10, height=175)
 spacer_3 = Spacer(width=10)
 spacer_4 = Spacer(width=10)
+spacer_5 = Spacer(width=10)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # define main layout to pass to curdoc()
@@ -2994,8 +3066,12 @@ layout_correlation = column(row(column(corr_chart_x_include,
                             corr_chart,
                             div_horizontal_bar_2,
                             corr_chart_do_reg_button,
-                            data_table_multi_var_2,
-                            data_table_multi_var)
+                            multi_var_text_1,
+                            data_table_multi_var_coeff_1,
+                            data_table_multi_var_model_1,
+                            multi_var_text_2,
+                            data_table_multi_var_coeff_2,
+                            data_table_multi_var_model_2)
 
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
