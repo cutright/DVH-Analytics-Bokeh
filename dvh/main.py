@@ -1883,11 +1883,10 @@ def roi_viewer_go_to_next_slice():
 
 
 def update_roi_viewer_rois():
-    options = []
-    for i in range(0, len(source.data['uid'])):
-        if source.data['uid'][i] == roi_viewer_uid_select.value:
-            options.append(source.data['roi_name'][i])
+
+    options = DVH_SQL().get_unique_values('DVHs', 'roi_name', "study_instance_uid = '%s'" % roi_viewer_uid_select.value)
     options.sort()
+
     roi_viewer_roi_select.options = options
     roi_viewer_roi_select.value = options[0]
 
