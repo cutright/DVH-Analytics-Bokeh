@@ -2447,6 +2447,7 @@ def multi_var_linear_regression():
                 for k in included_vars:
                     current_x.append(correlation_1[k]['data'][i])
                 x.append(current_x)
+            x = sm.add_constant(x)  # explicitly add constant to calculate intercept
             y = correlation_1[corr_chart_y.value]['data']
 
             fit = sm.OLS(y, x).fit()
