@@ -96,7 +96,7 @@ source_corr_chart_1 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
 source_corr_chart_2 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
 source_corr_trend_1 = ColumnDataSource(data=dict(x=[], y=[]))
 source_corr_trend_2 = ColumnDataSource(data=dict(x=[], y=[]))
-corr_chart_stats_row_names = ['slope', 'y-intercept', 'R^2', 'p-value', 'std. err.']
+corr_chart_stats_row_names = ['slope', 'y-intercept', 'R-squared', 'p-value', 'std. err.']
 source_corr_chart_stats = ColumnDataSource(data=dict(stat=corr_chart_stats_row_names,
                                                      group_1=[''] * 5, group_2=[''] * 5))
 source_multi_var_include = ColumnDataSource(data=dict(var_name=[]))
@@ -2434,7 +2434,6 @@ def multi_var_linear_regression():
 
     else:
         print(str(datetime.now()), 'Performing multivariable regression', sep=' ')
-        x_count = len(correlation_1[correlation_1.keys()[0]]['data'])
 
         included_vars = [k for k in correlation_1.keys() if multi_var_reg_vars[k]]
         included_vars.sort()
@@ -2442,6 +2441,7 @@ def multi_var_linear_regression():
         # Blue Group
         if current_dvh_group_1:
             x = []
+            x_count = len(correlation_1[correlation_1.keys()[0]]['data'])
             for i in range(0, x_count):
                 current_x = []
                 for k in included_vars:
@@ -2477,11 +2477,13 @@ def multi_var_linear_regression():
         # Red Group
         if current_dvh_group_2:
             x = []
+            x_count = len(correlation_2[correlation_2.keys()[0]]['data'])
             for i in range(0, x_count):
                 current_x = []
                 for k in included_vars:
                     current_x.append(correlation_2[k]['data'][i])
                 x.append(current_x)
+            x = sm.add_constant(x)  # explicitly add constant to calculate intercept
             y = correlation_2[corr_chart_y.value]['data']
 
             fit = sm.OLS(y, x).fit()
@@ -2496,7 +2498,7 @@ def multi_var_linear_regression():
             r_sq_str = ["%0.3f" % r_sq]
             model_p_str = ["%0.3f" % model_p]
 
-            source_multi_var_coeff_results_2.data = {'var_name': included_vars, 'coeff': coeff, 'coeff_str': coeff_str,
+            source_multi_var_coeff_results_2.data = {'var_name': ['Constant'] + included_vars, 'coeff': coeff, 'coeff_str': coeff_str,
                                                      'p': coeff_p, 'p_str': coeff_p_str}
             source_multi_var_model_results_2.data = {'model_p': [model_p], 'model_p_str': model_p_str,
                                                      'r_sq': [r_sq], 'r_sq_str': r_sq_str,
@@ -3080,7 +3082,7 @@ roi_viewer_tab = Panel(child=roi_viewer_layout, title='ROI Viewer')
 planning_data_tab = Panel(child=layout_planning_data, title='Planning Data')
 trending_tab = Panel(child=layout_time_series, title='Time-Series')
 correlation_matrix_tab = Panel(child=layout_correlation_matrix, title='Correlation')
-correlation_tab = Panel(child=layout_correlation, title='Multi-Variable Regression')
+correlation_tab = Panel(child=layout_correlation, title='Regression')
 
 tabs = Tabs(tabs=[query_tab, dvh_tab, roi_viewer_tab, planning_data_tab,
                   trending_tab, correlation_matrix_tab, correlation_tab])
