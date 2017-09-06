@@ -96,9 +96,9 @@ source_corr_chart_1 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
 source_corr_chart_2 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
 source_corr_trend_1 = ColumnDataSource(data=dict(x=[], y=[]))
 source_corr_trend_2 = ColumnDataSource(data=dict(x=[], y=[]))
-corr_chart_stats_row_names = ['slope', 'y-intercept', 'R-squared', 'p-value', 'std. err.']
+corr_chart_stats_row_names = ['slope', 'y-intercept', 'R-squared', 'p-value', 'std. err.', 'sample size']
 source_corr_chart_stats = ColumnDataSource(data=dict(stat=corr_chart_stats_row_names,
-                                                     group_1=[''] * 5, group_2=[''] * 5))
+                                                     group_1=[''] * 6, group_2=[''] * 6))
 source_multi_var_include = ColumnDataSource(data=dict(var_name=[]))
 source_multi_var_coeff_results_1 = ColumnDataSource(data=dict(var_name=[], coeff=[], coeff_str=[], p=[], p_str=[]))
 source_multi_var_model_results_1 = ColumnDataSource(data=dict(model_p=[], model_p_str=[],
@@ -1925,9 +1925,7 @@ def update_roi_viewer_data(roi_name):
             x.append(float('nan'))
             y.append(float('nan'))
             z.append(float('nan'))
-        roi_data[z_plane] = {'x': x,
-                             'y': y,
-                             'z': z}
+        roi_data[z_plane] = {'x': x, 'y': y, 'z': z}
 
     return roi_data
 
@@ -2355,22 +2353,32 @@ def update_corr_chart():
 
         if x_1:
             slope, intercept, r_value, p_value, std_err = linregress(x_1, y_1)
-            group_1_stats = [slope, intercept, r_value**2, p_value, std_err]
+            group_1_stats = [round(slope, 3),
+                             round(intercept, 3),
+                             round(r_value ** 2, 3),
+                             round(p_value, 3),
+                             round(std_err, 3),
+                             len(x_1)]
             x_trend = [min(x_1), max(x_1)]
             y_trend = np.add(np.multiply(x_trend, slope), intercept)
             source_corr_trend_1.data = {'x': x_trend, 'y': y_trend}
         else:
-            group_1_stats = [''] * 5
+            group_1_stats = [''] * 6
             source_corr_trend_1.data = {'x': [], 'y': []}
 
         if x_2:
             slope, intercept, r_value, p_value, std_err = linregress(x_2, y_2)
-            group_2_stats = [slope, intercept, r_value ** 2, p_value, std_err]
+            group_2_stats = [round(slope, 3),
+                             round(intercept, 3),
+                             round(r_value ** 2, 3),
+                             round(p_value, 3),
+                             round(std_err, 3),
+                             len(x_2)]
             x_trend = [min(x_2), max(x_2)]
             y_trend = np.add(np.multiply(x_trend, slope), intercept)
             source_corr_trend_2.data = {'x': x_trend, 'y': y_trend}
         else:
-            group_2_stats = [''] * 5
+            group_2_stats = [''] * 6
             source_corr_trend_2.data = {'x': [], 'y': []}
 
         source_corr_chart_stats.data = {'stat': corr_chart_stats_row_names,
@@ -2378,8 +2386,8 @@ def update_corr_chart():
                                         'group_2': group_2_stats}
     else:
         source_corr_chart_stats.data = {'stat': corr_chart_stats_row_names,
-                                        'group_1': [''] * 5,
-                                        'group_2': [''] * 5}
+                                        'group_1': [''] * 6,
+                                        'group_2': [''] * 6}
         source_corr_chart_1.data = {'x': [], 'y': [], 'mrn': []}
         source_corr_chart_2.data = {'x': [], 'y': [], 'mrn': []}
         source_corr_trend_1.data = {'x': [], 'y': []}
@@ -2425,89 +2433,81 @@ def corr_chart_x_include_ticker(attr, old, new):
 
 
 def multi_var_linear_regression():
-    if '' in {corr_chart_x.value, corr_chart_y.value}:
-        source_multi_var_coeff_results_1.data = {'var_name': [], 'coeff': [], 'coeff_str': [], 'p': [], 'p_str': []}
-        source_multi_var_model_results_1.data = {'model_p': [], 'model_p_str': [],
-                                               'intercept': [], 'intercept_str': [],
-                                               'intercept_p': [], 'intercept_p_str': [],
-                                               'r_sq': [], 'r_sq_str': []}
+    print(str(datetime.now()), 'Performing multivariable regression', sep=' ')
 
+    included_vars = [k for k in correlation_1.keys() if multi_var_reg_vars[k]]
+    included_vars.sort()
+
+    # Blue Group
+    if current_dvh_group_1:
+        x = []
+        x_count = len(correlation_1[correlation_1.keys()[0]]['data'])
+        for i in range(0, x_count):
+            current_x = []
+            for k in included_vars:
+                current_x.append(correlation_1[k]['data'][i])
+            x.append(current_x)
+        x = sm.add_constant(x)  # explicitly add constant to calculate intercept
+        y = correlation_1[corr_chart_y.value]['data']
+
+        fit = sm.OLS(y, x).fit()
+
+        coeff = fit.params
+        coeff_p = fit.pvalues
+        r_sq = fit.rsquared
+        model_p = fit.f_pvalue
+
+        coeff_str = ["%0.3E" % i for i in coeff]
+        coeff_p_str = ["%0.3f" % i for i in coeff_p]
+        r_sq_str = ["%0.3f" % r_sq]
+        model_p_str = ["%0.3f" % model_p]
+
+        source_multi_var_coeff_results_1.data = {'var_name': ['Constant'] + included_vars,
+                                                 'coeff': coeff, 'coeff_str': coeff_str,
+                                                 'p': coeff_p, 'p_str': coeff_p_str}
+        source_multi_var_model_results_1.data = {'model_p': [model_p], 'model_p_str': model_p_str,
+                                                 'r_sq': [r_sq], 'r_sq_str': r_sq_str,
+                                                 'y_var': [corr_chart_y.value]}
     else:
-        print(str(datetime.now()), 'Performing multivariable regression', sep=' ')
+        source_multi_var_coeff_results_1.data = {'var_name': [], 'coeff': [],
+                                                 'coeff_str': [], 'p': [], 'p_str': []}
+        source_multi_var_model_results_1.data = {'model_p': [], 'model_p_str': [],
+                                                 'r_sq': [], 'r_sq_str': [], 'y_var': []}
 
-        included_vars = [k for k in correlation_1.keys() if multi_var_reg_vars[k]]
-        included_vars.sort()
+    # Red Group
+    if current_dvh_group_2:
+        x = []
+        x_count = len(correlation_2[correlation_2.keys()[0]]['data'])
+        for i in range(0, x_count):
+            current_x = []
+            for k in included_vars:
+                current_x.append(correlation_2[k]['data'][i])
+            x.append(current_x)
+        x = sm.add_constant(x)  # explicitly add constant to calculate intercept
+        y = correlation_2[corr_chart_y.value]['data']
 
-        # Blue Group
-        if current_dvh_group_1:
-            x = []
-            x_count = len(correlation_1[correlation_1.keys()[0]]['data'])
-            for i in range(0, x_count):
-                current_x = []
-                for k in included_vars:
-                    current_x.append(correlation_1[k]['data'][i])
-                x.append(current_x)
-            x = sm.add_constant(x)  # explicitly add constant to calculate intercept
-            y = correlation_1[corr_chart_y.value]['data']
+        fit = sm.OLS(y, x).fit()
 
-            fit = sm.OLS(y, x).fit()
+        coeff = fit.params
+        coeff_p = fit.pvalues
+        r_sq = fit.rsquared
+        model_p = fit.f_pvalue
 
-            coeff = fit.params
-            coeff_p = fit.pvalues
-            r_sq = fit.rsquared
-            model_p = fit.f_pvalue
+        coeff_str = ["%0.3E" % i for i in coeff]
+        coeff_p_str = ["%0.3f" % i for i in coeff_p]
+        r_sq_str = ["%0.3f" % r_sq]
+        model_p_str = ["%0.3f" % model_p]
 
-            coeff_str = ["%0.3E" % i for i in coeff]
-            coeff_p_str = ["%0.3f" % i for i in coeff_p]
-            r_sq_str = ["%0.3f" % r_sq]
-            model_p_str = ["%0.3f" % model_p]
-
-            source_multi_var_coeff_results_1.data = {'var_name': ['Constant'] + included_vars,
-                                                     'coeff': coeff, 'coeff_str': coeff_str,
-                                                     'p': coeff_p, 'p_str': coeff_p_str}
-            source_multi_var_model_results_1.data = {'model_p': [model_p], 'model_p_str': model_p_str,
-                                                     'r_sq': [r_sq], 'r_sq_str': r_sq_str,
-                                                     'y_var': [corr_chart_y.value]}
-        else:
-            source_multi_var_coeff_results_1.data = {'var_name': [], 'coeff': [],
-                                                     'coeff_str': [], 'p': [], 'p_str': []}
-            source_multi_var_model_results_1.data = {'model_p': [], 'model_p_str': [],
-                                                     'r_sq': [], 'r_sq_str': [], 'y_var': []}
-
-        # Red Group
-        if current_dvh_group_2:
-            x = []
-            x_count = len(correlation_2[correlation_2.keys()[0]]['data'])
-            for i in range(0, x_count):
-                current_x = []
-                for k in included_vars:
-                    current_x.append(correlation_2[k]['data'][i])
-                x.append(current_x)
-            x = sm.add_constant(x)  # explicitly add constant to calculate intercept
-            y = correlation_2[corr_chart_y.value]['data']
-
-            fit = sm.OLS(y, x).fit()
-
-            coeff = fit.params
-            coeff_p = fit.pvalues
-            r_sq = fit.rsquared
-            model_p = fit.f_pvalue
-
-            coeff_str = ["%0.3E" % i for i in coeff]
-            coeff_p_str = ["%0.3f" % i for i in coeff_p]
-            r_sq_str = ["%0.3f" % r_sq]
-            model_p_str = ["%0.3f" % model_p]
-
-            source_multi_var_coeff_results_2.data = {'var_name': ['Constant'] + included_vars, 'coeff': coeff, 'coeff_str': coeff_str,
-                                                     'p': coeff_p, 'p_str': coeff_p_str}
-            source_multi_var_model_results_2.data = {'model_p': [model_p], 'model_p_str': model_p_str,
-                                                     'r_sq': [r_sq], 'r_sq_str': r_sq_str,
-                                                     'y_var': [corr_chart_y.value]}
-        else:
-            source_multi_var_coeff_results_2.data = {'var_name': [], 'coeff': [],
-                                                     'coeff_str': [], 'p': [], 'p_str': []}
-            source_multi_var_model_results_2.data = {'model_p': [], 'model_p_str': [],
-                                                     'r_sq': [], 'r_sq_str': [], 'y_var': []}
+        source_multi_var_coeff_results_2.data = {'var_name': ['Constant'] + included_vars, 'coeff': coeff, 'coeff_str': coeff_str,
+                                                 'p': coeff_p, 'p_str': coeff_p_str}
+        source_multi_var_model_results_2.data = {'model_p': [model_p], 'model_p_str': model_p_str,
+                                                 'r_sq': [r_sq], 'r_sq_str': r_sq_str,
+                                                 'y_var': [corr_chart_y.value]}
+    else:
+        source_multi_var_coeff_results_2.data = {'var_name': [], 'coeff': [],
+                                                 'coeff_str': [], 'p': [], 'p_str': []}
+        source_multi_var_model_results_2.data = {'model_p': [], 'model_p_str': [],
+                                                 'r_sq': [], 'r_sq_str': [], 'y_var': []}
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2961,7 +2961,7 @@ corr_chart_y_prev.on_click(corr_chart_y_prev_ticker)
 corr_chart_y_next.on_click(corr_chart_y_next_ticker)
 corr_chart_x_include.on_change('active', corr_chart_x_include_ticker)
 
-corr_chart_do_reg_button = Button(label="Perform Regression", button_type="primary", width=150)
+corr_chart_do_reg_button = Button(label="Perform Multi-Var Regression", button_type="primary", width=200)
 corr_chart_do_reg_button.on_click(multi_var_linear_regression)
 
 corr_chart_x = Select(value='', options=[''], width=300)
@@ -2975,13 +2975,13 @@ corr_chart_y.on_change('value', update_corr_chart_ticker_y)
 corr_chart_text_1 = Div(text="<b>Blue Group</b>:", width=1050)
 corr_chart_text_2 = Div(text="<b>Red Group</b>:", width=1050)
 
-columns = [TableColumn(field="stat", title="Stat", width=100),
-           TableColumn(field="group_1", title="Blue Group", width=60, formatter=NumberFormatter(format="0.000")),
-           TableColumn(field="group_2", title="Red Group", width=60, formatter=NumberFormatter(format="0.000"))]
+columns = [TableColumn(field="stat", title="Single-Var Regression", width=100),
+           TableColumn(field="group_1", title="Blue Group", width=60),
+           TableColumn(field="group_2", title="Red Group", width=60)]
 data_table_corr_chart = DataTable(source=source_corr_chart_stats, columns=columns, editable=True,
-                                  height=175, width=275, row_headers=False)
+                                  height=180, width=300, row_headers=False)
 
-columns = [TableColumn(field="var_name", title="Variables for Regression", width=100)]
+columns = [TableColumn(field="var_name", title="Variables for Multi-Var Regression", width=100)]
 data_table_multi_var_include = DataTable(source=source_multi_var_include, columns=columns,
                                          height=175, width=275, row_headers=False)
 
