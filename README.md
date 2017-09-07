@@ -23,8 +23,11 @@ This code is built upon these core libraries:
 For installation instructions, see our [installation notes](https://github.com/cutright/DVH-Analytics/blob/master/install_notes.md).
 
 ## Dependencies
-* [Python](https://www.python.org) 2.7 tested  
+* [Python](https://www.python.org) 2.7  
     * Python 3 not currently supported
+    * [Future](https://pypi.python.org/pypi/future) 0.6.0
+        * for bridging gap between 2.7 and 3.x
+        * we're still working on the Python 3 transition
 * [PostgreSQL](https://www.postgresql.org/) and [psycopg2](http://initd.org/psycopg/)
 * [scipy](https://scipy.org)
     * [numpy](https://pypi.python.org/pypi/numpy) 1.12.1 tested
