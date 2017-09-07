@@ -2,13 +2,18 @@
 <img src='https://cloud.githubusercontent.com/assets/4778878/26684430/99fc183e-46ac-11e7-9e41-b768141212d5.png' align='right' width='300' alt="DVH Analytics screenshot">  
  
 DVH Analytics is a code to help radiation oncology departments build an in-house database of treatment planning data 
-for the purpose of historical comparisons.  
+for the purpose of historical comparisons and statistical analysis.  
 
-This code is still in development.  Please contact the developer if  you are interested in testing.
+This code is still in development.  Please contact the developer if  you are interested in testing or collaborating.
 
 This code builds a SQL database of DVHs and various planning parameters from DICOM files 
 (i.e., Plan, Structure, Dose). Since this code extracts data
-directly from DICOM files, we intend to accomodate an array of treatment planning system vendors.
+directly from DICOM files, we intend to accommodate an array of treatment planning system vendors.
+
+In addition to DVHs, this software provides methods to download queried data, view plan contours, 
+create time-series plots of various planning and dosimetric variables, detect correlations, and generate 
+ multi-variable linear regressions.
+
 
 This code is built upon these core libraries:
 * [pydicom](http://code.google.com/p/pydicom/) - Read, modify and write DICOM files with python code
