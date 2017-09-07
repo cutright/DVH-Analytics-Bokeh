@@ -25,7 +25,7 @@ For installation instructions, see our [installation notes](https://github.com/c
 ## Dependencies
 * [Python](https://www.python.org) 2.7  
     * Python 3 not currently supported
-    * [Future](https://pypi.python.org/pypi/future) 0.6.0
+    * [Future](https://pypi.python.org/pypi/future) 0.16.0
         * for bridging gap between 2.7 and 3.x
         * we're still working on the Python 3 transition
 * [PostgreSQL](https://www.postgresql.org/) and [psycopg2](http://initd.org/psycopg/)
