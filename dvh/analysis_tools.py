@@ -6,6 +6,7 @@ Created on Thu Mar  9 18:48:19 2017
 """
 
 from __future__ import print_function
+from future.utils import listitems
 import numpy as np
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL, get_unique_list
@@ -297,7 +298,7 @@ def calc_eud(dvh, a):
 def get_study_instance_uids(**kwargs):
     study_instance_uids = {}
     complete_list = []
-    for key, value in kwargs.iteritems():
+    for key, value in listitems(kwargs):
         if key not in {'Plans', 'DVHs', 'Beams', 'Rxs'}:
             print(key, ' is not a valid table name\nSelect from Plans, DVHs, Beams, or Rxs.', sep=' ')
             return
@@ -317,16 +318,16 @@ def get_study_instance_uids(**kwargs):
 def is_uid_in_all_keys(uid, uid_kwlist):
     key_answer = {}
     # Initialize a False value for each key
-    for key in uid_kwlist.iterkeys():
+    for key in list(uid_kwlist):
         key_answer[key] = False
     # search for uid in each keyword fof uid_kwlist
-    for key, value in uid_kwlist.iteritems():
+    for key, value in listitems(uid_kwlist):
         if uid in value:
             key_answer[key] = True
 
     final_answer = True
     # Product of all answer[key] values (except 'unique')
-    for key, value in key_answer.iteritems():
+    for key, value in listitems(key_answer):
         if key not in 'unique':
             final_answer *= value
     return final_answer

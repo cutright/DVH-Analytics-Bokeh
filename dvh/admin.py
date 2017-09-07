@@ -85,7 +85,7 @@ def load_sql_settings():
                 except:
                     config[line[0]] = ''
 
-        if 'user' not in config.keys():
+        if 'user' not in list(config):
             config['user'] = ''
             config['password'] = ''
 
@@ -459,7 +459,7 @@ def update_uncategorized_variation_change(attr, old, new):
 def update_uncategorized_variation_select():
     global uncategorized_variations
     uncategorized_variations = get_uncategorized_variations(select_physician.value)
-    new_options = uncategorized_variations.keys()
+    new_options = list(uncategorized_variations)
     new_options.sort()
     old_value_index = select_uncategorized_variation.options.index(select_uncategorized_variation.value)
     select_uncategorized_variation.options = new_options
@@ -474,7 +474,7 @@ def update_uncategorized_variation_select():
 
 
 def update_ignored_variations_select():
-    new_options = get_ignored_variations(select_physician.value).keys()
+    new_options = list(get_ignored_variations(select_physician.value))
     new_options.sort()
     select_ignored_variation.options = new_options
     select_ignored_variation.value = new_options[0]
@@ -492,7 +492,8 @@ def get_uncategorized_variations(physician):
             variation = clean_name(str(row[0]))
             study_instance_uid = str(row[1])
             physician_db = cnx.query('plans', 'physician', "study_instance_uid = '" + study_instance_uid + "'")[0][0]
-            if physician == physician_db and variation not in new_uncategorized_variations.keys():
+            new_uncategorized_variations_keys = list(new_uncategorized_variations)
+            if physician == physician_db and variation not in new_uncategorized_variations_keys:
                 new_uncategorized_variations[variation] = {'roi_name': str(row[0]), 'study_instance_uid': str(row[1])}
         if new_uncategorized_variations:
             return new_uncategorized_variations
@@ -514,7 +515,8 @@ def get_ignored_variations(physician):
             variation = clean_name(str(row[0]))
             study_instance_uid = str(row[1])
             physician_db = cnx.query('plans', 'physician', "study_instance_uid = '" + study_instance_uid + "'")[0][0]
-            if physician == physician_db and variation not in new_ignored_variations.keys():
+            new_ignored_variations_keys = list(new_ignored_variations)
+            if physician == physician_db and variation not in new_ignored_variations_keys:
                 new_ignored_variations[variation] = {'roi_name': str(row[0]), 'study_instance_uid': str(row[1])}
         if new_ignored_variations:
             return new_ignored_variations
@@ -1159,7 +1161,7 @@ select_unlinked_institutional_roi = Select(value=value,
                                            title='Linked Institutional ROI')
 uncategorized_variations = get_uncategorized_variations(select_physician.value)
 try:
-    options = uncategorized_variations.keys()
+    options = list(uncategorized_variations)
 except:
     options = ['']
 options.sort()
@@ -1169,7 +1171,7 @@ select_uncategorized_variation = Select(value=options[0],
                                         title='Uncategorized Variations')
 ignored_variations = get_ignored_variations(select_physician.value)
 try:
-    options = ignored_variations.keys()
+    options = list(ignored_variations)
 except:
     options = ['']
 if not options:

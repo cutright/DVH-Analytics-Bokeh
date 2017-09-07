@@ -8,6 +8,7 @@ Created on Sun Apr 21 2017
 
 
 from __future__ import print_function
+from future.utils import listvalues, listitems
 from analysis_tools import DVH, get_study_instance_uids, calc_eud, get_eud_a_values
 from utilities import Temp_DICOM_FileSet, get_planes_from_string, get_union
 from sql_connector import DVH_SQL
@@ -174,7 +175,7 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
 correlation_variables, correlation_names = [], []
 correlation_variables_beam = ['Beam Dose', 'Beam MU', 'Control Point Count', 'Gantry Range',
                               'SSD', 'Beam MU per control point']
-for key in range_categories.keys():
+for key in list(range_categories):
     if key.startswith('ROI') or key.startswith('PTV') or key in {'Total Plan MU', 'Rx Dose'}:
         correlation_variables.append(key)
         correlation_names.append(key)
@@ -462,7 +463,7 @@ class SelectorRow:
     def __init__(self):
 
         self.id = len(query_row)
-        self.category_options = selector_categories.keys()
+        self.category_options = list(selector_categories)
         self.category_options.sort()
         self.select_category = Select(value="ROI Institutional Category", options=self.category_options, width=300)
         self.select_category.on_change('value', self.update_selector_values)
@@ -521,7 +522,7 @@ class SelectorRow:
 class RangeRow:
     def __init__(self):
         self.id = len(query_row)
-        self.category_options = range_categories.keys()
+        self.category_options = list(range_categories)
         self.category_options.sort()
         self.select_category = Select(value=self.category_options[-1], options=self.category_options, width=300)
         self.select_category.on_change('value', self.update_range_values_ticker)
@@ -1286,7 +1287,7 @@ def calculate_review_dvh():
             structure_file = temp_dvh_info.structure[file_index]
             plan_file = temp_dvh_info.plan[file_index]
             dose_file = temp_dvh_info.dose[file_index]
-            key = temp_dvh_info.get_roi_names(select_reviewed_mrn.value).keys()[roi_index]
+            key = list(temp_dvh_info.get_roi_names(select_reviewed_mrn.value))[roi_index]
 
             rt_st = dicomparser.DicomParser(structure_file)
             rt_structures = rt_st.GetStructures()
@@ -1864,7 +1865,7 @@ def roi_viewer_slice_ticker(attr, old, new):
 
 
 def update_roi_viewer_slice():
-    options = roi_viewer_data.keys()
+    options = list(roi_viewer_data)
     options.sort()
     roi_viewer_slice_select.options = options
     roi_viewer_slice_select.value = options[0]
@@ -1911,7 +1912,7 @@ def update_roi_viewer_data(roi_name):
                                        'roi_coord_string',
                                        "study_instance_uid = '%s' and roi_name = '%s'" % (uid, roi_name))
     roi_planes = get_planes_from_string(roi_coord_string[0][0])
-    for z_plane in roi_planes.keys():
+    for z_plane in list(roi_planes):
         x, y, z = [], [], []
         for polygon in roi_planes[z_plane]:
             initial_polygon_index = len(x)
@@ -1945,7 +1946,7 @@ def update_tv_data():
         ptvs = [get_planes_from_string(ptv[0]) for ptv in ptv_coordinates_strings]
         tv_planes = get_union(ptvs)
 
-    for z_plane in tv_planes.keys():
+    for z_plane in list(tv_planes):
         x, y, z = [], [], []
         for polygon in tv_planes[z_plane]:
             initial_polygon_index = len(x)
@@ -1971,7 +1972,7 @@ def update_roi_viewer():
 
 def update_roi2_viewer():
     z = roi_viewer_slice_select.value
-    if z in roi2_viewer_data.keys():
+    if z in listitems(roi2_viewer_data):
         source_roi2_viewer.data = roi2_viewer_data[z]
     else:
         source_roi2_viewer.data = {'x': [], 'y': [], 'z': []}
@@ -1979,7 +1980,7 @@ def update_roi2_viewer():
 
 def update_roi3_viewer():
     z = roi_viewer_slice_select.value
-    if z in roi3_viewer_data.keys():
+    if z in list(roi3_viewer_data):
         source_roi3_viewer.data = roi3_viewer_data[z]
     else:
         source_roi3_viewer.data = {'x': [], 'y': [], 'z': []}
@@ -1987,7 +1988,7 @@ def update_roi3_viewer():
 
 def update_roi4_viewer():
     z = roi_viewer_slice_select.value
-    if z in roi4_viewer_data.keys():
+    if z in list(roi4_viewer_data):
         source_roi4_viewer.data = roi4_viewer_data[z]
     else:
         source_roi4_viewer.data = {'x': [], 'y': [], 'z': []}
@@ -1995,7 +1996,7 @@ def update_roi4_viewer():
 
 def update_roi5_viewer():
     z = roi_viewer_slice_select.value
-    if z in roi5_viewer_data.keys():
+    if z in list(roi5_viewer_data):
         source_roi5_viewer.data = roi5_viewer_data[z]
     else:
         source_roi5_viewer.data = {'x': [], 'y': [], 'z': []}
@@ -2018,7 +2019,7 @@ def roi_viewer_flip_x_axis():
 def roi_viewer_plot_tv():
     update_tv_data()
     z = roi_viewer_slice_select.value
-    if z in tv_data.keys() and not source_tv.data['x']:
+    if z in list(tv_data) and not source_tv.data['x']:
         source_tv.data = tv_data[z]
     else:
         source_tv.data = {'x': [], 'y': [], 'z': []}
@@ -2174,12 +2175,12 @@ def update_correlation():
             correlation_2[key] = {'uid': uids_ep_2, 'mrn': mrns_ep_2, 'data': data_ep_2, 'units': units}
 
     # declare space to tag variables to be used for multi variable regression
-    for key in correlation_1.keys():
-        correlation_1[key]['include'] = [False] * len(correlation_1[key]['uid'])
-    for key in correlation_2.keys():
-        correlation_2[key]['include'] = [False] * len(correlation_2[key]['uid'])
+    for key, value in listitems(correlation_1):
+        correlation_1[key]['include'] = [False] * len(value['uid'])
+    for key, value in listitems(correlation_2):
+        correlation_2[key]['include'] = [False] * len(value['uid'])
 
-    categories = correlation_1.keys()
+    categories = list(correlation_1)
     categories.sort()
     corr_chart_x.options = [''] + categories
     corr_chart_y.options = [''] + categories
@@ -2226,12 +2227,12 @@ def update_endpoints_in_correlation():
             correlation_2.pop(key, None)
 
     # declare space to tag variables to be used for multi variable regression
-    for key in correlation_1.keys():
-        correlation_1[key]['include'] = [False] * len(correlation_1[key]['uid'])
-    for key in correlation_2.keys():
-        correlation_2[key]['include'] = [False] * len(correlation_2[key]['uid'])
+    for key, value in listitems(correlation_1):
+        correlation_1[key]['include'] = [False] * len(value['uid'])
+    for key, value in listitems(correlation_2):
+        correlation_2[key]['include'] = [False] * len(value['uid'])
 
-    categories = correlation_1.keys()
+    categories = list(correlation_1)
     categories.sort()
     corr_chart_x.options = [''] + categories
     corr_chart_y.options = [''] + categories
@@ -2427,7 +2428,7 @@ def corr_chart_x_include_ticker(attr, old, new):
         multi_var_reg_vars[corr_chart_x.value] = True
     if not new and multi_var_reg_vars[corr_chart_x.value]:
         multi_var_reg_vars[corr_chart_x.value] = False
-    included_vars = [key for key in multi_var_reg_vars.keys() if multi_var_reg_vars[key]]
+    included_vars = [key for key, value in listitems(multi_var_reg_vars) if value]
     included_vars.sort()
     source_multi_var_include.data = {'var_name': included_vars}
 
@@ -2435,13 +2436,13 @@ def corr_chart_x_include_ticker(attr, old, new):
 def multi_var_linear_regression():
     print(str(datetime.now()), 'Performing multivariable regression', sep=' ')
 
-    included_vars = [k for k in correlation_1.keys() if multi_var_reg_vars[k]]
+    included_vars = [key for key, value in listitems(correlation_1) if value]
     included_vars.sort()
 
     # Blue Group
     if current_dvh_group_1:
         x = []
-        x_count = len(correlation_1[correlation_1.keys()[0]]['data'])
+        x_count = len(correlation_1[list(correlation_1)[0]]['data'])
         for i in range(0, x_count):
             current_x = []
             for k in included_vars:
@@ -2477,7 +2478,7 @@ def multi_var_linear_regression():
     # Red Group
     if current_dvh_group_2:
         x = []
-        x_count = len(correlation_2[correlation_2.keys()[0]]['data'])
+        x_count = len(correlation_2[list(correlation_2)[0]]['data'])
         for i in range(0, x_count):
             current_x = []
             for k in included_vars:
@@ -2766,7 +2767,7 @@ legend_control_chart = Legend(items=[("Blue Group", [control_chart_data_1]),
 control_chart.add_layout(legend_control_chart, 'right')
 control_chart.legend.click_policy = "hide"
 
-control_chart_options = range_categories.keys() + ["DVH Endpoint %d" % i for i in range(1, 9)]
+control_chart_options = list(range_categories) + ["DVH Endpoint %d" % i for i in range(1, 9)]
 control_chart_options.sort()
 control_chart_options.append('')
 control_chart_y = Select(value=control_chart_options[-1], options=control_chart_options, width=300)

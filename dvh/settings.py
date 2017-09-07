@@ -7,6 +7,7 @@ Created on Fri Mar 24 13:43:28 2017
 """
 
 from __future__ import print_function
+from future.utils import listvalues
 from utilities import is_import_settings_defined, is_sql_connection_defined,\
     write_import_settings, write_sql_connection_settings, validate_sql_connection
 import os
@@ -72,7 +73,7 @@ def load_sql_settings():
                 except:
                     config[line[0]] = ''
 
-        if 'user' not in config.keys():
+        if 'user' not in list(config):
             config['user'] = ''
             config['password'] = ''
 
@@ -199,7 +200,7 @@ def update_dir_save_status():
 
     script_dir = os.path.dirname(__file__)
 
-    for path in directories.itervalues():
+    for path in listvalues(directories):
         rel_path = path[2:len(path)]
         abs_dir_path = os.path.join(script_dir, rel_path)
         if not(os.path.isdir(path) or (os.path.isdir(abs_dir_path) and path[0:2] == './')):
@@ -244,7 +245,7 @@ def check_tables():
         for table in tables:
             table_result[table] = DVH_SQL().check_table_exists(table)
 
-        if all(table_result.itervalues()):
+        if all(table_result.values()):
             check_tables_button.button_type = 'success'
             check_tables_button.label = 'Success'
         else:

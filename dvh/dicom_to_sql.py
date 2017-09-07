@@ -7,6 +7,7 @@ Created on Thu Mar  2 22:15:52 2017
 """
 
 from __future__ import print_function
+from future.utils import listvalues
 from sql_connector import DVH_SQL
 from dicom_to_python import DVHTable, PlanRow, BeamTable, RxTable
 import os
@@ -50,7 +51,7 @@ def dicom_to_sql(**kwargs):
     file_paths, warning = get_file_paths(import_settings['inbox'], force_update=force_update)
 
     if not warning['mrn']:
-        for f in file_paths.itervalues():
+        for f in listvalues(file_paths):
             print(f.structure)
             print(f.plan)
             print(f.dose)
@@ -240,13 +241,8 @@ def is_file_imported(file_path):
 
 
 def rank_ptvs_by_D95(dvhs):
-    ptv_number_list = []
-    ptv_index = []
-
-    for i in range(0, dvhs.count):
-        ptv_number_list.append(0)
-        if dvhs.roi_type[i] == 'PTV':
-            ptv_index.append(i)
+    ptv_number_list = [0] * dvhs.count
+    ptv_index = [i for i in range(0, dvhs.count) if dvhs.roi_type[i] == 'PTV']
 
     ptv_count = len(ptv_index)
 

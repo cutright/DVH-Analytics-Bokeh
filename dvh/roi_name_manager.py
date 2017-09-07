@@ -28,7 +28,7 @@ class Physician:
     def add_physician_roi_variation(self, physician_roi, variation):
         physician_roi = clean_name(physician_roi)
         variation = clean_name(variation)
-        if physician_roi in self.physician_rois.keys():
+        if physician_roi in list(self.physician_rois):
             if variation not in self.physician_rois[physician_roi]['variations']:
                 self.physician_rois[physician_roi]['variations'].append(variation)
                 self.physician_rois[physician_roi]['variations'].sort()
@@ -67,7 +67,7 @@ class DatabaseROIs:
     ##############################################
     def import_physician_roi_maps(self):
 
-        for physician in self.physicians.keys():
+        for physician in list(self.physicians):
             rel_path = 'preferences/physician_' + physician + '.roi'
             abs_file_path = os.path.join(self.script_dir, rel_path)
             if os.path.isfile(abs_file_path):
@@ -105,7 +105,7 @@ class DatabaseROIs:
         self.physicians.pop(physician, None)
 
     def get_physicians(self):
-        return self.physicians.keys()
+        return list(self.physicians)
 
     def get_physician(self, physician):
         return self.physicians[physician]
@@ -190,7 +190,7 @@ class DatabaseROIs:
     def get_physician_rois(self, physician):
         physician = clean_name(physician).upper()
         if self.is_physician(physician):
-            physician_rois = self.physicians[physician].physician_rois.keys()
+            physician_rois = list(self.physicians[physician].physician_rois)
             if physician_rois:
                 physician_rois.sort()
                 return physician_rois

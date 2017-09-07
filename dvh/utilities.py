@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
+from future.utils import listitems
 from sql_to_python import QuerySQL
 from sql_connector import DVH_SQL
 from datetime import datetime
@@ -96,7 +97,7 @@ class Temp_DICOM_FileSet:
         rt_structures = rt_st.GetStructures()
 
         roi = {}
-        for key in rt_structures:
+        for key in list(rt_structures):
             if rt_structures[key]['type'].upper() not in {'MARKER', 'REGISTRATION', 'ISOCENTER'}:
                 roi[key] = rt_structures[key]['name']
 
@@ -159,12 +160,12 @@ def recalculate_total_mu(*custom_condition):
         uid = beam_data.study_instance_uid[i]
         beam_mu = beam_data.beam_mu[i]
         fxs = float(beam_data.fx_count[i])
-        if uid not in plan_mus.keys():
+        if uid not in list(plan_mus):
             plan_mus[uid] = 0.
 
         plan_mus[uid] += beam_mu * fxs
 
-    for uid in plan_mus.keys():
+    for uid in list(plan_mus):
         cnx.update('Plans', 'total_mu', str(round(plan_mus[uid], 1)), "study_instance_uid = '%s'" % uid)
 
     cnx.close()
@@ -242,10 +243,7 @@ def write_import_settings(directories):
 
 def write_sql_connection_settings(config):
 
-    text = []
-    for key, value in config.iteritems():
-        if value:
-            text.append(key + ' ' + value)
+    text = ["%s %s" % (key, value) for key, value in listitems(config) if value]
     text = '\n'.join(text)
 
     script_dir = os.path.dirname(__file__)
@@ -273,7 +271,7 @@ def validate_import_settings():
                 config[line[0]] = ''
 
     valid = True
-    for key, value in config.iteritems():
+    for key, value in listitems(config):
         if not os.path.isdir(value):
             print('invalid', key, 'path:', value, sep=" ")
             valid = False
@@ -354,7 +352,7 @@ def surface_area_of_roi(coord):
     :rtype: float
     """
     surface_area = 0.
-    all_z_values = [round(float(z), 1) for z in coord.keys()]
+    all_z_values = [round(float(z), 1) for z in list(coord)]
     all_z_values = np.sort(all_z_values)
     thicknesses = np.abs(np.diff(all_z_values))
     thicknesses = np.append(thicknesses, np.min(thicknesses))
@@ -435,17 +433,17 @@ def calc_roi_overlap(oar, tv):
     #    Same method DICOM uses to handle rings and islands
 
     intersection_volume = 0.
-    all_z_values = [round(float(z), 2) for z in tv.keys()]
+    all_z_values = [round(float(z), 2) for z in list(tv)]
     all_z_values = np.sort(all_z_values)
     thicknesses = np.abs(np.diff(all_z_values))
     thicknesses = np.append(thicknesses, np.min(thicknesses))
     all_z_values = all_z_values.tolist()
 
-    for z in tv.keys():
+    for z in list(tv):
         # z in coord will not necessarily go in order of z, convert z to float to lookup thickness
         # also used to check for top and bottom slices, to add area of those contours
 
-        if z in oar.keys():
+        if z in list(oar):
             thickness = thicknesses[all_z_values.index(round(float(z), 2))]
             shapely_tv = points_to_shapely_polygon(tv[z])
             shapely_oar = points_to_shapely_polygon(oar[z])
@@ -461,19 +459,19 @@ def get_union(rois):
 
     all_z_values = []
     for roi in rois:
-        for z in roi.keys():
+        for z in list(roi):
             if z not in all_z_values:
                 all_z_values.append(z)
 
     for z in all_z_values:
 
-        if z not in new_roi.keys():
+        if z not in list(new_roi):
             new_roi[z] = []
 
         current_slice = []
         for roi in rois:
             # Make sure current roi has at least 3 points in z plane
-            if z in roi.keys() and len(roi[z][0]) > 2:
+            if z in list(roi) and len(roi[z][0]) > 2:
                 if not current_slice:
                     current_slice = points_to_shapely_polygon(roi[z])
                 else:
@@ -514,13 +512,13 @@ def calc_volume(roi):
     #    Same method DICOM uses to handle rings and islands
 
     volume = 0.
-    all_z_values = [round(float(z), 2) for z in roi.keys()]
+    all_z_values = [round(float(z), 2) for z in list(roi)]
     all_z_values = np.sort(all_z_values)
     thicknesses = np.abs(np.diff(all_z_values))
     thicknesses = np.append(thicknesses, np.min(thicknesses))
     all_z_values = all_z_values.tolist()
 
-    for z in roi.keys():
+    for z in list(roi):
         # z in coord will not necessarily go in order of z, convert z to float to lookup thickness
         # also used to check for top and bottom slices, to add area of those contours
 
@@ -551,7 +549,7 @@ def get_roi_coordinates_from_string(roi_coord_string):
 def get_roi_coordinates_from_planes(planes):
     roi_coordinates = []
 
-    for z in planes.keys():
+    for z in list(planes):
         for polygon in planes[z]:
             for point in polygon:
                 roi_coordinates.append(np.array((point[0], point[1], point[2])))
@@ -568,7 +566,7 @@ def get_planes_from_string(roi_coord_string):
         z = round(float(z), 2)
         z_str = str(z)
 
-        if z_str not in planes.keys():
+        if z_str not in list(planes):
             planes[z_str] = []
 
         i, points = 0, []

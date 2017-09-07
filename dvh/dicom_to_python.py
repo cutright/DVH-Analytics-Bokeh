@@ -8,6 +8,7 @@ Created on Sun Feb 26 11:06:28 2017
 """
 
 from __future__ import print_function
+from future.utils import listvalues, listitems
 import dicom  # pydicom
 from dicompylercore import dicomparser, dvhcalc
 from datetime import datetime
@@ -21,7 +22,7 @@ class DVHRow:
     def __init__(self, mrn, study_instance_uid, institutional_roi, physician_roi,
                  roi_name, roi_type, volume, min_dose, mean_dose, max_dose, dvh_str, roi_coord, surface_area):
 
-        for key, value in locals().iteritems():
+        for key, value in listitems(locals()):
             if key != 'self':
                 setattr(self, key, value)
 
@@ -39,7 +40,7 @@ class BeamRow:
                  beam_dose_pt, isocenter, ssd, treatment_machine, scan_mode, scan_spot_count,
                  beam_mu_per_deg, beam_mu_per_cp):
 
-        for key, value in locals().iteritems():
+        for key, value in listitems(locals()):
             if key != 'self':
                 setattr(self, key, value)
 
@@ -48,7 +49,7 @@ class RxRow:
     def __init__(self, mrn, study_instance_uid, plan_name, fx_grp_name, fx_grp_number, fx_grp_count,
                  fx_dose, fxs, rx_dose, rx_percent, normalization_method, normalization_object):
 
-        for key, value in locals().iteritems():
+        for key, value in listitems(locals()):
             if key != 'self':
                 setattr(self, key, value)
 
