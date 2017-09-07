@@ -532,9 +532,14 @@ def delete_uncategorized_dvh():
             ignore_button_roi.button_type = 'success'
             ignore_button_roi.label = 'Cancel Delete DVH'
     else:
-        roi_info = uncategorized_variations[select_uncategorized_variation.value]
-        DVH_SQL().delete_dvh(roi_info['roi_name'], roi_info['study_instance_uid'])
+        physician_uids = DVH_SQL().query('Plans', 'study_instance_uid', "physician = '%s'" % select_physician.value)
+        physician_uids = [uid[0] for uid in physician_uids]
+        uids = DVH_SQL().query('DVHs', 'study_instance_uid', "roi_name = '%s'" % select_uncategorized_variation.value)
+        for uid in uids:
+            if uid[0] in physician_uids:
+                DVH_SQL().delete_dvh(select_uncategorized_variation.value, uid[0])
         update_uncategorized_variation_select()
+        update_ignored_variations_select()
         delete_uncategorized_button_roi.button_type = 'warning'
         delete_uncategorized_button_roi.label = 'Delete DVH'
         ignore_button_roi.button_type = 'primary'
@@ -549,8 +554,13 @@ def delete_ignored_dvh():
             unignore_button_roi.button_type = 'success'
             unignore_button_roi.label = 'Cancel Delete DVH'
     else:
-        roi_info = ignored_variations[select_ignored_variation.value]
-        DVH_SQL().delete_dvh(roi_info['roi_name'], roi_info['study_instance_uid'])
+        physician_uids = DVH_SQL().query('Plans', 'study_instance_uid', "physician = '%s'" % select_physician.value)
+        physician_uids = [uid[0] for uid in physician_uids]
+        uids = DVH_SQL().query('DVHs', 'study_instance_uid', "roi_name = '%s'" % select_ignored_variation.value)
+        for uid in uids:
+            if uid[0] in physician_uids:
+                DVH_SQL().delete_dvh(select_ignored_variation.value, uid[0])
+        update_uncategorized_variation_select()
         update_ignored_variations_select()
         delete_ignored_button_roi.button_type = 'warning'
         delete_ignored_button_roi.label = 'Delete DVH'
