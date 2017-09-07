@@ -10,7 +10,7 @@ This code builds a SQL database of DVHs and various planning parameters from DIC
 (i.e., Plan, Structure, Dose). Since this code extracts data
 directly from DICOM files, we intend to accommodate an array of treatment planning system vendors.
 
-In addition to DVHs, this software provides methods to download queried data, view plan contours, 
+In addition to viewing DVH data, this software provides methods to download queried data, view plan contours, 
 create time-series plots of various planning and dosimetric variables, detect correlations, and generate 
  multi-variable linear regressions.
 
