@@ -8,7 +8,7 @@ Created on Sun Feb 26 11:06:28 2017
 """
 
 from __future__ import print_function
-from future.utils import listvalues, listitems
+from future.utils import listitems
 import dicom  # pydicom
 from dicompylercore import dicomparser, dvhcalc
 from datetime import datetime

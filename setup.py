@@ -19,13 +19,14 @@ requires = [
     'shapely[vectorized] == 1.6b2',
     'freetype-py',
     'statsmodels',
+    'future',
 ]
 
 setup(
     name='dvh-analytics',
     include_package_data=True,
     packages=find_packages(),
-    version='0.1.34',
+    version='0.1.35',
     description='Create a database of DVHs, views with Bokeh',
     author='Dan Cutright',
     author_email='dan.cutright@gmail.com',

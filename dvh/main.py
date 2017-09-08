@@ -8,8 +8,8 @@ Created on Sun Apr 21 2017
 
 
 from __future__ import print_function
-from future.utils import listvalues, listitems
-from analysis_tools import DVH, get_study_instance_uids, calc_eud, get_eud_a_values
+from future.utils import listitems
+from analysis_tools import DVH, get_study_instance_uids
 from utilities import Temp_DICOM_FileSet, get_planes_from_string, get_union
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL
@@ -41,7 +41,6 @@ endpoint_data = {"ep%d" % i: [] for i in range(1, 9)}
 endpoint_columns = {i: '' for i in range(0, 10)}
 x, y = [], []
 uids_1, uids_2 = [], []
-eud_a_values = get_eud_a_values()
 widget_row_start = 0
 
 temp_dvh_info = Temp_DICOM_FileSet()
@@ -856,7 +855,6 @@ def update_dvh_data(dvh):
         dvh.institutional_roi.extend(['N/A'] * extra_rows)
         dvh.physician_roi.extend(['N/A'] * extra_rows)
         dvh.roi_type.extend(['Stat'] * extra_rows)
-        dvh.eud_a_value.extend(['N/A'] * extra_rows)
         dvh.dist_to_ptv_min.extend(['N/A'] * extra_rows)
         dvh.dist_to_ptv_median.extend(['N/A'] * extra_rows)
         dvh.dist_to_ptv_mean.extend(['N/A'] * extra_rows)
@@ -869,7 +867,6 @@ def update_dvh_data(dvh):
         dvh.min_dose.extend(calc_stats(dvh_group_1.min_dose))
         dvh.mean_dose.extend(calc_stats(dvh_group_1.mean_dose))
         dvh.max_dose.extend(calc_stats(dvh_group_1.max_dose))
-        dvh.eud.extend(calc_stats(dvh_group_1.eud))
     if group_2_count > 0:
         dvh.rx_dose.extend(calc_stats(dvh_group_2.rx_dose))
         dvh.volume.extend(calc_stats(dvh_group_2.volume))
@@ -877,7 +874,6 @@ def update_dvh_data(dvh):
         dvh.min_dose.extend(calc_stats(dvh_group_2.min_dose))
         dvh.mean_dose.extend(calc_stats(dvh_group_2.mean_dose))
         dvh.max_dose.extend(calc_stats(dvh_group_2.max_dose))
-        dvh.eud.extend(calc_stats(dvh_group_2.eud))
 
     # Adjust dvh object for review dvh
     dvh.dvh = np.insert(dvh.dvh, 0, 0, 1)
@@ -894,8 +890,6 @@ def update_dvh_data(dvh):
     dvh.min_dose.insert(0, '')
     dvh.mean_dose.insert(0, '')
     dvh.max_dose.insert(0, '')
-    dvh.eud.insert(0, 'N/A')
-    dvh.eud_a_value.insert(0, 'N/A')
     dvh.dist_to_ptv_min.insert(0, 'N/A')
     dvh.dist_to_ptv_mean.insert(0, 'N/A')
     dvh.dist_to_ptv_median.insert(0, 'N/A')
@@ -924,8 +918,6 @@ def update_dvh_data(dvh):
                    'min_dose': dvh.min_dose,
                    'mean_dose': dvh.mean_dose,
                    'max_dose': dvh.max_dose,
-                   'eud': dvh.eud,
-                   'eud_a_value': dvh.eud_a_value,
                    'dist_to_ptv_min': dvh.dist_to_ptv_min,
                    'dist_to_ptv_mean': dvh.dist_to_ptv_mean,
                    'dist_to_ptv_median': dvh.dist_to_ptv_median,
@@ -1251,9 +1243,7 @@ def update_dvh_review_rois(attr, old, new):
                    'mean_dose': [(0, '')],
                    'max_dose': [(0, '')],
                    'mrn': [(0, '')],
-                   'rx_dose': [(0, '')],
-                   'eud_a_value': [(0, '')],
-                   'eud': [(0, '')]}
+                   'rx_dose': [(0, '')]}
         source.patch(patches)
 
 
@@ -1268,9 +1258,7 @@ def calculate_review_dvh():
                'mean_dose': [(0, '')],
                'max_dose': [(0, '')],
                'mrn': [(0, '')],
-               'rx_dose': [(0, 1)],
-               'eud_a_value': [(0, '')],
-               'eud': [(0, '')]}
+               'rx_dose': [(0, 1)]}
 
     try:
         if not source.data['x']:
@@ -1304,15 +1292,9 @@ def calculate_review_dvh():
                 review_rx.value = str(round(rx_dose, 2))
             else:
                 rx_dose = round(float(review_rx.value), 2)
-            if not review_eud_a_value.value:
-                eud_a_value = 1.
-            else:
-                eud_a_value = float(review_eud_a_value.value)
 
             x = review_dvh.bincenters
             y = np.divide(review_dvh.counts, max(review_dvh.counts))
-
-            eud = calc_eud(y, eud_a_value)
 
             if radio_group_dose.active == 1:
                 f = 5000
@@ -1336,9 +1318,7 @@ def calculate_review_dvh():
                        'mean_dose': [(0, mean_dose)],
                        'max_dose': [(0, max_dose)],
                        'mrn': [(0, select_reviewed_mrn.value)],
-                       'rx_dose': [(0, rx_dose)],
-                       'eud_a_value': [(0, eud_a_value)],
-                       'eud': [(0, eud)]}
+                       'rx_dose': [(0, rx_dose)]}
 
     except:
         pass
@@ -1371,10 +1351,6 @@ def review_rx_ticker(attr, old, new):
         source.patch({'rx_dose': [(0, round(float(review_rx.value), 2))]})
     else:
         calculate_review_dvh()
-
-
-def review_eud_a_value_ticker(attr, old, new):
-    calculate_review_dvh()
 
 
 def update_control_chart_ticker(attr, old, new):
@@ -2568,8 +2544,6 @@ columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="min_dose", title="Min Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="mean_dose", title="Mean Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="max_dose", title="Max Dose", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="eud", title="EUD", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="eud_a_value", title="a", width=80),
            TableColumn(field="dist_to_ptv_min", title="Dist to PTV", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="ptv_overlap", title="PTV Overlap", width=80, formatter=NumberFormatter(format="0.0"))]
 data_table = DataTable(source=source, columns=columns, width=1200, editable=True)
@@ -2691,13 +2665,6 @@ select_reviewed_dvh.on_change('value', select_reviewed_dvh_ticker)
 
 review_rx = TextInput(value='', title="Rx Dose (Gy):", width=170)
 review_rx.on_change('value', review_rx_ticker)
-review_eud_a_value = TextInput(value='1', title="EUD a-value:", width=170)
-review_eud_a_value.on_change('value', review_eud_a_value_ticker)
-
-# calculate_review_dvh_button = Button(label="Calculate Review DVH",
-#                                      button_type="success",
-#                                      width=180)
-# calculate_review_dvh_button.on_click(calculate_review_dvh)
 
 # Begin defining main row of widgets below figure
 
@@ -3028,7 +2995,7 @@ layout_query = column(row(main_add_selector_button,
                           download_dropdown))
 
 layout_dvhs = column(row(radio_group_dose, radio_group_volume),
-                     row(select_reviewed_mrn, select_reviewed_dvh, review_rx, review_eud_a_value),
+                     row(select_reviewed_mrn, select_reviewed_dvh, review_rx),
                      dvh_plots,
                      data_table_title,
                      data_table,

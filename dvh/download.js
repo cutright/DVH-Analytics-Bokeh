@@ -7,7 +7,7 @@ if (cb_obj.get('value') == 'anon_dvhs') {
 
     var data = source.data;
     var ep_names = source_endpoint_names.data;
-    filetext = 'DVH Data\npatient#,roi_name,roi_type,rx_dose,volume,surface_area,min_dose,mean_dose,max_dose,eud,a,dist_to_ptv_min,dist_to_ptv_mean,dist_to_ptv_median,dist_to_ptv_max,ptv_overlap,';
+    filetext = 'DVH Data\npatient#,roi_name,roi_type,rx_dose,volume,surface_area,min_dose,mean_dose,max_dose,dist_to_ptv_min,dist_to_ptv_mean,dist_to_ptv_median,dist_to_ptv_max,ptv_overlap,';
     ep_names_string = [ep_names['ep1'][0].toString(),
                        ep_names['ep2'][0].toString(),
                        ep_names['ep3'][0].toString(),
@@ -29,8 +29,6 @@ if (cb_obj.get('value') == 'anon_dvhs') {
                        data['min_dose'][i].toString(),
                        data['mean_dose'][i].toString(),
                        data['max_dose'][i].toString(),
-                       data['eud'][i].toString(),
-                       data['eud_a_value'][i].toString(),
                        data['dist_to_ptv_min'][i].toString(),
                        data['dist_to_ptv_mean'][i].toString(),
                        data['dist_to_ptv_median'][i].toString(),
@@ -108,7 +106,7 @@ if (cb_obj.get('value') == 'all' || cb_obj.get('value') == 'lite') {
 
     var data = source.data;
     var ep_names = source_endpoint_names.data;
-    filetext = 'DVH Data\nmrn,uid,roi_name,roi_type,rx_dose,volume,surface_area,min_dose,mean_dose,max_dose,eud,a,dist_to_ptv_min,dist_to_ptv_mean,dist_to_ptv_median,dist_to_ptv_max,ptv_overlap,';
+    filetext = 'DVH Data\nmrn,uid,roi_name,roi_type,rx_dose,volume,surface_area,min_dose,mean_dose,max_dose,dist_to_ptv_min,dist_to_ptv_mean,dist_to_ptv_median,dist_to_ptv_max,ptv_overlap,';
     ep_names_string = [ep_names['ep1'][0].toString(),
                        ep_names['ep2'][0].toString(),
                        ep_names['ep3'][0].toString(),
@@ -131,8 +129,6 @@ if (cb_obj.get('value') == 'all' || cb_obj.get('value') == 'lite') {
                        data['min_dose'][i].toString(),
                        data['mean_dose'][i].toString(),
                        data['max_dose'][i].toString(),
-                       data['eud'][i].toString(),
-                       data['eud_a_value'][i].toString(),
                        data['dist_to_ptv_min'][i].toString(),
                        data['dist_to_ptv_mean'][i].toString(),
                        data['dist_to_ptv_median'][i].toString(),
