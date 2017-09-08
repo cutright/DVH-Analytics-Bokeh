@@ -9,7 +9,7 @@ Created on Sun Apr 21 2017
 
 from __future__ import print_function
 from future.utils import listitems
-from analysis_tools import DVH, get_study_instance_uids
+from analysis_tools import DVH, get_study_instance_uids, calc_eud
 from utilities import Temp_DICOM_FileSet, get_planes_from_string, get_union
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL
@@ -106,6 +106,8 @@ source_multi_var_model_results_1 = ColumnDataSource(data=dict(model_p=[], model_
 source_multi_var_coeff_results_2 = ColumnDataSource(data=dict(var_name=[], coeff=[], coeff_str=[], p=[], p_str=[]))
 source_multi_var_model_results_2 = ColumnDataSource(data=dict(model_p=[], model_p_str=[],
                                                               r_sq=[], r_sq_str=[], y_var=[]))
+source_rad_bio = ColumnDataSource(data=dict(mrn=[], uid=[], roi_name=[], ptv_overlap=[], roi_type=[], rx_dose=[],
+                                            fxs=[], fx_dose=[], eud_a=[], gamma_50=[], td_tcp=[], eud=[], ntcp_tcp=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -283,6 +285,7 @@ def update_data():
     calculate_review_dvh()
     update_all_range_endpoints()
     update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
+    initialize_rad_bio_source()
     update_button.label = old_update_button_label
     update_button.button_type = old_update_button_type
     control_chart_y.value = ''
@@ -2009,11 +2012,7 @@ def roi_viewer_wheel_event(event):
             roi_viewer_go_to_previous_slice()
 
 
-def update_correlation():
-
-    global correlation_1, correlation_2
-    correlation_1, correlation_2 = {}, {}
-
+def get_include_map():
     # remove review and stats from source
     group_1_count, group_2_count = group_count()
     if group_1_count > 0 and group_2_count > 0:
@@ -2025,6 +2024,17 @@ def update_correlation():
     include = [True] * (len(source.data['uid']) - extra_rows)
     include[0] = False
     include.extend([False] * extra_rows)
+
+    return include
+
+
+def update_correlation():
+
+    global correlation_1, correlation_2
+    correlation_1, correlation_2 = {}, {}
+
+    # remove review and stats from source
+    include = get_include_map()
 
     # Get data from DVHs table
     for key in correlation_variables:
@@ -2487,6 +2497,96 @@ def multi_var_linear_regression():
                                                  'r_sq': [], 'r_sq_str': [], 'y_var': []}
 
 
+def initialize_rad_bio_source():
+    include = get_include_map()
+
+    # Get data from DVH Table
+    mrn = [j for i, j in enumerate(source.data['mrn']) if include[i]]
+    uid = [j for i, j in enumerate(source.data['uid']) if include[i]]
+    roi_name = [j for i, j in enumerate(source.data['roi_name']) if include[i]]
+    ptv_overlap = [j for i, j in enumerate(source.data['ptv_overlap']) if include[i]]
+    roi_type = [j for i, j in enumerate(source.data['roi_type']) if include[i]]
+    rx_dose = [j for i, j in enumerate(source.data['rx_dose']) if include[i]]
+
+    row_count = len(uid)
+    empty = [''] * row_count
+
+    # Get data from beam table
+    fxs, fx_dose = [], []
+    for eud_uid in uid:
+        plan_index = source_plans.data['uid'].index(eud_uid)
+        fxs.append(source_plans.data['fxs'][plan_index])
+
+        rx_uids, rx_fxs = source_rxs.data['uid'], source_rxs.data['fxs']
+        rx_indices = [i for i, rx_uid in enumerate(rx_uids) if rx_uid == eud_uid]
+        max_rx_fxs = max([source_rxs.data['fxs'][i] for i in rx_indices])
+        rx_index = [i for i, rx_uid in enumerate(rx_uids) if rx_uid == eud_uid and rx_fxs[i] == max_rx_fxs][0]
+        fx_dose.append(source_rxs.data['fx_dose'][rx_index])
+
+    source_rad_bio.data = {'mrn': mrn,
+                           'uid': uid,
+                           'roi_name': roi_name,
+                           'ptv_overlap': ptv_overlap,
+                           'roi_type': roi_type,
+                           'rx_dose': rx_dose,
+                           'fxs': fxs,
+                           'fx_dose': fx_dose,
+                           'eud_a': empty,
+                           'gamma_50': empty,
+                           'td_tcd': empty,
+                           'eud': empty,
+                           'ntcp_tcp': empty}
+
+
+def eud_a_ticker(attr, old, new):
+
+    try:
+        new = float(new)
+        row_count = len(source_rad_bio.data['uid'])
+        source_rad_bio.patch({'eud_a': [(i, new) for i in range(0, row_count)]})
+    except:
+        pass
+
+
+def gamma_50_ticker(attr, old, new):
+
+    try:
+        new = float(new)
+        row_count = len(source_rad_bio.data['uid'])
+        source_rad_bio.patch({'gamma_50': [(i, new) for i in range(0, row_count)]})
+    except:
+        pass
+
+
+def td_tcd_ticker(attr, old, new):
+
+    try:
+        new = float(new)
+        row_count = len(source_rad_bio.data['uid'])
+        source_rad_bio.patch({'td_tcd': [(i, new) for i in range(0, row_count)]})
+    except:
+        pass
+
+
+def update_eud():
+
+    uid_roi_list = ["%s_%s" % (uid, source.data['roi_name'][i]) for i, uid in enumerate(source.data['uid'])]
+
+    eud, ntcp_tcp = [], []
+    for i, uid in enumerate(source_rad_bio.data['uid']):
+        uid_roi = "%s_%s" % (uid, source_rad_bio.data['roi_name'][i])
+        source_index = uid_roi_list.index(uid_roi)
+        dvh = source.data['y'][source_index]
+        a = source_rad_bio.data['eud_a'][i]
+        eud.append(round(calc_eud(dvh, a), 2))
+        td_tcd = source_rad_bio.data['td_tcd'][i]
+        gamma_50 = source_rad_bio.data['gamma_50'][i]
+        ntcp_tcp.append(round(1. / (1. + (td_tcd / eud[-1]) ** (4. * gamma_50)), 2))
+
+    source_rad_bio.patch({'eud': [(i, j) for i, j in enumerate(eud)],
+                          'ntcp_tcp': [(i, j) for i, j in enumerate(ntcp_tcp)]})
+
+
 # !!!!!!!!!!!!!!!!!!!!!!!!!
 # set up layout
 # !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2787,6 +2887,51 @@ histograms.add_layout(legend_hist, 'right')
 histograms.legend.click_policy = "hide"
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Radbio Objects
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+rad_bio_eud_a_input = TextInput(value='', title='EUD a-value:', width=150)
+rad_bio_gamma_50_input = TextInput(value='', title=u"\u03b3_50:", width=150)
+rad_bio_td_tcd_input = TextInput(value='', title='TD_50 or TCD_50:', width=150)
+rad_bio_update_button = Button(label="Calc EUD and NTCP/TCP", button_type="primary", width=150)
+
+rad_bio_eud_a_input.on_change('value', eud_a_ticker)
+rad_bio_gamma_50_input.on_change('value', gamma_50_ticker)
+rad_bio_td_tcd_input.on_change('value', td_tcd_ticker)
+rad_bio_update_button.on_click(update_eud)
+
+columns = [TableColumn(field="mrn", title="MRN", width=150),
+           TableColumn(field="roi_name", title="ROI Name", width=250),
+           TableColumn(field="ptv_overlap", title="PTV Overlap",  width=150),
+           TableColumn(field="roi_type", title="ROI Type", width=100),
+           TableColumn(field="rx_dose", title="Rx Dose", width=100, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="fxs", title="Total Fxs", width=100),
+           TableColumn(field="fx_dose", title="Fx Dose", width=100, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="eud_a", title="a", width=50),
+           TableColumn(field="gamma_50", title=u"\u03b3_50", width=75),
+           TableColumn(field="td_tcd", title="TD_50 or TCD_50", width=150),
+           TableColumn(field="eud", title="EUD", width=75, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="ntcp_tcp", title="NTCP or TCP", width=150, formatter=NumberFormatter(format="0.000"))]
+data_table_rad_bio = DataTable(source=source_rad_bio, columns=columns, editable=True, width=1100)
+
+source_emami = ColumnDataSource(data=dict(roi=['Brain', 'Brainstem', 'Optic Chiasm', 'Colon', 'Ear (mid/ext)',
+                                               'Ear (mid/ext)', 'Esophagus', 'Heart', 'Kidney', 'Lens', 'Liver',
+                                               'Lung', 'Optic Nerve', 'Retina'],
+                                          ep=['Necrosis', 'Necrosis', 'Blindness', 'Obstruction/Perforation',
+                                              'Acute serous otitus', 'Chronic serous otitus', 'Peforation',
+                                              'Pericarditus', 'Nephritis', 'Cataract', 'Liver Failure',
+                                              'Pneumonitis', 'Blindness', 'Blindness'],
+                                          a=[5, 7, 25, 6, 31, 31, 19, 3, 1, 3, 3, 1, 25, 15],
+                                          gamma_50=[3, 3, 3, 4, 3, 4, 4, 3, 3, 1, 3, 2, 3, 2],
+                                          td_tcd=[60, 65, 65, 55, 40, 65, 68, 50, 28, 18, 40, 24.5, 65, 65]))
+columns = [TableColumn(field="roi", title="Structure", width=150),
+           TableColumn(field="ep", title="Endpoint", width=250),
+           TableColumn(field="a", title="a", width=75),
+           TableColumn(field="gamma_50", title=u"\u03b3_50", width=75),
+           TableColumn(field="td_tcd", title="TD_50", width=150)]
+data_table_emami = DataTable(source=source_emami, columns=columns, editable=True, width=1100)
+
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # ROI Viewer Objects
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 roi_viewer_options = [''] + source.data['mrn']
@@ -2984,6 +3129,9 @@ spacer_2 = Spacer(width=10, height=175)
 spacer_3 = Spacer(width=10)
 spacer_4 = Spacer(width=10)
 spacer_5 = Spacer(width=10)
+spacer_6 = Spacer(width=30)
+spacer_7 = Spacer(width=30)
+spacer_8 = Spacer(width=30)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # define main layout to pass to curdoc()
@@ -3001,6 +3149,11 @@ layout_dvhs = column(row(radio_group_dose, radio_group_volume),
                      data_table,
                      endpoint_table_title,
                      data_table_endpoints)
+
+layout_rad_bio = column(data_table_emami,
+                        row(rad_bio_eud_a_input, spacer_6, rad_bio_gamma_50_input, spacer_7, rad_bio_td_tcd_input,
+                            spacer_8, rad_bio_update_button),
+                        data_table_rad_bio)
 
 roi_viewer_layout = layout([[roi_viewer_mrn_select, roi_viewer_study_date_select, roi_viewer_uid_select],
                             [roi_viewer_roi_select, roi_viewer_slice_select,
@@ -3046,13 +3199,14 @@ layout_correlation = column(row(column(corr_chart_x_include,
 
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
+rad_bio_tab = Panel(child=layout_rad_bio, title='Rad Bio')
 roi_viewer_tab = Panel(child=roi_viewer_layout, title='ROI Viewer')
 planning_data_tab = Panel(child=layout_planning_data, title='Planning Data')
 trending_tab = Panel(child=layout_time_series, title='Time-Series')
 correlation_matrix_tab = Panel(child=layout_correlation_matrix, title='Correlation')
 correlation_tab = Panel(child=layout_correlation, title='Regression')
 
-tabs = Tabs(tabs=[query_tab, dvh_tab, roi_viewer_tab, planning_data_tab,
+tabs = Tabs(tabs=[query_tab, dvh_tab, rad_bio_tab, roi_viewer_tab, planning_data_tab,
                   trending_tab, correlation_matrix_tab, correlation_tab])
 
 # go ahead and add a selector row for the user
