@@ -38,6 +38,7 @@ update_warning = True
 query_row, query_row_type = [], []
 anon_id_map = {}
 endpoint_data = {"ep%d" % i: [] for i in range(1, 9)}
+eud_data, ntcp_tcp_data = [], []
 endpoint_columns = {i: '' for i in range(0, 10)}
 x, y = [], []
 uids_1, uids_2 = [], []
@@ -272,7 +273,8 @@ def get_physician():
 
 # main update function
 def update_data():
-    global query_row_type, query_row, current_dvh, current_dvh_group_1, current_dvh_group_2
+    global query_row_type, query_row, current_dvh, current_dvh_group_1, current_dvh_group_2, eud_data, ntcp_tcp_data
+    eud_data, ntcp_tcp_data = [], []
     old_update_button_label = update_button.label
     old_update_button_type = update_button.button_type
     update_button.label = 'Updating...'
@@ -1405,6 +1407,16 @@ def update_control_chart():
             y_source_uids = source.data['uid']
             y_source_mrns = source.data['mrn']
             control_chart.yaxis.axis_label = source_endpoint_names.data[y_var_name][0]
+        elif new == 'EUD':
+            y_source_values = eud_data
+            y_source_uids = source_rad_bio.data['uid']
+            y_source_mrns = source_rad_bio.data['mrn']
+            control_chart.yaxis.axis_label = 'EUD (Gy)'
+        elif new == 'NTCP/TCP':
+            y_source_values = ntcp_tcp_data
+            y_source_uids = source_rad_bio.data['uid']
+            y_source_mrns = source_rad_bio.data['mrn']
+            control_chart.yaxis.axis_label = 'NTCP or TCP'
         else:
             y_source = range_categories[new]['source']
             y_var_name = range_categories[new]['var_name']
@@ -1439,9 +1451,14 @@ def update_control_chart():
             except:
                 skipped.append(True)
 
+            # Get group color
             if not skipped[-1]:
-                if new.startswith('DVH Endpoint') or range_categories[new]['source'] == source:
-                    roi = source.data['roi_name'][v]
+                if new.startswith('DVH Endpoint') or new in {'EUD', 'NTCP/TCP'} \
+                        or range_categories[new]['source'] == source:
+                    if new in {'EUD', 'NTCP/TCP'}:
+                        roi = source_rad_bio.data['roi_name'][v]
+                    else:
+                        roi = source.data['roi_name'][v]
 
                     found = {'blue': False, 'red': False}
 
@@ -1518,27 +1535,6 @@ def update_control_chart():
     control_chart_update_trend()
 
 
-def get_color_if_source(uid, roi):
-    found = {'blue': False, 'red': False}
-    r1, r1_max = 0, len(current_dvh_group_1.study_instance_uid)
-    while r1 < r1_max and not found['blue']:
-        if current_dvh_group_1.study_instance_uid[r1] == uid and current_dvh_group_1.roi_name[r1] == roi:
-            found['blue'] = True
-            color = 'blue'
-        r1 += 1
-
-    r2, r2_max = 0, len(current_dvh_group_2.study_instance_uid)
-    while r2 < r2_max and not found['red']:
-        if current_dvh_group_2.study_instance_uid[r2] == uid and current_dvh_group_2.roi_name[r2] == roi:
-            found['red'] = True
-            if found['blue']:
-                color = 'purple'
-            else:
-                color = 'red'
-        r2 += 1
-    return color
-
-
 def moving_avg(xyw, avg_len):
     x = xyw['x']
     y = xyw['y']
@@ -1608,16 +1604,9 @@ def control_chart_update_trend():
             source_time_patch_1.data = {'x': [group_1['x'][0], group_1['x'][-1], group_1['x'][-1], group_1['x'][0]],
                                         'y': [upper_bound_1, upper_bound_1, lower_bound_1, lower_bound_1]}
         else:
-            source_time_trend_1.data = {'x': [],
-                                        'y': [],
-                                        'mrn': []}
-            source_time_bound_1.data = {'x': [],
-                                        'mrn': [],
-                                        'upper': [],
-                                        'avg': [],
-                                        'lower': []}
-            source_time_patch_1.data = {'x': [],
-                                        'y': []}
+            source_time_trend_1.data = {'x': [], 'y': [], 'mrn': []}
+            source_time_bound_1.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+            source_time_patch_1.data = {'x': [], 'y': []}
         if group_2['x']:
             group_2_collapsed = collapse_into_single_dates(group_2['x'], group_2['y'])
             x_trend_2, moving_avgs_2 = moving_avg(group_2_collapsed, avg_len)
@@ -1638,21 +1627,18 @@ def control_chart_update_trend():
                                               group_2['x'][-1], group_2['x'][0]],
                                         'y': [upper_bound_2,  upper_bound_2, lower_bound_2, lower_bound_2]}
         else:
-            source_time_trend_2.data = {'x': [],
-                                        'y': [],
-                                        'mrn': []}
-            source_time_bound_2.data = {'x': [],
-                                        'mrn': [],
-                                        'upper': [],
-                                        'avg': [],
-                                        'lower': []}
-            source_time_patch_2.data = {'x': [],
-                                        'y': []}
+            source_time_trend_2.data = {'x': [], 'y': [], 'mrn': []}
+            source_time_bound_2.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+            source_time_patch_2.data = {'x': [], 'y': []}
 
         x_var = str(control_chart_y.value)
         if x_var.startswith('DVH Endpoint'):
             x_var_name = "ep%s" % x_var[-1]
             histograms.xaxis.axis_label = source_endpoint_names.data[x_var_name][0]
+        elif x_var == 'EUD':
+            histograms.xaxis.axis_label = "%s (Gy)" % x_var
+        elif x_var == 'NTCP/TCP':
+            histograms.xaxis.axis_label = "NTCP/TCP"
         else:
             if range_categories[x_var]['units']:
                 histograms.xaxis.axis_label = "%s (%s)" % (x_var, range_categories[x_var]['units'])
@@ -2160,6 +2146,30 @@ def update_correlation():
             correlation_1[key] = {'uid': uids_ep_1, 'mrn': mrns_ep_1, 'data': data_ep_1, 'units': units}
             correlation_2[key] = {'uid': uids_ep_2, 'mrn': mrns_ep_2, 'data': data_ep_2, 'units': units}
 
+    # Get data from EUD data
+    if eud_data and ntcp_tcp_data:
+        uid_roi_list = ["%s_%s" % (uid, source.data['roi_name'][i]) for i, uid in enumerate(source.data['uid'])]
+        eud_1, eud_2, ntcp_tcp_1, ntcp_tcp_2 = [], [], [], []
+        uids_rad_bio_1, mrns_rad_bio_1, uids_rad_bio_2, mrns_rad_bio_2 = [], [], [], []
+        for i, uid in enumerate(source_rad_bio.data['uid']):
+            uid_roi = "%s_%s" % (uid, source_rad_bio.data['roi_name'][i])
+            source_index = uid_roi_list.index(uid_roi)
+            group = source.data['group'][source_index]
+            if group in {'Blue', 'Blue & Red'}:
+                eud_1.append(eud_data[i])
+                ntcp_tcp_1.append(ntcp_tcp_data[i])
+                uids_rad_bio_1.append(uid)
+                mrns_rad_bio_1.append(source.data['mrn'][source_index])
+            if group in {'Red', 'Blue & Red'}:
+                eud_2.append(eud_data[i])
+                ntcp_tcp_2.append(ntcp_tcp_data[i])
+                uids_rad_bio_2.append(uid)
+                mrns_rad_bio_2.append(source.data['mrn'][source_index])
+        correlation_1['EUD'] = {'uid': uids_rad_bio_1, 'mrn': mrns_rad_bio_1, 'data': eud_1, 'units': 'Gy'}
+        correlation_1['NTCP/TCP'] = {'uid': uids_rad_bio_1, 'mrn': mrns_rad_bio_1, 'data': ntcp_tcp_1, 'units': []}
+        correlation_2['EUD'] = {'uid': uids_rad_bio_2, 'mrn': mrns_rad_bio_2, 'data': eud_2, 'units': 'Gy'}
+        correlation_2['NTCP/TCP'] = {'uid': uids_rad_bio_2, 'mrn': mrns_rad_bio_2, 'data': ntcp_tcp_2, 'units': []}
+
     # declare space to tag variables to be used for multi variable regression
     for key, value in listitems(correlation_1):
         correlation_1[key]['include'] = [False] * len(value['uid'])
@@ -2227,11 +2237,56 @@ def update_endpoints_in_correlation():
     update_corr_chart()
 
 
+def update_eud_in_correlation():
+    global correlation_1, correlation_2
+    if eud_data and ntcp_tcp_data:
+        # Get data from EUD data
+        uid_roi_list = ["%s_%s" % (uid, source.data['roi_name'][i]) for i, uid in enumerate(source.data['uid'])]
+        eud_1, eud_2, ntcp_tcp_1, ntcp_tcp_2 = [], [], [], []
+        uids_rad_bio_1, mrns_rad_bio_1, uids_rad_bio_2, mrns_rad_bio_2 = [], [], [], []
+        for i, uid in enumerate(source_rad_bio.data['uid']):
+            uid_roi = "%s_%s" % (uid, source_rad_bio.data['roi_name'][i])
+            source_index = uid_roi_list.index(uid_roi)
+            group = source.data['group'][source_index]
+            if group in {'Blue', 'Blue & Red'}:
+                eud_1.append(eud_data[i])
+                ntcp_tcp_1.append(ntcp_tcp_data[i])
+                uids_rad_bio_1.append(uid)
+                mrns_rad_bio_1.append(source.data['mrn'][source_index])
+            if group in {'Red', 'Blue & Red'}:
+                eud_2.append(eud_data[i])
+                ntcp_tcp_2.append(ntcp_tcp_data[i])
+                uids_rad_bio_2.append(uid)
+                mrns_rad_bio_2.append(source.data['mrn'][source_index])
+        correlation_1['EUD'] = {'uid': uids_rad_bio_1, 'mrn': mrns_rad_bio_1, 'data': eud_1, 'units': 'Gy'}
+        correlation_1['NTCP/TCP'] = {'uid': uids_rad_bio_1, 'mrn': mrns_rad_bio_1, 'data': ntcp_tcp_1, 'units': []}
+        correlation_2['EUD'] = {'uid': uids_rad_bio_2, 'mrn': mrns_rad_bio_2, 'data': eud_2, 'units': 'Gy'}
+        correlation_2['NTCP/TCP'] = {'uid': uids_rad_bio_2, 'mrn': mrns_rad_bio_2, 'data': ntcp_tcp_2, 'units': []}
+
+        # declare space to tag variables to be used for multi variable regression
+        for key, value in listitems(correlation_1):
+            correlation_1[key]['include'] = [False] * len(value['uid'])
+        for key, value in listitems(correlation_2):
+            correlation_2[key]['include'] = [False] * len(value['uid'])
+
+        categories = list(correlation_1)
+        categories.sort()
+        corr_chart_x.options = [''] + categories
+        corr_chart_y.options = [''] + categories
+
+        update_correlation_matrix()
+        update_corr_chart()
+
+
 def update_correlation_matrix():
     categories = [key for index, key in enumerate(correlation_names) if index in corr_fig_include.active]
     eps_calced = [i for i in range(0, 8) if endpoint_data["ep%d" % (i+1)][0] != '']
     endpoint_names = ["DVH Endpoint %d" % (i+1) for i in range(0, 8) if i in corr_fig_include_2.active and eps_calced]
     categories.extend(endpoint_names)
+    if 8 in corr_fig_include_2.active:
+        categories.append('EUD')
+    if 9 in corr_fig_include_2.active:
+        categories.append('NTCP/TCP')
     categories_count = len(categories)
     source_corr_matrix_line.data = {'x': [1, len(categories)], 'y': [len(categories), 1]}
 
@@ -2509,7 +2564,7 @@ def initialize_rad_bio_source():
     rx_dose = [j for i, j in enumerate(source.data['rx_dose']) if include[i]]
 
     row_count = len(uid)
-    empty = [''] * row_count
+    empty = [0] * row_count
 
     # Get data from beam table
     fxs, fx_dose = [], []
@@ -2545,7 +2600,8 @@ def eud_a_ticker(attr, old, new):
         row_count = len(source_rad_bio.data['uid'])
         source_rad_bio.patch({'eud_a': [(i, new) for i in range(0, row_count)]})
     except:
-        pass
+        source_rad_bio.patch({'eud_a': [(i, 0) for i in range(0, len(source_rad_bio.data['uid']))]})
+    update_eud()
 
 
 def gamma_50_ticker(attr, old, new):
@@ -2555,7 +2611,8 @@ def gamma_50_ticker(attr, old, new):
         row_count = len(source_rad_bio.data['uid'])
         source_rad_bio.patch({'gamma_50': [(i, new) for i in range(0, row_count)]})
     except:
-        pass
+        source_rad_bio.patch({'gamma_50': [(i, 0) for i in range(0, len(source_rad_bio.data['uid']))]})
+    update_eud()
 
 
 def td_tcd_ticker(attr, old, new):
@@ -2565,26 +2622,52 @@ def td_tcd_ticker(attr, old, new):
         row_count = len(source_rad_bio.data['uid'])
         source_rad_bio.patch({'td_tcd': [(i, new) for i in range(0, row_count)]})
     except:
-        pass
+        source_rad_bio.patch({'td_tcd': [(i, 0) for i in range(0, len(source_rad_bio.data['uid']))]})
+    update_eud()
 
 
 def update_eud():
+    global eud_data, ntcp_tcp_data
+    if rad_bio_eud_a_input.value and rad_bio_gamma_50_input.value and rad_bio_td_tcd_input.value:
 
-    uid_roi_list = ["%s_%s" % (uid, source.data['roi_name'][i]) for i, uid in enumerate(source.data['uid'])]
+        uid_roi_list = ["%s_%s" % (uid, source.data['roi_name'][i]) for i, uid in enumerate(source.data['uid'])]
 
-    eud, ntcp_tcp = [], []
-    for i, uid in enumerate(source_rad_bio.data['uid']):
-        uid_roi = "%s_%s" % (uid, source_rad_bio.data['roi_name'][i])
-        source_index = uid_roi_list.index(uid_roi)
-        dvh = source.data['y'][source_index]
-        a = source_rad_bio.data['eud_a'][i]
-        eud.append(round(calc_eud(dvh, a), 2))
-        td_tcd = source_rad_bio.data['td_tcd'][i]
-        gamma_50 = source_rad_bio.data['gamma_50'][i]
-        ntcp_tcp.append(round(1. / (1. + (td_tcd / eud[-1]) ** (4. * gamma_50)), 2))
+        eud, ntcp_tcp = [], []
+        for i, uid in enumerate(source_rad_bio.data['uid']):
+            uid_roi = "%s_%s" % (uid, source_rad_bio.data['roi_name'][i])
+            source_index = uid_roi_list.index(uid_roi)
+            dvh = source.data['y'][source_index]
+            a = source_rad_bio.data['eud_a'][i]
+            eud.append(round(calc_eud(dvh, a), 2))
+            td_tcd = source_rad_bio.data['td_tcd'][i]
+            gamma_50 = source_rad_bio.data['gamma_50'][i]
+            ntcp_tcp.append(round(1. / (1. + (td_tcd / eud[-1]) ** (4. * gamma_50)), 2))
 
-    source_rad_bio.patch({'eud': [(i, j) for i, j in enumerate(eud)],
-                          'ntcp_tcp': [(i, j) for i, j in enumerate(ntcp_tcp)]})
+        eud_data = eud
+        ntcp_tcp_data = ntcp_tcp
+        source_rad_bio.patch({'eud': [(i, j) for i, j in enumerate(eud)],
+                              'ntcp_tcp': [(i, j) for i, j in enumerate(ntcp_tcp)]})
+    else:
+        eud_data, ntcp_tcp_data = [], []
+        source_rad_bio.patch({'eud': [(i, 0) for i in range(0, len(source_rad_bio.data['uid']))],
+                              'ntcp_tcp': [(i, 0) for i in range(0, len(source_rad_bio.data['uid']))]})
+
+    update_eud_in_correlation()
+    if control_chart_y.value in {'EUD', 'NTCP/TCP'}:
+        update_control_chart()
+
+
+def emami_selection(attr, old, new):
+    row_index = source_emami.selected['1d']['indices'][0]
+    rad_bio_eud_a_input.value = str(source_emami.data['eud_a'][row_index])
+    rad_bio_gamma_50_input.value = str(source_emami.data['gamma_50'][row_index])
+    rad_bio_td_tcd_input.value = str(source_emami.data['td_tcd'][row_index])
+
+
+def clear_source_selection(src):
+    src.selected = {'0d': {'glyph': None, 'indices': []},
+                    '1d': {'indices': []},
+                    '2d': {'indices': {}}}
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2834,10 +2917,10 @@ legend_control_chart = Legend(items=[("Blue Group", [control_chart_data_1]),
 control_chart.add_layout(legend_control_chart, 'right')
 control_chart.legend.click_policy = "hide"
 
-control_chart_options = list(range_categories) + ["DVH Endpoint %d" % i for i in range(1, 9)]
+control_chart_options = list(range_categories) + ["DVH Endpoint %d" % i for i in range(1, 9)] + ['EUD', 'NTCP/TCP']
 control_chart_options.sort()
-control_chart_options.append('')
-control_chart_y = Select(value=control_chart_options[-1], options=control_chart_options, width=300)
+control_chart_options.insert(0, '')
+control_chart_y = Select(value=control_chart_options[0], options=control_chart_options, width=300)
 control_chart_y.title = "Select a Range Variable"
 control_chart_y.on_change('value', update_control_chart_y_ticker)
 
@@ -2897,7 +2980,6 @@ rad_bio_update_button = Button(label="Calc EUD and NTCP/TCP", button_type="prima
 rad_bio_eud_a_input.on_change('value', eud_a_ticker)
 rad_bio_gamma_50_input.on_change('value', gamma_50_ticker)
 rad_bio_td_tcd_input.on_change('value', td_tcd_ticker)
-rad_bio_update_button.on_click(update_eud)
 
 columns = [TableColumn(field="mrn", title="MRN", width=150),
            TableColumn(field="roi_name", title="ROI Name", width=250),
@@ -2920,15 +3002,19 @@ source_emami = ColumnDataSource(data=dict(roi=['Brain', 'Brainstem', 'Optic Chia
                                               'Acute serous otitus', 'Chronic serous otitus', 'Peforation',
                                               'Pericarditus', 'Nephritis', 'Cataract', 'Liver Failure',
                                               'Pneumonitis', 'Blindness', 'Blindness'],
-                                          a=[5, 7, 25, 6, 31, 31, 19, 3, 1, 3, 3, 1, 25, 15],
+                                          eud_a=[5, 7, 25, 6, 31, 31, 19, 3, 1, 3, 3, 1, 25, 15],
                                           gamma_50=[3, 3, 3, 4, 3, 4, 4, 3, 3, 1, 3, 2, 3, 2],
                                           td_tcd=[60, 65, 65, 55, 40, 65, 68, 50, 28, 18, 40, 24.5, 65, 65]))
 columns = [TableColumn(field="roi", title="Structure", width=150),
            TableColumn(field="ep", title="Endpoint", width=250),
-           TableColumn(field="a", title="a", width=75),
+           TableColumn(field="eud_a", title="a", width=75),
            TableColumn(field="gamma_50", title=u"\u03b3_50", width=75),
            TableColumn(field="td_tcd", title="TD_50", width=150)]
 data_table_emami = DataTable(source=source_emami, columns=columns, editable=True, width=1100)
+source_emami.on_change('selected', emami_selection)
+emami_text = Div(text="<b>Published EUD Parameters from Emami et. al. for 1.8-2.0Gy fractions</b>", width=500)
+rad_bio_custom_text = Div(text="<b>Applied Parameters:</b>", width=150)
+data_table_rad_bio_text = Div(text="<b>EUD Calculations for Query</b>", width=500)
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3036,7 +3122,8 @@ corr_fig_text_1 = Div(text="Blue Group:", width=110)
 corr_fig_text_2 = Div(text="Red Group:", width=110)
 
 corr_fig_include = CheckboxGroup(labels=correlation_names, active=[])
-corr_fig_include_2 = CheckboxGroup(labels=["DVH Endpoint %d" % i for i in range(1, 9)], active=[])
+corr_fig_include_2 = CheckboxGroup(labels=["DVH Endpoint %d" % i for i in range(1, 9)] + ['EUD', 'NTCP / TCP'],
+                                   active=[])
 
 # Control Chart layout
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
@@ -3131,7 +3218,8 @@ spacer_4 = Spacer(width=10)
 spacer_5 = Spacer(width=10)
 spacer_6 = Spacer(width=30)
 spacer_7 = Spacer(width=30)
-spacer_8 = Spacer(width=30)
+spacer_8 = Spacer(width=10)
+spacer_9 = Spacer(width=10)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # define main layout to pass to curdoc()
@@ -3150,9 +3238,12 @@ layout_dvhs = column(row(radio_group_dose, radio_group_volume),
                      endpoint_table_title,
                      data_table_endpoints)
 
-layout_rad_bio = column(data_table_emami,
-                        row(rad_bio_eud_a_input, spacer_6, rad_bio_gamma_50_input, spacer_7, rad_bio_td_tcd_input,
-                            spacer_8, rad_bio_update_button),
+layout_rad_bio = column(emami_text,
+                        data_table_emami,
+                        rad_bio_custom_text,
+                        row(rad_bio_eud_a_input, spacer_6,
+                            rad_bio_gamma_50_input, spacer_7, rad_bio_td_tcd_input),
+                        data_table_rad_bio_text,
                         data_table_rad_bio)
 
 roi_viewer_layout = layout([[roi_viewer_mrn_select, roi_viewer_study_date_select, roi_viewer_uid_select],
@@ -3170,7 +3261,7 @@ layout_planning_data = column(rxs_table_title, data_table_rxs,
                               beam_table_title, data_table_beams, beam_table_title2, data_table_beams2)
 
 layout_time_series = column(row(control_chart_y, control_chart_lookback_units, control_chart_text_lookback_distance,
-                                control_chart_percentile, trend_update_button),
+                                spacer_8, control_chart_percentile, spacer_9, trend_update_button),
                             control_chart,
                             div_horizontal_bar,
                             row(histogram_bin_slider, histogram_radio_group),
