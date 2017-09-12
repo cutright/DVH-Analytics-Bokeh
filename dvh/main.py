@@ -22,8 +22,8 @@ from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider, 
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
-from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, Panel, Tabs, \
-    NumberFormatter, RadioButtonGroup, TextInput, RadioGroup, CheckboxButtonGroup, Dropdown, CheckboxGroup
+from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, Panel, Tabs, NumberFormatter,\
+    RadioButtonGroup, TextInput, RadioGroup, CheckboxButtonGroup, Dropdown, CheckboxGroup, AutocompleteInput
 from dicompylercore import dicomparser, dvhcalc
 from bokeh import events
 from scipy.stats import ttest_ind, ranksums, normaltest, pearsonr, linregress
@@ -2289,6 +2289,13 @@ def update_correlation_matrix():
     if 9 in corr_fig_include_2.active:
         categories.append('NTCP/TCP')
     categories_count = len(categories)
+
+    categories_for_label = [category.replace("Control Point", "CP") for category in categories]
+    categories_for_label = [category.replace("control point", "CP") for category in categories_for_label]
+    categories_for_label = [category.replace("Distance", "Dist") for category in categories_for_label]
+    categories_for_label = [category.replace("Endpoint", "EP") for category in categories_for_label]
+    corr_fig.x_range.factors = categories_for_label
+    corr_fig.y_range.factors = categories_for_label[::-1]
     source_corr_matrix_line.data = {'x': [1, len(categories)], 'y': [len(categories), 1]}
 
     s = {'1_pos': {'x': [], 'y': [], 'x_name': [], 'y_name': [], 'color': [],
@@ -2644,10 +2651,13 @@ def update_eud():
             uid_roi = "%s_%s" % (uid, source_rad_bio.data['roi_name'][i])
             source_index = uid_roi_list.index(uid_roi)
             dvh = source.data['y'][source_index]
-            a = float(source_rad_bio.data['eud_a'][i])
+            a = float(rad_bio_a[i])
+            # a = float(source_rad_bio.data['eud_a'][i])
             eud.append(round(calc_eud(dvh, a), 2))
-            td_tcd = float(source_rad_bio.data['td_tcd'][i])
-            gamma_50 = float(source_rad_bio.data['gamma_50'][i])
+            td_tcd = float(rad_bio_td_tcd[i])
+            gamma_50 = float(rad_bio_gamma_50[i])
+            # td_tcd = float(source_rad_bio.data['td_tcd'][i])
+            # gamma_50 = float(source_rad_bio.data['gamma_50'][i])
             ntcp_tcp.append(round(1. / (1. + (td_tcd / eud[-1]) ** (4. * gamma_50)), 2))
 
         rad_bio_eud_data = eud
@@ -3007,7 +3017,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=150),
            TableColumn(field="td_tcd", title="TD_50 or TCD_50", width=150),
            TableColumn(field="eud", title="EUD", width=75, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="ntcp_tcp", title="NTCP or TCP", width=150, formatter=NumberFormatter(format="0.000"))]
-data_table_rad_bio = DataTable(source=source_rad_bio, columns=columns, editable=True, width=1100)
+data_table_rad_bio = DataTable(source=source_rad_bio, columns=columns, editable=False, width=1100)
 
 source_emami = ColumnDataSource(data=dict(roi=['Brain', 'Brainstem', 'Optic Chiasm', 'Colon', 'Ear (mid/ext)',
                                                'Ear (mid/ext)', 'Esophagus', 'Heart', 'Kidney', 'Lens', 'Liver',
@@ -3024,7 +3034,7 @@ columns = [TableColumn(field="roi", title="Structure", width=150),
            TableColumn(field="eud_a", title="a", width=75),
            TableColumn(field="gamma_50", title=u"\u03b3_50", width=75),
            TableColumn(field="td_tcd", title="TD_50", width=150)]
-data_table_emami = DataTable(source=source_emami, columns=columns, editable=True, width=1100)
+data_table_emami = DataTable(source=source_emami, columns=columns, editable=False, width=1100)
 source_emami.on_change('selected', emami_selection)
 emami_text = Div(text="<b>Published EUD Parameters from Emami et. al. for 1.8-2.0Gy fractions</b> (Click to apply)",
                  width=600)
@@ -3090,9 +3100,10 @@ roi_viewer_scrolling = CheckboxGroup(labels=["Enable Slice Scrolling with Mouse 
 corr_fig = figure(plot_width=900, plot_height=700,
                   x_axis_location="above",
                   tools="pan, box_zoom, wheel_zoom, reset",
-                  logo=None)
-corr_fig.min_border_left = min_border
-corr_fig.min_border_bottom = min_border
+                  logo=None,
+                  x_range=[''], y_range=[''])
+corr_fig.min_border_left = 175
+corr_fig.min_border_top = 130
 corr_fig.xaxis.major_label_orientation = pi / 4
 corr_fig.toolbar.active_scroll = "auto"
 corr_fig.title.align = 'center'
@@ -3100,13 +3111,13 @@ corr_fig.title.text_font_style = "italic"
 corr_fig.xaxis.axis_line_color = None
 corr_fig.xaxis.major_tick_line_color = None
 corr_fig.xaxis.minor_tick_line_color = None
-corr_fig.xaxis.major_label_text_font_size = "12pt"
+corr_fig.xaxis.major_label_text_font_size = "10pt"
 corr_fig.xgrid.grid_line_color = None
 corr_fig.ygrid.grid_line_color = None
 corr_fig.yaxis.axis_line_color = None
 corr_fig.yaxis.major_tick_line_color = None
 corr_fig.yaxis.minor_tick_line_color = None
-corr_fig.yaxis.major_label_text_font_size = "12pt"
+corr_fig.yaxis.major_label_text_font_size = "10pt"
 corr_fig.outline_line_color = None
 corr_1_pos = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=source_correlation_1_pos)
 corr_1_neg = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=source_correlation_1_neg)
