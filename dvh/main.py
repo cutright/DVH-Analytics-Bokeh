@@ -43,7 +43,7 @@ rad_bio_a, rad_bio_gamma_50, rad_bio_td_tcd = [], [], []
 endpoint_columns = {i: '' for i in range(0, 10)}
 x, y = [], []
 uids_1, uids_2 = [], []
-widget_row_start = 0
+widget_row_start = 1
 
 temp_dvh_info = Temp_DICOM_FileSet()
 dvh_review_mrns = temp_dvh_info.mrn
@@ -110,6 +110,14 @@ source_multi_var_model_results_2 = ColumnDataSource(data=dict(model_p=[], model_
                                                               r_sq=[], r_sq_str=[], y_var=[]))
 source_rad_bio = ColumnDataSource(data=dict(mrn=[], uid=[], roi_name=[], ptv_overlap=[], roi_type=[], rx_dose=[],
                                             fxs=[], fx_dose=[], eud_a=[], gamma_50=[], td_tcp=[], eud=[], ntcp_tcp=[]))
+
+# The following block of code is a work-around for Bokeh 0.12.7 - 0.12.9 (current version)
+source.js_on_change('data', CustomJS(args=dict(source=source), code="source.change.emit()"))
+source_beams.js_on_change('data', CustomJS(args=dict(source=source_beams), code="source.change.emit()"))
+source_plans.js_on_change('data', CustomJS(args=dict(source=source_plans), code="source.change.emit()"))
+source_rxs.js_on_change('data', CustomJS(args=dict(source=source_rxs), code="source.change.emit()"))
+source_multi_var_include.js_on_change('data', CustomJS(args=dict(source=source_multi_var_include),
+                                                       code="source.change.emit()"))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -2293,7 +2301,14 @@ def update_correlation_matrix():
     categories_for_label = [category.replace("Control Point", "CP") for category in categories]
     categories_for_label = [category.replace("control point", "CP") for category in categories_for_label]
     categories_for_label = [category.replace("Distance", "Dist") for category in categories_for_label]
-    categories_for_label = [category.replace("Endpoint", "EP") for category in categories_for_label]
+
+    for i, category in enumerate(categories_for_label):
+        if category.startswith('DVH'):
+            try:
+                categories_for_label[i] = source_endpoint_names.data["ep%s" % category[-1]][0]
+            except:
+                pass
+
     corr_fig.x_range.factors = categories_for_label
     corr_fig.y_range.factors = categories_for_label[::-1]
     source_corr_matrix_line.data = {'x': [1, len(categories)], 'y': [len(categories), 1]}
@@ -2354,8 +2369,8 @@ def update_correlation_matrix():
                     s[k]['size'].append(max_size * abs(r))
                     s[k]['x'].append(x + 1)
                     s[k]['y'].append(categories_count - y)
-                    s[k]['x_name'].append(categories[x])
-                    s[k]['y_name'].append(categories[y])
+                    s[k]['x_name'].append(categories_for_label[x])
+                    s[k]['y_name'].append(categories_for_label[y])
 
                     x_norm, x_p = normaltest(x_data)
                     y_norm, y_p = normaltest(y_data)
@@ -2383,6 +2398,11 @@ def update_corr_chart_ticker_y(attr, old, new):
     update_corr_chart()
 
 
+def corr_fig_include_ticker(attr, old, new):
+    if len(corr_fig_include.active) + len(corr_fig_include_2.active) > 1:
+        update_correlation_matrix()
+
+
 def update_corr_chart():
     if corr_chart_x.value and corr_chart_y.value:
         x_units = correlation_1[corr_chart_x.value]['units']
@@ -2391,11 +2411,17 @@ def update_corr_chart():
         x_2, y_2 = correlation_2[corr_chart_x.value]['data'], correlation_2[corr_chart_y.value]['data']
         mrn_1, mrn_2 = correlation_1[corr_chart_x.value]['mrn'], correlation_2[corr_chart_x.value]['mrn']
         if x_units:
-            corr_chart.xaxis.axis_label = "%s (%s)" % (corr_chart_x.value, x_units)
+            if corr_chart_x.value.startswith('DVH Endpoint'):
+                corr_chart.xaxis.axis_label = "%s" % x_units
+            else:
+                corr_chart.xaxis.axis_label = "%s (%s)" % (corr_chart_x.value, x_units)
         else:
             corr_chart.xaxis.axis_label = corr_chart_x.value
         if y_units:
-            corr_chart.yaxis.axis_label = "%s (%s)" % (corr_chart_y.value, y_units)
+            if corr_chart_y.value.startswith('DVH Endpoint'):
+                corr_chart.yaxis.axis_label = "%s" % y_units
+            else:
+                corr_chart.yaxis.axis_label = "%s (%s)" % (corr_chart_y.value, y_units)
         else:
             corr_chart.xaxis.axis_label = corr_chart_y.value
         source_corr_chart_1.data = {'x': x_1, 'y': y_1, 'mrn': mrn_1}
@@ -2603,40 +2629,43 @@ def initialize_rad_bio_source():
 
 def eud_a_ticker(attr, old, new):
     global rad_bio_a
+    row_count = len(source_rad_bio.data['uid'])
     try:
         new = float(new)
-        row_count = len(source_rad_bio.data['uid'])
         rad_bio_a = [new] * row_count
-        source_rad_bio.patch({'eud_a': [(i, new) for i in range(0, row_count)]})
+        patch = {'eud_a': [(i, new) for i in range(0, row_count)]}
     except:
         rad_bio_a = [0] * row_count
-        source_rad_bio.patch({'eud_a': [(i, 0) for i in range(0, len(source_rad_bio.data['uid']))]})
+        patch = {'eud_a': [(i, 0) for i in range(0, row_count)]}
+    source_rad_bio.patch(patch)
     update_eud()
 
 
 def gamma_50_ticker(attr, old, new):
     global rad_bio_gamma_50
+    row_count = len(source_rad_bio.data['uid'])
     try:
         new = float(new)
-        row_count = len(source_rad_bio.data['uid'])
         rad_bio_gamma_50 = [new] * row_count
-        source_rad_bio.patch({'gamma_50': [(i, new) for i in range(0, row_count)]})
+        patch = {'gamma_50': [(i, new) for i in range(0, row_count)]}
     except:
         rad_bio_gamma_50 = [0] * row_count
-        source_rad_bio.patch({'gamma_50': [(i, 0) for i in range(0, len(source_rad_bio.data['uid']))]})
+        patch = {'gamma_50': [(i, 0) for i in range(0, row_count)]}
+    source_rad_bio.patch(patch)
     update_eud()
 
 
 def td_tcd_ticker(attr, old, new):
     global rad_bio_td_tcd
+    row_count = len(source_rad_bio.data['uid'])
     try:
         new = float(new)
-        row_count = len(source_rad_bio.data['uid'])
         rad_bio_td_tcd = [new] * row_count
-        source_rad_bio.patch({'td_tcd': [(i, new) for i in range(0, row_count)]})
+        patch = {'td_tcd': [(i, new) for i in range(0, row_count)]}
     except:
         rad_bio_td_tcd = [0] * row_count
-        source_rad_bio.patch({'td_tcd': [(i, 0) for i in range(0, len(source_rad_bio.data['uid']))]})
+        patch = {'td_tcd': [(i, 0) for i in range(0, row_count)]}
+    source_rad_bio.patch(patch)
     update_eud()
 
 
@@ -2687,9 +2716,33 @@ def clear_source_selection(src):
                     '2d': {'indices': {}}}
 
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!
-# set up layout
-# !!!!!!!!!!!!!!!!!!!!!!!!!
+def custom_title_blue_ticker(attr, old, new):
+    custom_title_query_blue.value = new
+    custom_title_dvhs_blue.value = new
+    custom_title_rad_bio_blue.value = new
+    custom_title_roi_viewer_blue.value = new
+    custom_title_planning_blue.value = new
+    custom_title_time_series_blue.value = new
+    custom_title_correlation_blue.value = new
+    custom_title_regression_blue.value = new
+
+
+def custom_title_red_ticker(attr, old, new):
+    custom_title_query_red.value = new
+    custom_title_dvhs_red.value = new
+    custom_title_rad_bio_red.value = new
+    custom_title_roi_viewer_red.value = new
+    custom_title_planning_red.value = new
+    custom_title_time_series_red.value = new
+    custom_title_correlation_red.value = new
+    custom_title_regression_red.value = new
+
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Set up Layout
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 min_border = 50
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
 dvh_plots = figure(plot_width=1050, plot_height=500, tools=tools, logo=None, active_drag="box_zoom")
@@ -3145,9 +3198,6 @@ legend_corr = Legend(items=[("+r Blue Group", [corr_1_pos]),
 corr_fig.add_layout(legend_corr, 'right')
 corr_fig.legend.click_policy = "hide"
 
-corr_fig_update_button = Button(label="Update Matrix", button_type="primary", width=150)
-corr_fig_update_button.on_click(update_correlation_matrix)
-
 corr_fig_text = Div(text="<b>Sample Sizes</b>", width=100)
 corr_fig_text_1 = Div(text="Blue Group:", width=110)
 corr_fig_text_2 = Div(text="Red Group:", width=110)
@@ -3155,6 +3205,8 @@ corr_fig_text_2 = Div(text="Red Group:", width=110)
 corr_fig_include = CheckboxGroup(labels=correlation_names, active=[])
 corr_fig_include_2 = CheckboxGroup(labels=["DVH Endpoint %d" % i for i in range(1, 9)] + ['EUD', 'NTCP / TCP'],
                                    active=[])
+corr_fig_include.on_change('active', corr_fig_include_ticker)
+corr_fig_include_2.on_change('active', corr_fig_include_ticker)
 
 # Control Chart layout
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
@@ -3244,27 +3296,57 @@ columns = [TableColumn(field="y_var", title="Dependent Variable", width=150),
 data_table_multi_var_coeff_2 = DataTable(source=source_multi_var_model_results_2, columns=columns, editable=True,
                                          height=60, row_headers=False)
 
-spacer_1 = Spacer(width=10, height=175)
-spacer_2 = Spacer(width=10, height=175)
-spacer_3 = Spacer(width=10)
-spacer_4 = Spacer(width=10)
-spacer_5 = Spacer(width=10)
-spacer_6 = Spacer(width=30)
-spacer_7 = Spacer(width=30)
-spacer_8 = Spacer(width=10)
-spacer_9 = Spacer(width=10)
-spacer_10 = Spacer(width=30)
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Custom group titles
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+custom_title_query_blue = TextInput(value='', title='Blue Group Custom Title:', width=300)
+custom_title_query_red = TextInput(value='', title='Red Group Custom Title:', width=300)
+custom_title_dvhs_blue = TextInput(value='', title='Blue Group Custom Title:', width=300)
+custom_title_dvhs_red = TextInput(value='', title='Red Group Custom Title:', width=300)
+custom_title_rad_bio_blue = TextInput(value='', title='Blue Group Custom Title:', width=300)
+custom_title_rad_bio_red = TextInput(value='', title='Red Group Custom Title:', width=300)
+custom_title_roi_viewer_blue = TextInput(value='', title='Blue Group Custom Title:', width=300)
+custom_title_roi_viewer_red = TextInput(value='', title='Red Group Custom Title:', width=300)
+custom_title_planning_blue = TextInput(value='', title='Blue Group Custom Title:', width=300)
+custom_title_planning_red = TextInput(value='', title='Red Group Custom Title:', width=300)
+custom_title_time_series_blue = TextInput(value='', title='Blue Group Custom Title:', width=300)
+custom_title_time_series_red = TextInput(value='', title='Red Group Custom Title:', width=300)
+custom_title_correlation_blue = TextInput(value='', title='Blue Group Custom Title:', width=300)
+custom_title_correlation_red = TextInput(value='', title='Red Group Custom Title:', width=300)
+custom_title_regression_blue = TextInput(value='', title='Blue Group Custom Title:', width=300)
+custom_title_regression_red = TextInput(value='', title='Red Group Custom Title:', width=300)
+
+custom_title_query_blue.on_change('value', custom_title_blue_ticker)
+custom_title_query_red.on_change('value', custom_title_red_ticker)
+custom_title_dvhs_blue.on_change('value', custom_title_blue_ticker)
+custom_title_dvhs_red.on_change('value', custom_title_red_ticker)
+custom_title_rad_bio_blue.on_change('value', custom_title_blue_ticker)
+custom_title_rad_bio_red.on_change('value', custom_title_red_ticker)
+custom_title_roi_viewer_blue.on_change('value', custom_title_blue_ticker)
+custom_title_roi_viewer_red.on_change('value', custom_title_red_ticker)
+custom_title_planning_blue.on_change('value', custom_title_blue_ticker)
+custom_title_planning_red.on_change('value', custom_title_red_ticker)
+custom_title_time_series_blue.on_change('value', custom_title_blue_ticker)
+custom_title_time_series_red.on_change('value', custom_title_red_ticker)
+custom_title_correlation_blue.on_change('value', custom_title_blue_ticker)
+custom_title_correlation_red.on_change('value', custom_title_red_ticker)
+custom_title_regression_blue.on_change('value', custom_title_blue_ticker)
+custom_title_regression_red.on_change('value', custom_title_red_ticker)
+
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # define main layout to pass to curdoc()
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-layout_query = column(row(main_add_selector_button,
+layout_query = column(row(custom_title_query_blue, Spacer(width=50), custom_title_query_red),
+                      row(main_add_selector_button,
                           main_add_range_button,
                           main_add_endpoint_button,
                           update_button,
                           download_dropdown))
 
-layout_dvhs = column(row(radio_group_dose, radio_group_volume),
+layout_dvhs = column(row(custom_title_dvhs_blue, Spacer(width=50), custom_title_dvhs_red),
+                     row(radio_group_dose, radio_group_volume),
                      row(select_reviewed_mrn, select_reviewed_dvh, review_rx),
                      dvh_plots,
                      data_table_title,
@@ -3272,15 +3354,17 @@ layout_dvhs = column(row(radio_group_dose, radio_group_volume),
                      endpoint_table_title,
                      data_table_endpoints)
 
-layout_rad_bio = column(emami_text,
+layout_rad_bio = column(row(custom_title_rad_bio_blue, Spacer(width=50), custom_title_rad_bio_red),
+                        emami_text,
                         data_table_emami,
                         rad_bio_custom_text,
-                        row(rad_bio_eud_a_input, spacer_6,
-                            rad_bio_gamma_50_input, spacer_7, rad_bio_td_tcd_input, spacer_10, rad_bio_update_button),
+                        row(rad_bio_eud_a_input, Spacer(width=30),
+                            rad_bio_gamma_50_input, Spacer(width=30), rad_bio_td_tcd_input, Spacer(width=30), rad_bio_update_button),
                         data_table_rad_bio_text,
                         data_table_rad_bio)
 
-roi_viewer_layout = layout([[roi_viewer_mrn_select, roi_viewer_study_date_select, roi_viewer_uid_select],
+roi_viewer_layout = layout(row(custom_title_roi_viewer_blue, Spacer(width=50), custom_title_roi_viewer_red),
+                           [[roi_viewer_mrn_select, roi_viewer_study_date_select, roi_viewer_uid_select],
                             [roi_viewer_roi_select, roi_viewer_slice_select,
                              roi_viewer_previous_slice, roi_viewer_next_slice],
                             [roi_viewer_roi2_select, roi_viewer_roi3_select,
@@ -3290,12 +3374,14 @@ roi_viewer_layout = layout([[roi_viewer_mrn_select, roi_viewer_study_date_select
                             [roi_viewer_scrolling],
                             [roi_viewer]])
 
-layout_planning_data = column(rxs_table_title, data_table_rxs,
+layout_planning_data = column(row(custom_title_planning_blue, Spacer(width=50), custom_title_planning_red),
+                              rxs_table_title, data_table_rxs,
                               plans_table_title, data_table_plans,
                               beam_table_title, data_table_beams, beam_table_title2, data_table_beams2)
 
-layout_time_series = column(row(control_chart_y, control_chart_lookback_units, control_chart_text_lookback_distance,
-                                spacer_8, control_chart_percentile, spacer_9, trend_update_button),
+layout_time_series = column(row(custom_title_time_series_blue, Spacer(width=50), custom_title_time_series_red),
+                            row(control_chart_y, control_chart_lookback_units, control_chart_text_lookback_distance,
+                                Spacer(width=10), control_chart_percentile, Spacer(width=10), trend_update_button),
                             control_chart,
                             div_horizontal_bar,
                             row(histogram_bin_slider, histogram_radio_group),
@@ -3303,24 +3389,25 @@ layout_time_series = column(row(control_chart_y, control_chart_lookback_units, c
                             row(histogram_normaltest_2_text, histogram_ranksums_text),
                             histograms)
 
-layout_correlation_matrix = column(corr_fig_update_button,
+layout_correlation_matrix = column(row(custom_title_correlation_blue, Spacer(width=50), custom_title_correlation_red),
                                    row(corr_fig_text, corr_fig_text_1, corr_fig_text_2),
                                    row(corr_fig, corr_fig_include, corr_fig_include_2))
 
-layout_correlation = column(row(column(corr_chart_x_include,
-                                       row(corr_chart_x_prev, corr_chart_x_next, spacer_3, corr_chart_x),
-                                       row(corr_chart_y_prev, corr_chart_y_next, spacer_4, corr_chart_y)),
-                                spacer_1, data_table_corr_chart,
-                                spacer_2, data_table_multi_var_include),
-                            corr_chart,
-                            div_horizontal_bar_2,
-                            corr_chart_do_reg_button,
-                            multi_var_text_1,
-                            data_table_multi_var_coeff_1,
-                            data_table_multi_var_model_1,
-                            multi_var_text_2,
-                            data_table_multi_var_coeff_2,
-                            data_table_multi_var_model_2)
+layout_regression = column(row(custom_title_regression_blue, Spacer(width=50), custom_title_regression_red),
+                           row(column(corr_chart_x_include,
+                                      row(corr_chart_x_prev, corr_chart_x_next, Spacer(width=10), corr_chart_x),
+                                      row(corr_chart_y_prev, corr_chart_y_next, Spacer(width=10), corr_chart_y)),
+                               Spacer(width=10, height=175), data_table_corr_chart,
+                               Spacer(width=10, height=175), data_table_multi_var_include),
+                           corr_chart,
+                           div_horizontal_bar_2,
+                           corr_chart_do_reg_button,
+                           multi_var_text_1,
+                           data_table_multi_var_coeff_1,
+                           data_table_multi_var_model_1,
+                           multi_var_text_2,
+                           data_table_multi_var_coeff_2,
+                           data_table_multi_var_model_2)
 
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
@@ -3329,7 +3416,7 @@ roi_viewer_tab = Panel(child=roi_viewer_layout, title='ROI Viewer')
 planning_data_tab = Panel(child=layout_planning_data, title='Planning Data')
 trending_tab = Panel(child=layout_time_series, title='Time-Series')
 correlation_matrix_tab = Panel(child=layout_correlation_matrix, title='Correlation')
-correlation_tab = Panel(child=layout_correlation, title='Regression')
+correlation_tab = Panel(child=layout_regression, title='Regression')
 
 tabs = Tabs(tabs=[query_tab, dvh_tab, rad_bio_tab, roi_viewer_tab, planning_data_tab,
                   trending_tab, correlation_matrix_tab, correlation_tab])
