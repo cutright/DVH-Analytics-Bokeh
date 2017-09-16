@@ -3363,16 +3363,17 @@ layout_rad_bio = column(row(custom_title_rad_bio_blue, Spacer(width=50), custom_
                         data_table_rad_bio_text,
                         data_table_rad_bio)
 
-roi_viewer_layout = layout(row(custom_title_roi_viewer_blue, Spacer(width=50), custom_title_roi_viewer_red),
-                           [[roi_viewer_mrn_select, roi_viewer_study_date_select, roi_viewer_uid_select],
-                            [roi_viewer_roi_select, roi_viewer_slice_select,
-                             roi_viewer_previous_slice, roi_viewer_next_slice],
-                            [roi_viewer_roi2_select, roi_viewer_roi3_select,
-                             roi_viewer_roi4_select, roi_viewer_roi5_select],
-                            [roi_viewer_flip_text],
-                            [roi_viewer_flip_x_axis_button, roi_viewer_flip_y_axis_button, roi_viewer_plot_tv_button],
-                            [roi_viewer_scrolling],
-                            [roi_viewer]])
+roi_viewer_layout = column(row(custom_title_roi_viewer_blue, Spacer(width=50), custom_title_roi_viewer_red),
+                           row(roi_viewer_mrn_select, roi_viewer_study_date_select, roi_viewer_uid_select),
+                           row(roi_viewer_roi_select, roi_viewer_slice_select,
+                               roi_viewer_previous_slice, roi_viewer_next_slice),
+                           row(roi_viewer_roi2_select, roi_viewer_roi3_select,
+                               roi_viewer_roi4_select, roi_viewer_roi5_select),
+                           row(roi_viewer_flip_text),
+                           row(roi_viewer_flip_x_axis_button, roi_viewer_flip_y_axis_button,
+                               roi_viewer_plot_tv_button),
+                           row(roi_viewer_scrolling),
+                           row(roi_viewer))
 
 layout_planning_data = column(row(custom_title_planning_blue, Spacer(width=50), custom_title_planning_red),
                               rxs_table_title, data_table_rxs,

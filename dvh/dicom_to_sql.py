@@ -153,7 +153,12 @@ def dicom_to_sql(**kwargs): \
     seconds = total_time.seconds
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
-    print("This import took %dhrs %02dmin %02dsec to complete" % (h, m, s))
+    if h:
+        print("This import took %dhrs %02dmin %02dsec to complete" % (h, m, s))
+    elif m:
+        print("This import took%02dmin %02dsec to complete" % (m, s))
+    else:
+        print("This import took %02dsec to complete" % s)
 
 
 def get_file_paths(start_path):

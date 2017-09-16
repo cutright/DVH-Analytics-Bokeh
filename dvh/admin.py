@@ -808,12 +808,12 @@ def import_inbox():
     import_inbox_button.button_type = 'success'
     import_inbox_button.label = 'Import all from inbox'
 
-    initial_condition = calculate_condition.value
-    calculate_condition.value = 'dist_to_ptv_min is NULL'
-    calculate_ptv_distances()
-    calculate_condition.value = 'ptv_overlap is NULL'
-    calculate_ptv_overlap()
-    calculate_condition.value = initial_condition
+    # initial_condition = calculate_condition.value
+    # calculate_condition.value = 'dist_to_ptv_min is NULL'
+    # calculate_ptv_distances()
+    # calculate_condition.value = 'ptv_overlap is NULL'
+    # calculate_ptv_overlap()
+    # calculate_condition.value = initial_condition
 
 
 def rebuild_db_button_click():
