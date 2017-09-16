@@ -2405,10 +2405,15 @@ def corr_fig_include_ticker(attr, old, new):
 
 def update_corr_chart():
     if corr_chart_x.value and corr_chart_y.value:
+        print(0)
         x_units = correlation_1[corr_chart_x.value]['units']
+        print(1)
         y_units = correlation_1[corr_chart_y.value]['units']
+        print(2)
         x_1, y_1 = correlation_1[corr_chart_x.value]['data'], correlation_1[corr_chart_y.value]['data']
+        print(3)
         x_2, y_2 = correlation_2[corr_chart_x.value]['data'], correlation_2[corr_chart_y.value]['data']
+        print(4)
         mrn_1, mrn_2 = correlation_1[corr_chart_x.value]['mrn'], correlation_2[corr_chart_x.value]['mrn']
         if x_units:
             if corr_chart_x.value.startswith('DVH Endpoint'):

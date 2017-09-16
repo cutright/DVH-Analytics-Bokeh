@@ -10,7 +10,7 @@ from utilities import is_import_settings_defined, is_sql_connection_defined, val
     recalculate_ages, update_min_distances_in_db, update_treatment_volume_overlap_in_db, update_volumes_in_db
 import os
 from os.path import dirname, join
-import datetime
+from datetime import datetime
 from roi_name_manager import DatabaseROIs, clean_name
 from sql_connector import DVH_SQL
 from dicom_to_sql import dicom_to_sql, rebuild_database
@@ -843,7 +843,7 @@ def backup_db():
         os.mkdir(abs_path)
 
     new_file = config['dbname'] + '_' + config['host'] + '_' + config['port'] +\
-               '_' + str(datetime.datetime.now()).split('.')[0].replace(':', '-').replace(' ', '_') +\
+               '_' + str(datetime.now()).split('.')[0].replace(':', '-').replace(' ', '_') +\
                '.sql'
     abs_file_path = os.path.join(abs_path, new_file)
 
@@ -907,6 +907,8 @@ def delete_backup():
 
 
 def calculate_ptv_distances():
+    start_time = datetime.now()
+    print(str(start_time), 'Beginning PTV distance calculations', sep=' ')
     calculate_ptv_dist_button.label = 'Calculating...'
     calculate_ptv_dist_button.button_type = 'warning'
     if calculate_condition.value:
@@ -917,8 +919,24 @@ def calculate_ptv_distances():
     calculate_ptv_dist_button.label = 'Calc PTV Distances'
     calculate_ptv_dist_button.button_type = 'primary'
 
+    end_time = datetime.now()
+    print(str(end_time), 'Calculations complete', sep=' ')
+
+    total_time = end_time - start_time
+    seconds = total_time.seconds
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    if h:
+        print("These calculations took %dhrs %02dmin %02dsec to complete" % (h, m, s))
+    elif m:
+        print("These calculations took%02dmin %02dsec to complete" % (m, s))
+    else:
+        print("These calculations took %02dsec to complete" % s)
+
 
 def calculate_ptv_overlap():
+    start_time = datetime.now()
+    print(str(start_time), 'Beginning PTV overlap calculations', sep=' ')
     calculate_tv_overlap_button.label = 'Calculating...'
     calculate_tv_overlap_button.button_type = 'warning'
     if calculate_condition.value:
@@ -928,6 +946,20 @@ def calculate_ptv_overlap():
     update_query_source()
     calculate_tv_overlap_button.label = 'Calc PTV Overlap'
     calculate_tv_overlap_button.button_type = 'primary'
+
+    end_time = datetime.now()
+    print(str(end_time), 'Calculations complete', sep=' ')
+
+    total_time = end_time - start_time
+    seconds = total_time.seconds
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    if h:
+        print("These calculations took %dhrs %02dmin %02dsec to complete" % (h, m, s))
+    elif m:
+        print("These calculations took%02dmin %02dsec to complete" % (m, s))
+    else:
+        print("These calculations took %02dsec to complete" % s)
 
 
 def calculate_ages_click():
