@@ -14,7 +14,8 @@ import datetime
 from roi_name_manager import DatabaseROIs, clean_name
 from sql_connector import DVH_SQL
 from dicom_to_sql import dicom_to_sql, rebuild_database
-from bokeh.models.widgets import Select, Button, Tabs, Panel, TextInput, RadioButtonGroup, Div, MultiSelect, TableColumn, DataTable
+from bokeh.models.widgets import Select, Button, Tabs, Panel, TextInput, RadioButtonGroup,\
+    Div, MultiSelect, TableColumn, DataTable, CheckboxGroup
 from bokeh.layouts import layout
 from bokeh.plotting import figure
 from bokeh.io import curdoc
@@ -799,9 +800,20 @@ def import_inbox():
     else:
         import_inbox_button.button_type = 'warning'
         import_inbox_button.label = 'Importing...'
-        dicom_to_sql()
+        if import_inbox_force.active:
+            force_update = True
+        else:
+            force_update = False
+        dicom_to_sql(force_update=force_update)
     import_inbox_button.button_type = 'success'
     import_inbox_button.label = 'Import all from inbox'
+
+    initial_condition = calculate_condition.value
+    calculate_condition.value = 'dist_to_ptv_min is NULL'
+    calculate_ptv_distances()
+    calculate_condition.value = 'ptv_overlap is NULL'
+    calculate_ptv_overlap()
+    calculate_condition.value = initial_condition
 
 
 def rebuild_db_button_click():
@@ -1285,11 +1297,12 @@ roi_layout = layout([[select_institutional_roi],
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 import_inbox_button = Button(label='Import all from inbox', button_type='success', width=200)
 import_inbox_button.on_click(import_inbox)
+import_inbox_force = CheckboxGroup(labels=['Force Update'], active=[])
 rebuild_db_button = Button(label='Rebuild database', button_type='warning', width=200)
 rebuild_db_button.on_click(rebuild_db_button_click)
 
 query_title = Div(text="<b>Query Database</b>", width=1000)
-query_table = Select(value='DVHs', options=['DVHs', 'Plans', 'Rxs', 'Beams'], width=200, title='Table')
+query_table = Select(value='DVHs', options=['DVHs', 'Plans', 'Rxs', 'Beams', 'DICOM_Files'], width=200, title='Table')
 query_columns = MultiSelect(title="Columns (Ctrl or Shift Click enabled)", width=250, options=[tuple(['', ''])])
 query_condition = TextInput(value='', title="Condition", width=300)
 query_button = Button(label='Query', button_type='primary', width=100)
@@ -1344,6 +1357,7 @@ download.callback = CustomJS(args=dict(source=query_source),
                              code=open(join(dirname(__file__), "download_admin_query.js")).read())
 
 db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
+                           [import_inbox_force],
                            [query_title],
                            [query_table, query_columns, query_condition, table_slider, query_button],
                            [update_db_title],

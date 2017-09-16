@@ -142,6 +142,7 @@ class DVH_SQL:
 
         # Import each ROI from ROI_PyTable, append to output text file
         sql_input = [str(plan.mrn),
+                     plan.study_instance_uid,
                      str(plan.birth_date),
                      str(plan.age),
                      plan.patient_sex,
@@ -150,7 +151,6 @@ class DVH_SQL:
                      plan.tx_site,
                      str(plan.rx_dose),
                      str(plan.fxs),
-                     plan.study_instance_uid,
                      plan.patient_orientation,
                      str(plan.plan_time_stamp),
                      str(plan.struct_time_stamp),
@@ -276,6 +276,14 @@ class DVH_SQL:
         os.remove(file_path)
         print('Rxs imported')
 
+    def insert_dicom_file_row(self, mrn, uid, dir_name, plan_file, struct_file, dose_file):
+
+        sql_cmd = "INSERT INTO DICOM_Files VALUES ('%s', '%s', '%s', '%s', '%s', '%s', NOW());\n" % \
+                  (mrn, uid, dir_name, plan_file, struct_file, dose_file)
+        sql_cmd.replace("'(NULL)'", "(NULL)")
+        self.cursor.execute(sql_cmd)
+        self.cnx.commit()
+
     def delete_rows(self, condition_str):
 
         for table in self.tables:
@@ -302,6 +310,11 @@ class DVH_SQL:
         for table in self.tables:
             self.cursor.execute("DROP TABLE IF EXISTS %s;" % table)
             self.cnx.commit()
+
+    def drop_table(self, table):
+        print("Dropping table: %s" % table)
+        self.cursor.execute("DROP TABLE IF EXISTS %s;" % table)
+        self.cnx.commit()
 
     def initialize_database(self):
         print('Loading create_tables.sql')

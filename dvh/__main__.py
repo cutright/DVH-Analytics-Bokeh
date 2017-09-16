@@ -172,14 +172,6 @@ def main():
                         dest='start_path',
                         help='modify the start path for dicom import',
                         default=None)
-    parser.add_argument('--do-not-organize',
-                        help='Import will organize files by default. Set to False to leave files in the same hierarchy',
-                        default=False,
-                        action='store_true')
-    parser.add_argument('--do-not-move',
-                        help='Import will move files by default.  Set to False to leave files where they are',
-                        default=False,
-                        action='store_true')
     parser.add_argument('--force-update',
                         help='Import will add to SQL DB even if DB already contains data from dicom files',
                         default=False,
@@ -217,15 +209,10 @@ def main():
         elif args.command[0] == 'print_mrns':
             print_mrns()
 
-        elif args.command[0] == 'recalculate_ages':
-            recalculate_ages()
-
         elif args.command[0] == 'import':
 
             # Set defaults
             start_path = False
-            organize_files = True
-            move_files = True
             force_update = False
 
             if args.start_path:
@@ -233,16 +220,10 @@ def main():
                     start_path = str(args.start_path)
                 else:
                     print(args.start_path, 'is not a valid path', sep=' ')
-            if args.do_not_organize:
-                organize_files = False
-            if args.do_not_move:
-                move_files = False
             if args.force_update:
                 force_update = True
 
             dicom_to_sql(start_path=start_path,
-                         organize_files=organize_files,
-                         move_files=move_files,
                          force_update=force_update)
         elif args.command[0] == 'run':
 
@@ -263,7 +244,14 @@ def main():
 
         elif args.command[0] == 'admin':
 
-            command = ["bokeh", "serve", "--show", "--port", "5007"]
+            command = ["bokeh", "serve", "--show", "--port"]
+            if args.port:
+                command.append(args.port)
+            else:
+                command.append("5007")
+            if args.allow_websocket_origin:
+                command.append("--allow-websocket-origin")
+                command.append(args.allow_websocket_origin)
 
             file_name = 'admin.py'
             abs_file_path = os.path.join(script_dir, file_name)
@@ -274,7 +262,14 @@ def main():
 
         elif args.command[0] == 'settings':
 
-            command = ["bokeh", "serve", "--show", "--port", "5008"]
+            command = ["bokeh", "serve", "--show", "--port"]
+            if args.port:
+                command.append(args.port)
+            else:
+                command.append("5008")
+            if args.allow_websocket_origin:
+                command.append("--allow-websocket-origin")
+                command.append(args.allow_websocket_origin)
 
             file_name = 'settings.py'
             abs_file_path = os.path.join(script_dir, file_name)

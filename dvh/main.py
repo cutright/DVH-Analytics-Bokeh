@@ -23,7 +23,7 @@ from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
 from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, Panel, Tabs, NumberFormatter,\
-    RadioButtonGroup, TextInput, RadioGroup, CheckboxButtonGroup, Dropdown, CheckboxGroup, AutocompleteInput
+    RadioButtonGroup, TextInput, RadioGroup, CheckboxButtonGroup, Dropdown, CheckboxGroup
 from dicompylercore import dicomparser, dvhcalc
 from bokeh import events
 from scipy.stats import ttest_ind, ranksums, normaltest, pearsonr, linregress

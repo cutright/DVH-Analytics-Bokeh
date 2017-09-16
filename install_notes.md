@@ -51,21 +51,16 @@ Alternatively, to import your own data via command line for more options:
 $ dvh import
 ~~~~
 Assuming all of the previous steps were successful, all dicom files anywhere within your inbox will be imported 
-into the SQL database, then organized by patient name and moved to the specified imported folder.  Note that by 
-default, the code will not import dicom files with Study Instance UIDs that are already in the database.  You 
-may over-ride any of these default behaviors with any combination of the following optional flags:
- - force-update
- - do-not-organize
- - do-not-move  
+into the SQL database, then organized by patient ID and moved to the specified imported folder.  Note that by 
+default, the code will not import dicom files with Study Instance UIDs that are already in the database.
  
-For example, the following command will not check for duplicate database entries and will not remove the dicom files 
-from the inbox folder:
+You may force the import regardless of UID conflicts by typing:
 ~~~~
-$ dvh import --force-update --do-not-move
+$ dvh import --force-update
 ~~~~
 If you'd like to import from a directory other than the one in your settings:
 ~~~~
-$ dvh import --start-path /someabsolute/directory/name
+$ dvh import --start-path /some-absolute-directory-name
 ~~~~
 ## ROI Name Manager, DB Editor, and Backup & Restore
 Using the 'settings' command will start a Bokeh server and open your default browser to access the ROI Name 
