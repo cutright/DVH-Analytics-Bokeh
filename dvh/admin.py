@@ -929,7 +929,7 @@ def calculate_ptv_distances():
     if h:
         print("These calculations took %dhrs %02dmin %02dsec to complete" % (h, m, s))
     elif m:
-        print("These calculations took%02dmin %02dsec to complete" % (m, s))
+        print("These calculations took %02dmin %02dsec to complete" % (m, s))
     else:
         print("These calculations took %02dsec to complete" % s)
 
@@ -957,7 +957,7 @@ def calculate_ptv_overlap():
     if h:
         print("These calculations took %dhrs %02dmin %02dsec to complete" % (h, m, s))
     elif m:
-        print("These calculations took%02dmin %02dsec to complete" % (m, s))
+        print("These calculations took %02dmin %02dsec to complete" % (m, s))
     else:
         print("These calculations took %02dsec to complete" % s)
 
