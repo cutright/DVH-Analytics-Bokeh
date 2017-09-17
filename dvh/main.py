@@ -2592,18 +2592,19 @@ def multi_var_linear_regression():
 
 
 def initialize_rad_bio_source():
+    global rad_bio_a, rad_bio_gamma_50, rad_bio_td_tcd
+
     include = get_include_map()
 
     # Get data from DVH Table
     mrn = [j for i, j in enumerate(source.data['mrn']) if include[i]]
     uid = [j for i, j in enumerate(source.data['uid']) if include[i]]
+    group = [j for i, j in enumerate(source.data['group']) if include[i]]
     roi_name = [j for i, j in enumerate(source.data['roi_name']) if include[i]]
     ptv_overlap = [j for i, j in enumerate(source.data['ptv_overlap']) if include[i]]
     roi_type = [j for i, j in enumerate(source.data['roi_type']) if include[i]]
     rx_dose = [j for i, j in enumerate(source.data['rx_dose']) if include[i]]
-
-    row_count = len(uid)
-    empty = [0] * row_count
+    empty = [0] * len(uid)
 
     # Get data from beam table
     fxs, fx_dose = [], []
@@ -2619,6 +2620,7 @@ def initialize_rad_bio_source():
 
     source_rad_bio.data = {'mrn': mrn,
                            'uid': uid,
+                           'group': group,
                            'roi_name': roi_name,
                            'ptv_overlap': ptv_overlap,
                            'roi_type': roi_type,
@@ -2631,77 +2633,85 @@ def initialize_rad_bio_source():
                            'eud': empty,
                            'ntcp_tcp': empty}
 
+    rad_bio_a = empty
+    rad_bio_gamma_50 = empty
+    rad_bio_td_tcd = empty
 
-def eud_a_ticker(attr, old, new):
-    global rad_bio_a
+
+def rad_bio_apply():
+    global rad_bio_a, rad_bio_gamma_50, rad_bio_td_tcd
     row_count = len(source_rad_bio.data['uid'])
+
+    if rad_bio_apply_filter.active == [0, 1]:
+        include = [i for i in range(0, row_count)]
+    elif 0 in rad_bio_apply_filter.active:
+        include = [i for i in range(0, row_count) if source_rad_bio.data['group'][i] in {'Blue', 'Blue & Red'}]
+    elif 1 in rad_bio_apply_filter.active:
+        include = [i for i in range(0, row_count) if source_rad_bio.data['group'][i] in {'Red', 'Blue & Red'}]
+    else:
+        include = []
+
+    if 2 in rad_bio_apply_filter.active:
+        include.extend([i for i in range(0, row_count) if i in source_rad_bio.selected['1d']['indices']])
+
     try:
-        new = float(new)
-        rad_bio_a = [new] * row_count
-        patch = {'eud_a': [(i, new) for i in range(0, row_count)]}
+        new_eud_a = float(rad_bio_eud_a_input.value)
     except:
-        rad_bio_a = [0] * row_count
-        patch = {'eud_a': [(i, 0) for i in range(0, row_count)]}
-    source_rad_bio.patch(patch)
-    update_eud()
-
-
-def gamma_50_ticker(attr, old, new):
-    global rad_bio_gamma_50
-    row_count = len(source_rad_bio.data['uid'])
+        new_eud_a = 1.
     try:
-        new = float(new)
-        rad_bio_gamma_50 = [new] * row_count
-        patch = {'gamma_50': [(i, new) for i in range(0, row_count)]}
+        new_gamma_50 = float(rad_bio_gamma_50_input.value)
     except:
-        rad_bio_gamma_50 = [0] * row_count
-        patch = {'gamma_50': [(i, 0) for i in range(0, row_count)]}
-    source_rad_bio.patch(patch)
-    update_eud()
-
-
-def td_tcd_ticker(attr, old, new):
-    global rad_bio_td_tcd
-    row_count = len(source_rad_bio.data['uid'])
+        new_gamma_50 = 1.
     try:
-        new = float(new)
-        rad_bio_td_tcd = [new] * row_count
-        patch = {'td_tcd': [(i, new) for i in range(0, row_count)]}
+        new_td_tcd = float(rad_bio_td_tcd_input.value)
     except:
-        rad_bio_td_tcd = [0] * row_count
-        patch = {'td_tcd': [(i, 0) for i in range(0, row_count)]}
+        new_td_tcd = 1.
+
+    for i in include:
+        rad_bio_a[i] = new_eud_a
+        rad_bio_gamma_50[i] = new_gamma_50
+        rad_bio_td_tcd[i] = new_td_tcd
+
+    eud_patch = [tuple([i, new_eud_a]) for i in range(0, row_count) if i in include]
+    gamma_50_patch = [tuple([i, new_gamma_50]) for i in range(0, row_count) if i in include]
+    td_tcd_patch = [tuple([i, new_td_tcd]) for i in range(0, row_count) if i in include]
+
+    patch = {'eud_a': eud_patch,
+             'gamma_50': gamma_50_patch,
+             'td_tcd': td_tcd_patch}
+
     source_rad_bio.patch(patch)
-    update_eud()
 
 
 def update_eud():
     global rad_bio_eud_data, rad_bio_ntcp_tcp_data
-    if rad_bio_eud_a_input.value and rad_bio_gamma_50_input.value and rad_bio_td_tcd_input.value:
 
-        uid_roi_list = ["%s_%s" % (uid, source.data['roi_name'][i]) for i, uid in enumerate(source.data['uid'])]
+    uid_roi_list = ["%s_%s" % (uid, source.data['roi_name'][i]) for i, uid in enumerate(source.data['uid'])]
 
-        eud, ntcp_tcp = [], []
-        for i, uid in enumerate(source_rad_bio.data['uid']):
-            uid_roi = "%s_%s" % (uid, source_rad_bio.data['roi_name'][i])
-            source_index = uid_roi_list.index(uid_roi)
-            dvh = source.data['y'][source_index]
-            a = float(rad_bio_a[i])
-            # a = float(source_rad_bio.data['eud_a'][i])
+    eud, ntcp_tcp = [], []
+    for i, uid in enumerate(source_rad_bio.data['uid']):
+        uid_roi = "%s_%s" % (uid, source_rad_bio.data['roi_name'][i])
+        source_index = uid_roi_list.index(uid_roi)
+        dvh = source.data['y'][source_index]
+        a = source_rad_bio.data['eud_a'][i]
+        try:
             eud.append(round(calc_eud(dvh, a), 2))
-            td_tcd = float(rad_bio_td_tcd[i])
-            gamma_50 = float(rad_bio_gamma_50[i])
-            # td_tcd = float(source_rad_bio.data['td_tcd'][i])
-            # gamma_50 = float(source_rad_bio.data['gamma_50'][i])
-            ntcp_tcp.append(round(1. / (1. + (td_tcd / eud[-1]) ** (4. * gamma_50)), 2))
+        except:
+            eud.append(0)
+        td_tcd = source_rad_bio.data['td_tcd'][i]
+        gamma_50 = source_rad_bio.data['gamma_50'][i]
+        print(i, a, td_tcd, gamma_50, sep=' ')
+        if eud[-1] > 0:
+            x = (td_tcd / eud[-1]) ** (4. * gamma_50)
+            x = (1 / (1 + x))
+            ntcp_tcp.append(x)
+        else:
+            ntcp_tcp.append(0)
 
-        rad_bio_eud_data = eud
-        rad_bio_ntcp_tcp_data = ntcp_tcp
-        source_rad_bio.patch({'eud': [(i, j) for i, j in enumerate(eud)],
-                              'ntcp_tcp': [(i, j) for i, j in enumerate(ntcp_tcp)]})
-    else:
-        rad_bio_eud_data, rad_bio_ntcp_tcp_data = [], []
-        source_rad_bio.patch({'eud': [(i, 0) for i in range(0, len(source_rad_bio.data['uid']))],
-                              'ntcp_tcp': [(i, 0) for i in range(0, len(source_rad_bio.data['uid']))]})
+    rad_bio_eud_data = eud
+    rad_bio_ntcp_tcp_data = ntcp_tcp
+    source_rad_bio.patch({'eud': [(i, j) for i, j in enumerate(eud)],
+                          'ntcp_tcp': [(i, j) for i, j in enumerate(ntcp_tcp)]})
 
     update_eud_in_correlation()
     if control_chart_y.value in {'EUD', 'NTCP/TCP'}:
@@ -3056,14 +3066,15 @@ histograms.legend.click_policy = "hide"
 rad_bio_eud_a_input = TextInput(value='', title='EUD a-value:', width=150)
 rad_bio_gamma_50_input = TextInput(value='', title=u"\u03b3_50:", width=150)
 rad_bio_td_tcd_input = TextInput(value='', title='TD_50 or TCD_50:', width=150)
+rad_bio_apply_button = Button(label="Apply parameters", button_type="primary", width=150)
+rad_bio_apply_filter = CheckboxButtonGroup(labels=["Blue Group", "Red Group", "Selected"], active=[0], width=300)
 rad_bio_update_button = Button(label="Calc EUD and NTCP/TCP", button_type="primary", width=150)
 
-rad_bio_eud_a_input.on_change('value', eud_a_ticker)
-rad_bio_gamma_50_input.on_change('value', gamma_50_ticker)
-rad_bio_td_tcd_input.on_change('value', td_tcd_ticker)
+rad_bio_apply_button.on_click(rad_bio_apply)
 rad_bio_update_button.on_click(update_eud)
 
 columns = [TableColumn(field="mrn", title="MRN", width=150),
+           TableColumn(field="group", title="Group", width=100),
            TableColumn(field="roi_name", title="ROI Name", width=250),
            TableColumn(field="ptv_overlap", title="PTV Overlap",  width=150),
            TableColumn(field="roi_type", title="ROI Type", width=100),
@@ -3072,7 +3083,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=150),
            TableColumn(field="fx_dose", title="Fx Dose", width=100, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="eud_a", title="a", width=50),
            TableColumn(field="gamma_50", title=u"\u03b3_50", width=75),
-           TableColumn(field="td_tcd", title="TD_50 or TCD_50", width=150),
+           TableColumn(field="td_tcd", title="TD or TCD", width=150),
            TableColumn(field="eud", title="EUD", width=75, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="ntcp_tcp", title="NTCP or TCP", width=150, formatter=NumberFormatter(format="0.000"))]
 data_table_rad_bio = DataTable(source=source_rad_bio, columns=columns, editable=False, width=1100)
@@ -3359,12 +3370,15 @@ layout_dvhs = column(row(custom_title_dvhs_blue, Spacer(width=50), custom_title_
                      endpoint_table_title,
                      data_table_endpoints)
 
+
 layout_rad_bio = column(row(custom_title_rad_bio_blue, Spacer(width=50), custom_title_rad_bio_red),
                         emami_text,
                         data_table_emami,
                         rad_bio_custom_text,
                         row(rad_bio_eud_a_input, Spacer(width=30),
-                            rad_bio_gamma_50_input, Spacer(width=30), rad_bio_td_tcd_input, Spacer(width=30), rad_bio_update_button),
+                            rad_bio_gamma_50_input, Spacer(width=30), rad_bio_td_tcd_input, Spacer(width=30),
+                            rad_bio_apply_filter, Spacer(width=30), rad_bio_apply_button),
+                        row(rad_bio_update_button),
                         data_table_rad_bio_text,
                         data_table_rad_bio)
 
