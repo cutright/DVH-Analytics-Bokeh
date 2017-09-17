@@ -117,6 +117,14 @@ source_rxs.js_on_change('data', CustomJS(args=dict(source=source_rxs), code="sou
 source_rad_bio.js_on_change('data', CustomJS(args=dict(source=source_rad_bio), code="source.change.emit()"))
 source_multi_var_include.js_on_change('data', CustomJS(args=dict(source=source_multi_var_include),
                                                        code="source.change.emit()"))
+source_multi_var_coeff_results_1.js_on_change('data', CustomJS(args=dict(source=source_multi_var_coeff_results_1),
+                                                               code="source.change.emit()"))
+source_multi_var_coeff_results_2.js_on_change('data', CustomJS(args=dict(source=source_multi_var_coeff_results_2),
+                                                               code="source.change.emit()"))
+source_multi_var_model_results_1.js_on_change('data', CustomJS(args=dict(source=source_multi_var_model_results_1),
+                                                               code="source.change.emit()"))
+source_multi_var_model_results_2.js_on_change('data', CustomJS(args=dict(source=source_multi_var_model_results_2),
+                                                               code="source.change.emit()"))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
