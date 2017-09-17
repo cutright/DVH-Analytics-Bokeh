@@ -38,8 +38,6 @@ update_warning = True
 query_row, query_row_type = [], []
 anon_id_map = {}
 endpoint_data = {"ep%d" % i: [] for i in range(1, 9)}
-rad_bio_eud_data, rad_bio_ntcp_tcp_data = [], []
-rad_bio_a, rad_bio_gamma_50, rad_bio_td_tcd = [], [], []
 endpoint_columns = {i: '' for i in range(0, 10)}
 x, y = [], []
 uids_1, uids_2 = [], []
@@ -116,6 +114,7 @@ source.js_on_change('data', CustomJS(args=dict(source=source), code="source.chan
 source_beams.js_on_change('data', CustomJS(args=dict(source=source_beams), code="source.change.emit()"))
 source_plans.js_on_change('data', CustomJS(args=dict(source=source_plans), code="source.change.emit()"))
 source_rxs.js_on_change('data', CustomJS(args=dict(source=source_rxs), code="source.change.emit()"))
+source_rad_bio.js_on_change('data', CustomJS(args=dict(source=source_rad_bio), code="source.change.emit()"))
 source_multi_var_include.js_on_change('data', CustomJS(args=dict(source=source_multi_var_include),
                                                        code="source.change.emit()"))
 
@@ -196,7 +195,7 @@ for key in list(range_categories):
             correlation_names.append("%s (%s)" % (key, stat))
 correlation_variables.sort()
 correlation_names.sort()
-multi_var_reg_var_names = correlation_names + ["DVH Endpoint %d" % i for i in range(1, 9)]
+multi_var_reg_var_names = correlation_names + ["DVH Endpoint %d" % i for i in range(1, 9)] + ['EUD', 'NTCP/TCP']
 multi_var_reg_vars = {name: False for name in multi_var_reg_var_names}
 
 
@@ -282,8 +281,7 @@ def get_physician():
 
 # main update function
 def update_data():
-    global query_row_type, query_row, current_dvh, current_dvh_group_1, current_dvh_group_2, rad_bio_eud_data, rad_bio_ntcp_tcp_data
-    rad_bio_eud_data, rad_bio_ntcp_tcp_data = [], []
+    global query_row_type, query_row, current_dvh, current_dvh_group_1, current_dvh_group_2
     old_update_button_label = update_button.label
     old_update_button_type = update_button.button_type
     update_button.label = 'Updating...'
@@ -405,15 +403,15 @@ def get_query(**kwargs):
 
         # The multiple entries of the same variable are found, assume an 'or' condition
         plan_query_str = []
-        for key in plan_query_map.iterkeys():
+        for key in list(plan_query_map):
             plan_query_str.append('(' + ' or '.join(plan_query_map[key]) + ')')
 
         rx_query_str = []
-        for key in rx_query_map.iterkeys():
+        for key in list(rx_query_map):
             rx_query_str.append('(' + ' or '.join(rx_query_map[key]) + ')')
 
         beam_query_str = []
-        for key in beam_query_map.iterkeys():
+        for key in list(beam_query_map):
             beam_query_str.append('(' + ' or '.join(beam_query_map[key]) + ')')
 
         dvh_query_str = []
@@ -1417,12 +1415,12 @@ def update_control_chart():
             y_source_mrns = source.data['mrn']
             control_chart.yaxis.axis_label = source_endpoint_names.data[y_var_name][0]
         elif new == 'EUD':
-            y_source_values = rad_bio_eud_data
+            y_source_values = source_rad_bio.data['eud']
             y_source_uids = source_rad_bio.data['uid']
             y_source_mrns = source_rad_bio.data['mrn']
             control_chart.yaxis.axis_label = 'EUD (Gy)'
         elif new == 'NTCP/TCP':
-            y_source_values = rad_bio_ntcp_tcp_data
+            y_source_values = source_rad_bio.data['ntcp_tcp']
             y_source_uids = source_rad_bio.data['uid']
             y_source_mrns = source_rad_bio.data['mrn']
             control_chart.yaxis.axis_label = 'NTCP or TCP'
@@ -1647,7 +1645,7 @@ def control_chart_update_trend():
         elif x_var == 'EUD':
             histograms.xaxis.axis_label = "%s (Gy)" % x_var
         elif x_var == 'NTCP/TCP':
-            histograms.xaxis.axis_label = "NTCP/TCP"
+            histograms.xaxis.axis_label = "NTCP or TCP"
         else:
             if range_categories[x_var]['units']:
                 histograms.xaxis.axis_label = "%s (%s)" % (x_var, range_categories[x_var]['units'])
@@ -2155,30 +2153,6 @@ def update_correlation():
             correlation_1[key] = {'uid': uids_ep_1, 'mrn': mrns_ep_1, 'data': data_ep_1, 'units': units}
             correlation_2[key] = {'uid': uids_ep_2, 'mrn': mrns_ep_2, 'data': data_ep_2, 'units': units}
 
-    # Get data from EUD data
-    if rad_bio_eud_data and rad_bio_ntcp_tcp_data:
-        uid_roi_list = ["%s_%s" % (uid, source.data['roi_name'][i]) for i, uid in enumerate(source.data['uid'])]
-        eud_1, eud_2, ntcp_tcp_1, ntcp_tcp_2 = [], [], [], []
-        uids_rad_bio_1, mrns_rad_bio_1, uids_rad_bio_2, mrns_rad_bio_2 = [], [], [], []
-        for i, uid in enumerate(source_rad_bio.data['uid']):
-            uid_roi = "%s_%s" % (uid, source_rad_bio.data['roi_name'][i])
-            source_index = uid_roi_list.index(uid_roi)
-            group = source.data['group'][source_index]
-            if group in {'Blue', 'Blue & Red'}:
-                eud_1.append(rad_bio_eud_data[i])
-                ntcp_tcp_1.append(rad_bio_ntcp_tcp_data[i])
-                uids_rad_bio_1.append(uid)
-                mrns_rad_bio_1.append(source.data['mrn'][source_index])
-            if group in {'Red', 'Blue & Red'}:
-                eud_2.append(rad_bio_eud_data[i])
-                ntcp_tcp_2.append(rad_bio_ntcp_tcp_data[i])
-                uids_rad_bio_2.append(uid)
-                mrns_rad_bio_2.append(source.data['mrn'][source_index])
-        correlation_1['EUD'] = {'uid': uids_rad_bio_1, 'mrn': mrns_rad_bio_1, 'data': eud_1, 'units': 'Gy'}
-        correlation_1['NTCP/TCP'] = {'uid': uids_rad_bio_1, 'mrn': mrns_rad_bio_1, 'data': ntcp_tcp_1, 'units': []}
-        correlation_2['EUD'] = {'uid': uids_rad_bio_2, 'mrn': mrns_rad_bio_2, 'data': eud_2, 'units': 'Gy'}
-        correlation_2['NTCP/TCP'] = {'uid': uids_rad_bio_2, 'mrn': mrns_rad_bio_2, 'data': ntcp_tcp_2, 'units': []}
-
     # declare space to tag variables to be used for multi variable regression
     for key, value in listitems(correlation_1):
         correlation_1[key]['include'] = [False] * len(value['uid'])
@@ -2247,44 +2221,44 @@ def update_endpoints_in_correlation():
 
 
 def update_eud_in_correlation():
-    global correlation_1, correlation_2
-    if rad_bio_eud_data and rad_bio_ntcp_tcp_data:
-        # Get data from EUD data
-        uid_roi_list = ["%s_%s" % (uid, source.data['roi_name'][i]) for i, uid in enumerate(source.data['uid'])]
-        eud_1, eud_2, ntcp_tcp_1, ntcp_tcp_2 = [], [], [], []
-        uids_rad_bio_1, mrns_rad_bio_1, uids_rad_bio_2, mrns_rad_bio_2 = [], [], [], []
-        for i, uid in enumerate(source_rad_bio.data['uid']):
-            uid_roi = "%s_%s" % (uid, source_rad_bio.data['roi_name'][i])
-            source_index = uid_roi_list.index(uid_roi)
-            group = source.data['group'][source_index]
-            if group in {'Blue', 'Blue & Red'}:
-                eud_1.append(rad_bio_eud_data[i])
-                ntcp_tcp_1.append(rad_bio_ntcp_tcp_data[i])
-                uids_rad_bio_1.append(uid)
-                mrns_rad_bio_1.append(source.data['mrn'][source_index])
-            if group in {'Red', 'Blue & Red'}:
-                eud_2.append(rad_bio_eud_data[i])
-                ntcp_tcp_2.append(rad_bio_ntcp_tcp_data[i])
-                uids_rad_bio_2.append(uid)
-                mrns_rad_bio_2.append(source.data['mrn'][source_index])
-        correlation_1['EUD'] = {'uid': uids_rad_bio_1, 'mrn': mrns_rad_bio_1, 'data': eud_1, 'units': 'Gy'}
-        correlation_1['NTCP/TCP'] = {'uid': uids_rad_bio_1, 'mrn': mrns_rad_bio_1, 'data': ntcp_tcp_1, 'units': []}
-        correlation_2['EUD'] = {'uid': uids_rad_bio_2, 'mrn': mrns_rad_bio_2, 'data': eud_2, 'units': 'Gy'}
-        correlation_2['NTCP/TCP'] = {'uid': uids_rad_bio_2, 'mrn': mrns_rad_bio_2, 'data': ntcp_tcp_2, 'units': []}
+    global correlation_1, correlation_2, multi_var_reg_vars
 
-        # declare space to tag variables to be used for multi variable regression
-        for key, value in listitems(correlation_1):
-            correlation_1[key]['include'] = [False] * len(value['uid'])
-        for key, value in listitems(correlation_2):
-            correlation_2[key]['include'] = [False] * len(value['uid'])
+    # Get data from EUD data
+    uid_roi_list = ["%s_%s" % (uid, source.data['roi_name'][i]) for i, uid in enumerate(source.data['uid'])]
+    eud_1, eud_2, ntcp_tcp_1, ntcp_tcp_2 = [], [], [], []
+    uids_rad_bio_1, mrns_rad_bio_1, uids_rad_bio_2, mrns_rad_bio_2 = [], [], [], []
+    for i, uid in enumerate(source_rad_bio.data['uid']):
+        uid_roi = "%s_%s" % (uid, source_rad_bio.data['roi_name'][i])
+        source_index = uid_roi_list.index(uid_roi)
+        group = source.data['group'][source_index]
+        if group in {'Blue', 'Blue & Red'}:
+            eud_1.append(source_rad_bio.data['eud'][i])
+            ntcp_tcp_1.append(source_rad_bio.data['ntcp_tcp'][i])
+            uids_rad_bio_1.append(uid)
+            mrns_rad_bio_1.append(source.data['mrn'][source_index])
+        if group in {'Red', 'Blue & Red'}:
+            eud_2.append(source_rad_bio.data['eud'][i])
+            ntcp_tcp_2.append(source_rad_bio.data['ntcp_tcp'][i])
+            uids_rad_bio_2.append(uid)
+            mrns_rad_bio_2.append(source.data['mrn'][source_index])
+    correlation_1['EUD'] = {'uid': uids_rad_bio_1, 'mrn': mrns_rad_bio_1, 'data': eud_1, 'units': 'Gy'}
+    correlation_1['NTCP/TCP'] = {'uid': uids_rad_bio_1, 'mrn': mrns_rad_bio_1, 'data': ntcp_tcp_1, 'units': []}
+    correlation_2['EUD'] = {'uid': uids_rad_bio_2, 'mrn': mrns_rad_bio_2, 'data': eud_2, 'units': 'Gy'}
+    correlation_2['NTCP/TCP'] = {'uid': uids_rad_bio_2, 'mrn': mrns_rad_bio_2, 'data': ntcp_tcp_2, 'units': []}
 
-        categories = list(correlation_1)
-        categories.sort()
-        corr_chart_x.options = [''] + categories
-        corr_chart_y.options = [''] + categories
+    # declare space to tag variables to be used for multi variable regression
+    for key, value in listitems(correlation_1):
+        correlation_1[key]['include'] = [False] * len(value['uid'])
+    for key, value in listitems(correlation_2):
+        correlation_2[key]['include'] = [False] * len(value['uid'])
 
-        update_correlation_matrix()
-        update_corr_chart()
+    categories = list(correlation_1)
+    categories.sort()
+    corr_chart_x.options = [''] + categories
+    corr_chart_y.options = [''] + categories
+
+    update_correlation_matrix()
+    update_corr_chart()
 
 
 def update_correlation_matrix():
@@ -2405,15 +2379,10 @@ def corr_fig_include_ticker(attr, old, new):
 
 def update_corr_chart():
     if corr_chart_x.value and corr_chart_y.value:
-        print(0)
         x_units = correlation_1[corr_chart_x.value]['units']
-        print(1)
         y_units = correlation_1[corr_chart_y.value]['units']
-        print(2)
         x_1, y_1 = correlation_1[corr_chart_x.value]['data'], correlation_1[corr_chart_y.value]['data']
-        print(3)
         x_2, y_2 = correlation_2[corr_chart_x.value]['data'], correlation_2[corr_chart_y.value]['data']
-        print(4)
         mrn_1, mrn_2 = correlation_1[corr_chart_x.value]['mrn'], correlation_2[corr_chart_x.value]['mrn']
         if x_units:
             if corr_chart_x.value.startswith('DVH Endpoint'):
@@ -2421,14 +2390,14 @@ def update_corr_chart():
             else:
                 corr_chart.xaxis.axis_label = "%s (%s)" % (corr_chart_x.value, x_units)
         else:
-            corr_chart.xaxis.axis_label = corr_chart_x.value
+            corr_chart.xaxis.axis_label = corr_chart_x.value.replace('/', ' or ')
         if y_units:
             if corr_chart_y.value.startswith('DVH Endpoint'):
                 corr_chart.yaxis.axis_label = "%s" % y_units
             else:
                 corr_chart.yaxis.axis_label = "%s (%s)" % (corr_chart_y.value, y_units)
         else:
-            corr_chart.xaxis.axis_label = corr_chart_y.value
+            corr_chart.yaxis.axis_label = corr_chart_y.value.replace('/', ' or ')
         source_corr_chart_1.data = {'x': x_1, 'y': y_1, 'mrn': mrn_1}
         source_corr_chart_2.data = {'x': x_2, 'y': y_2, 'mrn': mrn_2}
 
@@ -2592,8 +2561,6 @@ def multi_var_linear_regression():
 
 
 def initialize_rad_bio_source():
-    global rad_bio_a, rad_bio_gamma_50, rad_bio_td_tcd
-
     include = get_include_map()
 
     # Get data from DVH Table
@@ -2633,13 +2600,8 @@ def initialize_rad_bio_source():
                            'eud': empty,
                            'ntcp_tcp': empty}
 
-    rad_bio_a = empty
-    rad_bio_gamma_50 = empty
-    rad_bio_td_tcd = empty
-
 
 def rad_bio_apply():
-    global rad_bio_a, rad_bio_gamma_50, rad_bio_td_tcd
     row_count = len(source_rad_bio.data['uid'])
 
     if rad_bio_apply_filter.active == [0, 1]:
@@ -2667,25 +2629,14 @@ def rad_bio_apply():
     except:
         new_td_tcd = 1.
 
-    for i in include:
-        rad_bio_a[i] = new_eud_a
-        rad_bio_gamma_50[i] = new_gamma_50
-        rad_bio_td_tcd[i] = new_td_tcd
-
-    eud_patch = [tuple([i, new_eud_a]) for i in range(0, row_count) if i in include]
-    gamma_50_patch = [tuple([i, new_gamma_50]) for i in range(0, row_count) if i in include]
-    td_tcd_patch = [tuple([i, new_td_tcd]) for i in range(0, row_count) if i in include]
-
-    patch = {'eud_a': eud_patch,
-             'gamma_50': gamma_50_patch,
-             'td_tcd': td_tcd_patch}
+    patch = {'eud_a': [(i, new_eud_a) for i in range(0, row_count) if i in include],
+             'gamma_50': [(i, new_gamma_50) for i in range(0, row_count) if i in include],
+             'td_tcd': [(i, new_td_tcd) for i in range(0, row_count) if i in include]}
 
     source_rad_bio.patch(patch)
 
 
 def update_eud():
-    global rad_bio_eud_data, rad_bio_ntcp_tcp_data
-
     uid_roi_list = ["%s_%s" % (uid, source.data['roi_name'][i]) for i, uid in enumerate(source.data['uid'])]
 
     eud, ntcp_tcp = [], []
@@ -2700,16 +2651,11 @@ def update_eud():
             eud.append(0)
         td_tcd = source_rad_bio.data['td_tcd'][i]
         gamma_50 = source_rad_bio.data['gamma_50'][i]
-        print(i, a, td_tcd, gamma_50, sep=' ')
         if eud[-1] > 0:
-            x = (td_tcd / eud[-1]) ** (4. * gamma_50)
-            x = (1 / (1 + x))
-            ntcp_tcp.append(x)
+            ntcp_tcp.append(1 / (1 + (td_tcd / eud[-1]) ** (4. * gamma_50)))
         else:
             ntcp_tcp.append(0)
 
-    rad_bio_eud_data = eud
-    rad_bio_ntcp_tcp_data = ntcp_tcp
     source_rad_bio.patch({'eud': [(i, j) for i, j in enumerate(eud)],
                           'ntcp_tcp': [(i, j) for i, j in enumerate(ntcp_tcp)]})
 
@@ -3370,14 +3316,13 @@ layout_dvhs = column(row(custom_title_dvhs_blue, Spacer(width=50), custom_title_
                      endpoint_table_title,
                      data_table_endpoints)
 
-
 layout_rad_bio = column(row(custom_title_rad_bio_blue, Spacer(width=50), custom_title_rad_bio_red),
                         emami_text,
                         data_table_emami,
                         rad_bio_custom_text,
-                        row(rad_bio_eud_a_input, Spacer(width=30),
-                            rad_bio_gamma_50_input, Spacer(width=30), rad_bio_td_tcd_input, Spacer(width=30),
-                            rad_bio_apply_filter, Spacer(width=30), rad_bio_apply_button),
+                        row(rad_bio_eud_a_input, Spacer(width=50),
+                            rad_bio_gamma_50_input, Spacer(width=50), rad_bio_td_tcd_input, Spacer(width=50),
+                            rad_bio_apply_filter, Spacer(width=50), rad_bio_apply_button),
                         row(rad_bio_update_button),
                         data_table_rad_bio_text,
                         data_table_rad_bio)
