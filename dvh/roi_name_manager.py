@@ -432,14 +432,16 @@ class DatabaseROIs:
     ################
     def get_physician_roi_visual_coordinates(self, physician, physician_roi):
 
+        # All 0.5 subtractions due to a workaround of a Bokeh 0.12.9 bug
+
         institutional_roi = self.get_institutional_roi(physician, physician_roi)
 
         table = {'name': [institutional_roi, physician_roi],
-                 'x': [1, 2],
+                 'x': [1 - 0.5, 2 - 0.5],
                  'y': [0, 0],
-                 'x0': [1, 2],
+                 'x0': [1, 2 - 0.5],
                  'y0': [0, 0],
-                 'x1': [2, 1],
+                 'x1': [2 - 0.5, 1 - 0.5],
                  'y1': [0, 0]}
 
         variations = self.get_variations(physician, physician_roi)
@@ -452,11 +454,11 @@ class DatabaseROIs:
         for variation in variations:
             y = initial_y - variation_counter
             table['name'].append(variation)
-            table['x'].append(3)
+            table['x'].append(3 - 0.5)
             table['y'].append(y)
-            table['x0'].append(2)
+            table['x0'].append(2 - 0.5)
             table['y0'].append(0)
-            table['x1'].append(3)
+            table['x1'].append(3 - 0.5)
             table['y1'].append(y)
             variation_counter += 1
 
