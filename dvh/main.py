@@ -1944,7 +1944,7 @@ def update_roi_viewer():
 
 def update_roi2_viewer():
     z = roi_viewer_slice_select.value
-    if z in listitems(roi2_viewer_data):
+    if z in list(roi2_viewer_data):
         source_roi2_viewer.data = roi2_viewer_data[z]
     else:
         source_roi2_viewer.data = {'x': [], 'y': [], 'z': []}
