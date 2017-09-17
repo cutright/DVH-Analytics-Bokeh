@@ -2285,7 +2285,8 @@ def update_correlation_matrix():
 
     corr_fig.x_range.factors = categories_for_label
     corr_fig.y_range.factors = categories_for_label[::-1]
-    source_corr_matrix_line.data = {'x': [1, len(categories)], 'y': [len(categories), 1]}
+    # 0.5 offset due to Bokeh 0.12.9 bug
+    source_corr_matrix_line.data = {'x': [0.5, len(categories) - 0.5], 'y': [len(categories)-0.5, 0.5]}
 
     s = {'1_pos': {'x': [], 'y': [], 'x_name': [], 'y_name': [], 'color': [],
                    'alpha': [], 'r': [], 'p': [], 'group': [], 'size': [], 'x_normality': [], 'y_normality': []},
@@ -2341,8 +2342,9 @@ def update_correlation_matrix():
                     s[k]['p'].append(p_value)
                     s[k]['alpha'].append(abs(r))
                     s[k]['size'].append(max_size * abs(r))
-                    s[k]['x'].append(x + 1)
-                    s[k]['y'].append(categories_count - y)
+                    # 0.5 offset due to bokeh 0.12.9 bug
+                    s[k]['x'].append(x + 0.5)
+                    s[k]['y'].append(categories_count - y - 0.5)
                     s[k]['x_name'].append(categories_for_label[x])
                     s[k]['y_name'].append(categories_for_label[y])
 
