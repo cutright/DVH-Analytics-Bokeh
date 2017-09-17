@@ -17,7 +17,7 @@ import numpy as np
 import itertools
 from datetime import datetime
 from os.path import dirname, join
-from bokeh.layouts import layout, column, row
+from bokeh.layouts import column, row
 from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider, Spacer
 from bokeh.plotting import figure
 from bokeh.io import curdoc
@@ -542,9 +542,9 @@ class RangeRow:
         self.var_name = range_categories[self.select_category.value]['var_name']
         self.min_value = []
         self.max_value = []
-        self.text_min = TextInput(value='', title='', width=210)
+        self.text_min = TextInput(value='', title='', width=180)
         self.text_min.on_change('value', self.check_for_start_date_ticker)
-        self.text_max = TextInput(value='', title='', width=210)
+        self.text_max = TextInput(value='', title='', width=180)
         self.text_max.on_change('value', self.check_for_end_date_ticker)
         self.update_range_values(self.select_category.value)
 
@@ -553,11 +553,11 @@ class RangeRow:
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
         self.delete_last_row.on_click(self.delete_row)
 
-        self.row = row([self.select_category,
-                        self.text_min,
-                        self.text_max,
-                        self.pop_grp,
-                        self.delete_last_row])
+        self.row = row(self.select_category,
+                       self.text_min, Spacer(width=30),
+                       self.text_max, Spacer(width=30),
+                       self.pop_grp,
+                       self.delete_last_row)
 
     def check_for_start_date_ticker(self, attrname, old, new):
         if self.select_category.value.lower().find("date") > -1:
@@ -615,7 +615,7 @@ class EndPointRow:
         self.text_input = TextInput(value='', title="Volume (%):", width=260)
         self.text_input.on_change('value', self.endpoint_calc_ticker)
 
-        self.units = RadioButtonGroup(labels=self.unit_labels[0], active=0, width=340)
+        self.units = RadioButtonGroup(labels=self.unit_labels[0], active=0, width=310)
         self.units.on_change('active', self.endpoint_units_ticker)
 
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
@@ -623,7 +623,7 @@ class EndPointRow:
 
         self.row = row(self.select_category,
                        self.units_out,
-                       self.text_input,
+                       self.text_input, Spacer(width=30),
                        self.units,
                        self.delete_last_row)
 
