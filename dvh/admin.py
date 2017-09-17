@@ -19,7 +19,7 @@ from bokeh.models.widgets import Select, Button, Tabs, Panel, TextInput, RadioBu
 from bokeh.layouts import layout
 from bokeh.plotting import figure
 from bokeh.io import curdoc
-from bokeh.models import ColumnDataSource, LabelSet, Range1d, Slider, CustomJS
+from bokeh.models import ColumnDataSource, LabelSet, Range1d, Slider, CustomJS, Spacer
 
 
 query_source = ColumnDataSource(data=dict())
@@ -1322,7 +1322,8 @@ roi_layout = layout([[select_institutional_roi],
                      [input_text, operator, category],
                      [div_action],
                      [action_button],
-                     [p]])
+                     [p],
+                     [Spacer(width=1000, height=100)]])
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Database Editor Objects

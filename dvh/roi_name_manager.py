@@ -452,7 +452,7 @@ class DatabaseROIs:
             initial_y = float(variations_count - 1) / float(2)
         variation_counter = 0
         for variation in variations:
-            y = initial_y - variation_counter
+            y = initial_y - variation_counter - 0.25
             table['name'].append(variation)
             table['x'].append(3 - 0.5)
             table['y'].append(y)
