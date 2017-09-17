@@ -2487,7 +2487,7 @@ def corr_chart_x_include_ticker(attr, old, new):
 def multi_var_linear_regression():
     print(str(datetime.now()), 'Performing multivariable regression', sep=' ')
 
-    included_vars = [key for key, value in listitems(correlation_1) if value]
+    included_vars = [key for key in list(correlation_1) if multi_var_reg_vars[key]]
     included_vars.sort()
 
     # Blue Group
