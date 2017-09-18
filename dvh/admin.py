@@ -492,7 +492,9 @@ def get_uncategorized_variations(physician):
         for row in cursor_rtn:
             variation = clean_name(str(row[0]))
             study_instance_uid = str(row[1])
-            physician_db = cnx.query('plans', 'physician', "study_instance_uid = '" + study_instance_uid + "'")[0][0]
+            physician_db = cnx.query('plans', 'physician', "study_instance_uid = '" + study_instance_uid + "'")
+            if physician_db:
+                physician_db = physician_db[0][0]
             new_uncategorized_variations_keys = list(new_uncategorized_variations)
             if physician == physician_db and variation not in new_uncategorized_variations_keys:
                 new_uncategorized_variations[variation] = {'roi_name': str(row[0]), 'study_instance_uid': str(row[1])}

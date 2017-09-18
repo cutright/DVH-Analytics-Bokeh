@@ -2930,7 +2930,7 @@ query_row_type.append('main')
 tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
 control_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None,
                        active_drag="box_zoom", x_axis_type='datetime')
-control_chart.min_border_left = min_border
+# control_chart.min_border_left = min_border
 control_chart.min_border_bottom = min_border
 control_chart_data_1 = control_chart.circle('x', 'y', size=10, color='blue', alpha=0.25, source=source_time_1)
 control_chart_data_2 = control_chart.circle('x', 'y', size=10, color='red', alpha=0.25, source=source_time_2)

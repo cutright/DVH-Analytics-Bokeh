@@ -83,16 +83,30 @@ def dicom_to_sql(**kwargs): \
 
         # Process DICOM files into Python objects
         plan, beams, dvhs, rxs = [], [], [], []
+
+        if plan_file:
+            mp = dicom.read_file(plan_file).ManufacturerModelName.lower()
+        if struct_file:
+            ms = dicom.read_file(struct_file).ManufacturerModelName.lower()
+        if dose_file:
+            md = dicom.read_file(dose_file).ManufacturerModelName.lower()
+
+        if 'gammaplan' in "%s %s %s" % (mp, ms, md):
+            print("Leksell Gamma Plan is not currently supported. Skipping import.")
+            continue
+
         if plan_file and struct_file and dose_file:
-            plan = PlanRow(plan_file, struct_file, dose_file)
+                plan = PlanRow(plan_file, struct_file, dose_file)
         else:
             print('WARNING: Missing complete set of plan, struct, and dose files for uid %s' % uid)
             if not force_update:
                 print('WARNING: Skipping this import. If you wish to import an incomplete DICOM set, use Force Update')
                 print('WARNING: The current file will be moved to the misc folder with in your imported folder')
                 continue
-        if plan_file and not hasattr(dicom.read_file(plan_file), 'BrachyTreatmentType'):
-            beams = BeamTable(plan_file)
+
+        if plan_file:
+            if not hasattr(dicom.read_file(plan_file), 'BrachyTreatmentType'):
+                beams = BeamTable(plan_file)
         if struct_file and dose_file:
             dvhs = DVHTable(struct_file, dose_file)
             setattr(dvhs, 'ptv_number', rank_ptvs_by_D95(dvhs))
@@ -102,7 +116,7 @@ def dicom_to_sql(**kwargs): \
         # Insert data from Python objects into SQL tables
         if plan:
             sqlcnx.insert_plan(plan)
-        if beams and not hasattr(dicom.read_file(plan_file), 'BrachyTreatmentType'):
+        if beams:
             sqlcnx.insert_beams(beams)
         if dvhs:
             sqlcnx.insert_dvhs(dvhs)
