@@ -11,15 +11,6 @@
 - [ ] Add thorough comments throughout all code
    - [ ] Clean code where possible
    - [ ] Prep for public release
-   
-
-- [ ] Adapt code and validate for other treatment planning systems
-   - [X] Pinnacle
-   - [X] iPlan
-   - [X] Raystation Protons
-   - [X] Oncentra Brachytherapy
-   - [ ] GammaPlan
-   - [X] Monaco
 
 
 ### Lower Priorities
