@@ -3324,7 +3324,8 @@ layout_dvhs = column(row(custom_title_dvhs_blue, Spacer(width=50), custom_title_
                      data_table_title,
                      data_table,
                      endpoint_table_title,
-                     data_table_endpoints)
+                     data_table_endpoints,
+                     Spacer(width=1000, height=100))
 
 layout_rad_bio = column(row(custom_title_rad_bio_blue, Spacer(width=50), custom_title_rad_bio_red),
                         emami_text,
@@ -3335,7 +3336,8 @@ layout_rad_bio = column(row(custom_title_rad_bio_blue, Spacer(width=50), custom_
                             rad_bio_apply_filter, Spacer(width=50), rad_bio_apply_button),
                         row(rad_bio_update_button),
                         data_table_rad_bio_text,
-                        data_table_rad_bio)
+                        data_table_rad_bio,
+                        Spacer(width=1000, height=100))
 
 roi_viewer_layout = column(row(custom_title_roi_viewer_blue, Spacer(width=50), custom_title_roi_viewer_red),
                            row(roi_viewer_mrn_select, roi_viewer_study_date_select, roi_viewer_uid_select),
@@ -3347,7 +3349,8 @@ roi_viewer_layout = column(row(custom_title_roi_viewer_blue, Spacer(width=50), c
                            row(roi_viewer_flip_x_axis_button, roi_viewer_flip_y_axis_button,
                                roi_viewer_plot_tv_button),
                            row(roi_viewer_scrolling),
-                           row(roi_viewer))
+                           row(roi_viewer),
+                           row(Spacer(width=1000, height=100)))
 
 layout_planning_data = column(row(custom_title_planning_blue, Spacer(width=50), custom_title_planning_red),
                               rxs_table_title, data_table_rxs,
@@ -3362,7 +3365,8 @@ layout_time_series = column(row(custom_title_time_series_blue, Spacer(width=50),
                             row(histogram_bin_slider, histogram_radio_group),
                             row(histogram_normaltest_1_text, histogram_ttest_text),
                             row(histogram_normaltest_2_text, histogram_ranksums_text),
-                            histograms)
+                            histograms,
+                            Spacer(width=1000, height=100))
 
 layout_correlation_matrix = column(row(custom_title_correlation_blue, Spacer(width=50), custom_title_correlation_red),
                                    row(corr_fig_text, corr_fig_text_1, corr_fig_text_2),
@@ -3382,7 +3386,8 @@ layout_regression = column(row(custom_title_regression_blue, Spacer(width=50), c
                            data_table_multi_var_model_1,
                            multi_var_text_2,
                            data_table_multi_var_coeff_2,
-                           data_table_multi_var_model_2)
+                           data_table_multi_var_model_2,
+                           Spacer(width=1000, height=100))
 
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')

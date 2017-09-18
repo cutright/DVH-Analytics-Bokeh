@@ -1,10 +1,11 @@
 ## To Do List
 ### Higher Priorities
 
-- [ ] Rewrite import process
-   - [ ] Account for multiple files for same UID
-   - [ ] Catalog CT files
-   - [ ] Keep catalog in SQL
+- [X] Rewrite import process
+   - [X] Account for multiple files for same UID
+   - [X] Catalog CT files
+   - [X] Keep catalog in SQL
+   - [ ] Validate and error test new functionality
 
 
 - [ ] Add thorough comments throughout all code
@@ -24,6 +25,8 @@
 ### Lower Priorities
 - [ ] Allow user to input list of MRNs to restrict population
   - [X] Added ability to select one at a time from a drop down list
+
+- [ ] Add a 'not' condition
 
 
 - [ ] Clean text representation in date fields  
