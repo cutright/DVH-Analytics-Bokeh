@@ -81,8 +81,8 @@ source_roi3_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi4_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi5_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_tv = ColumnDataSource(data=dict(x=[], y=[]))
-source_histogram_1 = ColumnDataSource(data=dict(x=[], top=[], width=[], color=[]))
-source_histogram_2 = ColumnDataSource(data=dict(x=[], top=[], width=[], color=[]))
+source_histogram_1 = ColumnDataSource(data=dict(x=[], top=[], width=[]))
+source_histogram_2 = ColumnDataSource(data=dict(x=[], top=[], width=[]))
 source_corr_matrix_line = ColumnDataSource(data=dict(x=[], y=[]))
 source_correlation_1_pos = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[], color=[], alpha=[], r=[], p=[],
                                                       group=[], size=[], x_normality=[], y_normality=[]))
@@ -1714,7 +1714,7 @@ def update_histograms():
     if control_chart_y.value != '':
 
         # Update Histograms
-        bin_size = histogram_bin_slider.value
+        bin_size = int(histogram_bin_slider.value)
         width_fraction = 0.9
 
         hist, bins = np.histogram(source_time_1.data['y'], bins=bin_size)
@@ -1727,8 +1727,7 @@ def update_histograms():
         center = (bins[:-1] + bins[1:]) / 2.
         source_histogram_1.data = {'x': center,
                                    'top': hist,
-                                   'width': width,
-                                   'color': ['blue'] * len(center)}
+                                   'width': width}
 
         hist, bins = np.histogram(source_time_2.data['y'], bins=bin_size)
         if histogram_radio_group.active == 1:
@@ -1737,11 +1736,10 @@ def update_histograms():
         center = (bins[:-1] + bins[1:]) / 2.
         source_histogram_2.data = {'x': center,
                                    'top': hist,
-                                   'width': width,
-                                   'color': ['red'] * len(center)}
+                                   'width': width}
     else:
-        source_histogram_1.data = {'x': [], 'top': [], 'width': [], 'color': []}
-        source_histogram_2.data = {'x': [], 'top': [], 'width': [], 'color': []}
+        source_histogram_1.data = {'x': [], 'top': [], 'width': []}
+        source_histogram_2.data = {'x': [], 'top': [], 'width': []}
 
 
 def update_roi_viewer_mrn():
