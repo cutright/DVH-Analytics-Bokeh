@@ -436,10 +436,12 @@ class DatabaseROIs:
 
         institutional_roi = self.get_institutional_roi(physician, physician_roi)
 
+        # x and y are coordinates for the circles
+        # x0, y0 is beggining of line segment, x1, y1 is end of line-segment
         table = {'name': [institutional_roi, physician_roi],
                  'x': [1 - 0.5, 2 - 0.5],
                  'y': [0, 0],
-                 'x0': [1, 2 - 0.5],
+                 'x0': [1 - 0.5, 2 - 0.5],
                  'y0': [0, 0],
                  'x1': [2 - 0.5, 1 - 0.5],
                  'y1': [0, 0]}
