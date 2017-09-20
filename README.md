@@ -25,7 +25,7 @@ For installation instructions, see our [installation notes](https://github.com/c
     * Python 3 not currently supported
     * [Future](https://pypi.python.org/pypi/future) 0.16.0
         * for bridging gap between 2.7 and 3.x
-        * we're still working on the Python 3 transition
+        * we're still working on the Python 3 transition for DVH Analytics
 * [PostgreSQL](https://www.postgresql.org/) and [psycopg2](http://initd.org/psycopg/)
 * [scipy](https://scipy.org)
     * [numpy](https://pypi.python.org/pypi/numpy) 1.12.1 tested
