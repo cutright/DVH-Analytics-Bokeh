@@ -1,18 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-      <style>
-        h2 {
-            display: block;
-            font: "Libre Baskerville", sans-serif;
-            font-size: 1.5em;
-            margin-top: 0.83em;
-            margin-bottom: 0.83em;
-            margin-left: 15em;
-            margin-right: 0;
-            font-weight: bold;
-        }
-        </style>
     <meta charset="utf-8">
     <title>DVH Database</title>
     {{ bokeh_css }}
@@ -20,7 +8,7 @@
   </head>
   <body>
     <div class="content">
-         <h2>DVH Analytics</h2>
+      <p style="font-family:helvetica;"><img src="/dvh/static/images/logo.jpeg" style="width:75px;height:75px;"> <font size="24">DVH Analytics</font></p>
       {{ plot_div|indent(8) }}
         {{ plot_script|indent(8) }}
     </div>
