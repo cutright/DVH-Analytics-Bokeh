@@ -35,7 +35,7 @@ For installation instructions, see our [installation notes](https://github.com/c
 * [dicompyler-core](https://pypi.python.org/pypi/dicompyler-core) 0.5.3
     * requirements per [developer](https://github.com/bastula)
         * [numpy](http://www.numpy.org/) 1.2 or higher
-        * [pydicom](http://code.google.com/p/pydicom/) 0.9.9 or higher
+        * [pydicom](https://github.com/pydicom/pydicom) 0.9.9 or higher
             * pydicom 1.0 is preferred and can be installed via pip using: pip install https://github.com/darcymason/pydicom/archive/master.zip
         * [matplotlib](http://matplotlib.sourceforge.net/) 1.3.0 or higher (for DVH calculation)
         * [six](https://pythonhosted.org/six/) 1.5 or higher
