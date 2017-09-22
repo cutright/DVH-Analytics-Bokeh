@@ -1,5 +1,5 @@
 # DVH Analytics
-<img src='https://user-images.githubusercontent.com/4778878/30724288-7cabb358-9f02-11e7-83ac-6f600e04ea00.jpg' align='right' width='300' alt="DVH Analytics screenshot">  
+<img src='https://user-images.githubusercontent.com/4778878/30643873-2115f6de-9dd6-11e7-9d6c-c51dd8307384.jpg' align='right' width='300' alt="DVH Analytics screenshot">  
  
 DVH Analytics is a code to help radiation oncology departments build an in-house database of treatment planning data 
 for the purpose of historical comparisons and statistical analysis. This code is still in development.  Please contact the developer if  you are interested in testing or collaborating.
