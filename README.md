@@ -9,15 +9,19 @@ DVH Analytics is a software application to help radiation oncology departments b
 for the purpose of historical comparisons and statistical analysis. This code is still in development.  Please contact the developer if  you are interested in testing or collaborating.
 
 The application builds a SQL database of DVHs and various planning parameters from DICOM files 
-(i.e., Plan, Structure, Dose). Since this code extracts data
-directly from DICOM files, we intend to accommodate an array of treatment planning system vendors.
+(i.e., Plan, Structure, Dose). Since the data is extracted directly from DICOM files, we intend
+to accommodate an array of treatment planning system vendors.
 
-In addition to viewing DVH data, this software provides methods to download queried data, view plan contours, 
-create time-series plots of various planning and dosimetric variables, calculate correlations, and generate 
- multi-variable linear regressions.
+In addition to viewing DVH data, this software provides methods to:
+
+- download queried data
+- view plan contours
+- create time-series plots of various planning and dosimetric variables
+- calculate correlations
+- and generate multi-variable linear regressions.
 
 
-This code is built upon these core libraries:
+The code is built upon these core libraries:
 * [pydicom](http://code.google.com/p/pydicom/) - Read, modify and write DICOM files with python code
 * [dicompyler-core](https://pypi.python.org/pypi/dicompyler-core) - Extensible radiation therapy research platform and viewer for DICOM and DICOM RT
 * [Bokeh](http://bokeh.pydata.org/en/latest/index.html) - Interactive Web Plotting for Python
