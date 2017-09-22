@@ -1,3 +1,7 @@
+<h3 align="center">
+  <img src="https://user-images.githubusercontent.com/4778878/30724445-66fda59c-9f03-11e7-883b-138ecb32a10a.jpg" alt="fastlane Logo" />
+</h3>
+
 # DVH Analytics
 <img src='https://user-images.githubusercontent.com/4778878/30643873-2115f6de-9dd6-11e7-9d6c-c51dd8307384.jpg' align='right' width='300' alt="DVH Analytics screenshot">  
  
