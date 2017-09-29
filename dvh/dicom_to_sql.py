@@ -83,7 +83,7 @@ def dicom_to_sql(**kwargs): \
 
         # Process DICOM files into Python objects
         plan, beams, dvhs, rxs = [], [], [], []
-
+        mp, ms, md = [], [], []
         if plan_file:
             mp = dicom.read_file(plan_file).ManufacturerModelName.lower()
         if struct_file:

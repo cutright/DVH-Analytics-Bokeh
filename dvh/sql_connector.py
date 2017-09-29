@@ -34,7 +34,7 @@ class DVH_SQL:
 
         self.cnx = cnx
         self.cursor = cnx.cursor()
-        self.tables = ['DVHs', 'Plans', 'Rxs', 'Beams']
+        self.tables = ['DVHs', 'Plans', 'Rxs', 'Beams', 'DICOM_Files']
 
     def close(self):
         self.cnx.close()
