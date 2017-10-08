@@ -26,11 +26,11 @@ $ sudo apt-get install libfreetype6-dev
 ## Define directories and connection settings
 For a web-based UI, type in the following to access the Settings:
 ~~~~
-$ dvh setup
+$ dvh settings
 ~~~~
 or the following for a command-line based setup:
 ~~~~
-$ dvh setup_simple
+$ dvh settings_simple
 ~~~~
 
 ## Processing test files
@@ -121,7 +121,7 @@ $ xcode-select --install
 If you are familiar with PostgreSQL and have access to a PostgreSQL DB, you simply need to fill in the
 login information by running:
 ~~~
-$ dvh settings --sql
+$ dvh settings_simple --sql
 ~~~
 
 If you need PostgreSQL, here are some options for each OS.
