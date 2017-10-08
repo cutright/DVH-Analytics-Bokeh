@@ -8,7 +8,7 @@ This is the main python file for command line implementation.
 
 from __future__ import print_function
 from dicom_to_sql import dicom_to_sql
-from utilities import recalculate_ages, Temp_DICOM_FileSet
+from utilities import Temp_DICOM_FileSet
 from sql_connector import DVH_SQL
 from analysis_tools import DVH
 from utilities import is_import_settings_defined, is_sql_connection_defined,\
@@ -17,6 +17,10 @@ import os
 from getpass import getpass
 import argparse
 from subprocess import call
+
+
+if is_sql_connection_defined():
+    DVH_SQL().initialize_database()
 
 
 def settings(**kwargs):
@@ -35,15 +39,15 @@ def test_dvh_code():
     if not is_import_settings_defined() and not is_sql_connection_defined():
         print("ERROR: Import and SQL settings are not yet defined.",
               "Please run:\n",
-              "    $ dvh settings", sep='')
+              "    $ dvh settings_simple", sep='')
     elif not is_import_settings_defined():
         print("ERROR: Import settings are not yet defined.",
               "Please run:\n",
-              "    $ dvh settings --dir", sep='')
+              "    $ dvh settings_simple --dir", sep='')
     elif not is_sql_connection_defined():
         print("ERROR: Invalid or empty SQL settings.",
               "Please run:\n",
-              "    $ dvh settings --sql", sep='')
+              "    $ dvh settings_simple --sql", sep='')
     else:
         is_import_valid = validate_import_settings()
         is_sql_connection_valid = validate_sql_connection()
