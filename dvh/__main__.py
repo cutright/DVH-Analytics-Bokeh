@@ -282,6 +282,10 @@ def main():
 
             call(command)
 
+        elif args.command[0] == 'create_tables':
+
+            DVH_SQL().initialize_database()
+
 
 if __name__ == '__main__':
     main()
