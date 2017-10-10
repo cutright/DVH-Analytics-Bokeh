@@ -188,6 +188,10 @@ def main():
                         dest='port',
                         help='Initializes Bokeh server on a non-default port',
                         default=None)
+    parser.add_argument('--use-xheaders',
+                        dest='xheaders',
+                        help='Use this if you are deploying behind an SSL-terminated proxy',
+                        default=None)
     parser.add_argument('command', nargs='+', help='bar help')
     args = parser.parse_args()
 
@@ -239,6 +243,8 @@ def main():
             if args.port:
                 command.append("--port")  # Defaults to 5006
                 command.append(args.port)
+            if args.xheaders:
+                command.append("--use-xheaders")
             if not args.allow_websocket_origin and not args.port:
                 command.append("--show")
 
@@ -256,6 +262,8 @@ def main():
             if args.allow_websocket_origin:
                 command.append("--allow-websocket-origin")
                 command.append(args.allow_websocket_origin)
+            if args.xheaders:
+                command.append("--use-xheaders")
 
             file_name = 'admin.py'
             abs_file_path = os.path.join(script_dir, file_name)
@@ -274,6 +282,8 @@ def main():
             if args.allow_websocket_origin:
                 command.append("--allow-websocket-origin")
                 command.append(args.allow_websocket_origin)
+            if args.xheaders:
+                command.append("--use-xheaders")
 
             file_name = 'settings.py'
             abs_file_path = os.path.join(script_dir, file_name)

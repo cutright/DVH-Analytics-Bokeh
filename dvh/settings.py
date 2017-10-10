@@ -18,9 +18,6 @@ from bokeh.layouts import layout
 from bokeh.io import curdoc
 
 
-if is_sql_connection_defined():
-    DVH_SQL().initialize_database()
-
 directories = {}
 config = {}
 save_needed = False
