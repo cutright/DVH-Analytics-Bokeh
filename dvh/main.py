@@ -2721,6 +2721,7 @@ dvh_plots.add_tools(HoverTool(show_arrow=False, line_policy='next',
                               tooltips=[('Label', '@mrn @roi_name'),
                                         ('Dose', '$x'),
                                         ('Volume', '$y')]))
+dvh_plots.lod_factor = 100  # level of detail during interactive plot events
 
 # Add statistical plots to figure
 stats_median_1 = dvh_plots.line('x', 'median', source=source_stats_1,
@@ -3101,7 +3102,8 @@ roi_viewer_flip_x_axis_button.on_click(roi_viewer_flip_x_axis)
 roi_viewer_flip_y_axis_button.on_click(roi_viewer_flip_y_axis)
 roi_viewer_plot_tv_button.on_click(roi_viewer_plot_tv)
 
-roi_viewer = figure(plot_width=825, plot_height=600, logo=None)
+roi_viewer = figure(plot_width=825, plot_height=600, logo=None, match_aspect=True,
+                    tools="pan,wheel_zoom,reset,crosshair,save")
 roi_viewer.min_border_left = min_border
 roi_viewer.min_border_bottom = min_border
 roi_viewer.y_range.flipped = True
