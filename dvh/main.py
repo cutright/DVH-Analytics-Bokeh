@@ -54,6 +54,8 @@ else:
 
 roi_viewer_data, roi2_viewer_data, roi3_viewer_data, roi4_viewer_data, roi5_viewer_data = {}, {}, {}, {}, {}
 tv_data = {}
+plot_axis_label_font_size = "14pt"
+plot_axis_value_font_size = "10pt"
 
 # Initialize ColumnDataSource variables
 source = ColumnDataSource(data=dict(color=[], x=[], y=[], mrn=[],
@@ -2753,7 +2755,7 @@ def custom_title_red_ticker(attr, old, new):
 # Set up Layout
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-min_border = 50
+min_border = 75
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
 dvh_plots = figure(plot_width=1050, plot_height=500, tools=tools, logo=None, active_drag="box_zoom")
 dvh_plots.min_border_left = min_border
@@ -2762,6 +2764,11 @@ dvh_plots.add_tools(HoverTool(show_arrow=False, line_policy='next',
                               tooltips=[('Label', '@mrn @roi_name'),
                                         ('Dose', '$x'),
                                         ('Volume', '$y')]))
+dvh_plots.xaxis.axis_label_text_font_size = plot_axis_label_font_size
+dvh_plots.yaxis.axis_label_text_font_size = plot_axis_label_font_size
+dvh_plots.xaxis.major_label_text_font_size = plot_axis_value_font_size
+dvh_plots.yaxis.major_label_text_font_size = plot_axis_value_font_size
+dvh_plots.yaxis.axis_label_text_baseline = "bottom"
 dvh_plots.lod_factor = 100  # level of detail during interactive plot events
 
 # Add statistical plots to figure
@@ -2970,6 +2977,10 @@ query_row_type.append('main')
 tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
 control_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None,
                        active_drag="box_zoom", x_axis_type='datetime')
+control_chart.xaxis.axis_label_text_font_size = plot_axis_label_font_size
+control_chart.yaxis.axis_label_text_font_size = plot_axis_label_font_size
+control_chart.xaxis.major_label_text_font_size = plot_axis_value_font_size
+control_chart.yaxis.major_label_text_font_size = plot_axis_value_font_size
 # control_chart.min_border_left = min_border
 control_chart.min_border_bottom = min_border
 control_chart_data_1 = control_chart.circle('x', 'y', size=10, color='blue', alpha=0.25, source=source_time_1)
@@ -3029,6 +3040,10 @@ div_horizontal_bar = Div(text="<hr>", width=1050)
 # histograms
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
 histograms = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
+histograms.xaxis.axis_label_text_font_size = plot_axis_label_font_size
+histograms.yaxis.axis_label_text_font_size = plot_axis_label_font_size
+histograms.xaxis.major_label_text_font_size = plot_axis_value_font_size
+histograms.yaxis.major_label_text_font_size = plot_axis_value_font_size
 histograms.min_border_left = min_border
 histograms.min_border_bottom = min_border
 hist_1 = histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_1, color='blue', alpha=0.3)
@@ -3157,6 +3172,10 @@ roi_viewer_plot_tv_button.on_click(roi_viewer_plot_tv)
 
 roi_viewer = figure(plot_width=825, plot_height=600, logo=None, match_aspect=True,
                     tools="pan,wheel_zoom,reset,crosshair,save")
+roi_viewer.xaxis.axis_label_text_font_size = plot_axis_label_font_size
+roi_viewer.yaxis.axis_label_text_font_size = plot_axis_label_font_size
+roi_viewer.xaxis.major_label_text_font_size = plot_axis_value_font_size
+roi_viewer.yaxis.major_label_text_font_size = plot_axis_value_font_size
 roi_viewer.min_border_left = min_border
 roi_viewer.min_border_bottom = min_border
 roi_viewer.y_range.flipped = True
@@ -3180,6 +3199,10 @@ corr_fig = figure(plot_width=900, plot_height=700,
                   tools="pan, box_zoom, wheel_zoom, reset",
                   logo=None,
                   x_range=[''], y_range=[''])
+corr_fig.xaxis.axis_label_text_font_size = plot_axis_label_font_size
+corr_fig.yaxis.axis_label_text_font_size = plot_axis_label_font_size
+corr_fig.xaxis.major_label_text_font_size = plot_axis_value_font_size
+corr_fig.yaxis.major_label_text_font_size = plot_axis_value_font_size
 corr_fig.min_border_left = 175
 corr_fig.min_border_top = 130
 corr_fig.xaxis.major_label_orientation = pi / 4
@@ -3189,13 +3212,11 @@ corr_fig.title.text_font_style = "italic"
 corr_fig.xaxis.axis_line_color = None
 corr_fig.xaxis.major_tick_line_color = None
 corr_fig.xaxis.minor_tick_line_color = None
-corr_fig.xaxis.major_label_text_font_size = "10pt"
 corr_fig.xgrid.grid_line_color = None
 corr_fig.ygrid.grid_line_color = None
 corr_fig.yaxis.axis_line_color = None
 corr_fig.yaxis.major_tick_line_color = None
 corr_fig.yaxis.minor_tick_line_color = None
-corr_fig.yaxis.major_label_text_font_size = "10pt"
 corr_fig.outline_line_color = None
 corr_1_pos = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=source_correlation_1_pos)
 corr_1_neg = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=source_correlation_1_neg)
@@ -3236,6 +3257,10 @@ corr_fig_include_2.on_change('active', corr_fig_include_ticker)
 # Control Chart layout
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
 corr_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
+corr_chart.xaxis.axis_label_text_font_size = plot_axis_label_font_size
+corr_chart.yaxis.axis_label_text_font_size = plot_axis_label_font_size
+corr_chart.xaxis.major_label_text_font_size = plot_axis_value_font_size
+corr_chart.yaxis.major_label_text_font_size = plot_axis_value_font_size
 corr_chart.min_border_left = min_border
 corr_chart.min_border_bottom = min_border
 corr_chart_data_1 = corr_chart.circle('x', 'y', size=10, color='blue', alpha=0.5, source=source_corr_chart_1)
