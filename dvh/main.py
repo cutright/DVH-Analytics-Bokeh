@@ -29,6 +29,7 @@ from bokeh import events
 from scipy.stats import ttest_ind, ranksums, normaltest, pearsonr, linregress
 from math import pi
 import statsmodels.api as sm
+import matplotlib.colors as plot_colors
 
 # Declare variables
 colors = itertools.cycle(palette)
@@ -875,11 +876,6 @@ def update_dvh_data(dvh):
         dvh.institutional_roi.extend(['N/A'] * extra_rows)
         dvh.physician_roi.extend(['N/A'] * extra_rows)
         dvh.roi_type.extend(['Stat'] * extra_rows)
-        dvh.dist_to_ptv_min.extend(['N/A'] * extra_rows)
-        dvh.dist_to_ptv_median.extend(['N/A'] * extra_rows)
-        dvh.dist_to_ptv_mean.extend(['N/A'] * extra_rows)
-        dvh.dist_to_ptv_max.extend(['N/A'] * extra_rows)
-        dvh.ptv_overlap.extend(['N/A'] * extra_rows)
     if group_1_count > 0:
         dvh.rx_dose.extend(calc_stats(dvh_group_1.rx_dose))
         dvh.volume.extend(calc_stats(dvh_group_1.volume))
@@ -887,6 +883,11 @@ def update_dvh_data(dvh):
         dvh.min_dose.extend(calc_stats(dvh_group_1.min_dose))
         dvh.mean_dose.extend(calc_stats(dvh_group_1.mean_dose))
         dvh.max_dose.extend(calc_stats(dvh_group_1.max_dose))
+        dvh.dist_to_ptv_min.extend(calc_stats(dvh_group_1.dist_to_ptv_min))
+        dvh.dist_to_ptv_median.extend(calc_stats(dvh_group_1.dist_to_ptv_median))
+        dvh.dist_to_ptv_mean.extend(calc_stats(dvh_group_1.dist_to_ptv_mean))
+        dvh.dist_to_ptv_max.extend(calc_stats(dvh_group_1.dist_to_ptv_max))
+        dvh.ptv_overlap.extend(calc_stats(dvh_group_1.ptv_overlap))
     if group_2_count > 0:
         dvh.rx_dose.extend(calc_stats(dvh_group_2.rx_dose))
         dvh.volume.extend(calc_stats(dvh_group_2.volume))
@@ -894,6 +895,11 @@ def update_dvh_data(dvh):
         dvh.min_dose.extend(calc_stats(dvh_group_2.min_dose))
         dvh.mean_dose.extend(calc_stats(dvh_group_2.mean_dose))
         dvh.max_dose.extend(calc_stats(dvh_group_2.max_dose))
+        dvh.dist_to_ptv_min.extend(calc_stats(dvh_group_2.dist_to_ptv_min))
+        dvh.dist_to_ptv_median.extend(calc_stats(dvh_group_2.dist_to_ptv_median))
+        dvh.dist_to_ptv_mean.extend(calc_stats(dvh_group_2.dist_to_ptv_mean))
+        dvh.dist_to_ptv_max.extend(calc_stats(dvh_group_2.dist_to_ptv_max))
+        dvh.ptv_overlap.extend(calc_stats(dvh_group_2.ptv_overlap))
 
     # Adjust dvh object for review dvh
     dvh.dvh = np.insert(dvh.dvh, 0, 0, 1)
@@ -1833,6 +1839,31 @@ def roi_viewer_roi5_ticker(attr, old, new):
     update_roi5_viewer()
 
 
+def roi_viewer_roi1_color_ticker(attr, old, new):
+    roi_viewer_patch1.glyph.fill_color = new
+    roi_viewer_patch1.glyph.line_color = new
+
+
+def roi_viewer_roi2_color_ticker(attr, old, new):
+    roi_viewer_patch2.glyph.fill_color = new
+    roi_viewer_patch2.glyph.line_color = new
+
+
+def roi_viewer_roi3_color_ticker(attr, old, new):
+    roi_viewer_patch3.glyph.fill_color = new
+    roi_viewer_patch3.glyph.line_color = new
+
+
+def roi_viewer_roi4_color_ticker(attr, old, new):
+    roi_viewer_patch4.glyph.fill_color = new
+    roi_viewer_patch4.glyph.line_color = new
+
+
+def roi_viewer_roi5_color_ticker(attr, old, new):
+    roi_viewer_patch5.glyph.fill_color = new
+    roi_viewer_patch5.glyph.line_color = new
+
+
 def roi_viewer_slice_ticker(attr, old, new):
     update_roi_viewer()
     update_roi2_viewer()
@@ -1846,7 +1877,7 @@ def update_roi_viewer_slice():
     options = list(roi_viewer_data)
     options.sort()
     roi_viewer_slice_select.options = options
-    roi_viewer_slice_select.value = options[0]
+    roi_viewer_slice_select.value = options[len(options) / 2]  # default to the middle slice
 
 
 def roi_viewer_go_to_previous_slice():
@@ -1867,7 +1898,17 @@ def update_roi_viewer_rois():
     options.sort()
 
     roi_viewer_roi_select.options = options
-    roi_viewer_roi_select.value = options[0]
+    # default to an external like ROI if found
+    if 'external' in options:
+        roi_viewer_roi_select.value = 'external'
+    elif 'ext' in options:
+        roi_viewer_roi_select.value = 'ext'
+    elif 'body' in options:
+        roi_viewer_roi_select.value = 'body'
+    elif 'skin' in options:
+        roi_viewer_roi_select.value = 'skin'
+    else:
+        roi_viewer_roi_select.value = options[0]
 
     roi_viewer_roi2_select.options = [''] + options
     roi_viewer_roi2_select.value = ''
@@ -3069,15 +3110,22 @@ data_table_rad_bio_text = Div(text="<b>EUD Calculations for Query</b>", width=50
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # ROI Viewer Objects
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+roi_colors = plot_colors.cnames.keys()
+roi_colors.sort()
 roi_viewer_options = [''] + source.data['mrn']
 roi_viewer_mrn_select = Select(value='', options=roi_viewer_options, width=200, title='MRN')
 roi_viewer_study_date_select = Select(value='', options=[''], width=200, title='Sim Study Date')
-roi_viewer_uid_select = Select(value='', options=[''], width=425, title='Study Instance UID')
-roi_viewer_roi_select = Select(value='', options=[''], width=400, title='ROI 1: Blue')
-roi_viewer_roi2_select = Select(value='', options=[''], width=200, height=100, title='ROI 2: Green')
-roi_viewer_roi3_select = Select(value='', options=[''], width=200, height=100, title='ROI 3: Red')
-roi_viewer_roi4_select = Select(value='', options=[''], width=200, height=100, title='ROI 4: Orange')
-roi_viewer_roi5_select = Select(value='', options=[''], width=200, height=100, title='ROI 5: Light Green')
+roi_viewer_uid_select = Select(value='', options=[''], width=400, title='Study Instance UID')
+roi_viewer_roi_select = Select(value='', options=[''], width=250, title='ROI 1 Name')
+roi_viewer_roi2_select = Select(value='', options=[''], width=200, title='ROI 2 Name')
+roi_viewer_roi3_select = Select(value='', options=[''], width=200, title='ROI 3 Name')
+roi_viewer_roi4_select = Select(value='', options=[''], width=200, title='ROI 4 Name')
+roi_viewer_roi5_select = Select(value='', options=[''], width=200, title='ROI 5 Name')
+roi_viewer_roi1_select_color = Select(value='blue', options=roi_colors, width=150, title='ROI 1 Color')
+roi_viewer_roi2_select_color = Select(value='green', options=roi_colors, width=200, height=100, title='ROI 2 Color')
+roi_viewer_roi3_select_color = Select(value='red', options=roi_colors, width=200, height=100, title='ROI 3 Color')
+roi_viewer_roi4_select_color = Select(value='orange', options=roi_colors, width=200, height=100, title='ROI 4 Color')
+roi_viewer_roi5_select_color = Select(value='lightgreen', options=roi_colors, width=200, height=100, title='ROI 5 Color')
 roi_viewer_slice_select = Select(value='', options=[''], width=200, title='Slice: z = ')
 roi_viewer_previous_slice = Button(label="<", button_type="primary", width=50)
 roi_viewer_next_slice = Button(label=">", button_type="primary", width=50)
@@ -3095,6 +3143,11 @@ roi_viewer_roi2_select.on_change('value', roi_viewer_roi2_ticker)
 roi_viewer_roi3_select.on_change('value', roi_viewer_roi3_ticker)
 roi_viewer_roi4_select.on_change('value', roi_viewer_roi4_ticker)
 roi_viewer_roi5_select.on_change('value', roi_viewer_roi5_ticker)
+roi_viewer_roi1_select_color.on_change('value', roi_viewer_roi1_color_ticker)
+roi_viewer_roi2_select_color.on_change('value', roi_viewer_roi2_color_ticker)
+roi_viewer_roi3_select_color.on_change('value', roi_viewer_roi3_color_ticker)
+roi_viewer_roi4_select_color.on_change('value', roi_viewer_roi4_color_ticker)
+roi_viewer_roi5_select_color.on_change('value', roi_viewer_roi5_color_ticker)
 roi_viewer_slice_select.on_change('value', roi_viewer_slice_ticker)
 roi_viewer_previous_slice.on_click(roi_viewer_go_to_previous_slice)
 roi_viewer_next_slice.on_click(roi_viewer_go_to_next_slice)
@@ -3107,11 +3160,11 @@ roi_viewer = figure(plot_width=825, plot_height=600, logo=None, match_aspect=Tru
 roi_viewer.min_border_left = min_border
 roi_viewer.min_border_bottom = min_border
 roi_viewer.y_range.flipped = True
-roi_viewer.patch('x', 'y', source=source_roi_viewer, color='blue', alpha=0.5)
-roi_viewer.patch('x', 'y', source=source_roi2_viewer, color='green', alpha=0.5)
-roi_viewer.patch('x', 'y', source=source_roi3_viewer, color='red', alpha=0.5)
-roi_viewer.patch('x', 'y', source=source_roi4_viewer, color='orange', alpha=0.5)
-roi_viewer.patch('x', 'y', source=source_roi5_viewer, color='lightgreen', alpha=0.5)
+roi_viewer_patch1 = roi_viewer.patch('x', 'y', source=source_roi_viewer, color='blue', alpha=0.5)
+roi_viewer_patch2 = roi_viewer.patch('x', 'y', source=source_roi2_viewer, color='green', alpha=0.5)
+roi_viewer_patch3 = roi_viewer.patch('x', 'y', source=source_roi3_viewer, color='red', alpha=0.5)
+roi_viewer_patch4 = roi_viewer.patch('x', 'y', source=source_roi4_viewer, color='orange', alpha=0.5)
+roi_viewer_patch5 = roi_viewer.patch('x', 'y', source=source_roi5_viewer, color='lightgreen', alpha=0.5)
 roi_viewer.patch('x', 'y', source=source_tv, color='black', alpha=0.5)
 roi_viewer.xaxis.axis_label = "Lateral DICOM Coordinate (mm)"
 roi_viewer.yaxis.axis_label = "Anterior/Posterior DICOM Coordinate (mm)"
@@ -3341,10 +3394,14 @@ layout_rad_bio = column(row(custom_title_rad_bio_blue, Spacer(width=50), custom_
 
 roi_viewer_layout = column(row(custom_title_roi_viewer_blue, Spacer(width=50), custom_title_roi_viewer_red),
                            row(roi_viewer_mrn_select, roi_viewer_study_date_select, roi_viewer_uid_select),
-                           row(roi_viewer_roi_select, roi_viewer_slice_select,
+                           Div(text="<hr>", width=800),
+                           row(roi_viewer_roi_select, roi_viewer_roi1_select_color, roi_viewer_slice_select,
                                roi_viewer_previous_slice, roi_viewer_next_slice),
+                           Div(text="<hr>", width=800),
                            row(roi_viewer_roi2_select, roi_viewer_roi3_select,
                                roi_viewer_roi4_select, roi_viewer_roi5_select),
+                           row(roi_viewer_roi2_select_color, roi_viewer_roi3_select_color,
+                               roi_viewer_roi4_select_color, roi_viewer_roi5_select_color),
                            row(roi_viewer_flip_text),
                            row(roi_viewer_flip_x_axis_button, roi_viewer_flip_y_axis_button,
                                roi_viewer_plot_tv_button),
