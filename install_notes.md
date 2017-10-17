@@ -22,6 +22,11 @@ And for Linux only, you may need to install freetype prior to pip install dvh-an
 ~~~~
 $ sudo apt-get install libfreetype6-dev
 ~~~~
+WARNING:   
+If you're more comfortable or simply prefer to clone the github code, please note that any
+time you read `$ dvh` in the remainder of this document, you'll need to replace it with `$ python start.py` when run
+from the dvh directory.  DVH Analytics relies entirely on Bokeh to create web servers/pages for any GUI, so it's
+best to follow this guide if you're unfamiliar with Bokeh.
 
 ## Define directories and connection settings
 For a web-based UI, type in the following to access the Settings:
