@@ -34,21 +34,29 @@ def settings(**kwargs):
             set_sql_connection_parameters()
 
 
-def test_dvh_code():
-
+def test_import_sql_cnx_definitions():
     if not is_import_settings_defined() and not is_sql_connection_defined():
         print("ERROR: Import and SQL settings are not yet defined.",
               "Please run:\n",
               "    $ dvh settings_simple", sep='')
+        return False
     elif not is_import_settings_defined():
         print("ERROR: Import settings are not yet defined.",
               "Please run:\n",
               "    $ dvh settings_simple --dir", sep='')
+        return False
     elif not is_sql_connection_defined():
         print("ERROR: Invalid or empty SQL settings.",
               "Please run:\n",
               "    $ dvh settings_simple --sql", sep='')
+        return False
     else:
+        return True
+
+
+def test_dvh_code():
+
+    if test_import_sql_cnx_definitions():
         is_import_valid = validate_import_settings()
         is_sql_connection_valid = validate_sql_connection()
         if not is_import_valid and not is_sql_connection_valid:
@@ -231,38 +239,44 @@ def main():
                          force_update=force_update)
         elif args.command[0] == 'run':
 
-            command = ["bokeh", "serve"]
+            if test_import_sql_cnx_definitions():
+                print(validate_sql_connection(verbose=False))
+                command = ["bokeh", "serve"]
 
-            if args.allow_websocket_origin:
-                command.append("--allow-websocket-origin")
-                command.append(args.allow_websocket_origin)
-            if args.port:
-                command.append("--port")  # Defaults to 5006
-                command.append(args.port)
-            if not args.allow_websocket_origin and not args.port:
-                command.append("--show")
+                if args.allow_websocket_origin:
+                    command.append("--allow-websocket-origin")
+                    command.append(args.allow_websocket_origin)
+                if args.port:
+                    command.append("--port")  # Defaults to 5006
+                    command.append(args.port)
+                if not args.allow_websocket_origin and not args.port:
+                    command.append("--show")
 
-            command.append(script_dir)
+                command.append(script_dir)
 
-            call(command)
+                call(command)
 
         elif args.command[0] == 'admin':
+            if test_import_sql_cnx_definitions():
 
-            command = ["bokeh", "serve", "--show", "--port"]
-            if args.port:
-                command.append(args.port)
+                command = ["bokeh", "serve", "--show", "--port"]
+                if args.port:
+                    command.append(args.port)
+                else:
+                    command.append("5007")
+                if args.allow_websocket_origin:
+                    command.append("--allow-websocket-origin")
+                    command.append(args.allow_websocket_origin)
+
+                file_name = 'admin.py'
+                abs_file_path = os.path.join(script_dir, file_name)
+
+                command.append(abs_file_path)
+
+                call(command)
             else:
-                command.append("5007")
-            if args.allow_websocket_origin:
-                command.append("--allow-websocket-origin")
-                command.append(args.allow_websocket_origin)
-
-            file_name = 'admin.py'
-            abs_file_path = os.path.join(script_dir, file_name)
-
-            command.append(abs_file_path)
-
-            call(command)
+                print("Could not connect to SQL. You may need to update/initiate settings.")
+                print("Try running with 'settings' command instead of 'admin'")
 
         elif args.command[0] == 'settings':
 
