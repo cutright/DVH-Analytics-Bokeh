@@ -255,6 +255,9 @@ def main():
                 command.append(script_dir)
 
                 call(command)
+            else:
+                print("Could not connect to SQL. You may need to update/initiate settings.")
+                print("Try running with 'settings' command instead of 'run'")
 
         elif args.command[0] == 'admin':
             if test_import_sql_cnx_definitions():
