@@ -6,6 +6,9 @@
    - [X] Catalog CT files
    - [X] Keep catalog in SQL
    - [ ] Validate and error test new functionality
+   - [ ] Allow easy re-import from original DICOM
+
+- [ ] Write instruction manual
 
 
 - [ ] Add thorough comments throughout all code
