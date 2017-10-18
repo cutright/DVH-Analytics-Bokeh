@@ -240,21 +240,24 @@ def main():
         elif args.command[0] == 'run':
 
             if test_import_sql_cnx_definitions():
-                print(validate_sql_connection(verbose=False))
-                command = ["bokeh", "serve"]
+                if DVH_SQL().is_sql_table_empty('DVHs'):
+                    print("There is no data in your SQL table.")
+                    print("You may import data from the admin view (use the 'admin' command instead of 'run'")
+                else:
+                    command = ["bokeh", "serve"]
 
-                if args.allow_websocket_origin:
-                    command.append("--allow-websocket-origin")
-                    command.append(args.allow_websocket_origin)
-                if args.port:
-                    command.append("--port")  # Defaults to 5006
-                    command.append(args.port)
-                if not args.allow_websocket_origin and not args.port:
-                    command.append("--show")
+                    if args.allow_websocket_origin:
+                        command.append("--allow-websocket-origin")
+                        command.append(args.allow_websocket_origin)
+                    if args.port:
+                        command.append("--port")  # Defaults to 5006
+                        command.append(args.port)
+                    if not args.allow_websocket_origin and not args.port:
+                        command.append("--show")
 
-                command.append(script_dir)
+                    command.append(script_dir)
 
-                call(command)
+                    call(command)
             else:
                 print("Could not connect to SQL. You may need to update/initiate settings.")
                 print("Try running with 'settings' command instead of 'run'")
