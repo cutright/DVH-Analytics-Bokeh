@@ -340,6 +340,12 @@ class DVH_SQL:
         else:
             return False
 
+    def is_sql_table_empty(self, table):
+        line = "SELECT COUNT(*) FROM %s;" % table
+        self.cursor.execute(line)
+        count = self.cursor.fetchone()[0]
+        return not(bool(count))
+
     def get_unique_values(self, table, column, *condition):
         if condition:
             query = "select distinct " + column + " from " + table + " where " + str(condition[0]) + ";"
