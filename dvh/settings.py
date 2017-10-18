@@ -130,77 +130,44 @@ def update_sql_settings():
     config['password'] = input_password.value
 
 
-def update_inbox_status(attr, old, new):
+def update_directory_status(dir_label, input_widget):
+
+    directory = directories[dir_label.lower()]
+
+    if os.path.isdir(directory):
+        input_widget.title = dir_label
+        save_dir_button.button_type = 'success'
+    elif not directory:
+        input_widget.title = "%s --- Path Needed ---" % dir_label
+        save_dir_button.button_type = 'warning'
+    else:
+        input_widget.title = "%s --- Invalid Path ---" % dir_label
+        save_dir_button.button_type = 'warning'
+
+    update_dir_save_status()
+
+
+def update_inbox(attr, old, new):
     directories['inbox'] = new
-
-    script_dir = os.path.dirname(__file__)
-    rel_path = new[2:len(new)]
-    abs_dir_path = os.path.join(script_dir, rel_path)
-
-    if os.path.isdir(new) or (os.path.isdir(abs_dir_path) and new[0:2] == './'):
-        input_inbox.title = "Inbox"
-        save_dir_button.button_type = 'success'
-    elif not new:
-        input_inbox.title = "Inbox --- Path Needed ---"
-        save_dir_button.button_type = 'warning'
-    else:
-        input_inbox.title = "Inbox --- Invalid Path ---"
-        save_dir_button.button_type = 'warning'
-
-    update_dir_save_status()
+    update_directory_status("Inbox", input_inbox)
 
 
-def update_imported_status(attr, old, new):
+def update_imported(attr, old, new):
     directories['imported'] = new
-
-    script_dir = os.path.dirname(__file__)
-    rel_path = new[2:len(new)]
-    abs_dir_path = os.path.join(script_dir, rel_path)
-
-    if os.path.isdir(new) or (os.path.isdir(abs_dir_path) and new[0:2] == './'):
-        input_imported.title = "Imported"
-        save_dir_button.button_type = 'success'
-    elif not new:
-        input_imported.title = "Imported --- Path Needed ---"
-        save_dir_button.button_type = 'warning'
-    else:
-        input_imported.title = "Imported --- Invalid Path ---"
-        save_dir_button.button_type = 'warning'
-
-    update_dir_save_status()
+    update_directory_status("Imported", input_imported)
 
 
-def update_review_status(attr, old, new):
-
+def update_review(attr, old, new):
     directories['review'] = new
-
-    script_dir = os.path.dirname(__file__)
-    rel_path = new[2:len(new)]
-    abs_dir_path = os.path.join(script_dir, rel_path)
-
-    if os.path.isdir(new) or (os.path.isdir(abs_dir_path) and new[0:2] == './'):
-        input_review.title = "Review"
-        save_dir_button.button_type = 'success'
-    elif not new:
-        input_review.title = "Review --- Path Needed ---"
-        save_dir_button.button_type = 'warning'
-    else:
-        input_review.title = "Review --- Invalid Path ---"
-        save_dir_button.button_type = 'warning'
-
-    update_dir_save_status()
+    update_directory_status("Review", input_review)
 
 
 def update_dir_save_status():
 
     dir_save_status = True
 
-    script_dir = os.path.dirname(__file__)
-
     for path in listvalues(directories):
-        rel_path = path[2:len(path)]
-        abs_dir_path = os.path.join(script_dir, rel_path)
-        if not(os.path.isdir(path) or (os.path.isdir(abs_dir_path) and path[0:2] == './')):
+        if not(os.path.isdir(path)):
             dir_save_status = False
 
     if dir_save_status:
@@ -310,13 +277,14 @@ def save_needed_sql(attr, old, new):
 # Layout objects
 ######################################################
 div_import = Div(text="<b>DICOM Directories</b>")
+div_import_note = Div(text="Please fill in existing directory locations below.")
 div_horizontal_bar_settings = Div(text="<hr>", width=900)
-input_inbox = TextInput(value=directories['inbox'], title="Inbox", width=300)
-input_inbox.on_change('value', update_inbox_status)
-input_imported = TextInput(value=directories['imported'], title="Imported", width=300)
-input_imported.on_change('value', update_imported_status)
-input_review = TextInput(value=directories['review'], title="Review", width=300)
-input_review.on_change('value', update_review_status)
+input_inbox = TextInput(value=directories['inbox'], title="Inbox", width=600)
+input_inbox.on_change('value', update_inbox)
+input_imported = TextInput(value=directories['imported'], title="Imported", width=600)
+input_imported.on_change('value', update_imported)
+input_review = TextInput(value=directories['review'], title="Review", width=600)
+input_review.on_change('value', update_review)
 
 div_sql = Div(text="<b>SQL Settings</b>")
 input_host = TextInput(value=config['host'], title="Host", width=300)
@@ -353,6 +321,7 @@ echo_button = Button(label="Echo", button_type='primary', width=100)
 echo_button.on_click(echo)
 
 settings_layout = layout([[div_import],
+                          [div_import_note],
                           [input_inbox],
                           [input_imported],
                           [input_review],
@@ -368,6 +337,11 @@ settings_layout = layout([[div_import],
 # Create the document Bokeh server will use to generate the webpage
 curdoc().add_root(settings_layout)
 curdoc().title = "DVH Analytics"
+
+# Update statuses based on the loaded import_settings.txt
+update_directory_status("Inbox", input_inbox)
+update_directory_status("Imported", input_imported)
+update_directory_status("Review", input_review)
 
 
 if __name__ == '__main__':
