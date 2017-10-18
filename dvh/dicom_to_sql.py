@@ -10,6 +10,7 @@ from __future__ import print_function
 from sql_connector import DVH_SQL
 from dicom_to_python import DVHTable, PlanRow, BeamTable, RxTable
 import os
+import shutil
 import dicom
 from datetime import datetime
 
@@ -274,10 +275,10 @@ def move_files_to_new_path(files, new_dir):
         file_name = os.path.basename(file_path)
         new = os.path.join(new_dir, file_name)
         try:
-            os.rename(file_path, new)
+            shutil.move(file_path, new)
         except:
             os.mkdir(new_dir)
-            os.rename(file_path, new)
+            shutil.move(file_path, new)
 
 
 def remove_empty_folders(start_path):
@@ -313,7 +314,7 @@ def move_all_files(new_dir, old_dir):
     for f in file_paths:
         file_name = os.path.basename(f)
         new = os.path.join(misc_path, file_name)
-        os.rename(f, new)
+        shutil.move(f, new)
 
     os.chdir(initial_path)
 
