@@ -1232,13 +1232,16 @@ def date_str_to_sql_format(date, **kwargs):
 
 
 def calc_stats(data):
-    data_np = np.array(data)
-    rtn_data = [np.max(data_np),
-                np.percentile(data_np, 75),
-                np.median(data_np),
-                np.mean(data_np),
-                np.percentile(data_np, 25),
-                np.min(data_np)]
+    try:
+        data_np = np.array(data)
+        rtn_data = [np.max(data_np),
+                    np.percentile(data_np, 75),
+                    np.median(data_np),
+                    np.mean(data_np),
+                    np.percentile(data_np, 25),
+                    np.min(data_np)]
+    except:
+        rtn_data = [0, 0, 0, 0, 0, 0]
     return rtn_data
 
 

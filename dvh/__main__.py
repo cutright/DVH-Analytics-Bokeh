@@ -19,10 +19,6 @@ import argparse
 from subprocess import call
 
 
-if is_sql_connection_defined():
-    DVH_SQL().initialize_database()
-
-
 def settings(**kwargs):
     if not kwargs:
         set_import_settings()

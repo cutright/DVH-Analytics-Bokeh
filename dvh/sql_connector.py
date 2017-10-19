@@ -323,7 +323,7 @@ class DVH_SQL:
         abs_file_path = os.path.join(script_dir, rel_path)
         print('Executing create_tables.sql')
         self.execute_file(abs_file_path)
-        print('Tables created')
+        print('Tables created or were already created')
 
     def reinitialize_database(self):
         self.drop_tables()
