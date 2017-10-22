@@ -744,9 +744,10 @@ def update_query_source():
     if new_data:
         query_source.data = new_data
 
-        data_table_rxs_new = DataTable(source=query_source, columns=table_columns, width=table_slider.value, editable=True)
+        data_table_new = DataTable(source=query_source, columns=table_columns,
+                                   width=int(table_slider.value), editable=True)
         db_editor_layout.children.pop()
-        db_editor_layout.children.append(data_table_rxs_new)
+        db_editor_layout.children.append(data_table_new)
 
 
 def update_db():
