@@ -26,7 +26,7 @@ setup(
     name='dvh-analytics',
     include_package_data=True,
     packages=find_packages(),
-    version='0.2.20',
+    version='0.2.21',
     description='Create a database of DVHs, views with Bokeh',
     author='Dan Cutright',
     author_email='dan.cutright@gmail.com',
