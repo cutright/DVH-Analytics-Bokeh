@@ -1,6 +1,18 @@
 # Installation notes for DVH Analytics
 
-## Pre-requisites:
+## Before you start
+Please note this software does not work "out-of-the-box."  Some broad strokes:
+* Must have a PostgreSQL DB setup prior to use. [PostgreSQL Notes](#PostgreSQL)
+* Must initialize import_settings.txt and sql_connection.cfg  
+`$ dvh settings` or `$ dvh settings_simple`
+* Must import data via the admin GUI or `$ dvh import` prior to running the main Bokeh app.
+
+If you do not install this software, please replace any reference to `$ dvh` below with `$ python start.py` and
+run from the dvh directory within this code. DVH Analytics relies on Bokeh to create web servers/pages for the GUIs, 
+so it's best to follow this guide as this app may not behave in the way you might expect from a traditional python app.
+
+
+## Pre-requisites
  - [Chrome](https://www.google.com/chrome/browser/desktop/) or [Firefox](https://www.mozilla.org/en-US/firefox/new/)
  - [PostgreSQL](https://www.postgresql.org/) (tested with 9.6)
  - [Python 2.7](https://www.python.org/downloads/release/python-2712/) (python3 not supported)
@@ -22,11 +34,6 @@ And for Linux only, you may need to install freetype prior to pip install dvh-an
 ~~~~
 $ sudo apt-get install libfreetype6-dev
 ~~~~
-WARNING:   
-If you're more comfortable or simply prefer to clone the github code, please note that any
-time you read `$ dvh` in the remainder of this document, you'll need to replace it with `$ python start.py` and run
-it from the dvh directory.  DVH Analytics relies entirely on Bokeh to create web servers/pages for any GUI, so it's
-best to follow this guide as this app may not behave in the way you might expect from a traditional python app.
 
 ## Define directories and connection settings
 For a web-based UI, type in the following to access the Settings:
