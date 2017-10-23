@@ -19,6 +19,9 @@ import argparse
 from subprocess import call
 
 
+script_dir = os.path.dirname(__file__)
+
+
 if is_sql_connection_defined():
     DVH_SQL().initialize_database()
 
@@ -170,6 +173,24 @@ def print_mrns():
             print(current_mrn)
 
 
+def initialize_default_import_settings_file():
+    # Create default import settings file
+    import_settings_path = os.path.join(script_dir, "preferences/import_settings.txt")
+    if not os.path.isfile(import_settings_path):
+        write_import_settings({'inbox': '',
+                               'imported': '',
+                               'review': ''})
+
+
+def initialize_default_sql_connection_config_file():
+    # Create default sql connection config file
+    sql_connection_path = os.path.join(script_dir, "preferences/sql_connection.cnf")
+    if not os.path.isfile(sql_connection_path):
+        write_sql_connection_settings({'host': 'localhost',
+                                       'dbname': 'dvh',
+                                       'port': '5432'})
+
+
 def main():
     parser = argparse.ArgumentParser(description='Command line interface for DVH Analytics')
     parser.add_argument('--sql',
@@ -200,8 +221,6 @@ def main():
     args = parser.parse_args()
 
     if args.command:
-
-        script_dir = os.path.dirname(__file__)
 
         if args.command[0] == 'settings_simple':
             if not args.sql and not args.dir:
@@ -285,6 +304,9 @@ def main():
                 print("Try running with 'settings' command instead of 'admin'")
 
         elif args.command[0] == 'settings':
+
+            initialize_default_import_settings_file()
+            initialize_default_sql_connection_config_file()
 
             command = ["bokeh", "serve", "--show", "--port"]
             if args.port:
