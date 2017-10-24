@@ -47,7 +47,7 @@ For installation instructions, see our [installation notes](https://github.com/c
             * pydicom 1.0 is preferred and can be installed via pip using: pip install https://github.com/darcymason/pydicom/archive/master.zip
         * [matplotlib](http://matplotlib.sourceforge.net/) 1.3.0 or higher (for DVH calculation)
         * [six](https://pythonhosted.org/six/) 1.5 or higher
-* [Bokeh](http://bokeh.pydata.org/en/latest/index.html) 0.12.9
+* [Bokeh](http://bokeh.pydata.org/en/latest/index.html) 0.12.10
     * requirements per [developer](http://bokeh.pydata.org/en/latest/docs/installation.html)
         * [NumPy](http://www.numpy.org/)
         * [Jinja2](http://jinja.pocoo.org/)
