@@ -1,6 +1,13 @@
 ## To Do List
 ### Higher Priorities
 
+- [ ] Redesign Query Tab
+  - [ ] Allow user to input list of MRNs to restrict population
+  - [ ] Add a 'not' condition
+  - [ ] Layout should be static, use Data Table to display accumulating list of query contstraints
+  - [ ] Remove limit of 8 on DVH Endpoints
+  - [ ] Dashboard of potential data issues in query
+
 - [X] Rewrite import process
    - [X] Account for multiple files for same UID
    - [X] Catalog CT files
@@ -17,12 +24,6 @@
 
 
 ### Lower Priorities
-- [ ] Allow user to input list of MRNs to restrict population
-  - [X] Added ability to select one at a time from a drop down list
-
-- [ ] Add a 'not' condition
-
-
 - [ ] Clean text representation in date fields  
 
 
