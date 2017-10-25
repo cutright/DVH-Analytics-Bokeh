@@ -16,18 +16,19 @@ import numpy as np
 from scipy.spatial.distance import cdist
 
 
+SCRIPT_DIR = os.path.dirname(__file__)
+
 class Temp_DICOM_FileSet:
     def __init__(self, **kwargs):
 
         # Read SQL configuration file
-        script_dir = os.path.dirname(__file__)
         if 'start_path' in kwargs:
             rel_path = kwargs['start_path']
-            abs_file_path = os.path.join(script_dir, rel_path)
+            abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
             start_path = abs_file_path
         else:
             rel_path = "preferences/import_settings.txt"
-            abs_file_path = os.path.join(script_dir, rel_path)
+            abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
             with open(abs_file_path, 'r') as document:
                 for line in document:
                     line = line.split()
@@ -204,9 +205,8 @@ def platform():
 
 def is_import_settings_defined():
 
-    script_dir = os.path.dirname(__file__)
     rel_path = "preferences/import_settings.txt"
-    abs_file_path = os.path.join(script_dir, rel_path)
+    abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
 
     if os.path.isfile(abs_file_path):
         return True
@@ -216,9 +216,8 @@ def is_import_settings_defined():
 
 def is_sql_connection_defined():
 
-    script_dir = os.path.dirname(__file__)
     rel_path = "preferences/sql_connection.cnf"
-    abs_file_path = os.path.join(script_dir, rel_path)
+    abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
 
     if os.path.isfile(abs_file_path):
         return True
@@ -233,9 +232,8 @@ def write_import_settings(directories):
                    'review ' + directories['review']]
     import_text = '\n'.join(import_text)
 
-    script_dir = os.path.dirname(__file__)
     rel_path = "preferences/import_settings.txt"
-    abs_file_path = os.path.join(script_dir, rel_path)
+    abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
 
     with open(abs_file_path, "w") as text_file:
         text_file.write(import_text)
@@ -246,18 +244,16 @@ def write_sql_connection_settings(config):
     text = ["%s %s" % (key, value) for key, value in listitems(config) if value]
     text = '\n'.join(text)
 
-    script_dir = os.path.dirname(__file__)
     rel_path = "preferences/sql_connection.cnf"
-    abs_file_path = os.path.join(script_dir, rel_path)
+    abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
 
     with open(abs_file_path, "w") as text_file:
         text_file.write(text)
 
 
 def validate_import_settings():
-    script_dir = os.path.dirname(__file__)
     rel_path = "preferences/import_settings.txt"
-    abs_file_path = os.path.join(script_dir, rel_path)
+    abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
 
     with open(abs_file_path, 'r') as document:
         config = {}
@@ -306,6 +302,29 @@ def validate_sql_connection(*config, **kwargs):
                       "    $ dvh settings --sql", sep="")
 
     return valid
+
+
+def load_options():
+    rel_path = "preferences/options.txt"
+    abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
+
+    with open(abs_file_path, 'r') as document:
+        options = {}
+        for line in document:
+            line = line.split()
+            if not line:
+                continue
+            try:
+                options[line[0]] = line[1]
+            except:
+                options[line[0]] = ''
+
+            if options[line[0]].lower() in {'true'}:
+                options[line[0]] = True
+            elif options[line[0]].lower() in {'false'}:
+                options[line[0]] = False
+
+    return options
 
 
 def change_angle_origin(angles, max_positive_angle):
