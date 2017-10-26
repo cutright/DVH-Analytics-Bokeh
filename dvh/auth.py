@@ -6,7 +6,10 @@
 # some guidance on this. I (the DVH Analytics developer) do not claim to be a security expert by any stretch.  The
 # end-user is entirely liable for proper security implementation.
 
-
+from __future__ import print_function
+from bokeh.models.widgets import Button, TextInput, PasswordInput
+from bokeh.layouts import row
+from bokeh.models import Spacer
 # import ldap  # This is from pip install python-ldap.  Not necessary, just what we used for our implementaiton.
 
 
@@ -40,14 +43,18 @@ def check_credentials(username, password):
     #     ldap_client.unbind()
     # except ldap.INVALID_CREDENTIALS:
     #     ldap_client.unbind()
+    #     print("Login attempt: Invalid credentials")
     #     return False
     # except ldap.SERVER_DOWN:
+    #     print("Login attempt: Server down")
     #     return False
     # except ldap.LDAPError, e:
     #     ldap_client.unbind()
-    #     if type(e.message) == dict and e.message.has_key('desc'):
+    #     if type(e.message) == dict and 'desc' in e.message:
+    #         print("Login error: %s" % e.message['desc'])
     #         return False
     #     else:
+    #         print("Login error: %s" % e.message)
     #         return False
     #     ldap_client.unbind()
 

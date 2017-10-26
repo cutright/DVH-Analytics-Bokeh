@@ -195,3 +195,21 @@ Then compile:
 ~~~~
 $ python get-pip.py
 ~~~~
+
+### Security Concerns
+Obviously, data intended for an application like this may be sensitive and require HIPPA compliance.  The end user is 
+entirely liable for settings up an appropriately secure environment.  Bokeh provides some help 
+[here](https://bokeh.pydata.org/en/latest/docs/user_guide/server.html#basic-reverse-proxy-setup)
+with reguards to a reverse proxy, so that HTTPS may be implemented.
+
+DVH Analytics does provide a loose framework for authentication. There is a parameter 'auth_user_req' located in 
+preferences/options.txt; by default this is set to False.  If set to True, user name and password fields will 
+be provided to the user when accessing any of the Bokeh servers in this app.  These credentials will be passed to the check_credentials 
+function in auth.py.  By default, this function simply returns True.  The end user must supply their own code 
+for authentication.  An example code using python-ldap is provided in auth.py, but requires some editing for each end user's
+own implementation.  And please remember, you need to setup HTTPS on your own for this authentication to make any sense,
+otherwise user name and passwords will not be encrypted inbetween the web-user and the Bokeh server.
+
+Your SQL DB password is stored as plain text in preferences/sql_connection.cnf.  I realize this is not ideal, but if OS
+user authentication is implemented, you don't need a password. Alternatively, you could change permissions on this file
+so only you or root can access it, just be sure to run your bokeh serve with sudo if needed.

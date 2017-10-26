@@ -34,20 +34,19 @@ import matplotlib.colors as plot_colors
 import time
 
 
-# Currently the options file only specifies if user authorization is required
-# This depnds on a user defined function in dvh/auth.py.  By default, this returns True
+# This depends on a user defined function in dvh/auth.py.  By default, this returns True
 # It is up to the user/installer to write their own function (e.g., using python-ldap)
 # Proper execution of this requires placing Bokeh behind a reverse proxy with SSL setup (HTTPS)
 # Please see Bokeh documentation for more information
 OPTIONS = load_options()
 if 'auth_user_req' in OPTIONS:
     ACCESS_GRANTED = not(OPTIONS['auth_user_req'])
-    widget_row_start = 2
 else:
-    ACCESS_GRANTED = False
-    widget_row_start = 1
+    ACCESS_GRANTED = True
+
 
 # Declare variables
+widget_row_start = 1
 colors = itertools.cycle(palette)
 current_dvh, current_dvh_group_1, current_dvh_group_2 = [], [], []
 correlation_1, correlation_2 = {}, {}
@@ -228,46 +227,43 @@ multi_var_reg_vars = {name: False for name in multi_var_reg_var_names}
 # Functions that add widget rows
 def button_add_selector_row():
     global query_row_type
-    if ACCESS_GRANTED:
-        old_label = main_add_selector_button.label
-        old_type = main_add_selector_button.button_type
-        main_add_selector_button.label = 'Updating Layout...'
-        main_add_selector_button.button_type = 'warning'
-        query_row.append(SelectorRow())
-        layout_query.children.insert(widget_row_start + len(query_row_type), query_row[-1].row)
-        query_row_type.append('selector')
-        update_update_button_status()
-        main_add_selector_button.label = old_label
-        main_add_selector_button.button_type = old_type
+    old_label = main_add_selector_button.label
+    old_type = main_add_selector_button.button_type
+    main_add_selector_button.label = 'Updating Layout...'
+    main_add_selector_button.button_type = 'warning'
+    query_row.append(SelectorRow())
+    layout_query.children.insert(widget_row_start + len(query_row_type), query_row[-1].row)
+    query_row_type.append('selector')
+    update_update_button_status()
+    main_add_selector_button.label = old_label
+    main_add_selector_button.button_type = old_type
 
 
 def button_add_range_row():
     global query_row_type
-    if ACCESS_GRANTED:
-        old_label = main_add_range_button.label
-        old_type = main_add_range_button.button_type
-        main_add_range_button.label = 'Updating Layout...'
-        main_add_range_button.button_type = 'warning'
-        query_row.append(RangeRow())
-        layout_query.children.insert(widget_row_start + len(query_row_type), query_row[-1].row)
-        query_row_type.append('range')
-        update_update_button_status()
-        main_add_range_button.label = old_label
-        main_add_range_button.button_type = old_type
+    old_label = main_add_range_button.label
+    old_type = main_add_range_button.button_type
+    main_add_range_button.label = 'Updating Layout...'
+    main_add_range_button.button_type = 'warning'
+    query_row.append(RangeRow())
+    layout_query.children.insert(widget_row_start + len(query_row_type), query_row[-1].row)
+    query_row_type.append('range')
+    update_update_button_status()
+    main_add_range_button.label = old_label
+    main_add_range_button.button_type = old_type
 
 
 def button_add_endpoint_row():
     global query_row_type
-    if ACCESS_GRANTED:
-        old_label = main_add_endpoint_button.label
-        old_type = main_add_endpoint_button.button_type
-        main_add_endpoint_button.label = 'Updating Layout...'
-        main_add_endpoint_button.button_type = 'warning'
-        query_row.append(EndPointRow())
-        layout_query.children.insert(widget_row_start + len(query_row_type), query_row[-1].row)
-        query_row_type.append('endpoint')
-        main_add_endpoint_button.label = old_label
-        main_add_endpoint_button.button_type = old_type
+    old_label = main_add_endpoint_button.label
+    old_type = main_add_endpoint_button.button_type
+    main_add_endpoint_button.label = 'Updating Layout...'
+    main_add_endpoint_button.button_type = 'warning'
+    query_row.append(EndPointRow())
+    layout_query.children.insert(widget_row_start + len(query_row_type), query_row[-1].row)
+    query_row_type.append('endpoint')
+    main_add_endpoint_button.label = old_label
+    main_add_endpoint_button.button_type = old_type
 
 
 # Updates query row ids (after row deletion)
@@ -311,34 +307,33 @@ def get_physician():
 # main update function
 def update_data():
     global query_row_type, query_row, current_dvh, current_dvh_group_1, current_dvh_group_2
-    if ACCESS_GRANTED:
-        old_update_button_label = update_button.label
-        old_update_button_type = update_button.button_type
-        update_button.label = 'Updating...'
-        update_button.button_type = 'warning'
-        uids, dvh_query_str = get_query()
-        print(str(datetime.now()), 'getting dvh data', sep=' ')
-        current_dvh = DVH(uid=uids, dvh_condition=dvh_query_str)
-        print(str(datetime.now()), 'initializing source data ', current_dvh.query, sep=' ')
-        current_dvh_group_1, current_dvh_group_2 = update_dvh_data(current_dvh)
-        calculate_review_dvh()
-        update_all_range_endpoints()
-        update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
-        initialize_rad_bio_source()
-        update_button.label = old_update_button_label
-        update_button.button_type = old_update_button_type
-        control_chart_y.value = ''
-        update_roi_viewer_mrn()
-        print(str(datetime.now()), 'updating correlation data')
-        update_correlation()
-        print(str(datetime.now()), 'correlation data updated')
-        # Use this code once we track down where empty queries fail
-        #     print(str(datetime.now()), 'Query returned no results ', current_dvh.query, sep=' ')
-        #     update_button.label = 'No results match query'
-        #     update_button.button_type = 'danger'
-        #     time.sleep(3)
-        #     update_button.label = 'Perform Query'
-        #     update_button.button_type = 'success'
+    old_update_button_label = update_button.label
+    old_update_button_type = update_button.button_type
+    update_button.label = 'Updating...'
+    update_button.button_type = 'warning'
+    uids, dvh_query_str = get_query()
+    print(str(datetime.now()), 'getting dvh data', sep=' ')
+    current_dvh = DVH(uid=uids, dvh_condition=dvh_query_str)
+    print(str(datetime.now()), 'initializing source data ', current_dvh.query, sep=' ')
+    current_dvh_group_1, current_dvh_group_2 = update_dvh_data(current_dvh)
+    calculate_review_dvh()
+    update_all_range_endpoints()
+    update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
+    initialize_rad_bio_source()
+    update_button.label = old_update_button_label
+    update_button.button_type = old_update_button_type
+    control_chart_y.value = ''
+    update_roi_viewer_mrn()
+    print(str(datetime.now()), 'updating correlation data')
+    update_correlation()
+    print(str(datetime.now()), 'correlation data updated')
+    # Use this code once we track down where empty queries fail
+    #     print(str(datetime.now()), 'Query returned no results ', current_dvh.query, sep=' ')
+    #     update_button.label = 'No results match query'
+    #     update_button.button_type = 'danger'
+    #     time.sleep(3)
+    #     update_button.label = 'Perform Query'
+    #     update_button.button_type = 'success'
 
 
 # Checks size of current query, changes update button to orange if over 50 DVHs
@@ -2780,7 +2775,8 @@ def auth_button_click():
         if ACCESS_GRANTED:
             auth_button.label = 'Access Granted'
             auth_button.button_type = 'success'
-            button_add_selector_row()
+            curdoc().clear()
+            curdoc().add_root(tabs)
         else:
             auth_button.label = 'Failed'
             auth_button.button_type = 'danger'
@@ -3430,25 +3426,17 @@ auth_user = TextInput(value='', title='User Name:', width=150)
 auth_pass = PasswordInput(value='', title='Password:', width=150)
 auth_button = Button(label="Authenticate", button_type="warning", width=100)
 auth_button.on_click(auth_button_click)
+layout_login = row(auth_user, Spacer(width=50), auth_pass, Spacer(width=50), auth_button)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # define main layout to pass to curdoc()
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-if ACCESS_GRANTED:
-    layout_query = column(row(custom_title_query_blue, Spacer(width=50), custom_title_query_red),
-                          row(main_add_selector_button,
-                              main_add_range_button,
-                              main_add_endpoint_button,
-                              update_button,
-                              download_dropdown))
-else:
-    layout_query = column(row(custom_title_query_blue, Spacer(width=50), custom_title_query_red),
-                          row(auth_user, Spacer(width=50), auth_pass, Spacer(width=50), auth_button),
-                          row(main_add_selector_button,
-                              main_add_range_button,
-                              main_add_endpoint_button,
-                              update_button,
-                              download_dropdown))
+layout_query = column(row(custom_title_query_blue, Spacer(width=50), custom_title_query_red),
+                      row(main_add_selector_button,
+                          main_add_range_button,
+                          main_add_endpoint_button,
+                          update_button,
+                          download_dropdown))
 
 layout_dvhs = column(row(custom_title_dvhs_blue, Spacer(width=50), custom_title_dvhs_red),
                      row(radio_group_dose, radio_group_volume),
@@ -3543,5 +3531,8 @@ if ACCESS_GRANTED:
     button_add_selector_row()
 
 # Create the document Bokeh server will use to generate the webpage
-curdoc().add_root(tabs)
+if ACCESS_GRANTED:
+    curdoc().add_root(tabs)
+else:
+    curdoc().add_root(layout_login)
 curdoc().title = "DVH Analytics"

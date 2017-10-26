@@ -7,7 +7,8 @@ Created on Fri Mar 24 13:43:28 2017
 
 from __future__ import print_function
 from utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection, \
-    recalculate_ages, update_min_distances_in_db, update_treatment_volume_overlap_in_db, update_volumes_in_db
+    recalculate_ages, update_min_distances_in_db, update_treatment_volume_overlap_in_db, update_volumes_in_db, \
+    load_options
 import os
 from os.path import dirname, join
 from datetime import datetime
@@ -15,11 +16,28 @@ from roi_name_manager import DatabaseROIs, clean_name
 from sql_connector import DVH_SQL
 from dicom_to_sql import dicom_to_sql, rebuild_database
 from bokeh.models.widgets import Select, Button, Tabs, Panel, TextInput, RadioButtonGroup,\
-    Div, MultiSelect, TableColumn, DataTable, CheckboxGroup
-from bokeh.layouts import layout
+    Div, MultiSelect, TableColumn, DataTable, CheckboxGroup, PasswordInput
+from bokeh.layouts import layout, row, column
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.models import ColumnDataSource, LabelSet, Range1d, Slider, CustomJS, Spacer
+import auth
+import time
+
+
+# This depends on a user defined function in dvh/auth.py.  By default, this returns True
+# It is up to the user/installer to write their own function (e.g., using python-ldap)
+# Proper execution of this requires placing Bokeh behind a reverse proxy with SSL setup (HTTPS)
+# Please see Bokeh documentation for more information
+OPTIONS = load_options()
+if 'auth_user_req' in OPTIONS:
+    ACCESS_GRANTED = not(OPTIONS['auth_user_req'])
+else:
+    ACCESS_GRANTED = False
+if 'disable_backup_tab' in OPTIONS:
+    BACKUP_ALLOWED = not(OPTIONS['disable_backup_tab'])
+else:
+    BACKUP_ALLOWED = True
 
 
 query_source = ColumnDataSource(data=dict())
@@ -414,6 +432,7 @@ def save_db():
 def update_column_source_data():
     source.data = db.get_physician_roi_visual_coordinates(select_physician.value,
                                                           select_physician_roi.value)
+
 
 function_map = {'Add Institutional ROI': add_institutional_roi,
                 'Add Physician': add_physician,
@@ -1159,9 +1178,39 @@ def recalculate_roi_volumes(*condition):
         update_volumes_in_db(roi[0], roi[1])
 
 
+def auth_button_click():
+    global ACCESS_GRANTED
+
+    if not ACCESS_GRANTED:
+        ACCESS_GRANTED = auth.check_credentials(auth_user.value, auth_pass.value)
+        if ACCESS_GRANTED:
+            auth_button.label = 'Access Granted'
+            auth_button.button_type = 'success'
+            curdoc().clear()
+            curdoc().add_root(tabs)
+        else:
+            auth_button.label = 'Failed'
+            auth_button.button_type = 'danger'
+            time.sleep(3)
+            auth_button.label = 'Authenticate'
+            auth_button.button_type = 'warning'
+
+
 ######################################################
 # Layout objects
 ######################################################
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Custom authorization
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+auth_user = TextInput(value='', title='User Name:', width=150)
+auth_pass = PasswordInput(value='', title='Password:', width=150)
+auth_button = Button(label="Authenticate", button_type="warning", width=100)
+auth_button.on_click(auth_button_click)
+auth_div = Div(text="<b>DVH Analytics Admin</b>", width=600)
+layout_login = column(auth_div,
+                      row(auth_user, Spacer(width=50), auth_pass, Spacer(width=50), auth_button))
+
 
 # !!!!!!!!!!!!!!!!!!!!!!!
 # ROI Name Manger objects
@@ -1397,7 +1446,8 @@ db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [query_title],
                            [query_table, query_columns, query_condition, table_slider, query_button],
                            [update_db_title],
-                           [update_db_table, update_db_column, update_db_condition, update_db_value, update_db_button],
+                           [update_db_table, update_db_column, update_db_condition, update_db_value,
+                            update_db_button],
                            [delete_from_db_title],
                            [delete_from_db_column, delete_from_db_value, delete_auth_text, delete_from_db_button],
                            [change_mrn_uid_title],
@@ -1477,11 +1527,18 @@ db_tab = Panel(child=db_editor_layout, title='Database Editor')
 backup_tab = Panel(child=backup_layout, title='Backup & Restore')
 baseline_tab = Panel(child=baseline_layout, title='Baseline Plans')
 
-tabs = Tabs(tabs=[db_tab, roi_tab, baseline_tab, backup_tab])
+if BACKUP_ALLOWED:
+    tabs = Tabs(tabs=[db_tab, roi_tab, baseline_tab, backup_tab])
+else:
+    tabs = Tabs(tabs=[db_tab, roi_tab, baseline_tab])
 
 # Create the document Bokeh server will use to generate the webpage
-curdoc().add_root(tabs)
-curdoc().title = "DVH Analytics"
+if ACCESS_GRANTED:
+    curdoc().add_root(tabs)
+else:
+    curdoc().add_root(layout_login)
+
+curdoc().title = "DVH Analytics: Admin"
 
 
 if __name__ == '__main__':

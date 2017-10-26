@@ -9,13 +9,25 @@ Created on Fri Mar 24 13:43:28 2017
 from __future__ import print_function
 from future.utils import listvalues
 from utilities import is_import_settings_defined, is_sql_connection_defined,\
-    write_import_settings, write_sql_connection_settings, validate_sql_connection
+    write_import_settings, write_sql_connection_settings, validate_sql_connection, load_options
 import os
 import time
 from sql_connector import DVH_SQL
-from bokeh.models.widgets import Button, TextInput, Div
-from bokeh.layouts import layout
+from bokeh.models.widgets import Button, TextInput, Div, PasswordInput
+from bokeh.models import Spacer
+from bokeh.layouts import layout, row, column
 from bokeh.io import curdoc
+import auth
+
+# This depends on a user defined function in dvh/auth.py.  By default, this returns True
+# It is up to the user/installer to write their own function (e.g., using python-ldap)
+# Proper execution of this requires placing Bokeh behind a reverse proxy with SSL setup (HTTPS)
+# Please see Bokeh documentation for more information
+OPTIONS = load_options()
+if 'auth_user_req' in OPTIONS:
+    ACCESS_GRANTED = not(OPTIONS['auth_user_req'])
+else:
+    ACCESS_GRANTED = True
 
 
 directories = {}
@@ -99,14 +111,12 @@ def reload_sql_settings():
 
 
 def save_directories():
-    global directories
-    update_direcories()
+    update_directories()
     write_import_settings(directories)
     reload_directories()
 
 
 def save_sql_settings():
-    global config
     update_sql_settings()
     write_sql_connection_settings(config)
     reload_sql_settings()
@@ -114,7 +124,7 @@ def save_sql_settings():
     save_sql_settings_button.label = 'Save'
 
 
-def update_direcories():
+def update_directories():
     global directories
     directories['inbox'] = input_inbox.value
     directories['imported'] = input_imported.value
@@ -273,9 +283,38 @@ def save_needed_sql(attr, old, new):
     save_sql_settings_button.button_type = 'warning'
 
 
+def auth_button_click():
+    global ACCESS_GRANTED
+
+    if not ACCESS_GRANTED:
+        ACCESS_GRANTED = auth.check_credentials(auth_user.value, auth_pass.value)
+        if ACCESS_GRANTED:
+            auth_button.label = 'Access Granted'
+            auth_button.button_type = 'success'
+            curdoc().clear()
+            curdoc().add_root(settings_layout)
+        else:
+            auth_button.label = 'Failed'
+            auth_button.button_type = 'danger'
+            time.sleep(3)
+            auth_button.label = 'Authenticate'
+            auth_button.button_type = 'warning'
+
+
 ######################################################
 # Layout objects
 ######################################################
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Custom authorization
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+auth_user = TextInput(value='', title='User Name:', width=150)
+auth_pass = PasswordInput(value='', title='Password:', width=150)
+auth_button = Button(label="Authenticate", button_type="warning", width=100)
+auth_button.on_click(auth_button_click)
+auth_div = Div(text="<b>DVH Analytics Admin</b>", width=600)
+layout_login = column(auth_div,
+                      row(auth_user, Spacer(width=50), auth_pass, Spacer(width=50), auth_button))
+
 div_import = Div(text="<b>DICOM Directories</b>")
 div_import_note = Div(text="Please fill in existing directory locations below.")
 div_horizontal_bar_settings = Div(text="<hr>", width=900)
@@ -291,7 +330,7 @@ input_host = TextInput(value=config['host'], title="Host", width=300)
 input_port = TextInput(value=config['port'], title="Port", width=300)
 input_dbname = TextInput(value=config['dbname'], title="Database Name", width=300)
 input_user = TextInput(value=config['user'], title="User (Leave blank for OS authentication)", width=300)
-input_password = TextInput(value=config['password'], title="Password (Leave blank for OS authentication)", width=300)
+input_password = PasswordInput(value=config['password'], title="Password (Leave blank for OS authentication)", width=300)
 input_host.on_change('value', save_needed_sql)
 input_port.on_change('value', save_needed_sql)
 input_dbname.on_change('value', save_needed_sql)
@@ -335,7 +374,11 @@ settings_layout = layout([[div_import],
                           [check_tables_button, create_tables_button, clear_tables_button]])
 
 # Create the document Bokeh server will use to generate the webpage
-curdoc().add_root(settings_layout)
+# Create the document Bokeh server will use to generate the webpage
+if ACCESS_GRANTED:
+    curdoc().add_root(settings_layout)
+else:
+    curdoc().add_root(layout_login)
 curdoc().title = "DVH Analytics"
 
 # Update statuses based on the loaded import_settings.txt
