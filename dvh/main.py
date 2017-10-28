@@ -656,7 +656,7 @@ class EndPointRow:
                 update_endpoints_in_correlation()
 
     def endpoint_calc_ticker(self, attrname, old, new):
-        if self.text_input.value != '':
+        if self.text_input.value != '' and source.data['mrn']:
             update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
             if current_dvh:
                 update_endpoints_in_correlation()
@@ -667,12 +667,14 @@ class EndPointRow:
             update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
             if current_dvh:
                 update_endpoints_in_correlation()
+        update_control_chart_y_axis_label()
 
     def endpoint_units_out_ticker(self, attrname, old, new):
         if self.text_input.value != '':
             update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
             if current_dvh:
                 update_endpoints_in_correlation()
+        update_control_chart_y_axis_label()
 
     def delete_row(self):
         self.delete_last_row.button_type = 'danger'
@@ -1422,6 +1424,24 @@ def collapse_into_single_dates(x, y):
     return {'x': x_collapsed, 'y': y_collapsed, 'w': w_collapsed}
 
 
+def update_control_chart_y_axis_label():
+    new = str(control_chart_y.value)
+    if new:
+        if new.startswith('DVH Endpoint'):
+            y_var_name = 'ep' + str(new[-1])
+            y_source_values = endpoint_data[y_var_name]
+            control_chart.yaxis.axis_label = source_endpoint_names.data[y_var_name][0]
+        elif new == 'EUD':
+            control_chart.yaxis.axis_label = 'EUD (Gy)'
+        elif new == 'NTCP/TCP':
+            control_chart.yaxis.axis_label = 'NTCP or TCP'
+        else:
+            if range_categories[new]['units']:
+                control_chart.yaxis.axis_label = "%s (%s)" % (new, range_categories[new]['units'])
+            else:
+                control_chart.yaxis.axis_label = new
+
+
 def update_control_chart():
     new = str(control_chart_y.value)
     if new:
@@ -1438,19 +1458,17 @@ def update_control_chart():
             # source.data[y_var_name] always returns source.data['ep1'] values?
             # even printing source.data['ep2'] explicitly yields 'ep1' values.
             # endpoint_data created to work around this. Bug?
+            # UPDATE: Bokeh has fixed this bug, can remove workaround
             y_source_uids = source.data['uid']
             y_source_mrns = source.data['mrn']
-            control_chart.yaxis.axis_label = source_endpoint_names.data[y_var_name][0]
         elif new == 'EUD':
             y_source_values = source_rad_bio.data['eud']
             y_source_uids = source_rad_bio.data['uid']
             y_source_mrns = source_rad_bio.data['mrn']
-            control_chart.yaxis.axis_label = 'EUD (Gy)'
         elif new == 'NTCP/TCP':
             y_source_values = source_rad_bio.data['ntcp_tcp']
             y_source_uids = source_rad_bio.data['uid']
             y_source_mrns = source_rad_bio.data['mrn']
-            control_chart.yaxis.axis_label = 'NTCP or TCP'
         else:
             y_source = range_categories[new]['source']
             y_var_name = range_categories[new]['var_name']
@@ -1458,10 +1476,7 @@ def update_control_chart():
             y_source_uids = y_source.data['uid']
             y_source_mrns = y_source.data['mrn']
 
-            if range_categories[new]['units']:
-                control_chart.yaxis.axis_label = "%s (%s)" % (new, range_categories[new]['units'])
-            else:
-                control_chart.yaxis.axis_label = new
+        update_control_chart_y_axis_label()
 
         sim_study_dates = source_plans.data['sim_study_date']
         sim_study_dates_uids = source_plans.data['uid']
