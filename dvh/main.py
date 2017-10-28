@@ -1502,7 +1502,7 @@ def update_control_chart():
                             if current_dvh_group_1.study_instance_uid[r1] == uid and \
                                             current_dvh_group_1.roi_name[r1] == roi:
                                 found['blue'] = True
-                                color = 'blue'
+                                color = GROUP_1_COLOR
                             r1 += 1
 
                     if current_dvh_group_2:
@@ -1512,24 +1512,24 @@ def update_control_chart():
                                             current_dvh_group_2.roi_name[r2] == roi:
                                 found['red'] = True
                                 if found['blue']:
-                                    color = 'purple'
+                                    color = GROUP_1_and_2_COLOR
                                 else:
-                                    color = 'red'
+                                    color = GROUP_2_COLOR
                             r2 += 1
 
                     colors.append(color)
                 else:
                     if current_dvh_group_1 and current_dvh_group_2:
                         if uid in current_dvh_group_1.study_instance_uid and uid in current_dvh_group_2.study_instance_uid:
-                            colors.append('purple')
+                            colors.append(GROUP_1_and_2_COLOR)
                         elif uid in current_dvh_group_1.study_instance_uid:
-                            colors.append('blue')
+                            colors.append(GROUP_1_COLOR)
                         else:
-                            colors.append('red')
+                            colors.append(GROUP_2_COLOR)
                     elif current_dvh_group_1:
-                        colors.append('blue')
+                        colors.append(GROUP_1_COLOR)
                     else:
-                        colors.append('red')
+                        colors.append(GROUP_2_COLOR)
 
         y_values = []
         y_mrns = []
@@ -1551,11 +1551,11 @@ def update_control_chart():
         source_time_1_data = {'x': [], 'y': [], 'mrn': []}
         source_time_2_data = {'x': [], 'y': [], 'mrn': []}
         for i in range(0, len(x_values_sorted)):
-            if colors_sorted[i] in {'blue', 'purple'}:
+            if colors_sorted[i] in {GROUP_1_COLOR, GROUP_1_and_2_COLOR}:
                 source_time_1_data['x'].append(x_values_sorted[i])
                 source_time_1_data['y'].append(y_values_sorted[i])
                 source_time_1_data['mrn'].append(y_mrns_sorted[i])
-            if colors_sorted[i] in {'red', 'purple'}:
+            if colors_sorted[i] in {GROUP_2_COLOR, GROUP_1_and_2_COLOR}:
                 source_time_2_data['x'].append(x_values_sorted[i])
                 source_time_2_data['y'].append(y_values_sorted[i])
                 source_time_2_data['mrn'].append(y_mrns_sorted[i])
@@ -1702,10 +1702,10 @@ def control_chart_update_trend():
         else:
             pt = ''
             pr = ''
-        histogram_normaltest_1_text.text = "Blue Group Normal Test p-value = %s" % p1
-        histogram_normaltest_2_text.text = "Red  Group Normal Test p-value = %s" % p2
-        histogram_ttest_text.text = "Two Sample t-Test (Blue vs Red) p-value = %s" % pt
-        histogram_ranksums_text.text = "Wilcoxon rank-sum (Blue vs Red) p-value = %s" % pr
+        histogram_normaltest_1_text.text = "Group 1 Normal Test p-value = %s" % p1
+        histogram_normaltest_2_text.text = "Group 2 Normal Test p-value = %s" % p2
+        histogram_ttest_text.text = "Two Sample t-Test (Group 1 vs 2) p-value = %s" % pt
+        histogram_ranksums_text.text = "Wilcoxon rank-sum (Group 1 vs 2) p-value = %s" % pr
 
     else:
         source_time_trend_1.data = {'x': [], 'y': [], 'mrn': []}
@@ -1716,10 +1716,10 @@ def control_chart_update_trend():
         source_time_bound_2.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
         source_time_patch_2.data = {'x': [], 'y': []}
 
-        histogram_normaltest_1_text.text = "Blue Group Normal Test p-value = "
-        histogram_normaltest_2_text.text = "Red  Group Normal Test p-value = "
-        histogram_ttest_text.text = "Two Sample t-Test (Blue vs Red) p-value = "
-        histogram_ranksums_text.text = "Wilcoxon rank-sum (Blue vs Red) p-value = "
+        histogram_normaltest_1_text.text = "Group 1 Normal Test p-value = "
+        histogram_normaltest_2_text.text = "Group 2 Normal Test p-value = "
+        histogram_ttest_text.text = "Two Sample t-Test (Group 1 vs 2) p-value = "
+        histogram_ranksums_text.text = "Wilcoxon rank-sum (Group 1 vs 2) p-value = "
 
     update_histograms()
 
@@ -3329,9 +3329,9 @@ corr_chart.add_tools(HoverTool(show_arrow=True,
                                          ('y', '@y{0.2f}')]))
 
 # Set the legend
-legend_corr_chart = Legend(items=[("Blue Group", [corr_chart_data_1]),
+legend_corr_chart = Legend(items=[("Group 1", [corr_chart_data_1]),
                                   ("Lin Reg", [corr_chart_trend_1]),
-                                  ("Red Group", [corr_chart_data_2]),
+                                  ("Group 2", [corr_chart_data_2]),
                                   ("Lin Reg", [corr_chart_trend_2])],
                            location=(25, 0))
 
@@ -3361,12 +3361,12 @@ corr_chart_y = Select(value='', options=[''], width=300)
 corr_chart_y.title = "Select a Dependent Variable (y-axis)"
 corr_chart_y.on_change('value', update_corr_chart_ticker_y)
 
-corr_chart_text_1 = Div(text="<b>Blue Group</b>:", width=1050)
-corr_chart_text_2 = Div(text="<b>Red Group</b>:", width=1050)
+corr_chart_text_1 = Div(text="<b>Group 1</b>:", width=1050)
+corr_chart_text_2 = Div(text="<b>Group 2</b>:", width=1050)
 
 columns = [TableColumn(field="stat", title="Single-Var Regression", width=100),
-           TableColumn(field="group_1", title="Blue Group", width=60),
-           TableColumn(field="group_2", title="Red Group", width=60)]
+           TableColumn(field="group_1", title="Group 1", width=60),
+           TableColumn(field="group_2", title="Group 2", width=60)]
 data_table_corr_chart = DataTable(source=source_corr_chart_stats, columns=columns, editable=True,
                                   height=180, width=300, row_headers=False)
 
@@ -3376,7 +3376,7 @@ data_table_multi_var_include = DataTable(source=source_multi_var_include, column
 
 div_horizontal_bar_2 = Div(text="<hr>", width=1050)
 
-multi_var_text_1 = Div(text="<b>Blue Group</b>", width=500)
+multi_var_text_1 = Div(text="<b>Group 1</b>", width=500)
 columns = [TableColumn(field="var_name", title="Independent Variable", width=300),
            TableColumn(field="coeff_str", title="coefficient",  width=150),
            TableColumn(field="p_str", title="p-value", width=150)]
@@ -3388,7 +3388,7 @@ columns = [TableColumn(field="y_var", title="Dependent Variable", width=150),
 data_table_multi_var_coeff_1 = DataTable(source=source_multi_var_model_results_1, columns=columns, editable=True,
                                          height=60, row_headers=False)
 
-multi_var_text_2 = Div(text="<b>Red Group</b>", width=500)
+multi_var_text_2 = Div(text="<b>Group 2</b>", width=500)
 columns = [TableColumn(field="var_name", title="Independent Variable", width=300),
            TableColumn(field="coeff_str", title="coefficient",  width=150),
            TableColumn(field="p_str", title="p-value", width=150)]
@@ -3404,22 +3404,24 @@ data_table_multi_var_coeff_2 = DataTable(source=source_multi_var_model_results_2
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Custom group titles
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-custom_title_query_blue = TextInput(value='', title='Blue Group Custom Title:', width=300)
-custom_title_query_red = TextInput(value='', title='Red Group Custom Title:', width=300)
-custom_title_dvhs_blue = TextInput(value='', title='Blue Group Custom Title:', width=300)
-custom_title_dvhs_red = TextInput(value='', title='Red Group Custom Title:', width=300)
-custom_title_rad_bio_blue = TextInput(value='', title='Blue Group Custom Title:', width=300)
-custom_title_rad_bio_red = TextInput(value='', title='Red Group Custom Title:', width=300)
-custom_title_roi_viewer_blue = TextInput(value='', title='Blue Group Custom Title:', width=300)
-custom_title_roi_viewer_red = TextInput(value='', title='Red Group Custom Title:', width=300)
-custom_title_planning_blue = TextInput(value='', title='Blue Group Custom Title:', width=300)
-custom_title_planning_red = TextInput(value='', title='Red Group Custom Title:', width=300)
-custom_title_time_series_blue = TextInput(value='', title='Blue Group Custom Title:', width=300)
-custom_title_time_series_red = TextInput(value='', title='Red Group Custom Title:', width=300)
-custom_title_correlation_blue = TextInput(value='', title='Blue Group Custom Title:', width=300)
-custom_title_correlation_red = TextInput(value='', title='Red Group Custom Title:', width=300)
-custom_title_regression_blue = TextInput(value='', title='Blue Group Custom Title:', width=300)
-custom_title_regression_red = TextInput(value='', title='Red Group Custom Title:', width=300)
+group_1_title = 'Group 1 (%s) Custom Title:' % GROUP_1_COLOR.capitalize()
+group_2_title = 'Group 2 (%s) Custom Title:' % GROUP_2_COLOR.capitalize()
+custom_title_query_blue = TextInput(value='', title=group_1_title, width=300)
+custom_title_query_red = TextInput(value='', title=group_2_title, width=300)
+custom_title_dvhs_blue = TextInput(value='', title=group_1_title, width=300)
+custom_title_dvhs_red = TextInput(value='', title=group_2_title, width=300)
+custom_title_rad_bio_blue = TextInput(value='', title=group_1_title, width=300)
+custom_title_rad_bio_red = TextInput(value='', title=group_2_title, width=300)
+custom_title_roi_viewer_blue = TextInput(value='', title=group_1_title, width=300)
+custom_title_roi_viewer_red = TextInput(value='', title=group_2_title, width=300)
+custom_title_planning_blue = TextInput(value='', title=group_1_title, width=300)
+custom_title_planning_red = TextInput(value='', title=group_2_title, width=300)
+custom_title_time_series_blue = TextInput(value='', title=group_1_title, width=300)
+custom_title_time_series_red = TextInput(value='', title=group_2_title, width=300)
+custom_title_correlation_blue = TextInput(value='', title=group_1_title, width=300)
+custom_title_correlation_red = TextInput(value='', title=group_2_title, width=300)
+custom_title_regression_blue = TextInput(value='', title=group_1_title, width=300)
+custom_title_regression_red = TextInput(value='', title=group_2_title, width=300)
 
 custom_title_query_blue.on_change('value', custom_title_blue_ticker)
 custom_title_query_red.on_change('value', custom_title_red_ticker)
