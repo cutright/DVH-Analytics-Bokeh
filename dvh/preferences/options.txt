@@ -1,2 +1,0 @@
-auth_user_req False
-disable_backup_tab False
