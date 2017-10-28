@@ -9,7 +9,7 @@ Created on Fri Mar 24 13:43:28 2017
 from __future__ import print_function
 from future.utils import listvalues
 from utilities import is_import_settings_defined, is_sql_connection_defined,\
-    write_import_settings, write_sql_connection_settings, validate_sql_connection, load_options
+    write_import_settings, write_sql_connection_settings, validate_sql_connection
 import os
 import time
 from sql_connector import DVH_SQL
@@ -18,16 +18,13 @@ from bokeh.models import Spacer
 from bokeh.layouts import layout, row, column
 from bokeh.io import curdoc
 import auth
+from options import *
 
 # This depends on a user defined function in dvh/auth.py.  By default, this returns True
 # It is up to the user/installer to write their own function (e.g., using python-ldap)
 # Proper execution of this requires placing Bokeh behind a reverse proxy with SSL setup (HTTPS)
 # Please see Bokeh documentation for more information
-OPTIONS = load_options()
-if 'auth_user_req' in OPTIONS:
-    ACCESS_GRANTED = not(OPTIONS['auth_user_req'])
-else:
-    ACCESS_GRANTED = True
+ACCESS_GRANTED = not AUTH_USER_REQ
 
 
 directories = {}
@@ -287,7 +284,7 @@ def auth_button_click():
     global ACCESS_GRANTED
 
     if not ACCESS_GRANTED:
-        ACCESS_GRANTED = auth.check_credentials(auth_user.value, auth_pass.value)
+        ACCESS_GRANTED = auth.check_credentials(auth_user.value, auth_pass.value, 'admin')
         if ACCESS_GRANTED:
             auth_button.label = 'Access Granted'
             auth_button.button_type = 'success'

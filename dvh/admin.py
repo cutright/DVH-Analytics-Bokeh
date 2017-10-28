@@ -7,8 +7,7 @@ Created on Fri Mar 24 13:43:28 2017
 
 from __future__ import print_function
 from utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection, \
-    recalculate_ages, update_min_distances_in_db, update_treatment_volume_overlap_in_db, update_volumes_in_db, \
-    load_options
+    recalculate_ages, update_min_distances_in_db, update_treatment_volume_overlap_in_db, update_volumes_in_db
 import os
 from os.path import dirname, join
 from datetime import datetime
@@ -23,22 +22,14 @@ from bokeh.io import curdoc
 from bokeh.models import ColumnDataSource, LabelSet, Range1d, Slider, CustomJS, Spacer
 import auth
 import time
+from options import *
 
 
 # This depends on a user defined function in dvh/auth.py.  By default, this returns True
 # It is up to the user/installer to write their own function (e.g., using python-ldap)
 # Proper execution of this requires placing Bokeh behind a reverse proxy with SSL setup (HTTPS)
 # Please see Bokeh documentation for more information
-OPTIONS = load_options()
-if 'auth_user_req' in OPTIONS:
-    ACCESS_GRANTED = not(OPTIONS['auth_user_req'])
-else:
-    ACCESS_GRANTED = False
-if 'disable_backup_tab' in OPTIONS:
-    BACKUP_ALLOWED = not(OPTIONS['disable_backup_tab'])
-else:
-    BACKUP_ALLOWED = True
-
+ACCESS_GRANTED = not AUTH_USER_REQ
 
 query_source = ColumnDataSource(data=dict())
 baseline_source = ColumnDataSource(data=dict(mrn=[]))
@@ -1182,7 +1173,7 @@ def auth_button_click():
     global ACCESS_GRANTED
 
     if not ACCESS_GRANTED:
-        ACCESS_GRANTED = auth.check_credentials(auth_user.value, auth_pass.value)
+        ACCESS_GRANTED = auth.check_credentials(auth_user.value, auth_pass.value, 'admin')
         if ACCESS_GRANTED:
             auth_button.label = 'Access Granted'
             auth_button.button_type = 'success'
@@ -1527,10 +1518,10 @@ db_tab = Panel(child=db_editor_layout, title='Database Editor')
 backup_tab = Panel(child=backup_layout, title='Backup & Restore')
 baseline_tab = Panel(child=baseline_layout, title='Baseline Plans')
 
-if BACKUP_ALLOWED:
-    tabs = Tabs(tabs=[db_tab, roi_tab, baseline_tab, backup_tab])
-else:
+if DISABLE_BACKUP_TAB:
     tabs = Tabs(tabs=[db_tab, roi_tab, baseline_tab])
+else:
+    tabs = Tabs(tabs=[db_tab, roi_tab, baseline_tab, backup_tab])
 
 # Create the document Bokeh server will use to generate the webpage
 if ACCESS_GRANTED:

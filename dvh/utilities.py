@@ -18,6 +18,8 @@ from scipy.spatial.distance import cdist
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
+PREFERENCE_PATHS = {''}
+
 class Temp_DICOM_FileSet:
     def __init__(self, **kwargs):
 
@@ -302,29 +304,6 @@ def validate_sql_connection(*config, **kwargs):
                       "    $ dvh settings --sql", sep="")
 
     return valid
-
-
-def load_options():
-    rel_path = "preferences/options.txt"
-    abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
-
-    with open(abs_file_path, 'r') as document:
-        options = {}
-        for line in document:
-            line = line.split()
-            if not line:
-                continue
-            try:
-                options[line[0]] = line[1]
-            except:
-                options[line[0]] = ''
-
-            if options[line[0]].lower() in {'true'}:
-                options[line[0]] = True
-            elif options[line[0]].lower() in {'false'}:
-                options[line[0]] = False
-
-    return options
 
 
 def change_angle_origin(angles, max_positive_angle):

@@ -14,7 +14,7 @@ from bokeh.models import Spacer
 
 
 # Place holder function.  Edit this to implement.
-def check_credentials(username, password):
+def check_credentials(username, password, usergroup):
 
     # ############################
     # # Example Code
