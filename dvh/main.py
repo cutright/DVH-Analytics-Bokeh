@@ -504,7 +504,7 @@ class SelectorRow:
         self.select_value = Select(value=self.values[0], options=self.values, width=420)
         self.select_value.on_change('value', self.selector_values_ticker)
 
-        self.pop_grp = CheckboxButtonGroup(labels=["Blue Group", "Red Group"], active=[0], width=180)
+        self.pop_grp = CheckboxButtonGroup(labels=["Group 1", "Group 2"], active=[0], width=180)
 
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
         self.delete_last_row.on_click(self.delete_row)
@@ -567,7 +567,7 @@ class RangeRow:
         self.text_max.on_change('value', self.check_for_end_date_ticker)
         self.update_range_values(self.select_category.value)
 
-        self.pop_grp = CheckboxButtonGroup(labels=["Blue Group", "Red Group"], active=[0], width=180)
+        self.pop_grp = CheckboxButtonGroup(labels=["Group 1", "Group 2"], active=[0], width=180)
 
         self.delete_last_row = Button(label="Delete", button_type="warning", width=100)
         self.delete_last_row.on_click(self.delete_row)
@@ -2418,8 +2418,8 @@ def update_correlation_matrix():
     source_correlation_2_pos.data = s['2_pos']
     source_correlation_2_neg.data = s['2_neg']
 
-    corr_fig_text_1.text = "Blue Group: %d" % len(correlation_1['ROI Max Dose']['uid'])
-    corr_fig_text_2.text = "Red Group: %d" % len(correlation_1['ROI Max Dose']['uid'])
+    corr_fig_text_1.text = "Group 1: %d" % len(correlation_1['ROI Max Dose']['uid'])
+    corr_fig_text_2.text = "Group 2: %d" % len(correlation_1['ROI Max Dose']['uid'])
 
 
 def update_corr_chart_ticker_x(attr, old, new):
@@ -3045,11 +3045,11 @@ control_chart.add_tools(HoverTool(show_arrow=True,
 control_chart.xaxis.axis_label = "Simulation Date"
 control_chart.yaxis.axis_label = ""
 # Set the legend
-legend_control_chart = Legend(items=[("Blue Group", [control_chart_data_1]),
+legend_control_chart = Legend(items=[("Group 1", [control_chart_data_1]),
                                      ("Series Average", [control_chart_avg_1]),
                                      ("Rolling Average", [control_chart_trend_1]),
                                      ("Percentile Region", [control_chart_patch_1]),
-                                     ("Red Group", [control_chart_data_2]),
+                                     ("Group 2", [control_chart_data_2]),
                                      ("Series Average", [control_chart_avg_2]),
                                      ("Rolling Average", [control_chart_trend_2]),
                                      ("Percentile Region", [control_chart_patch_2]),],
@@ -3102,17 +3102,17 @@ histogram_bin_slider = Slider(start=1, end=100, value=10, step=1, title="Number 
 histogram_bin_slider.on_change('value', histograms_ticker)
 histogram_radio_group = RadioGroup(labels=["Absolute Y-Axis", "Relative Y-Axis (to Group Max)"], active=0)
 histogram_radio_group.on_change('active', histograms_ticker)
-histogram_normaltest_1_text = Div(text="Blue Group Normal Test p-value = ", width=400)
-histogram_normaltest_2_text = Div(text="Red Group Normal Test p-value = ", width=400)
-histogram_ttest_text = Div(text="Two Sample t-Test (Blue vs Red) p-value = ", width=400)
-histogram_ranksums_text = Div(text="Wilcoxon rank-sum (Blue vs Red) p-value = ", width=400)
+histogram_normaltest_1_text = Div(text="Group 1 Normal Test p-value = ", width=400)
+histogram_normaltest_2_text = Div(text="Group 2 Normal Test p-value = ", width=400)
+histogram_ttest_text = Div(text="Two Sample t-Test (Group 1 vs 2) p-value = ", width=400)
+histogram_ranksums_text = Div(text="Wilcoxon rank-sum (Group 1 vs 2) p-value = ", width=400)
 histograms.add_tools(HoverTool(show_arrow=True,
                                line_policy='next',
                                tooltips=[('x', '@x{0.2f}'),
                                          ('Counts', '@top')]))
 # Set the legend
-legend_hist = Legend(items=[("Blue Group", [hist_1]),
-                            ("Red Group", [hist_2])],
+legend_hist = Legend(items=[("Group 1", [hist_1]),
+                            ("Group 2", [hist_2])],
                      location=(25, 0))
 
 # Add the layout outside the plot, clicking legend item hides the line
@@ -3126,7 +3126,7 @@ rad_bio_eud_a_input = TextInput(value='', title='EUD a-value:', width=150)
 rad_bio_gamma_50_input = TextInput(value='', title=u"\u03b3_50:", width=150)
 rad_bio_td_tcd_input = TextInput(value='', title='TD_50 or TCD_50:', width=150)
 rad_bio_apply_button = Button(label="Apply parameters", button_type="primary", width=150)
-rad_bio_apply_filter = CheckboxButtonGroup(labels=["Blue Group", "Red Group", "Selected"], active=[0], width=300)
+rad_bio_apply_filter = CheckboxButtonGroup(labels=["Group 1", "Group 2", "Selected"], active=[0], width=300)
 rad_bio_update_button = Button(label="Calc EUD and NTCP/TCP", button_type="primary", width=150)
 
 rad_bio_apply_button.on_click(rad_bio_apply)
@@ -3282,10 +3282,10 @@ corr_fig.add_tools(HoverTool(show_arrow=True,
 corr_fig.line(x='x', y='y', source=source_corr_matrix_line,
               line_width=3, line_dash='dotted', color='black', alpha=0.8)
 # Set the legend
-legend_corr = Legend(items=[("+r Blue Group", [corr_1_pos]),
-                            ("-r Blue Group", [corr_1_neg]),
-                            ("+r Red Group", [corr_2_pos]),
-                            ("-r Red Group", [corr_2_neg])],
+legend_corr = Legend(items=[("+r Group 1", [corr_1_pos]),
+                            ("-r Group 1", [corr_1_neg]),
+                            ("+r Group 2", [corr_2_pos]),
+                            ("-r Group 2", [corr_2_neg])],
                      location=(0, -575))
 
 # Add the layout outside the plot, clicking legend item hides the line
@@ -3293,8 +3293,8 @@ corr_fig.add_layout(legend_corr, 'right')
 corr_fig.legend.click_policy = "hide"
 
 corr_fig_text = Div(text="<b>Sample Sizes</b>", width=100)
-corr_fig_text_1 = Div(text="Blue Group:", width=110)
-corr_fig_text_2 = Div(text="Red Group:", width=110)
+corr_fig_text_1 = Div(text="Group 1:", width=110)
+corr_fig_text_2 = Div(text="Group 2:", width=110)
 
 corr_fig_include = CheckboxGroup(labels=correlation_names, active=[])
 corr_fig_include_2 = CheckboxGroup(labels=["DVH Endpoint %d" % i for i in range(1, 9)] + ['EUD', 'NTCP / TCP'],
