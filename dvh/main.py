@@ -1428,18 +1428,15 @@ def update_control_chart_y_axis_label():
     new = str(control_chart_y.value)
     if new:
         if new.startswith('DVH Endpoint'):
-            y_var_name = 'ep' + str(new[-1])
-            y_source_values = endpoint_data[y_var_name]
-            control_chart.yaxis.axis_label = source_endpoint_names.data[y_var_name][0]
+            control_chart.yaxis.axis_label = source_endpoint_names.data['ep' + str(new[-1])][0]
         elif new == 'EUD':
             control_chart.yaxis.axis_label = 'EUD (Gy)'
         elif new == 'NTCP/TCP':
             control_chart.yaxis.axis_label = 'NTCP or TCP'
+        elif range_categories[new]['units']:
+            control_chart.yaxis.axis_label = "%s (%s)" % (new, range_categories[new]['units'])
         else:
-            if range_categories[new]['units']:
-                control_chart.yaxis.axis_label = "%s (%s)" % (new, range_categories[new]['units'])
-            else:
-                control_chart.yaxis.axis_label = new
+            control_chart.yaxis.axis_label = new
 
 
 def update_control_chart():
