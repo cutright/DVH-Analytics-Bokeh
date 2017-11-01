@@ -3560,8 +3560,7 @@ tabs = Tabs(tabs=[query_tab, dvh_tab, rad_bio_tab, roi_viewer_tab, planning_data
                   trending_tab, correlation_matrix_tab, correlation_tab])
 
 # go ahead and add a selector row for the user if ACCESS_GRANTED
-if ACCESS_GRANTED:
-    button_add_selector_row()
+button_add_selector_row()
 
 # Create the document Bokeh server will use to generate the webpage
 if ACCESS_GRANTED:
