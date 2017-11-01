@@ -1506,24 +1506,24 @@ def update_control_chart():
                     else:
                         roi = source.data['roi_name'][v]
 
-                    found = {'blue': False, 'red': False}
+                    found = {'Group 1': False, 'Group 2': False}
 
                     if current_dvh_group_1:
                         r1, r1_max = 0, len(current_dvh_group_1.study_instance_uid)
-                        while r1 < r1_max and not found['blue']:
+                        while r1 < r1_max and not found['Group 1']:
                             if current_dvh_group_1.study_instance_uid[r1] == uid and \
                                             current_dvh_group_1.roi_name[r1] == roi:
-                                found['blue'] = True
+                                found['Group 1'] = True
                                 color = GROUP_1_COLOR
                             r1 += 1
 
                     if current_dvh_group_2:
                         r2, r2_max = 0, len(current_dvh_group_2.study_instance_uid)
-                        while r2 < r2_max and not found['red']:
+                        while r2 < r2_max and not found['Group 2']:
                             if current_dvh_group_2.study_instance_uid[r2] == uid and \
                                             current_dvh_group_2.roi_name[r2] == roi:
-                                found['red'] = True
-                                if found['blue']:
+                                found['Group 2'] = True
+                                if found['Group 1']:
                                     color = GROUP_1_and_2_COLOR
                                 else:
                                     color = GROUP_2_COLOR
@@ -2112,11 +2112,11 @@ def update_correlation():
             uids_dvh_1, mrns_dvh_1, data_dvh_1, uids_dvh_2, mrns_dvh_2, data_dvh_2 = [], [], [], [], [], []
             for i in range(0, len(src.data['uid'])):
                 if include[i]:
-                    if src.data['group'][i] in {'Blue', 'Blue & Red'}:
+                    if src.data['group'][i] in {'Group 1', 'Group 1 & 2'}:
                         uids_dvh_1.append(src.data['uid'][i])
                         mrns_dvh_1.append(src.data['mrn'][i])
                         data_dvh_1.append(src.data[curr_var][i])
-                    if src.data['group'][i] in {'Red', 'Blue & Red'}:
+                    if src.data['group'][i] in {'Group 2', 'Group 1 & 2'}:
                         uids_dvh_2.append(src.data['uid'][i])
                         mrns_dvh_2.append(src.data['mrn'][i])
                         data_dvh_2.append(src.data[curr_var][i])
@@ -2214,11 +2214,11 @@ def update_correlation():
             uids_ep_1, mrns_ep_1, data_ep_1, uids_ep_2, mrns_ep_2, data_ep_2 = [], [], [], [], [], []
             for i in range(0, len(src.data['uid'])):
                 if include[i]:
-                    if src.data['group'][i] in {'Blue', 'Blue & Red'}:
+                    if src.data['group'][i] in {'Group 1', 'Group 1 & 2'}:
                         uids_ep_1.append(src.data['uid'][i])
                         mrns_ep_1.append(src.data['mrn'][i])
                         data_ep_1.append(endpoint_data[ep][i])
-                    if src.data['group'][i] in {'Red', 'Blue & Red'}:
+                    if src.data['group'][i] in {'Group 2', 'Group 1 & 2'}:
                         uids_ep_2.append(src.data['uid'][i])
                         mrns_ep_2.append(src.data['mrn'][i])
                         data_ep_2.append(endpoint_data[ep][i])
@@ -2263,11 +2263,11 @@ def update_endpoints_in_correlation():
             uids_ep_1, mrns_ep_1, data_ep_1, uids_ep_2, mrns_ep_2, data_ep_2 = [], [], [], [], [], []
             for i in range(0, len(src.data['uid'])):
                 if include[i]:
-                    if src.data['group'][i] in {'Blue', 'Blue & Red'}:
+                    if src.data['group'][i] in {'Group 1', 'Group 1 & 2'}:
                         uids_ep_1.append(src.data['uid'][i])
                         mrns_ep_1.append(src.data['mrn'][i])
                         data_ep_1.append(endpoint_data[ep][i])
-                    if src.data['group'][i] in {'Red', 'Blue & Red'}:
+                    if src.data['group'][i] in {'Group 2', 'Group 1 & 2'}:
                         uids_ep_2.append(src.data['uid'][i])
                         mrns_ep_2.append(src.data['mrn'][i])
                         data_ep_2.append(endpoint_data[ep][i])
@@ -2303,12 +2303,12 @@ def update_eud_in_correlation():
         uid_roi = "%s_%s" % (uid, source_rad_bio.data['roi_name'][i])
         source_index = uid_roi_list.index(uid_roi)
         group = source.data['group'][source_index]
-        if group in {'Blue', 'Blue & Red'}:
+        if group in {'Group 1', 'Group 1 & 2'}:
             eud_1.append(source_rad_bio.data['eud'][i])
             ntcp_tcp_1.append(source_rad_bio.data['ntcp_tcp'][i])
             uids_rad_bio_1.append(uid)
             mrns_rad_bio_1.append(source.data['mrn'][source_index])
-        if group in {'Red', 'Blue & Red'}:
+        if group in {'Group 2', 'Group 1 & 2'}:
             eud_2.append(source_rad_bio.data['eud'][i])
             ntcp_tcp_2.append(source_rad_bio.data['ntcp_tcp'][i])
             uids_rad_bio_2.append(uid)
@@ -2384,11 +2384,11 @@ def update_correlation_matrix():
                     if r >= 0:
                         k = '1_pos'
                         s[k]['color'].append(GROUP_1_COLOR)
-                        s[k]['group'].append('Blue')
+                        s[k]['group'].append('Group 1')
                     else:
                         k = '1_neg'
                         s[k]['color'].append(GROUP_1_COLOR_NEG_CORR)
-                        s[k]['group'].append('Blue')
+                        s[k]['group'].append('Group 1')
                     data_to_enter = True
                 elif x < y and correlation_2[categories[0]]['uid']:
                     x_data = correlation_2[categories[x]]['data']
@@ -2400,11 +2400,11 @@ def update_correlation_matrix():
                     if r >= 0:
                         k = '2_pos'
                         s[k]['color'].append(GROUP_2_COLOR)
-                        s[k]['group'].append('Red')
+                        s[k]['group'].append('Group 2')
                     else:
                         k = '2_neg'
                         s[k]['color'].append(GROUP_2_COLOR_NEG_CORR)
-                        s[k]['group'].append('Red')
+                        s[k]['group'].append('Group 2')
                     data_to_enter = True
 
                 if data_to_enter:
@@ -2681,9 +2681,9 @@ def rad_bio_apply():
     if rad_bio_apply_filter.active == [0, 1]:
         include = [i for i in range(0, row_count)]
     elif 0 in rad_bio_apply_filter.active:
-        include = [i for i in range(0, row_count) if source_rad_bio.data['group'][i] in {'Blue', 'Blue & Red'}]
+        include = [i for i in range(0, row_count) if source_rad_bio.data['group'][i] in {'Group 1', 'Group 1 & 2'}]
     elif 1 in rad_bio_apply_filter.active:
-        include = [i for i in range(0, row_count) if source_rad_bio.data['group'][i] in {'Red', 'Blue & Red'}]
+        include = [i for i in range(0, row_count) if source_rad_bio.data['group'][i] in {'Group 2', 'Group 1 & 2'}]
     else:
         include = []
 
