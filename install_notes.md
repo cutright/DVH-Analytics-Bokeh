@@ -107,20 +107,7 @@ These two features work with any of the commands that start web-based UI.
 *(Windows only, Xcode command line tools for mac and Ubuntu both include Python 2.7)*  
 Download Python 2.7 (not 3.x) from: https://www.python.org/downloads/windows/
 
- - After the installation is complete, you'll need to edit your environment to include python in the command prompt.
- - Open a Windows Explorer.
-   - Right-click on My Computer.
-   - Click Properties -> Advanced system settings -> Environment variables
- - Create a new System variables
-   - Variable name: PYTHONPATH
-   - Variable value: C:\Python27\Lib;C:\Python27\DLLs;C:\Python27\Lib\lib-tk
- - Then edit the system variable Path by appending the following to the end of whatever is already there:
-   - ;%PYTHONPATH%
-
-Now you should be able to type 'python' in your command line (cmd.exe) to get a python console. If this doesn't work,
-you'll need to investigate why python did not install or is not found in your command line.  If this worked, exit by
-typing exit() and pressing enter.
-
+Be sure to include pip in the installation and let the installer update your environment variables.
 
 ### Xcode Command Line Tools (Mac Only)
 Make sure Xcode command line tools are installed
