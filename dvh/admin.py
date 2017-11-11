@@ -31,6 +31,7 @@ from options import *
 # Please see Bokeh documentation for more information
 ACCESS_GRANTED = not AUTH_USER_REQ
 
+# Create empty Bokeh data sources
 query_source = ColumnDataSource(data=dict())
 baseline_source = ColumnDataSource(data=dict(mrn=[]))
 
@@ -38,14 +39,6 @@ directories = {}
 config = {}
 categories = ["Institutional ROI", "Physician", "Physician ROI", "Variation"]
 operators = ["Add", "Delete", "Rename"]
-
-data = {'name': [],
-        'x': [],
-        'y': [],
-        'x0': [],
-        'y0': [],
-        'x1': [],
-        'y1': []}
 
 
 def load_directories():
@@ -188,7 +181,7 @@ def delete_physician_roi():
 def select_physician_roi_change(attr, old, new):
     update_variation()
     update_input_text()
-    update_column_source_data()
+    update_roi_map_source_data()
     update_select_unlinked_institutional_roi()
 
 
@@ -208,7 +201,7 @@ def update_physician_select():
     select_physician.options = new_options
     select_physician.value = new_options[0]
     update_input_text()
-    update_column_source_data()
+    update_roi_map_source_data()
 
 
 def add_physician():
@@ -258,7 +251,7 @@ def update_physician_roi_select():
     select_physician_roi.options = new_options
     select_physician_roi.value = new_options[0]
     update_input_text()
-    update_column_source_data()
+    update_roi_map_source_data()
 
 
 def update_variation():
@@ -420,9 +413,9 @@ def save_db():
     save_button_roi.label = 'Map Saved'
 
 
-def update_column_source_data():
-    source.data = db.get_physician_roi_visual_coordinates(select_physician.value,
-                                                          select_physician_roi.value)
+def update_roi_map_source_data():
+    roi_map_source.data = db.get_physician_roi_visual_coordinates(select_physician.value,
+                                                                  select_physician_roi.value)
 
 
 function_map = {'Add Institutional ROI': add_institutional_roi,
@@ -441,7 +434,7 @@ function_map = {'Add Institutional ROI': add_institutional_roi,
 
 def execute_button_click():
     function_map[input_text.title.strip(':')]()
-    update_column_source_data()
+    update_roi_map_source_data()
     update_uncategorized_variation_select()
     update_save_button_status()
 
@@ -450,7 +443,7 @@ def unlinked_institutional_roi_change(attr, old, new):
     if select_physician.value != 'DEFAULT':
         db.set_linked_institutional_roi(new, select_physician.value, select_physician_roi.value)
         update_action_text()
-        update_column_source_data()
+        update_roi_map_source_data()
 
 
 def update_select_unlinked_institutional_roi():
@@ -1323,33 +1316,33 @@ remap_all_rois_for_selected_physician_button.on_click(remap_all_rois_for_selecte
 remap_all_rois_button.on_click(remap_all_rois_in_db)
 
 # Plot
-p = figure(plot_width=1000, plot_height=500,
-           x_range=["Institutional ROI", "Physician ROI", "Variations"],
-           x_axis_location="above",
-           title="(Linked by Physician and Physician ROI dropdowns)",
-           tools="pan, ywheel_zoom",
-           logo=None)
-p.toolbar.active_scroll = "auto"
-p.title.align = 'center'
-p.title.text_font_style = "italic"
-p.xaxis.axis_line_color = None
-p.xaxis.major_tick_line_color = None
-p.xaxis.minor_tick_line_color = None
-p.xaxis.major_label_text_font_size = "15pt"
-p.xgrid.grid_line_color = None
-p.ygrid.grid_line_color = None
-p.yaxis.visible = False
-p.outline_line_color = None
-p.y_range = Range1d(-5, 5)
+roi_map_plot = figure(plot_width=1000, plot_height=500,
+                      x_range=["Institutional ROI", "Physician ROI", "Variations"],
+                      x_axis_location="above",
+                      title="(Linked by Physician and Physician ROI dropdowns)",
+                      tools="pan, ywheel_zoom",
+                      logo=None)
+roi_map_plot.toolbar.active_scroll = "auto"
+roi_map_plot.title.align = 'center'
+roi_map_plot.title.text_font_style = "italic"
+roi_map_plot.xaxis.axis_line_color = None
+roi_map_plot.xaxis.major_tick_line_color = None
+roi_map_plot.xaxis.minor_tick_line_color = None
+roi_map_plot.xaxis.major_label_text_font_size = "15pt"
+roi_map_plot.xgrid.grid_line_color = None
+roi_map_plot.ygrid.grid_line_color = None
+roi_map_plot.yaxis.visible = False
+roi_map_plot.outline_line_color = None
+roi_map_plot.y_range = Range1d(-5, 5)
 
-source = ColumnDataSource(data=data)
-p.circle("x", "y", size=12, source=source, line_color="black", fill_alpha=0.8)
+roi_map_source = ColumnDataSource(data={'name': [], 'x': [], 'y': [], 'x0': [], 'y0': [], 'x1': [], 'y1': []})
+roi_map_plot.circle("x", "y", size=12, source=roi_map_source, line_color="black", fill_alpha=0.8)
 labels = LabelSet(x="x", y="y", text="name", y_offset=8,
                   text_font_size="15pt", text_color="#555555",
-                  source=source, text_align='center')
-p.add_layout(labels)
-p.segment(x0='x0', y0='y0', x1='x1', y1='y1', source=source, alpha=0.5)
-update_column_source_data()
+                  source=roi_map_source, text_align='center')
+roi_map_plot.add_layout(labels)
+roi_map_plot.segment(x0='x0', y0='y0', x1='x1', y1='y1', source=roi_map_source, alpha=0.5)
+update_roi_map_source_data()
 
 roi_layout = layout([[select_institutional_roi],
                      [div_horizontal_bar1],
@@ -1365,7 +1358,7 @@ roi_layout = layout([[select_institutional_roi],
                      [input_text, operator, category],
                      [div_action],
                      [action_button],
-                     [p],
+                     [roi_map_plot],
                      [Spacer(width=1000, height=100)]])
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

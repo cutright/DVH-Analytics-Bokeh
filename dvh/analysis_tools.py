@@ -10,9 +10,10 @@ from future.utils import listitems
 import numpy as np
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL, get_unique_list
-import os
 
 
+# This class retrieves DVH data from the SQL database and calculates statistical DVHs (min, max, quartiles)
+# It also provides some inspection tools of the retrieved data
 class DVH:
     def __init__(self, **kwargs):
 
