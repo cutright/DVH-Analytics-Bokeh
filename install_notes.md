@@ -56,7 +56,7 @@ SQL DB has been established.
 
 ## Importing your own data
 To import your own data, you can click "Import all from inbox" in the Database Editor tab of the 
-[settings GUI](#ROI-Name-Manager,-DB Editor,-and-Backup-&-Restore)
+[settings GUI](#roi-name-manager-db-editor-and-backup--restore)
 
 Alternatively, to import your own data via command line for more options:
 ~~~~
