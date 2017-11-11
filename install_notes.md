@@ -110,8 +110,7 @@ Download Python 2.7 (not 3.x) from: https://www.python.org/downloads/windows/
 Be sure to include pip in the installation and let the installer update your environment variables.
 
 ### Xcode Command Line Tools (Mac Only)
-Make sure Xcode command line tools are installed
-If the full Xcode package is installed (from the Mac App Store), enter the following into a terminal window:
+Make sure Xcode command line tools are installed. If the full Xcode package is installed (from the Mac App Store), enter the following into a terminal window:
 ~~~~
 $ xcode-select --install
 ~~~~
