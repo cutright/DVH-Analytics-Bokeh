@@ -40,6 +40,7 @@ This application was presented at the AAPM Midwest Chapter 2017 Fall meetings. T
 * [SciPy](https://scipy.org)
     * [NumPy](https://pypi.python.org/pypi/numpy) 1.12.1 tested
 * [pydicom](https://github.com/darcymason/pydicom) 0.9.9
+* [shapely](https://github.com/Toblerity/Shapely) 1.6b2
 * [fuzzy wuzzy](https://github.com/seatgeek/fuzzywuzzy) 0.15
 * [Statsmodels](https://github.com/statsmodels/statsmodels) 0.8.0
 * [dicompyler-core](https://pypi.python.org/pypi/dicompyler-core) 0.5.3
