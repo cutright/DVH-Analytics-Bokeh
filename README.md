@@ -28,6 +28,8 @@ The code is built upon these core libraries:
 
 For installation instructions, see our [installation notes](https://github.com/cutright/DVH-Analytics/blob/master/install_notes.md).
 
+This application was presented at the AAPM Midwest Chapter 2017 Fall meetings. The slides are available [here](https://www.dropbox.com/s/gtaxd5dp69508cu/DVH%20Analytics.mp4?dl=0).
+
 ## Dependencies
 * [Python](https://www.python.org) 2.7  
     * Python 3 not currently supported
