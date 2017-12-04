@@ -23,7 +23,10 @@ script_dir = os.path.dirname(__file__)
 
 
 if is_sql_connection_defined():
-    DVH_SQL().initialize_database()
+    try:
+        DVH_SQL().initialize_database()
+    except:
+        print("Warning: could not initialize SQL database")
 
 
 def settings(**kwargs):

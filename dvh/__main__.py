@@ -23,7 +23,10 @@ script_dir = os.path.dirname(__file__)
 
 
 if is_sql_connection_defined():
-    DVH_SQL().initialize_database()
+    try:
+        DVH_SQL().initialize_database()
+    except:
+        print("Warning: could not initialize SQL database")
 
 
 def settings(**kwargs):
@@ -271,8 +274,6 @@ def main():
                     if args.port:
                         command.append("--port")  # Defaults to 5006
                         command.append(args.port)
-                    if not args.allow_websocket_origin and not args.port:
-                        command.append("--show")
 
                     command.append(script_dir)
 
@@ -284,7 +285,7 @@ def main():
         elif args.command[0] == 'admin':
             if test_import_sql_cnx_definitions():
 
-                command = ["bokeh", "serve", "--show", "--port"]
+                command = ["bokeh", "serve", "--port"]
                 if args.port:
                     command.append(args.port)
                 else:
@@ -308,7 +309,7 @@ def main():
             initialize_default_import_settings_file()
             initialize_default_sql_connection_config_file()
 
-            command = ["bokeh", "serve", "--show", "--port"]
+            command = ["bokeh", "serve", "--port"]
             if args.port:
                 command.append(args.port)
             else:
