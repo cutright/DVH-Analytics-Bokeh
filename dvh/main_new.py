@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
-main program for Bokeh server
+main program for Bokeh server (re-write for new query UI)
 Created on Sun Apr 21 2017
 @author: Dan Cutright, PhD
 """
@@ -94,6 +94,8 @@ source_roi3_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi4_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_roi5_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_tv = ColumnDataSource(data=dict(x=[], y=[]))
+source_rad_bio = ColumnDataSource(data=dict(mrn=[], uid=[], roi_name=[], ptv_overlap=[], roi_type=[], rx_dose=[],
+                                            fxs=[], fx_dose=[], eud_a=[], gamma_50=[], td_tcp=[], eud=[], ntcp_tcp=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -210,7 +212,7 @@ def add_selector_row():
         selector_row.options = ['1']
         selector_row.value = '1'
         source_selectors.data = dict(row=[1], category1=[''], category2=[''],
-                                     group=[''], group_label=[''], not_status=[''])
+                                     group=[], group_label=[''], not_status=[''])
     update_selector_source()
 
     clear_source_selection(source_selectors)
@@ -315,7 +317,7 @@ def update_range_source():
         var_name = range_categories[select_category.value]['var_name']
 
         r = int(range_row.value) - 1
-        group = sum([i+1 for i in group_range.active])
+        group = sum([i+1 for i in group_range.active])  # a result of 3 means group 1 & 2
         group_labels = ['1', '2', '1 & 2']
         group_label = group_labels[group-1]
         not_status = ['', 'Not'][len(range_not_operator_checkbox.active)]
@@ -421,7 +423,7 @@ def delete_range_row():
 
         if new_source_length == 0:
             source_ranges.data = dict(row=[], category=[], min=[], max=[], min_display=[], max_display=[],
-                                      group=[], group_label=[], not_status=[])
+                                      group=[], group_label=[''], not_status=[])
             range_row.options = ['']
             range_row.value = ''
             group_range.active = [0]
@@ -526,8 +528,6 @@ def ep_units_in_ticker(attr, old, new):
     if ALLOW_SOURCE_UPDATE:
         update_ep_text_input_title()
         update_ep_source()
-        if current_dvh:
-            update_source_endpoint_calcs()
 
 
 def update_ep_text_input_title():
@@ -546,15 +546,11 @@ def select_ep_type_ticker(attr, old, new):
 
         update_ep_text_input_title()
         update_ep_source()
-        if current_dvh:
-            update_source_endpoint_calcs()
 
 
 def ep_text_input_ticker(attr, old, new):
     if ALLOW_SOURCE_UPDATE:
         update_ep_source()
-        if current_dvh:
-            update_source_endpoint_calcs()
 
 
 def delete_ep_row():
@@ -650,7 +646,7 @@ def get_query(**kwargs):
         data = source_selectors.data
         for r in data['row']:
             r = int(r)
-            if active_group == data['group'][r-1]:
+            if data['group'][r-1] in {active_group, 3}:
                 var_name = selector_categories[data['category1'][r-1]]['var_name']
                 table = selector_categories[data['category1'][r-1]]['table']
                 value = data['category2'][r-1]
@@ -670,7 +666,7 @@ def get_query(**kwargs):
         data = source_ranges.data
         for r in data['row']:
             r = int(r)
-            if active_group in data['group']:
+            if data['group'][r-1] in {active_group, 3}:
                 var_name = range_categories[data['category'][r-1]]['var_name']
                 table = range_categories[data['category'][r-1]]['table']
 
@@ -682,7 +678,7 @@ def get_query(**kwargs):
                     value_low = "'%s'::date" % value_low
                     value_high = "'%s'::date" % value_high
 
-                if data['not_status'][r - 1]:
+                if data['not_status'][r-1]:
                     query_str = var_name + " NOT BETWEEN " + str(value_low) + " AND " + str(value_high)
                 else:
                     query_str = var_name + " BETWEEN " + str(value_low) + " AND " + str(value_high)
@@ -692,18 +688,18 @@ def get_query(**kwargs):
                     queries_by_sql_column[table][var_name] = []
                 queries_by_sql_column[table][var_name].append(query_str)
 
-        for table in queries:
-            temp_str = []
-            for v in queries_by_sql_column[table].keys():
+    for table in queries:
+        temp_str = []
+        for v in queries_by_sql_column[table].keys():
 
-                # collect all contraints for a given sql column into one list
-                q_by_sql_col = [q for q in queries_by_sql_column[table][v]]
+            # collect all constraints for a given sql column into one list
+            q_by_sql_col = [q for q in queries_by_sql_column[table][v]]
 
-                # combine all contraints for a given sql column with 'or' operators
-                temp_str.append("(%s)" % ' OR '.join(q_by_sql_col))
+            # combine all constraints for a given sql column with 'or' operators
+            temp_str.append("(%s)" % ' OR '.join(q_by_sql_col))
 
-            queries[table] = ' AND '.join(temp_str)
-            print(str(datetime.now()), '%s = %s' % (table, queries[table]), sep=' ')
+        queries[table] = ' AND '.join(temp_str)
+        print(str(datetime.now()), '%s = %s' % (table, queries[table]), sep=' ')
 
     # Get a list of UIDs that fit the plan, rx, and beam query criteria.  DVH query criteria will not alter the
     # list of UIDs, therefore dvh_query is not needed to get the UID list
@@ -722,6 +718,7 @@ def update_data():
     old_update_button_type = query_button.button_type
     query_button.label = 'Updating...'
     query_button.button_type = 'warning'
+    print(str(datetime.now()), 'Constructing query for complete dataset', sep=' ')
     uids, dvh_query_str = get_query()
     print(str(datetime.now()), 'getting dvh data', sep=' ')
     current_dvh = DVH(uid=uids, dvh_condition=dvh_query_str)
@@ -731,7 +728,7 @@ def update_data():
     # calculate_review_dvh()
     # update_all_range_endpoints()
     # update_endpoint_data(current_dvh, current_dvh_group_1, current_dvh_group_2)
-    # initialize_rad_bio_source()
+    initialize_rad_bio_source()
     query_button.label = old_update_button_label
     query_button.button_type = old_update_button_type
     # control_chart_y.value = ''
@@ -748,10 +745,11 @@ def update_dvh_data(dvh):
     global uids_1, uids_2, anon_id_map
 
     dvh_group_1, dvh_group_2 = [], []
-    group_1_count, group_2_count = group_count()
-    if group_1_count > 0 and group_2_count > 0:
+    group_1_constraint_count, group_2_constraint_count = group_constraint_count()
+
+    if group_1_constraint_count and group_2_constraint_count:
         extra_rows = 12
-    elif group_1_count > 0 or group_2_count > 0:
+    elif group_1_constraint_count or group_2_constraint_count:
         extra_rows = 6
     else:
         extra_rows = 0
@@ -778,7 +776,7 @@ def update_dvh_data(dvh):
 
     # stat_dvhs = dvh.get_standard_stat_dvh(dose=stat_dose_scale, volume=stat_volume_scale)
 
-    if group_1_count == 0:
+    if group_1_constraint_count == 0:
         uids_1 = []
         source_patch_1.data = {'x_patch': [],
                                'y_patch': []}
@@ -790,6 +788,7 @@ def update_dvh_data(dvh):
                                'q3': [],
                                'max': []}
     else:
+        print(str(datetime.now()), 'Constructing Group 1 query', sep=' ')
         uids_1, dvh_query_str = get_query(group=1)
         dvh_group_1 = DVH(uid=uids_1, dvh_condition=dvh_query_str)
         uids_1 = dvh_group_1.study_instance_uid
@@ -809,7 +808,7 @@ def update_dvh_data(dvh):
                                'median': stat_dvhs_1['median'].tolist(),
                                'q3': stat_dvhs_1['q3'].tolist(),
                                'max': stat_dvhs_1['max'].tolist()}
-    if group_2_count == 0:
+    if group_2_constraint_count == 0:
         uids_2 = []
         source_patch_2.data = {'x_patch': [],
                                'y_patch': []}
@@ -821,6 +820,7 @@ def update_dvh_data(dvh):
                                'q3': [],
                                'max': []}
     else:
+        print(str(datetime.now()), 'Constructing Group 2 query', sep=' ')
         uids_2, dvh_query_str = get_query(group=2)
         dvh_group_2 = DVH(uid=uids_2, dvh_condition=dvh_query_str)
         uids_2 = dvh_group_2.study_instance_uid
@@ -897,14 +897,14 @@ def update_dvh_data(dvh):
     dvh_groups.insert(0, 'Review')
 
     for n in range(0, 6):
-        if group_1_count > 0:
+        if group_1_constraint_count > 0:
             dvh.mrn.append(y_names[n])
             dvh.roi_name.append('N/A')
             x_data.append(x_axis_stat.tolist())
             current = stat_dvhs_1[y_names[n].lower()].tolist()
             y_data.append(current)
             dvh_groups.append('Blue')
-        if group_2_count > 0:
+        if group_2_constraint_count > 0:
             dvh.mrn.append(y_names[n])
             dvh.roi_name.append('N/A')
             x_data.append(x_axis_stat.tolist())
@@ -918,7 +918,7 @@ def update_dvh_data(dvh):
         dvh.institutional_roi.extend(['N/A'] * extra_rows)
         dvh.physician_roi.extend(['N/A'] * extra_rows)
         dvh.roi_type.extend(['Stat'] * extra_rows)
-    if group_1_count > 0:
+    if group_1_constraint_count > 0:
         dvh.rx_dose.extend(calc_stats(dvh_group_1.rx_dose))
         dvh.volume.extend(calc_stats(dvh_group_1.volume))
         dvh.surface_area.extend(calc_stats(dvh_group_1.surface_area))
@@ -930,7 +930,7 @@ def update_dvh_data(dvh):
         dvh.dist_to_ptv_mean.extend(calc_stats(dvh_group_1.dist_to_ptv_mean))
         dvh.dist_to_ptv_max.extend(calc_stats(dvh_group_1.dist_to_ptv_max))
         dvh.ptv_overlap.extend(calc_stats(dvh_group_1.ptv_overlap))
-    if group_2_count > 0:
+    if group_2_constraint_count > 0:
         dvh.rx_dose.extend(calc_stats(dvh_group_2.rx_dose))
         dvh.volume.extend(calc_stats(dvh_group_2.volume))
         dvh.surface_area.extend(calc_stats(dvh_group_2.surface_area))
@@ -1152,99 +1152,99 @@ def calc_stats(data):
     return rtn_data
 
 
-def group_count():
-    group_1_count, group_2_count = 0, 0
+def group_constraint_count():
+    group_1_constraint_count, group_2_constraint_count = 0, 0
 
     data = source_selectors.data
     for r in data['row']:
         r = int(r)
-        if 1 in data['group']:
-            group_1_count += 1
-        if 2 in data['group']:
-            group_2_count += 1
+        if data['group'][r-1] in {1, 3}:
+            group_1_constraint_count += 1
+        if data['group'][r-1] in {2, 3}:
+            group_2_constraint_count += 1
 
     data = source_ranges.data
     for r in data['row']:
         r = int(r)
-        if 1 in data['group'][r-1]:
-            group_1_count += 1
-        if 2 in data['group'][r-1]:
-            group_2_count += 1
+        if data['group'][r-1] in {1, 3}:
+            group_1_constraint_count += 1
+        if data['group'][r-1] in {2, 3}:
+            group_2_constraint_count += 1
 
-    return group_1_count, group_2_count
+    return group_1_constraint_count, group_2_constraint_count
 
 
 def update_source_endpoint_calcs():
+    if current_dvh:
+        num_stats_to_calculate = 6
 
-    num_stats_to_calculate = 6
+        group_1_constraint_count, group_2_constraint_count = group_constraint_count()
 
-    group_1_count, group_2_count = group_count()
+        ep, ep_1, ep_2 = {'mrn': ['']}, {}, {}
 
-    ep, ep_1, ep_2 = {'mrn': ['']}, {}, {}
+        table_columns = []
 
-    table_columns = []
+        ep['mrn'] = current_dvh.mrn
+        ep['group'] = source.data['group']
+        ep['roi_name'] = source.data['roi_name']
+        if group_1_constraint_count:
+            ep_1['mrn'] = current_dvh_group_1.mrn
+        if group_2_constraint_count:
+            ep_2['mrn'] = current_dvh_group_2.mrn
+        table_columns.append(TableColumn(field='mrn', title='MRN'))
+        table_columns.append(TableColumn(field='group', title='Group'))
+        table_columns.append(TableColumn(field='roi_name', title='ROI Name'))
 
-    ep['mrn'] = current_dvh.mrn
-    ep['group'] = source.data['group']
-    ep['roi_name'] = source.data['roi_name']
-    if group_1_count:
-        ep_1['mrn'] = current_dvh_group_1.mrn
-    if group_2_count:
-        ep_2['mrn'] = current_dvh_group_2.mrn
-    table_columns.append(TableColumn(field='mrn', title='MRN'))
-    table_columns.append(TableColumn(field='group', title='Group'))
-    table_columns.append(TableColumn(field='roi_name', title='ROI Name'))
+        data = source_endpoint_defs.data
+        for r in range(0, len(data['row'])):
 
-    data = source_endpoint_defs.data
-    for r in range(0, len(data['row'])):
+            ep_name = str(data['label'][r])
+            table_columns.append(TableColumn(field=ep_name, title=ep_name, formatter=NumberFormatter(format="0.00")))
+            x = data['input_value'][r]
 
-        ep_name = str(data['label'][r])
-        table_columns.append(TableColumn(field=ep_name, title=ep_name, formatter=NumberFormatter(format="0.00")))
-        x = data['input_value'][r]
+            if '%' in data['units_in'][r]:
+                endpoint_input = 'relative'
+                x /= 100.
+            else:
+                endpoint_input = 'absolute'
 
-        if '%' in data['units_in'][r]:
-            endpoint_input = 'relative'
-            x /= 100.
+            if '%' in data['units_out'][r]:
+                endpoint_output = 'relative'
+            else:
+                endpoint_output = 'absolute'
+
+            if 'Dose' in data['output_type'][r]:
+                ep[ep_name] = current_dvh.get_dose_to_volume(x, input=endpoint_input, output=endpoint_output)
+                if group_1_constraint_count:
+                    ep_1[ep_name] = current_dvh_group_1.get_dose_to_volume(x, input=endpoint_input, output=endpoint_output)
+                    ep_1[ep_name].extend([''] * num_stats_to_calculate)
+                if group_2_constraint_count:
+                    ep_2[ep_name] = current_dvh_group_2.get_dose_to_volume(x, input=endpoint_input, output=endpoint_output)
+                    ep_2[ep_name].extend([''] * num_stats_to_calculate)
+            else:
+                ep[ep_name] = current_dvh.get_volume_of_dose(x, input=endpoint_input, output=endpoint_output)
+                if group_1_constraint_count:
+                    ep_1[ep_name] = current_dvh_group_1.get_volume_of_dose(x, input=endpoint_input, output=endpoint_output)
+                    ep_1[ep_name].extend([''] * num_stats_to_calculate)
+                if group_2_constraint_count:
+                    ep_2[ep_name] = current_dvh_group_2.get_volume_of_dose(x, input=endpoint_input, output=endpoint_output)
+                    ep_2[ep_name].extend([''] * num_stats_to_calculate)
+
+            if group_1_constraint_count and group_2_constraint_count:
+                ep[ep_name].extend([''] * num_stats_to_calculate * 2)
+            else:
+                ep[ep_name].extend([''] * num_stats_to_calculate)
+
+        # Need to calculate stats here per group
+
+        # If number of columns are different, need to remove table from layout, and create a new table
+        if len(ep) == len(source_endpoint_calcs.data):
+            source_endpoint_calcs.data = ep
         else:
-            endpoint_input = 'absolute'
-
-        if '%' in data['units_out'][r]:
-            endpoint_output = 'relative'
-        else:
-            endpoint_output = 'absolute'
-
-        if 'Dose' in data['output_type'][r]:
-            ep[ep_name] = current_dvh.get_dose_to_volume(x, input=endpoint_input, output=endpoint_output)
-            if group_1_count:
-                ep_1[ep_name] = current_dvh_group_1.get_dose_to_volume(x, input=endpoint_input, output=endpoint_output)
-                ep_1[ep_name].extend([''] * num_stats_to_calculate)
-            if group_2_count:
-                ep_2[ep_name] = current_dvh_group_2.get_dose_to_volume(x, input=endpoint_input, output=endpoint_output)
-                ep_2[ep_name].extend([''] * num_stats_to_calculate)
-        else:
-            ep[ep_name] = current_dvh.get_volume_of_dose(x, input=endpoint_input, output=endpoint_output)
-            if group_1_count:
-                ep_1[ep_name] = current_dvh_group_1.get_volume_of_dose(x, input=endpoint_input, output=endpoint_output)
-                ep_1[ep_name].extend([''] * num_stats_to_calculate)
-            if group_2_count:
-                ep_2[ep_name] = current_dvh_group_2.get_volume_of_dose(x, input=endpoint_input, output=endpoint_output)
-                ep_2[ep_name].extend([''] * num_stats_to_calculate)
-
-        if group_1_count and group_2_count:
-            ep[ep_name].extend([''] * num_stats_to_calculate * 2)
-        else:
-            ep[ep_name].extend([''] * num_stats_to_calculate)
-
-    # Need to calculate stats here per group
-
-    # If number of columns are different, need to remove table from layout, and create a new table
-    if len(ep) == len(source_endpoint_calcs.data):
-        source_endpoint_calcs.data = ep
-    else:
-        source_endpoint_calcs.data = ep
-        data_table_new = DataTable(source=source_endpoint_calcs, columns=table_columns, width=1200)
-        layout_dvhs.children.pop()
-        layout_dvhs.children.append(data_table_new)
+            source_endpoint_calcs.data = ep
+            data_table_new = DataTable(source=source_endpoint_calcs, columns=table_columns, width=1200)
+            layout_dvhs.children.pop()
+            layout_dvhs.children.append(data_table_new)
 
 
 def update_roi_viewer_mrn():
@@ -1561,6 +1561,133 @@ def roi_viewer_wheel_event(event):
             roi_viewer_go_to_previous_slice()
 
 
+def get_include_map():
+    # remove review and stats from source
+    group_1_constraint_count, group_2_constraint_count = group_constraint_count()
+    if group_1_constraint_count > 0 and group_2_constraint_count > 0:
+        extra_rows = 12
+    elif group_1_constraint_count > 0 or group_2_constraint_count > 0:
+        extra_rows = 6
+    else:
+        extra_rows = 0
+    include = [True] * (len(source.data['uid']) - extra_rows)
+    include[0] = False
+    include.extend([False] * extra_rows)
+
+    return include
+
+
+def initialize_rad_bio_source():
+    include = get_include_map()
+
+    # Get data from DVH Table
+    mrn = [j for i, j in enumerate(source.data['mrn']) if include[i]]
+    uid = [j for i, j in enumerate(source.data['uid']) if include[i]]
+    group = [j for i, j in enumerate(source.data['group']) if include[i]]
+    roi_name = [j for i, j in enumerate(source.data['roi_name']) if include[i]]
+    ptv_overlap = [j for i, j in enumerate(source.data['ptv_overlap']) if include[i]]
+    roi_type = [j for i, j in enumerate(source.data['roi_type']) if include[i]]
+    rx_dose = [j for i, j in enumerate(source.data['rx_dose']) if include[i]]
+    empty = [0] * len(uid)
+
+    # Get data from beam table
+    fxs, fx_dose = [], []
+    for eud_uid in uid:
+        plan_index = source_plans.data['uid'].index(eud_uid)
+        fxs.append(source_plans.data['fxs'][plan_index])
+
+        rx_uids, rx_fxs = source_rxs.data['uid'], source_rxs.data['fxs']
+        rx_indices = [i for i, rx_uid in enumerate(rx_uids) if rx_uid == eud_uid]
+        max_rx_fxs = max([source_rxs.data['fxs'][i] for i in rx_indices])
+        rx_index = [i for i, rx_uid in enumerate(rx_uids) if rx_uid == eud_uid and rx_fxs[i] == max_rx_fxs][0]
+        fx_dose.append(source_rxs.data['fx_dose'][rx_index])
+
+    source_rad_bio.data = {'mrn': mrn,
+                           'uid': uid,
+                           'group': group,
+                           'roi_name': roi_name,
+                           'ptv_overlap': ptv_overlap,
+                           'roi_type': roi_type,
+                           'rx_dose': rx_dose,
+                           'fxs': fxs,
+                           'fx_dose': fx_dose,
+                           'eud_a': empty,
+                           'gamma_50': empty,
+                           'td_tcd': empty,
+                           'eud': empty,
+                           'ntcp_tcp': empty}
+
+
+def rad_bio_apply():
+    row_count = len(source_rad_bio.data['uid'])
+
+    if rad_bio_apply_filter.active == [0, 1]:
+        include = [i for i in range(0, row_count)]
+    elif 0 in rad_bio_apply_filter.active:
+        include = [i for i in range(0, row_count) if source_rad_bio.data['group'][i] in {'Group 1', 'Group 1 & 2'}]
+    elif 1 in rad_bio_apply_filter.active:
+        include = [i for i in range(0, row_count) if source_rad_bio.data['group'][i] in {'Group 2', 'Group 1 & 2'}]
+    else:
+        include = []
+
+    if 2 in rad_bio_apply_filter.active:
+        include.extend([i for i in range(0, row_count) if i in source_rad_bio.selected['1d']['indices']])
+
+    try:
+        new_eud_a = float(rad_bio_eud_a_input.value)
+    except:
+        new_eud_a = 1.
+    try:
+        new_gamma_50 = float(rad_bio_gamma_50_input.value)
+    except:
+        new_gamma_50 = 1.
+    try:
+        new_td_tcd = float(rad_bio_td_tcd_input.value)
+    except:
+        new_td_tcd = 1.
+
+    patch = {'eud_a': [(i, new_eud_a) for i in range(0, row_count) if i in include],
+             'gamma_50': [(i, new_gamma_50) for i in range(0, row_count) if i in include],
+             'td_tcd': [(i, new_td_tcd) for i in range(0, row_count) if i in include]}
+
+    source_rad_bio.patch(patch)
+
+
+def update_eud():
+    uid_roi_list = ["%s_%s" % (uid, source.data['roi_name'][i]) for i, uid in enumerate(source.data['uid'])]
+
+    eud, ntcp_tcp = [], []
+    for i, uid in enumerate(source_rad_bio.data['uid']):
+        uid_roi = "%s_%s" % (uid, source_rad_bio.data['roi_name'][i])
+        source_index = uid_roi_list.index(uid_roi)
+        dvh = source.data['y'][source_index]
+        a = source_rad_bio.data['eud_a'][i]
+        try:
+            eud.append(round(calc_eud(dvh, a), 2))
+        except:
+            eud.append(0)
+        td_tcd = source_rad_bio.data['td_tcd'][i]
+        gamma_50 = source_rad_bio.data['gamma_50'][i]
+        if eud[-1] > 0:
+            ntcp_tcp.append(1 / (1 + (td_tcd / eud[-1]) ** (4. * gamma_50)))
+        else:
+            ntcp_tcp.append(0)
+
+    source_rad_bio.patch({'eud': [(i, j) for i, j in enumerate(eud)],
+                          'ntcp_tcp': [(i, j) for i, j in enumerate(ntcp_tcp)]})
+
+    # update_eud_in_correlation()
+    # if control_chart_y.value in {'EUD', 'NTCP/TCP'}:
+    #     update_control_chart()
+
+
+def emami_selection(attr, old, new):
+    row_index = source_emami.selected['1d']['indices'][0]
+    rad_bio_eud_a_input.value = str(source_emami.data['eud_a'][row_index])
+    rad_bio_gamma_50_input.value = str(source_emami.data['gamma_50'][row_index])
+    rad_bio_td_tcd_input.value = str(source_emami.data['td_tcd'][row_index])
+
+
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Selection Filter UI objects
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1671,8 +1798,10 @@ ep_text_input = TextInput(value='', title="Input Volume (cc):", width=180)
 ep_text_input.on_change('value', ep_text_input_ticker)
 ep_units_in = RadioButtonGroup(labels=["cc", "%"], active=0, width=100)
 ep_units_in.on_change('active', ep_units_in_ticker)
-delete_ep_row_button= Button(label="Delete", button_type="warning", width=100)
+delete_ep_row_button = Button(label="Delete", button_type="warning", width=100)
 delete_ep_row_button.on_click(delete_ep_row)
+updated_ep_calcs_button = Button(label="Calculate", button_type="primary", width=100)
+updated_ep_calcs_button.on_click(update_source_endpoint_calcs)
 
 # endpoint  table
 columns = [TableColumn(field="row", title="Row", width=60),
@@ -1804,6 +1933,89 @@ data_table = DataTable(source=source, columns=columns, width=1200, editable=True
 endpoint_table_title = Div(text="<b>DVH Endpoints</b>", width=1200)
 data_table_endpoints = DataTable(source=source_endpoint_calcs, columns=[], width=1200, editable=True)
 
+# Set up Beams DataTable
+beam_table_title = Div(text="<b>Beams</b>", width=1500)
+columns = [TableColumn(field="mrn", title="MRN", width=105),
+           TableColumn(field="group", title="Group", width=230),
+           TableColumn(field="beam_number", title="Beam", width=50),
+           TableColumn(field="fx_count", title="Fxs", width=50),
+           TableColumn(field="fx_grp_beam_count", title="Beams", width=50),
+           TableColumn(field="fx_grp_number", title="Rx Grp", width=60),
+           TableColumn(field="beam_name", title="Name", width=150),
+           TableColumn(field="beam_dose", title="Dose", width=80, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="beam_energy_min", title="Energy Min", width=80),
+           TableColumn(field="beam_energy_max", title="Energy Max", width=80),
+           TableColumn(field="beam_mu", title="MU", width=100, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="beam_mu_per_deg", title="MU/deg", width=100, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="beam_mu_per_cp", title="MU/CP", width=100, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="beam_type", title="Type", width=100),
+           TableColumn(field="scan_mode", title="Scan Mode", width=100),
+           TableColumn(field="scan_spot_count", title="Scan Spots", width=100),
+           TableColumn(field="control_point_count", title="CPs", width=80),
+           TableColumn(field="radiation_type", title="Rad. Type", width=80),
+           TableColumn(field="ssd", title="SSD", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="treatment_machine", title="Tx Machine", width=80)]
+data_table_beams = DataTable(source=source_beams, columns=columns, width=1300, editable=True)
+beam_table_title2 = Div(text="<b>Beams Continued</b>", width=1500)
+columns = [TableColumn(field="mrn", title="MRN", width=105),
+           TableColumn(field="group", title="Group", width=230),
+           TableColumn(field="beam_name", title="Name", width=150),
+           TableColumn(field="gantry_start", title="Gan Start", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="gantry_end", title="End", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="gantry_rot_dir", title="Rot Dir", width=80),
+           TableColumn(field="gantry_range", title="Range", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="gantry_min", title="Min", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="gantry_max", title="Max", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="collimator_start", title="Col Start", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="collimator_end", title="End", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="collimator_rot_dir", title="Rot Dir", width=80),
+           TableColumn(field="collimator_range", title="Range", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="collimator_min", title="Min", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="collimator_max", title="Max", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="couch_start", title="Couch Start", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="couch_end", title="End", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="couch_rot_dir", title="Rot Dir", width=80),
+           TableColumn(field="couch_range", title="Range", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="couch_min", title="Min", width=80, formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="couch_max", title="Max", width=80, formatter=NumberFormatter(format="0.0"))]
+data_table_beams2 = DataTable(source=source_beams, columns=columns, width=1300, editable=True)
+
+# Set up Plans DataTable
+plans_table_title = Div(text="<b>Plans</b>", width=1200)
+columns = [TableColumn(field="mrn", title="MRN", width=420),
+           TableColumn(field="group", title="Group", width=230),
+           TableColumn(field="age", title="Age", width=80),
+           TableColumn(field="birth_date", title="Birth Date"),
+           TableColumn(field="dose_grid_res", title="Dose Grid Res"),
+           TableColumn(field="heterogeneity_correction", title="Heterogeneity"),
+           TableColumn(field="fxs", title="Fxs", width=80),
+           TableColumn(field="patient_orientation", title="Orientation"),
+           TableColumn(field="patient_sex", title="Sex", width=80),
+           TableColumn(field="physician", title="Rad Onc"),
+           TableColumn(field="rx_dose", title="Rx Dose", formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="sim_study_date", title="Sim Study Date"),
+           TableColumn(field="total_mu", title="Total MU", formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="tx_modality", title="Tx Modality"),
+           TableColumn(field="tx_site", title="Tx Site"),
+           TableColumn(field="baseline", title="Baseline")]
+data_table_plans = DataTable(source=source_plans, columns=columns, width=1300, editable=True)
+
+# Set up Rxs DataTable
+rxs_table_title = Div(text="<b>Rxs</b>", width=1000)
+columns = [TableColumn(field="mrn", title="MRN"),
+           TableColumn(field="group", title="Group", width=230),
+           TableColumn(field="plan_name", title="Plan Name"),
+           TableColumn(field="fx_dose", title="Fx Dose", formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="rx_percent", title="Rx Isodose", formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="fxs", title="Fxs", width=80),
+           TableColumn(field="rx_dose", title="Rx Dose", formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="fx_grp_number", title="Fx Grp"),
+           TableColumn(field="fx_grp_count", title="Fx Groups"),
+           TableColumn(field="fx_grp_name", title="Fx Grp Name"),
+           TableColumn(field="normalization_method", title="Norm Method"),
+           TableColumn(field="normalization_object", title="Norm Object")]
+data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1300, editable=True)
+
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Custom group titles
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1864,6 +2076,56 @@ select_reviewed_dvh = Select(title='ROI to review',
 
 review_rx = TextInput(value='', title="Rx Dose (Gy):", width=170)
 # review_rx.on_change('value', review_rx_ticker)
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Radbio Objects
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+rad_bio_eud_a_input = TextInput(value='', title='EUD a-value:', width=150)
+rad_bio_gamma_50_input = TextInput(value='', title=u"\u03b3_50:", width=150)
+rad_bio_td_tcd_input = TextInput(value='', title='TD_50 or TCD_50:', width=150)
+rad_bio_apply_button = Button(label="Apply parameters", button_type="primary", width=150)
+rad_bio_apply_filter = CheckboxButtonGroup(labels=["Group 1", "Group 2", "Selected"], active=[0], width=300)
+rad_bio_update_button = Button(label="Calc EUD and NTCP/TCP", button_type="primary", width=150)
+
+rad_bio_apply_button.on_click(rad_bio_apply)
+rad_bio_update_button.on_click(update_eud)
+
+columns = [TableColumn(field="mrn", title="MRN", width=150),
+           TableColumn(field="group", title="Group", width=100),
+           TableColumn(field="roi_name", title="ROI Name", width=250),
+           TableColumn(field="ptv_overlap", title="PTV Overlap",  width=150),
+           TableColumn(field="roi_type", title="ROI Type", width=100),
+           TableColumn(field="rx_dose", title="Rx Dose", width=100, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="fxs", title="Total Fxs", width=100),
+           TableColumn(field="fx_dose", title="Fx Dose", width=100, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="eud_a", title="a", width=50),
+           TableColumn(field="gamma_50", title=u"\u03b3_50", width=75),
+           TableColumn(field="td_tcd", title="TD or TCD", width=150),
+           TableColumn(field="eud", title="EUD", width=75, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="ntcp_tcp", title="NTCP or TCP", width=150, formatter=NumberFormatter(format="0.000"))]
+data_table_rad_bio = DataTable(source=source_rad_bio, columns=columns, editable=False, width=1100)
+
+source_emami = ColumnDataSource(data=dict(roi=['Brain', 'Brainstem', 'Optic Chiasm', 'Colon', 'Ear (mid/ext)',
+                                               'Ear (mid/ext)', 'Esophagus', 'Heart', 'Kidney', 'Lens', 'Liver',
+                                               'Lung', 'Optic Nerve', 'Retina'],
+                                          ep=['Necrosis', 'Necrosis', 'Blindness', 'Obstruction/Perforation',
+                                              'Acute serous otitus', 'Chronic serous otitus', 'Peforation',
+                                              'Pericarditus', 'Nephritis', 'Cataract', 'Liver Failure',
+                                              'Pneumonitis', 'Blindness', 'Blindness'],
+                                          eud_a=[5, 7, 25, 6, 31, 31, 19, 3, 1, 3, 3, 1, 25, 15],
+                                          gamma_50=[3, 3, 3, 4, 3, 4, 4, 3, 3, 1, 3, 2, 3, 2],
+                                          td_tcd=[60, 65, 65, 55, 40, 65, 68, 50, 28, 18, 40, 24.5, 65, 65]))
+columns = [TableColumn(field="roi", title="Structure", width=150),
+           TableColumn(field="ep", title="Endpoint", width=250),
+           TableColumn(field="eud_a", title="a", width=75),
+           TableColumn(field="gamma_50", title=u"\u03b3_50", width=75),
+           TableColumn(field="td_tcd", title="TD_50", width=150)]
+data_table_emami = DataTable(source=source_emami, columns=columns, editable=False, width=1100)
+source_emami.on_change('selected', emami_selection)
+emami_text = Div(text="<b>Published EUD Parameters from Emami et. al. for 1.8-2.0Gy fractions</b> (Click to apply)",
+                 width=600)
+rad_bio_custom_text = Div(text="<b>Applied Parameters:</b>", width=150)
+data_table_rad_bio_text = Div(text="<b>EUD Calculations for Query</b>", width=500)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # ROI Viewer Objects
@@ -1951,7 +2213,7 @@ layout_query = column(row(custom_title_query_blue, Spacer(width=50), custom_titl
                       range_filter_data_table,
                       div_range_end,
                       div_endpoint,
-                      add_endpoint_row_button,
+                      row(add_endpoint_row_button, Spacer(width=10), updated_ep_calcs_button),
                       row(ep_row, Spacer(width=10), select_ep_type, ep_text_input, ep_units_in, delete_ep_row_button),
                       ep_data_table)
 
@@ -1963,6 +2225,23 @@ layout_dvhs = column(row(custom_title_dvhs_blue, Spacer(width=50), custom_title_
                      data_table,
                      endpoint_table_title,
                      data_table_endpoints)
+
+layout_rad_bio = column(row(custom_title_rad_bio_blue, Spacer(width=50), custom_title_rad_bio_red),
+                        emami_text,
+                        data_table_emami,
+                        rad_bio_custom_text,
+                        row(rad_bio_eud_a_input, Spacer(width=50),
+                            rad_bio_gamma_50_input, Spacer(width=50), rad_bio_td_tcd_input, Spacer(width=50),
+                            rad_bio_apply_filter, Spacer(width=50), rad_bio_apply_button),
+                        row(rad_bio_update_button),
+                        data_table_rad_bio_text,
+                        data_table_rad_bio,
+                        Spacer(width=1000, height=100))
+
+layout_planning_data = column(row(custom_title_planning_blue, Spacer(width=50), custom_title_planning_red),
+                              rxs_table_title, data_table_rxs,
+                              plans_table_title, data_table_plans,
+                              beam_table_title, data_table_beams, beam_table_title2, data_table_beams2)
 
 roi_viewer_layout = column(row(custom_title_roi_viewer_blue, Spacer(width=50), custom_title_roi_viewer_red),
                            row(roi_viewer_mrn_select, roi_viewer_study_date_select, roi_viewer_uid_select),
@@ -1983,14 +2262,14 @@ roi_viewer_layout = column(row(custom_title_roi_viewer_blue, Spacer(width=50), c
 
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
-# rad_bio_tab = Panel(child=layout_rad_bio, title='Rad Bio')
+rad_bio_tab = Panel(child=layout_rad_bio, title='Rad Bio')
 roi_viewer_tab = Panel(child=roi_viewer_layout, title='ROI Viewer')
-# planning_data_tab = Panel(child=layout_planning_data, title='Planning Data')
+planning_data_tab = Panel(child=layout_planning_data, title='Planning Data')
 # trending_tab = Panel(child=layout_time_series, title='Time-Series')
 # correlation_matrix_tab = Panel(child=layout_correlation_matrix, title='Correlation')
 # correlation_tab = Panel(child=layout_regression, title='Regression')
 
-tabs = Tabs(tabs=[query_tab, dvh_tab, roi_viewer_tab])
+tabs = Tabs(tabs=[query_tab, dvh_tab, rad_bio_tab, roi_viewer_tab, planning_data_tab])
 
 curdoc().add_root(tabs)
 curdoc().title = "DVH Analytics"
