@@ -10,7 +10,8 @@ Created on Sun Apr 21 2017
 from __future__ import print_function
 from future.utils import listitems
 from analysis_tools import DVH, get_study_instance_uids, calc_eud
-from utilities import Temp_DICOM_FileSet, get_planes_from_string, get_union
+from utilities import Temp_DICOM_FileSet, get_planes_from_string, get_union,\
+    collapse_into_single_dates, moving_avg, calc_stats
 import auth
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL
@@ -96,6 +97,17 @@ source_roi5_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 source_tv = ColumnDataSource(data=dict(x=[], y=[]))
 source_rad_bio = ColumnDataSource(data=dict(mrn=[], uid=[], roi_name=[], ptv_overlap=[], roi_type=[], rx_dose=[],
                                             fxs=[], fx_dose=[], eud_a=[], gamma_50=[], td_tcp=[], eud=[], ntcp_tcp=[]))
+source_time_1 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
+source_time_2 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
+source_time_trend_1 = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
+source_time_trend_2 = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
+source_time_collapsed = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
+source_time_bound_1 = ColumnDataSource(data=dict(x=[], upper=[], avg=[], lower=[], mrn=[]))
+source_time_bound_2 = ColumnDataSource(data=dict(x=[], upper=[], avg=[], lower=[], mrn=[]))
+source_time_patch_1 = ColumnDataSource(data=dict(x=[], y=[]))
+source_time_patch_2 = ColumnDataSource(data=dict(x=[], y=[]))
+source_histogram_1 = ColumnDataSource(data=dict(x=[], top=[], width=[]))
+source_histogram_2 = ColumnDataSource(data=dict(x=[], top=[], width=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -731,7 +743,7 @@ def update_data():
     initialize_rad_bio_source()
     query_button.label = old_update_button_label
     query_button.button_type = old_update_button_type
-    # control_chart_y.value = ''
+    control_chart_y.value = ''
     update_roi_viewer_mrn()
     # print(str(datetime.now()), 'updating correlation data')
     # update_correlation()
@@ -1138,40 +1150,16 @@ def get_group_list(uids):
     return groups
 
 
-def calc_stats(data):
-    try:
-        data_np = np.array(data)
-        rtn_data = [np.max(data_np),
-                    np.percentile(data_np, 75),
-                    np.median(data_np),
-                    np.mean(data_np),
-                    np.percentile(data_np, 25),
-                    np.min(data_np)]
-    except:
-        rtn_data = [0, 0, 0, 0, 0, 0]
-    return rtn_data
-
-
 def group_constraint_count():
-    group_1_constraint_count, group_2_constraint_count = 0, 0
-
     data = source_selectors.data
-    for r in data['row']:
-        r = int(r)
-        if data['group'][r-1] in {1, 3}:
-            group_1_constraint_count += 1
-        if data['group'][r-1] in {2, 3}:
-            group_2_constraint_count += 1
+    g1a = len([r for r in data['row'] if data['group'][int(r)-1] in {1, 3}])
+    g2a = len([r for r in data['row'] if data['group'][int(r)-1] in {2, 3}])
 
     data = source_ranges.data
-    for r in data['row']:
-        r = int(r)
-        if data['group'][r-1] in {1, 3}:
-            group_1_constraint_count += 1
-        if data['group'][r-1] in {2, 3}:
-            group_2_constraint_count += 1
+    g1b = len([r for r in data['row'] if data['group'][int(r)-1] in {1, 3}])
+    g2b = len([r for r in data['row'] if data['group'][int(r)-1] in {2, 3}])
 
-    return group_1_constraint_count, group_2_constraint_count
+    return g1a + g1b, g2a + g2b
 
 
 def update_source_endpoint_calcs():
@@ -1180,17 +1168,15 @@ def update_source_endpoint_calcs():
 
         group_1_constraint_count, group_2_constraint_count = group_constraint_count()
 
-        ep, ep_1, ep_2 = {'mrn': ['']}, {}, {}
+        ep = {'mrn': ['']}
 
         table_columns = []
 
         ep['mrn'] = current_dvh.mrn
+        ep['uid'] = current_dvh.study_instance_uid
         ep['group'] = source.data['group']
         ep['roi_name'] = source.data['roi_name']
-        if group_1_constraint_count:
-            ep_1['mrn'] = current_dvh_group_1.mrn
-        if group_2_constraint_count:
-            ep_2['mrn'] = current_dvh_group_2.mrn
+
         table_columns.append(TableColumn(field='mrn', title='MRN'))
         table_columns.append(TableColumn(field='group', title='Group'))
         table_columns.append(TableColumn(field='roi_name', title='ROI Name'))
@@ -1215,20 +1201,8 @@ def update_source_endpoint_calcs():
 
             if 'Dose' in data['output_type'][r]:
                 ep[ep_name] = current_dvh.get_dose_to_volume(x, input=endpoint_input, output=endpoint_output)
-                if group_1_constraint_count:
-                    ep_1[ep_name] = current_dvh_group_1.get_dose_to_volume(x, input=endpoint_input, output=endpoint_output)
-                    ep_1[ep_name].extend([''] * num_stats_to_calculate)
-                if group_2_constraint_count:
-                    ep_2[ep_name] = current_dvh_group_2.get_dose_to_volume(x, input=endpoint_input, output=endpoint_output)
-                    ep_2[ep_name].extend([''] * num_stats_to_calculate)
             else:
                 ep[ep_name] = current_dvh.get_volume_of_dose(x, input=endpoint_input, output=endpoint_output)
-                if group_1_constraint_count:
-                    ep_1[ep_name] = current_dvh_group_1.get_volume_of_dose(x, input=endpoint_input, output=endpoint_output)
-                    ep_1[ep_name].extend([''] * num_stats_to_calculate)
-                if group_2_constraint_count:
-                    ep_2[ep_name] = current_dvh_group_2.get_volume_of_dose(x, input=endpoint_input, output=endpoint_output)
-                    ep_2[ep_name].extend([''] * num_stats_to_calculate)
 
             if group_1_constraint_count and group_2_constraint_count:
                 ep[ep_name].extend([''] * num_stats_to_calculate * 2)
@@ -1245,6 +1219,21 @@ def update_source_endpoint_calcs():
             data_table_new = DataTable(source=source_endpoint_calcs, columns=table_columns, width=1200)
             layout_dvhs.children.pop()
             layout_dvhs.children.append(data_table_new)
+
+    update_time_series_options()
+
+
+def update_time_series_options():
+    new_options = list(range_categories)
+    new_options.sort()
+    new_options.insert(0, '')
+
+    for ep in source_endpoint_calcs.data:
+        if ep.startswith('V_') or ep.startswith('D_'):
+            new_options.append("DVH Endpoint: %s" % ep)
+
+    control_chart_y.options = new_options
+    control_chart_y.value = ''
 
 
 def update_roi_viewer_mrn():
@@ -1688,6 +1677,326 @@ def emami_selection(attr, old, new):
     rad_bio_td_tcd_input.value = str(source_emami.data['td_tcd'][row_index])
 
 
+def update_control_chart_ticker(attr, old, new):
+    update_control_chart()
+
+
+def update_control_chart_y_ticker(attr, old, new):
+    update_control_chart()
+
+
+def update_control_chart_trend_ticker(attr, old, new):
+    control_chart_update_trend()
+
+
+def update_control_chart():
+    new = str(control_chart_y.value)
+    if new:
+
+        clear_source_selection(source_time_1)
+        clear_source_selection(source_time_2)
+
+        if new.startswith('DVH Endpoint: '):
+            y_var_name = new.split(': ')[1]
+            y_source_values = source_endpoint_calcs.data[y_var_name]
+            y_source_uids = source_endpoint_calcs.data['uid']
+            y_source_mrns = source_endpoint_calcs.data['mrn']
+        elif new == 'EUD':
+            y_source_values = source_rad_bio.data['eud']
+            y_source_uids = source_rad_bio.data['uid']
+            y_source_mrns = source_rad_bio.data['mrn']
+        elif new == 'NTCP/TCP':
+            y_source_values = source_rad_bio.data['ntcp_tcp']
+            y_source_uids = source_rad_bio.data['uid']
+            y_source_mrns = source_rad_bio.data['mrn']
+        else:
+            y_source = range_categories[new]['source']
+            y_var_name = range_categories[new]['var_name']
+            y_source_values = y_source.data[y_var_name]
+            y_source_uids = y_source.data['uid']
+            y_source_mrns = y_source.data['mrn']
+
+        # update_control_chart_y_axis_label()
+
+        sim_study_dates = source_plans.data['sim_study_date']
+        sim_study_dates_uids = source_plans.data['uid']
+
+        x_values = []
+        skipped = []
+        colors = []
+        for v in range(0, len(y_source_values)):
+            uid = y_source_uids[v]
+            try:
+                sim_study_dates_index = sim_study_dates_uids.index(uid)
+                current_date_str = sim_study_dates[sim_study_dates_index]
+                if current_date_str == 'None':
+                    current_date = datetime.now()
+                else:
+                    current_date = datetime(int(current_date_str[0:4]),
+                                            int(current_date_str[5:7]),
+                                            int(current_date_str[8:10]))
+                x_values.append(current_date)
+                skipped.append(False)
+            except:
+                skipped.append(True)
+
+            # Get group color
+            if not skipped[-1]:
+                if new.startswith('DVH Endpoint') or new in {'EUD', 'NTCP/TCP'} \
+                        or range_categories[new]['source'] == source:
+                    if new in {'EUD', 'NTCP/TCP'}:
+                        roi = source_rad_bio.data['roi_name'][v]
+                    else:
+                        roi = source.data['roi_name'][v]
+
+                    found = {'Group 1': False, 'Group 2': False}
+
+                    if current_dvh_group_1:
+                        r1, r1_max = 0, len(current_dvh_group_1.study_instance_uid)
+                        while r1 < r1_max and not found['Group 1']:
+                            if current_dvh_group_1.study_instance_uid[r1] == uid and \
+                                            current_dvh_group_1.roi_name[r1] == roi:
+                                found['Group 1'] = True
+                                color = GROUP_1_COLOR
+                            r1 += 1
+
+                    if current_dvh_group_2:
+                        r2, r2_max = 0, len(current_dvh_group_2.study_instance_uid)
+                        while r2 < r2_max and not found['Group 2']:
+                            if current_dvh_group_2.study_instance_uid[r2] == uid and \
+                                            current_dvh_group_2.roi_name[r2] == roi:
+                                found['Group 2'] = True
+                                if found['Group 1']:
+                                    color = GROUP_1_and_2_COLOR
+                                else:
+                                    color = GROUP_2_COLOR
+                            r2 += 1
+
+                    colors.append(color)
+                else:
+                    if current_dvh_group_1 and current_dvh_group_2:
+                        if uid in current_dvh_group_1.study_instance_uid and uid in current_dvh_group_2.study_instance_uid:
+                            colors.append(GROUP_1_and_2_COLOR)
+                        elif uid in current_dvh_group_1.study_instance_uid:
+                            colors.append(GROUP_1_COLOR)
+                        else:
+                            colors.append(GROUP_2_COLOR)
+                    elif current_dvh_group_1:
+                        colors.append(GROUP_1_COLOR)
+                    else:
+                        colors.append(GROUP_2_COLOR)
+
+        y_values = []
+        y_mrns = []
+        for v in range(0, len(y_source_values)):
+            if not skipped[v]:
+                y_values.append(y_source_values[v])
+                y_mrns.append(y_source_mrns[v])
+                if not isinstance(y_values[-1], (int, long, float)):
+                    y_values[-1] = 0
+
+        sort_index = sorted(range(len(x_values)), key=lambda k: x_values[k])
+        x_values_sorted, y_values_sorted, y_mrns_sorted, colors_sorted = [], [], [], []
+        for s in range(0, len(x_values)):
+            x_values_sorted.append(x_values[sort_index[s]])
+            y_values_sorted.append(y_values[sort_index[s]])
+            y_mrns_sorted.append(y_mrns[sort_index[s]])
+            colors_sorted.append(colors[sort_index[s]])
+
+        source_time_1_data = {'x': [], 'y': [], 'mrn': []}
+        source_time_2_data = {'x': [], 'y': [], 'mrn': []}
+        for i in range(0, len(x_values_sorted)):
+            if colors_sorted[i] in {GROUP_1_COLOR, GROUP_1_and_2_COLOR}:
+                source_time_1_data['x'].append(x_values_sorted[i])
+                source_time_1_data['y'].append(y_values_sorted[i])
+                source_time_1_data['mrn'].append(y_mrns_sorted[i])
+            if colors_sorted[i] in {GROUP_2_COLOR, GROUP_1_and_2_COLOR}:
+                source_time_2_data['x'].append(x_values_sorted[i])
+                source_time_2_data['y'].append(y_values_sorted[i])
+                source_time_2_data['mrn'].append(y_mrns_sorted[i])
+
+        source_time_1.data = source_time_1_data
+        source_time_2.data = source_time_2_data
+    else:
+        source_time_1.data = {'x': [], 'y': [], 'mrn': []}
+        source_time_2.data = {'x': [], 'y': [], 'mrn': []}
+
+    control_chart_update_trend()
+
+
+def control_chart_update_trend():
+    if control_chart_y.value:
+        selected_indices_1 = source_time_1.selected['1d']['indices']
+        selected_indices_2 = source_time_2.selected['1d']['indices']
+
+        if not selected_indices_1:
+            selected_indices_1 = range(0, len(source_time_1.data['x']))
+        if not selected_indices_2:
+            selected_indices_2 = range(0, len(source_time_2.data['x']))
+
+        group_1 = {'x': [], 'y': []}
+        group_2 = {'x': [], 'y': []}
+        for i in range(0, len(source_time_1.data['x'])):
+            if i in selected_indices_1:
+                group_1['x'].append(source_time_1.data['x'][i])
+                group_1['y'].append(source_time_1.data['y'][i])
+        for i in range(0, len(source_time_2.data['x'])):
+            if i in selected_indices_2:
+                group_2['x'].append(source_time_2.data['x'][i])
+                group_2['y'].append(source_time_2.data['y'][i])
+
+        try:
+            avg_len = int(control_chart_text_lookback_distance.value)
+        except:
+            avg_len = 1
+
+        try:
+            percentile = float(control_chart_percentile.value)
+        except:
+            percentile = 90.
+
+        # average daily data and keep track of points per day, calculate moving average
+        if group_1['x']:
+            group_1_collapsed = collapse_into_single_dates(group_1['x'], group_1['y'])
+            x_trend_1, moving_avgs_1 = moving_avg(group_1_collapsed, avg_len)
+
+            y_np_1 = np.array(group_1['y'])
+            upper_bound_1 = float(np.percentile(y_np_1, 50. + percentile / 2.))
+            average_1 = float(np.percentile(y_np_1, 50))
+            lower_bound_1 = float(np.percentile(y_np_1, 50. - percentile / 2.))
+            source_time_trend_1.data = {'x': x_trend_1,
+                                        'y': moving_avgs_1,
+                                        'mrn': ['Avg'] * len(x_trend_1)}
+            source_time_bound_1.data = {'x': group_1['x'],
+                                        'mrn': ['Bound'] * len(group_1['x']),
+                                        'upper': [upper_bound_1] * len(group_1['x']),
+                                        'avg': [average_1] * len(group_1['x']),
+                                        'lower': [lower_bound_1] * len(group_1['x'])}
+            source_time_patch_1.data = {'x': [group_1['x'][0], group_1['x'][-1], group_1['x'][-1], group_1['x'][0]],
+                                        'y': [upper_bound_1, upper_bound_1, lower_bound_1, lower_bound_1]}
+        else:
+            source_time_trend_1.data = {'x': [], 'y': [], 'mrn': []}
+            source_time_bound_1.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+            source_time_patch_1.data = {'x': [], 'y': []}
+        if group_2['x']:
+            group_2_collapsed = collapse_into_single_dates(group_2['x'], group_2['y'])
+            x_trend_2, moving_avgs_2 = moving_avg(group_2_collapsed, avg_len)
+
+            y_np_2 = np.array(group_2['y'])
+            upper_bound_2 = float(np.percentile(y_np_2, 50. + percentile / 2.))
+            average_2 = float(np.percentile(y_np_2, 50))
+            lower_bound_2 = float(np.percentile(y_np_2, 50. - percentile / 2.))
+            source_time_trend_2.data = {'x': x_trend_2,
+                                        'y': moving_avgs_2,
+                                        'mrn': ['Avg'] * len(x_trend_2)}
+            source_time_bound_2.data = {'x': group_2['x'],
+                                        'mrn': ['Bound'] * len(group_2['x']),
+                                        'upper': [upper_bound_2] * len(group_2['x']),
+                                        'avg': [average_2] * len(group_2['x']),
+                                        'lower': [lower_bound_2] * len(group_2['x'])}
+            source_time_patch_2.data = {'x': [group_2['x'][0], group_2['x'][-1],
+                                              group_2['x'][-1], group_2['x'][0]],
+                                        'y': [upper_bound_2,  upper_bound_2, lower_bound_2, lower_bound_2]}
+        else:
+            source_time_trend_2.data = {'x': [], 'y': [], 'mrn': []}
+            source_time_bound_2.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+            source_time_patch_2.data = {'x': [], 'y': []}
+
+        x_var = str(control_chart_y.value)
+        if x_var.startswith('DVH Endpoint'):
+            x_var_name = "ep%s" % x_var[-1]
+            # histograms.xaxis.axis_label = source_endpoint_names.data[x_var_name][0]
+        elif x_var == 'EUD':
+            histograms.xaxis.axis_label = "%s (Gy)" % x_var
+        elif x_var == 'NTCP/TCP':
+            histograms.xaxis.axis_label = "NTCP or TCP"
+        else:
+            if range_categories[x_var]['units']:
+                histograms.xaxis.axis_label = "%s (%s)" % (x_var, range_categories[x_var]['units'])
+            else:
+                histograms.xaxis.axis_label = x_var
+
+        # Normal Test for Blue Group
+        if group_1['y']:
+            s1, p1 = normaltest(group_1['y'])
+            p1 = "%0.3f" % p1
+        else:
+            p1 = ''
+
+        # Normal Test for Red Group
+        if group_2['y']:
+            s2, p2 = normaltest(group_2['y'])
+            p2 = "%0.3f" % p2
+        else:
+            p2 = ''
+
+        # t-Test and Rank Sums
+        if group_1['y'] and group_2['y']:
+            st, pt = ttest_ind(group_1['y'], group_2['y'])
+            sr, pr = ranksums(group_1['y'], group_2['y'])
+            pt = "%0.3f" % pt
+            pr = "%0.3f" % pr
+        else:
+            pt = ''
+            pr = ''
+        histogram_normaltest_1_text.text = "Group 1 Normal Test p-value = %s" % p1
+        histogram_normaltest_2_text.text = "Group 2 Normal Test p-value = %s" % p2
+        histogram_ttest_text.text = "Two Sample t-Test (Group 1 vs 2) p-value = %s" % pt
+        histogram_ranksums_text.text = "Wilcoxon rank-sum (Group 1 vs 2) p-value = %s" % pr
+
+    else:
+        source_time_trend_1.data = {'x': [], 'y': [], 'mrn': []}
+        source_time_bound_1.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+        source_time_patch_1.data = {'x': [], 'y': []}
+
+        source_time_trend_2.data = {'x': [], 'y': [], 'mrn': []}
+        source_time_bound_2.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+        source_time_patch_2.data = {'x': [], 'y': []}
+
+        histogram_normaltest_1_text.text = "Group 1 Normal Test p-value = "
+        histogram_normaltest_2_text.text = "Group 2 Normal Test p-value = "
+        histogram_ttest_text.text = "Two Sample t-Test (Group 1 vs 2) p-value = "
+        histogram_ranksums_text.text = "Wilcoxon rank-sum (Group 1 vs 2) p-value = "
+
+    update_histograms()
+
+
+def update_histograms():
+
+    if control_chart_y.value != '':
+        # Update Histograms
+        bin_size = int(histogram_bin_slider.value)
+        width_fraction = 0.9
+
+        hist, bins = np.histogram(source_time_1.data['y'], bins=bin_size)
+        if histogram_radio_group.active == 1:
+            hist = np.divide(hist, np.float(np.max(hist)))
+            histograms.yaxis.axis_label = "Relative Frequency"
+        else:
+            histograms.yaxis.axis_label = "Frequency"
+        width = [width_fraction * (bins[1] - bins[0])] * bin_size
+        center = (bins[:-1] + bins[1:]) / 2.
+        source_histogram_1.data = {'x': center,
+                                   'top': hist,
+                                   'width': width}
+
+        hist, bins = np.histogram(source_time_2.data['y'], bins=bin_size)
+        if histogram_radio_group.active == 1:
+            hist = np.divide(hist, np.float(np.max(hist)))
+        width = [width_fraction * (bins[1] - bins[0])] * bin_size
+        center = (bins[:-1] + bins[1:]) / 2.
+        source_histogram_2.data = {'x': center,
+                                   'top': hist,
+                                   'width': width}
+    else:
+        source_histogram_1.data = {'x': [], 'top': [], 'width': []}
+        source_histogram_2.data = {'x': [], 'top': [], 'width': []}
+
+
+def histograms_ticker(attr, old, new):
+    update_histograms()
+
+
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Selection Filter UI objects
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1742,7 +2051,6 @@ category_options = list(range_categories)
 category_options.sort()
 
 div_range = Div(text="<b>Query by Numerical Data</b>", width=1000)
-div_range_end = Div(text="<hr>", width=1050)
 
 # Add Current row to source
 add_range_row_button = Button(label="Add Range Filter", button_type="primary", width=200)
@@ -1802,6 +2110,7 @@ delete_ep_row_button = Button(label="Delete", button_type="warning", width=100)
 delete_ep_row_button.on_click(delete_ep_row)
 updated_ep_calcs_button = Button(label="Calculate", button_type="primary", width=100)
 updated_ep_calcs_button.on_click(update_source_endpoint_calcs)
+div_endpoint_start = Div(text="<hr>", width=1050)
 
 # endpoint  table
 columns = [TableColumn(field="row", title="Row", width=60),
@@ -2016,6 +2325,119 @@ columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="normalization_object", title="Norm Object")]
 data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1300, editable=True)
 
+
+# Control Chart layout
+tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
+control_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None,
+                       active_drag="box_zoom", x_axis_type='datetime')
+control_chart.xaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
+control_chart.yaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
+control_chart.xaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+control_chart.yaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+# control_chart.min_border_left = min_border
+control_chart.min_border_bottom = min_border
+control_chart_data_1 = control_chart.circle('x', 'y', size=TIME_SERIES_1_CIRCLE_SIZE, color=GROUP_1_COLOR,
+                                            alpha=TIME_SERIES_1_CIRCLE_ALPHA, source=source_time_1)
+control_chart_data_2 = control_chart.circle('x', 'y', size=TIME_SERIES_2_CIRCLE_SIZE, color=GROUP_2_COLOR,
+                                            alpha=TIME_SERIES_2_CIRCLE_ALPHA, source=source_time_2)
+control_chart_trend_1 = control_chart.line('x', 'y', color=GROUP_1_COLOR, source=source_time_trend_1,
+                                           line_width=TIME_SERIES_1_TREND_LINE_WIDTH,
+                                           line_dash=TIME_SERIES_1_TREND_LINE_DASH)
+control_chart_trend_2 = control_chart.line('x', 'y', color=GROUP_2_COLOR, source=source_time_trend_2,
+                                           line_width=TIME_SERIES_2_TREND_LINE_WIDTH,
+                                           line_dash=TIME_SERIES_2_TREND_LINE_DASH)
+control_chart_avg_1 = control_chart.line('x', 'avg', color=GROUP_1_COLOR, source=source_time_bound_1,
+                                         line_width=TIME_SERIES_1_AVG_LINE_WIDTH,
+                                         line_dash=TIME_SERIES_1_AVG_LINE_DASH)
+control_chart_avg_2 = control_chart.line('x', 'avg', color=GROUP_2_COLOR, source=source_time_bound_2,
+                                         line_width=TIME_SERIES_2_AVG_LINE_WIDTH,
+                                         line_dash=TIME_SERIES_2_AVG_LINE_DASH)
+control_chart_patch_1 = control_chart.patch('x', 'y', color=GROUP_1_COLOR, source=source_time_patch_1,
+                                            alpha=TIME_SERIES_1_PATCH_ALPHA)
+control_chart_patch_2 = control_chart.patch('x', 'y', color=GROUP_2_COLOR, source=source_time_patch_2,
+                                            alpha=TIME_SERIES_1_PATCH_ALPHA)
+control_chart.add_tools(HoverTool(show_arrow=True,
+                                  tooltips=[('ID', '@mrn'),
+                                            ('Date', '@x{%F}'),
+                                            ('Value', '@y{0.2f}')],
+                                  formatters={'x': 'datetime'}))
+control_chart.xaxis.axis_label = "Simulation Date"
+control_chart.yaxis.axis_label = ""
+# Set the legend
+legend_control_chart = Legend(items=[("Group 1", [control_chart_data_1]),
+                                     ("Series Average", [control_chart_avg_1]),
+                                     ("Rolling Average", [control_chart_trend_1]),
+                                     ("Percentile Region", [control_chart_patch_1]),
+                                     ("Group 2", [control_chart_data_2]),
+                                     ("Series Average", [control_chart_avg_2]),
+                                     ("Rolling Average", [control_chart_trend_2]),
+                                     ("Percentile Region", [control_chart_patch_2]),],
+                              location=(25, 0))
+
+# Add the layout outside the plot, clicking legend item hides the line
+control_chart.add_layout(legend_control_chart, 'right')
+control_chart.legend.click_policy = "hide"
+
+control_chart_options = list(range_categories)
+control_chart_options.sort()
+control_chart_options.insert(0, '')
+control_chart_y = Select(value=control_chart_options[0], options=control_chart_options, width=300)
+control_chart_y.title = "Select a Range Variable"
+control_chart_y.on_change('value', update_control_chart_y_ticker)
+
+control_chart_text_lookback_distance = TextInput(value='1', title="Lookback Distance", width=200)
+control_chart_text_lookback_distance.on_change('value', update_control_chart_trend_ticker)
+
+control_chart_percentile = TextInput(value='90', title="Percentile", width=200)
+control_chart_percentile.on_change('value', update_control_chart_trend_ticker)
+
+lookback_units_options = ['Dates with a Sim', 'Days', 'Patients']
+control_chart_lookback_units = Select(value=lookback_units_options[0], options=lookback_units_options, width=200)
+control_chart_lookback_units.title = 'Lookback Units'
+control_chart_lookback_units.on_change('value', update_control_chart_ticker)
+
+# source_time.on_change('selected', control_chart_update_trend)
+trend_update_button = Button(label="Update Trend", button_type="primary", width=150)
+trend_update_button.on_click(control_chart_update_trend)
+
+div_horizontal_bar = Div(text="<hr>", width=1050)
+
+# histograms
+tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
+histograms = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
+histograms.xaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
+histograms.yaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
+histograms.xaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+histograms.yaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+histograms.min_border_left = min_border
+histograms.min_border_bottom = min_border
+hist_1 = histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_1,
+                         color=GROUP_1_COLOR, alpha=HISTOGRAM_1_ALPHA)
+hist_2 = histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_2,
+                         color=GROUP_2_COLOR, alpha=HISTOGRAM_2_ALPHA)
+histograms.xaxis.axis_label = ""
+histograms.yaxis.axis_label = "Frequency"
+histogram_bin_slider = Slider(start=1, end=100, value=10, step=1, title="Number of Bins")
+histogram_bin_slider.on_change('value', histograms_ticker)
+histogram_radio_group = RadioGroup(labels=["Absolute Y-Axis", "Relative Y-Axis (to Group Max)"], active=0)
+histogram_radio_group.on_change('active', histograms_ticker)
+histogram_normaltest_1_text = Div(text="Group 1 Normal Test p-value = ", width=400)
+histogram_normaltest_2_text = Div(text="Group 2 Normal Test p-value = ", width=400)
+histogram_ttest_text = Div(text="Two Sample t-Test (Group 1 vs 2) p-value = ", width=400)
+histogram_ranksums_text = Div(text="Wilcoxon rank-sum (Group 1 vs 2) p-value = ", width=400)
+histograms.add_tools(HoverTool(show_arrow=True,
+                               line_policy='next',
+                               tooltips=[('x', '@x{0.2f}'),
+                                         ('Counts', '@top')]))
+# Set the legend
+legend_hist = Legend(items=[("Group 1", [hist_1]),
+                            ("Group 2", [hist_2])],
+                     location=(25, 0))
+
+# Add the layout outside the plot, clicking legend item hides the line
+histograms.add_layout(legend_hist, 'right')
+histograms.legend.click_policy = "hide"
+
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Custom group titles
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2210,12 +2632,7 @@ layout_query = column(row(custom_title_query_blue, Spacer(width=50), custom_titl
                       add_range_row_button,
                       row(range_row, Spacer(width=10), select_category, text_min, text_max, group_range,
                           delete_range_row_button, Spacer(width=10), range_not_operator_checkbox),
-                      range_filter_data_table,
-                      div_range_end,
-                      div_endpoint,
-                      row(add_endpoint_row_button, Spacer(width=10), updated_ep_calcs_button),
-                      row(ep_row, Spacer(width=10), select_ep_type, ep_text_input, ep_units_in, delete_ep_row_button),
-                      ep_data_table)
+                      range_filter_data_table)
 
 layout_dvhs = column(row(custom_title_dvhs_blue, Spacer(width=50), custom_title_dvhs_red),
                      row(radio_group_dose, radio_group_volume),
@@ -2223,6 +2640,11 @@ layout_dvhs = column(row(custom_title_dvhs_blue, Spacer(width=50), custom_title_
                      dvh_plots,
                      data_table_title,
                      data_table,
+                     div_endpoint_start,
+                     div_endpoint,
+                     row(add_endpoint_row_button, Spacer(width=10), updated_ep_calcs_button),
+                     row(ep_row, Spacer(width=10), select_ep_type, ep_text_input, ep_units_in, delete_ep_row_button),
+                     ep_data_table,
                      endpoint_table_title,
                      data_table_endpoints)
 
@@ -2242,6 +2664,17 @@ layout_planning_data = column(row(custom_title_planning_blue, Spacer(width=50), 
                               rxs_table_title, data_table_rxs,
                               plans_table_title, data_table_plans,
                               beam_table_title, data_table_beams, beam_table_title2, data_table_beams2)
+
+layout_time_series = column(row(custom_title_time_series_blue, Spacer(width=50), custom_title_time_series_red),
+                            row(control_chart_y, control_chart_lookback_units, control_chart_text_lookback_distance,
+                                Spacer(width=10), control_chart_percentile, Spacer(width=10), trend_update_button),
+                            control_chart,
+                            div_horizontal_bar,
+                            row(histogram_bin_slider, histogram_radio_group),
+                            row(histogram_normaltest_1_text, histogram_ttest_text),
+                            row(histogram_normaltest_2_text, histogram_ranksums_text),
+                            histograms,
+                            Spacer(width=1000, height=100))
 
 roi_viewer_layout = column(row(custom_title_roi_viewer_blue, Spacer(width=50), custom_title_roi_viewer_red),
                            row(roi_viewer_mrn_select, roi_viewer_study_date_select, roi_viewer_uid_select),
@@ -2265,11 +2698,11 @@ dvh_tab = Panel(child=layout_dvhs, title='DVHs')
 rad_bio_tab = Panel(child=layout_rad_bio, title='Rad Bio')
 roi_viewer_tab = Panel(child=roi_viewer_layout, title='ROI Viewer')
 planning_data_tab = Panel(child=layout_planning_data, title='Planning Data')
-# trending_tab = Panel(child=layout_time_series, title='Time-Series')
+time_series_tab = Panel(child=layout_time_series, title='Time-Series')
 # correlation_matrix_tab = Panel(child=layout_correlation_matrix, title='Correlation')
 # correlation_tab = Panel(child=layout_regression, title='Regression')
 
-tabs = Tabs(tabs=[query_tab, dvh_tab, rad_bio_tab, roi_viewer_tab, planning_data_tab])
+tabs = Tabs(tabs=[query_tab, dvh_tab, rad_bio_tab, roi_viewer_tab, planning_data_tab, time_series_tab])
 
 curdoc().add_root(tabs)
 curdoc().title = "DVH Analytics"
