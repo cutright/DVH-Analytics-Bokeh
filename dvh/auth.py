@@ -7,9 +7,6 @@
 # end-user is entirely liable for proper security implementation.
 
 from __future__ import print_function
-from bokeh.models.widgets import Button, TextInput, PasswordInput
-from bokeh.layouts import row
-from bokeh.models import Spacer
 # import ldap  # This is from pip install python-ldap.  Not necessary, just what we used for our implementaiton.
 
 
