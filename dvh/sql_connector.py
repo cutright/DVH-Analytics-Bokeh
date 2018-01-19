@@ -59,34 +59,36 @@ class DVH_SQL:
             return False
 
     def query(self, table_name, return_col_str, *condition_str):
-        query = 'Select ' + return_col_str + ' from ' + table_name
+        query = "Select %s from %s;" % (return_col_str, table_name)
         if condition_str and condition_str[0]:
-            query += ' where ' + condition_str[0]
-        query += ';'
+            query = "Select %s from %s where %s;" % (return_col_str, table_name, condition_str[0])
 
         self.cursor.execute(query)
         results = self.cursor.fetchall()
 
         return results
 
+    def query_generic(self, query_str):
+        self.cursor.execute(query_str)
+        return self.cursor.fetchall()
+
     def update(self, table_name, column, value, condition_str):
+
+        # augment value string for postgresql date formatting
         if '::date' in str(value):
-            value = "'" + value.strip('::date') + "'::date"
-            update = "Update " + table_name + " SET " + column + " = " + str(value) + " WHERE " + condition_str
+            value = "'%s'::date" % value.strip('::date')
         else:
-            update = "Update " + table_name + " SET " + column + " = '" + str(value) + "' WHERE " + condition_str
+            value = "''" % str(value)
+
+        update = "Update %s SET %s = %s WHERE %s" % (table_name, column, str(value), condition_str)
         self.cursor.execute(update)
         self.cnx.commit()
 
     def is_study_instance_uid_in_table(self, table_name, study_instance_uid):
-        query = 'Select study_instance_uid from ' + table_name
-        query += " where study_instance_uid = '" + study_instance_uid + "';"
+        query = "Select study_instance_uid from %s where study_instance_uid = '%s';" % (table_name, study_instance_uid)
         self.cursor.execute(query)
         results = self.cursor.fetchall()
-        if results:
-            return True
-        else:
-            return False
+        return bool(results)
 
     def insert_dvhs(self, dvh_table):
         file_path = 'insert_values_DVHs.sql'
@@ -301,8 +303,8 @@ class DVH_SQL:
             self.update(table, 'study_instance_uid', new, condition)
 
     def delete_dvh(self, roi_name, study_instance_uid):
-        self.cursor.execute("DELETE FROM DVHs WHERE roi_name = '" + roi_name +
-                            "' and study_instance_uid = '" + study_instance_uid + "';")
+        self.cursor.execute("DELETE FROM DVHs WHERE roi_name = '%s' and study_instance_uid = '%s';"
+                            % (roi_name, study_instance_uid))
         self.cnx.commit()
 
     def drop_tables(self):
@@ -317,13 +319,10 @@ class DVH_SQL:
         self.cnx.commit()
 
     def initialize_database(self):
-        print('Loading create_tables.sql')
         script_dir = os.path.dirname(__file__)
         rel_path = "preferences/create_tables.sql"
         abs_file_path = os.path.join(script_dir, rel_path)
-        print('Executing create_tables.sql')
         self.execute_file(abs_file_path)
-        print('Tables created or were already created')
 
     def reinitialize_database(self):
         self.drop_tables()
@@ -331,14 +330,10 @@ class DVH_SQL:
 
     def does_db_exist(self):
         # Check if database exists
-        line = "SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower('"
-        line += self.dbname + "');"
+        line = "SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower('%s');" % self.dbname
         self.cursor.execute(line)
 
-        if len(self.cursor.fetchone()) > 0:
-            return True
-        else:
-            return False
+        return bool(len(self.cursor.fetchone()))
 
     def is_sql_table_empty(self, table):
         line = "SELECT COUNT(*) FROM %s;" % table
@@ -348,50 +343,38 @@ class DVH_SQL:
 
     def get_unique_values(self, table, column, *condition):
         if condition:
-            query = "select distinct " + column + " from " + table + " where " + str(condition[0]) + ";"
+            query = "select distinct %s from %s where %s;" % (column, table, str(condition[0]))
         else:
-            query = "select distinct " + column + " from " + table + ";"
+            query = "select distinct %s from %s;" % (column, table)
         self.cursor.execute(query)
         cursor_return = self.cursor.fetchall()
-        unique_values = []
-        for i in range(0, len(cursor_return)):
-            unique_values.append(str(cursor_return[i][0]))
+        unique_values = [str(uv[0]) for uv in cursor_return]
         unique_values.sort()
         return unique_values
 
     def get_column_names(self, table_name):
-        query = "select column_name from information_schema.columns where table_name = '"
-        query += table_name
-        query += "';"
+        query = "select column_name from information_schema.columns where table_name = '%s';" % table_name.lower()
         self.cursor.execute(query)
         cursor_return = self.cursor.fetchall()
-        columns = []
-        for i in range(0, len(cursor_return)):
-            columns.append(str(cursor_return[i][0]))
+        columns = [str(c[0]) for c in cursor_return]
         columns.sort()
         return columns
 
     def get_min_value(self, table, column):
-        query = 'SELECT MIN(' + column + ') FROM ' + table + ';'
+        query = "SELECT MIN(%s) FROM %s;" % (column, table)
         self.cursor.execute(query)
         cursor_return = self.cursor.fetchone()
         return cursor_return[0]
 
     def get_max_value(self, table, column):
-        query = 'SELECT MAX(' + column + ') FROM ' + table + ';'
+        query = "SELECT MAX(%s) FROM %s;" % (column, table)
         self.cursor.execute(query)
         cursor_return = self.cursor.fetchone()
         return cursor_return[0]
 
     def get_roi_count_from_query(self, **kwargs):
         if 'uid' in kwargs:
-            study_instance_uid = kwargs['uid']
-            db_constraints_list = []
-            for i in range(0, len(study_instance_uid)):
-                db_constraints_list.append(study_instance_uid[i])
-            condition = "study_instance_uid in ('"
-            condition += "', '".join(db_constraints_list)
-            condition += "')"
+            condition = "study_instance_uid in ('%s')" % "', '".join(kwargs['uid'])
             if 'dvh_condition' in kwargs and kwargs['dvh_condition']:
                 condition = " and " + condition
         else:
