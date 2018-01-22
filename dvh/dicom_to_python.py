@@ -414,10 +414,13 @@ class BeamTable:
                 else:
                     beam_mu = 0
 
-                beam_dose_pt = [str(round(ref_beam_seq.BeamDoseSpecificationPoint[0], 2)),
-                                str(round(ref_beam_seq.BeamDoseSpecificationPoint[1], 2)),
-                                str(round(ref_beam_seq.BeamDoseSpecificationPoint[2], 2))]
-                beam_dose_pt = ','.join(beam_dose_pt)
+                if hasattr(ref_beam_seq, 'BeamDoseSpecificationPoint'):
+                    beam_dose_pt = [str(round(ref_beam_seq.BeamDoseSpecificationPoint[0], 2)),
+                                    str(round(ref_beam_seq.BeamDoseSpecificationPoint[1], 2)),
+                                    str(round(ref_beam_seq.BeamDoseSpecificationPoint[2], 2))]
+                    beam_dose_pt = ','.join(beam_dose_pt)
+                else:
+                    beam_dose_pt = '(NULL)'
 
                 radiation_type = beam_seq.RadiationType
                 if hasattr(beam_seq, 'ControlPointSequence'):
