@@ -700,11 +700,11 @@ def get_group_list(uids):
     for r in range(0, len(uids)):
         if uids[r] in uids_1:
             if uids[r] in uids_2:
-                groups.append('Blue & Red')
+                groups.append('Group 1 & 2')
             else:
-                groups.append('Blue')
+                groups.append('Group 1')
         else:
-            groups.append('Red')
+            groups.append('Group 2')
 
     return groups
 
@@ -851,15 +851,15 @@ def update_dvh_data(dvh):
         if dvh_group_1:
             for r1 in range(0, len(dvh_group_1.study_instance_uid)):
                 if dvh_group_1.study_instance_uid[r1] == current_uid and dvh_group_1.roi_name[r1] == current_roi:
-                    dvh_groups.append('Blue')
+                    dvh_groups.append('Group 1')
 
         if dvh_group_2:
             for r2 in range(0, len(dvh_group_2.study_instance_uid)):
                 if dvh_group_2.study_instance_uid[r2] == current_uid and dvh_group_2.roi_name[r2] == current_roi:
                     if len(dvh_groups) == r + 1:
-                        dvh_groups[r] = 'Blue & Red'
+                        dvh_groups[r] = 'Group 1 & 2'
                     else:
-                        dvh_groups.append('Red')
+                        dvh_groups.append('Group 2')
 
         if len(dvh_groups) < r + 1:
             dvh_groups.append('error')
@@ -873,14 +873,14 @@ def update_dvh_data(dvh):
             x_data.append(x_axis_stat.tolist())
             current = stat_dvhs_1[y_names[n].lower()].tolist()
             y_data.append(current)
-            dvh_groups.append('Blue')
+            dvh_groups.append('Group 1')
         if group_2_count > 0:
             dvh.mrn.append(y_names[n])
             dvh.roi_name.append('N/A')
             x_data.append(x_axis_stat.tolist())
             current = stat_dvhs_2[y_names[n].lower()].tolist()
             y_data.append(current)
-            dvh_groups.append('Red')
+            dvh_groups.append('Group 2')
 
     # Adjust dvh object to include stats data
     if extra_rows > 0:
