@@ -14,6 +14,12 @@ AUTH_USER_REQ = False
 # if you do not have pgsql command line tool installed, maybe best to just disable this tab to be cautious
 DISABLE_BACKUP_TAB = False
 
+# DVH Endpoint Table view cap, bokeh is very slow to delete a table and add another
+# This would need to happen if "changing" number of columns in a table, so DVH Analytics prints
+# and empty table with the number of endpoints set below.  All endpoints specified in main app will be calulated,
+# but only the number specified below will be displayed
+ENDPOINT_COUNT = 10
+
 # These colors propagate to all tabs that visualize your two groups
 GROUP_1_COLOR = 'blue'
 GROUP_1_COLOR_NEG_CORR = 'green'

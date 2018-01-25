@@ -82,6 +82,8 @@ source_ranges = ColumnDataSource(data=dict(row=[], category=[], min=[], max=[], 
 source_endpoint_defs = ColumnDataSource(data=dict(row=[], output_type=[], input_type=[], input_value=[],
                                                   label=[], units_in=[], units_out=[]))
 source_endpoint_calcs = ColumnDataSource(data=dict())
+source_endpoint_view = ColumnDataSource(data=dict(mrn=[], group=[], roi_name=[], ep1=[], ep2=[], ep3=[], ep4=[], ep5=[],
+                                                  ep6=[], ep7=[], ep8=[], ep9=[], ep10=[]))
 source_beams = ColumnDataSource(data=dict())
 source_plans = ColumnDataSource(data=dict())
 source_rxs = ColumnDataSource(data=dict())
@@ -534,6 +536,7 @@ def update_ep_source():
                  'input_value': [(r, input_value)], 'label': [(r, label)],
                  'units_in': [(r, units_in)], 'units_out': [(r, units_out)]}
         source_endpoint_defs.patch(patch)
+        update_source_endpoint_calcs()
 
 
 def ep_units_in_ticker(attr, old, new):
@@ -630,7 +633,7 @@ def update_ep_row_on_selection(attr, old, new):
 # Query functions
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-# This function retuns the list of information needed to execute QuerySQL from
+# This function returns the list of information needed to execute QuerySQL from
 # SQL_to_Python.py (i.e., uids and dvh_condition)
 # This function can be used for one group at a time, or both groups. Using both groups is useful so that duplicate
 # DVHs do not show up in the plot (i.e., if a DVH satisfies both group criteria)
@@ -868,7 +871,7 @@ def update_dvh_data(dvh):
         y_scale = ['%Vol'] * (dvh.count + extra_rows + 1)
         dvh_plots.yaxis.axis_label = "Relative Volume"
 
-    new_endpoint_columns = [''] * (dvh.count + extra_rows + 1)
+    # new_endpoint_columns = [''] * (dvh.count + extra_rows + 1)
 
     x_data, y_data = [], []
     for n in range(0, dvh.count):
@@ -893,15 +896,15 @@ def update_dvh_data(dvh):
         if dvh_group_1:
             for r1 in range(0, len(dvh_group_1.study_instance_uid)):
                 if dvh_group_1.study_instance_uid[r1] == current_uid and dvh_group_1.roi_name[r1] == current_roi:
-                    dvh_groups.append('Blue')
+                    dvh_groups.append('Group 1')
 
         if dvh_group_2:
             for r2 in range(0, len(dvh_group_2.study_instance_uid)):
                 if dvh_group_2.study_instance_uid[r2] == current_uid and dvh_group_2.roi_name[r2] == current_roi:
                     if len(dvh_groups) == r + 1:
-                        dvh_groups[r] = 'Blue & Red'
+                        dvh_groups[r] = 'Group 1 & 2'
                     else:
-                        dvh_groups.append('Red')
+                        dvh_groups.append('Group 2')
 
         if len(dvh_groups) < r + 1:
             dvh_groups.append('error')
@@ -915,14 +918,14 @@ def update_dvh_data(dvh):
             x_data.append(x_axis_stat.tolist())
             current = stat_dvhs_1[y_names[n].lower()].tolist()
             y_data.append(current)
-            dvh_groups.append('Blue')
+            dvh_groups.append('Group 1')
         if group_2_constraint_count > 0:
             dvh.mrn.append(y_names[n])
             dvh.roi_name.append('N/A')
             x_data.append(x_axis_stat.tolist())
             current = stat_dvhs_2[y_names[n].lower()].tolist()
             y_data.append(current)
-            dvh_groups.append('Red')
+            dvh_groups.append('Group 2')
 
     # Adjust dvh object to include stats data
     if extra_rows > 0:
@@ -1006,14 +1009,6 @@ def update_dvh_data(dvh):
                    'x': x_data,
                    'y': y_data,
                    'color': line_colors,
-                   'ep1': new_endpoint_columns,
-                   'ep2': new_endpoint_columns,
-                   'ep3': new_endpoint_columns,
-                   'ep4': new_endpoint_columns,
-                   'ep5': new_endpoint_columns,
-                   'ep6': new_endpoint_columns,
-                   'ep7': new_endpoint_columns,
-                   'ep8': new_endpoint_columns,
                    'x_scale': x_scale,
                    'y_scale': y_scale}
 
@@ -1141,11 +1136,11 @@ def get_group_list(uids):
     for r in range(0, len(uids)):
         if uids[r] in uids_1:
             if uids[r] in uids_2:
-                groups.append('Blue & Red')
+                groups.append('Group 1 & 2')
             else:
-                groups.append('Blue')
+                groups.append('Group 1')
         else:
-            groups.append('Red')
+            groups.append('Group 2')
 
     return groups
 
@@ -1164,11 +1159,10 @@ def group_constraint_count():
 
 def update_source_endpoint_calcs():
     if current_dvh:
-        num_stats_to_calculate = 6
-
         group_1_constraint_count, group_2_constraint_count = group_constraint_count()
 
         ep = {'mrn': ['']}
+        ep_1, ep_2 = {}, {}
 
         table_columns = []
 
@@ -1201,26 +1195,54 @@ def update_source_endpoint_calcs():
 
             if 'Dose' in data['output_type'][r]:
                 ep[ep_name] = current_dvh.get_dose_to_volume(x, input=endpoint_input, output=endpoint_output)
+                if current_dvh_group_1:
+                    ep_1[ep_name] = current_dvh_group_1.get_dose_to_volume(x, input=endpoint_input,
+                                                                           output=endpoint_output)
+                if current_dvh_group_2:
+                    ep_2[ep_name] = current_dvh_group_2.get_dose_to_volume(x, input=endpoint_input,
+                                                                           output=endpoint_output)
+
             else:
                 ep[ep_name] = current_dvh.get_volume_of_dose(x, input=endpoint_input, output=endpoint_output)
+                if current_dvh_group_1:
+                    ep_1[ep_name] = current_dvh_group_1.get_volume_of_dose(x, input=endpoint_input,
+                                                                           output=endpoint_output)
+                if current_dvh_group_2:
+                    ep_2[ep_name] = current_dvh_group_2.get_volume_of_dose(x, input=endpoint_input,
+                                                                           output=endpoint_output)
 
             if group_1_constraint_count and group_2_constraint_count:
-                ep[ep_name].extend([''] * num_stats_to_calculate * 2)
+                ep_1_stats = calc_stats(ep_1[ep_name])
+                ep_2_stats = calc_stats(ep_2[ep_name])
+                stats = []
+                for i in range(0, len(ep_1_stats)):
+                    stats.append(ep_1_stats[i])
+                    stats.append(ep_2_stats[i])
+                ep[ep_name].extend(stats)
             else:
-                ep[ep_name].extend([''] * num_stats_to_calculate)
+                ep[ep_name].extend(calc_stats(ep[ep_name]))
 
-        # Need to calculate stats here per group
-
-        # If number of columns are different, need to remove table from layout, and create a new table
-        if len(ep) == len(source_endpoint_calcs.data):
-            source_endpoint_calcs.data = ep
-        else:
-            source_endpoint_calcs.data = ep
-            data_table_new = DataTable(source=source_endpoint_calcs, columns=table_columns, width=1200)
-            layout_dvhs.children.pop()
-            layout_dvhs.children.append(data_table_new)
+        source_endpoint_calcs.data = ep
+        update_endpoint_view()
 
     update_time_series_options()
+
+
+def update_endpoint_view():
+    if current_dvh:
+        rows = len(source_endpoint_calcs.data['mrn'])
+        ep_view = {'mrn': source_endpoint_calcs.data['mrn'],
+                   'group': source_endpoint_calcs.data['group'],
+                   'roi_name': source_endpoint_calcs.data['roi_name']}
+        for i in range(1, ENDPOINT_COUNT+1):
+            ep_view["ep%s" % i] = [''] * rows  # filling table with empty strings
+
+        for r in range(0, len(source_endpoint_defs.data['row'])):
+            if r < ENDPOINT_COUNT:  # limiting UI to 10 columns since create a whole new table is very slow in Bokeh
+                key = source_endpoint_defs.data['label'][r]
+                ep_view["ep%s" % (r+1)] = source_endpoint_calcs.data[key]
+
+        source_endpoint_view.data = ep_view
 
 
 def update_time_series_options():
@@ -2108,8 +2130,6 @@ ep_units_in = RadioButtonGroup(labels=["cc", "%"], active=0, width=100)
 ep_units_in.on_change('active', ep_units_in_ticker)
 delete_ep_row_button = Button(label="Delete", button_type="warning", width=100)
 delete_ep_row_button.on_click(delete_ep_row)
-updated_ep_calcs_button = Button(label="Calculate", button_type="primary", width=100)
-updated_ep_calcs_button.on_click(update_source_endpoint_calcs)
 div_endpoint_start = Div(text="<hr>", width=1050)
 
 # endpoint  table
@@ -2240,7 +2260,20 @@ data_table = DataTable(source=source, columns=columns, width=1200, editable=True
 
 # Set up EndPoint DataTable
 endpoint_table_title = Div(text="<b>DVH Endpoints</b>", width=1200)
-data_table_endpoints = DataTable(source=source_endpoint_calcs, columns=[], width=1200, editable=True)
+columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
+           TableColumn(field="group", title="Group", width=175),
+           TableColumn(field="roi_name", title="ROI Name"),
+           TableColumn(field="ep1", title="ep1", width=100, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="ep2", title="ep2", width=80, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="ep3", title="ep3", width=80, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="ep4", title="ep4", width=80, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="ep5", title="ep5", width=80, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="ep6", title="ep6", width=80, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="ep7", title="ep7", width=80, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="ep8", title="ep8", width=80, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="ep9", title="ep9", width=80, formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="ep10", title="ep10", width=80, formatter=NumberFormatter(format="0.00"))]
+data_table_endpoints = DataTable(source=source_endpoint_view, columns=columns, width=1200, editable=True)
 
 # Set up Beams DataTable
 beam_table_title = Div(text="<b>Beams</b>", width=1500)
@@ -2642,7 +2675,7 @@ layout_dvhs = column(row(custom_title_dvhs_blue, Spacer(width=50), custom_title_
                      data_table,
                      div_endpoint_start,
                      div_endpoint,
-                     row(add_endpoint_row_button, Spacer(width=10), updated_ep_calcs_button),
+                     add_endpoint_row_button,
                      row(ep_row, Spacer(width=10), select_ep_type, ep_text_input, ep_units_in, delete_ep_row_button),
                      ep_data_table,
                      endpoint_table_title,
