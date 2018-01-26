@@ -78,7 +78,7 @@ class DVH_SQL:
         if '::date' in str(value):
             value = "'%s'::date" % value.strip('::date')
         else:
-            value = "''" % str(value)
+            value = "'%s'" % str(value)
 
         update = "Update %s SET %s = %s WHERE %s" % (table_name, column, str(value), condition_str)
         self.cursor.execute(update)
