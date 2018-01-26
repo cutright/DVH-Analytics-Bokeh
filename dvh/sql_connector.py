@@ -74,13 +74,20 @@ class DVH_SQL:
 
     def update(self, table_name, column, value, condition_str):
 
-        # augment value string for postgresql date formatting
-        if '::date' in str(value):
-            value = "'%s'::date" % value.strip('::date')
-        else:
-            value = "'%s'" % str(value)
+        try:
+            temp = float(value)
+            value_is_numeric = True
+        except ValueError:
+            value_is_numeric = False
 
-        update = "Update %s SET %s = %s WHERE %s" % (table_name, column, str(value), condition_str)
+        if '::date' in str(value):
+            value = "'%s'::date" % value.strip('::date')  # augment value string for postgresql date formatting
+        elif value_is_numeric:
+            value = str(value)
+        else:
+            value = "'%s'" % str(value)  # need quotes to input a string
+
+        update = "Update %s SET %s = %s WHERE %s" % (table_name, column, value, condition_str)
         self.cursor.execute(update)
         self.cnx.commit()
 
