@@ -200,7 +200,7 @@ def get_file_paths(start_path):
                 file_paths[uid] = {'rtplan': {'file_path': [], 'timestamp': [], 'latest_file': []},
                                    'rtstruct': {'file_path': [], 'timestamp': [], 'latest_file': []},
                                    'rtdose': {'file_path': [], 'timestamp': [], 'latest_file': []},
-                                   'other': {'file_path': [], 'time_stamp': []}}
+                                   'other': {'file_path': [], 'timestamp': []}}
 
             if file_type not in file_types:
                 file_type = 'other'
