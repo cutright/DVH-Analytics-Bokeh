@@ -2231,6 +2231,22 @@ def update_control_chart_trend_ticker(attr, old, new):
     control_chart_update_trend()
 
 
+def update_control_chart_y_axis_label():
+    new = str(control_chart_y.value)
+    if new:
+        if new.startswith('DVH Endpoint'):
+            # control_chart.yaxis.axis_label = source_endpoint_names.data['ep' + str(new[-1])][0]
+            pass
+        elif new == 'EUD':
+            control_chart.yaxis.axis_label = 'EUD (Gy)'
+        elif new == 'NTCP/TCP':
+            control_chart.yaxis.axis_label = 'NTCP or TCP'
+        elif range_categories[new]['units']:
+            control_chart.yaxis.axis_label = "%s (%s)" % (new, range_categories[new]['units'])
+        else:
+            control_chart.yaxis.axis_label = new
+
+
 def update_control_chart():
     new = str(control_chart_y.value)
     if new:
@@ -2258,7 +2274,7 @@ def update_control_chart():
             y_source_uids = y_source.data['uid']
             y_source_mrns = y_source.data['mrn']
 
-        # update_control_chart_y_axis_label()
+        update_control_chart_y_axis_label()
 
         sim_study_dates = source_plans.data['sim_study_date']
         sim_study_dates_uids = source_plans.data['uid']
@@ -2615,6 +2631,11 @@ def multi_var_linear_regression():
                                                  'coeff_str': [], 'p': [], 'p_str': []}
         source_multi_var_model_results_2.data = {'model_p': [], 'model_p_str': [],
                                                  'r_sq': [], 'r_sq_str': [], 'y_var': []}
+
+
+def multi_var_include_selection(attr, old, new):
+    row_index = source_multi_var_include.selected['1d']['indices'][0]
+    corr_chart_x.value = source_multi_var_include.data['var_name'][row_index]
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3230,6 +3251,8 @@ columns = [TableColumn(field="y_var", title="Dependent Variable", width=150),
            TableColumn(field="model_p_str", title="Prob for F-statistic", width=150)]
 data_table_multi_var_coeff_2 = DataTable(source=source_multi_var_model_results_2, columns=columns, editable=True,
                                          height=60, row_headers=False)
+
+source_multi_var_include.on_change('selected', multi_var_include_selection)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Custom group titles
