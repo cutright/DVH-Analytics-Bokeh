@@ -568,7 +568,7 @@ def update_ep_source():
         r = int(ep_row.value) - 1
 
         if 'Dose' in select_ep_type.value:
-            input_type, output_type = 'Dose', 'Volume'
+            input_type, output_type = 'Volume', 'Dose'
             if '%' in select_ep_type.value:
                 units_out = '%'
             else:
@@ -576,7 +576,7 @@ def update_ep_source():
             units_in = ['cc', '%'][ep_units_in.active]
             label = "D_%s%s" % (ep_text_input.value, units_in)
         else:
-            input_type, output_type = 'Volume', 'Dose'
+            input_type, output_type = 'Dose', 'Volume'
             if '%' in select_ep_type.value:
                 units_out = '%'
             else:
@@ -606,7 +606,7 @@ def update_ep_text_input_title():
     if 'Dose' in select_ep_type.value:
         ep_text_input.title = "Input Volume (%s):" % ['cc', '%'][ep_units_in.active]
     else:
-        ep_text_input.title = "Input Dose (%s):" % ['cc', 'Gy'][ep_units_in.active]
+        ep_text_input.title = "Input Dose (%s):" % ['Gy', '%'][ep_units_in.active]
 
 
 def select_ep_type_ticker(attr, old, new):
@@ -1234,7 +1234,6 @@ def update_source_endpoint_calcs():
 
         data = source_endpoint_defs.data
         for r in range(0, len(data['row'])):
-
             ep_name = str(data['label'][r])
             table_columns.append(TableColumn(field=ep_name, title=ep_name, formatter=NumberFormatter(format="0.00")))
             x = data['input_value'][r]
@@ -3492,7 +3491,7 @@ layout_time_series = column(row(custom_title_time_series_blue, Spacer(width=50),
                             histograms,
                             Spacer(width=1000, height=100))
 
-roi_viewer_layout = column(row(custom_title_roi_viewer_blue, Spacer(width=50), custom_title_roi_viewer_red),
+layout_roi_viewer = column(row(custom_title_roi_viewer_blue, Spacer(width=50), custom_title_roi_viewer_red),
                            row(roi_viewer_mrn_select, roi_viewer_study_date_select, roi_viewer_uid_select),
                            Div(text="<hr>", width=800),
                            row(roi_viewer_roi_select, roi_viewer_roi1_select_color, roi_viewer_slice_select,
@@ -3533,7 +3532,7 @@ layout_regression = column(row(custom_title_regression_blue, Spacer(width=50), c
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
 rad_bio_tab = Panel(child=layout_rad_bio, title='Rad Bio')
-roi_viewer_tab = Panel(child=roi_viewer_layout, title='ROI Viewer')
+roi_viewer_tab = Panel(child=layout_roi_viewer, title='ROI Viewer')
 planning_data_tab = Panel(child=layout_planning_data, title='Planning Data')
 time_series_tab = Panel(child=layout_time_series, title='Time-Series')
 correlation_matrix_tab = Panel(child=layout_correlation_matrix, title='Correlation')
