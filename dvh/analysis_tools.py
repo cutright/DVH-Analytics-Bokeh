@@ -96,9 +96,19 @@ class DVH:
             if 'input' in kwargs and kwargs['input'] == 'relative':
                 doses[x] = dose_to_volume(dvh, volume)
             else:
-                doses[x] = dose_to_volume(dvh, volume, self.volume[x])
+                # if self.volume[x] is zero, dose_to_volume encounters a divide / 0 error
+                if self.volume[x]:
+                    doses[x] = dose_to_volume(dvh, volume, self.volume[x])
+                else:
+                    doses[x] = 0
         if 'output' in kwargs and kwargs['output'] == 'relative':
-            doses = np.divide(doses * 100, self.rx_dose[0:self.count])
+            if self.rx_dose[0]:
+                doses = np.divide(doses * 100, self.rx_dose[0:self.count])
+            else:
+                self.rx_dose[0] = 1
+                doses = np.divide(doses * 100, self.rx_dose[0:self.count])
+                self.rx_dose[0] = 0
+                doses[0] = 0
 
         return doses.tolist()
 
