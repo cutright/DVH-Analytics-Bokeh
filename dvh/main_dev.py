@@ -648,6 +648,7 @@ def delete_ep_row():
                 ep_row.value = ep_row.options[-1]
             source_endpoint_defs.data = new_ep_source
 
+        update_source_endpoint_calcs()  # not efficient, but still relatively quick
         clear_source_selection(source_endpoint_defs)
 
 
@@ -1303,6 +1304,7 @@ def update_endpoint_view():
 
 def update_time_series_options():
     new_options = list(range_categories)
+    new_options.extend(['EUD', 'NTCP/TCP'])
     new_options.sort()
     new_options.insert(0, '')
 
@@ -2234,8 +2236,7 @@ def update_control_chart_y_axis_label():
     new = str(control_chart_y.value)
     if new:
         if new.startswith('DVH Endpoint'):
-            # control_chart.yaxis.axis_label = source_endpoint_names.data['ep' + str(new[-1])][0]
-            pass
+            control_chart.yaxis.axis_label = str(control_chart_y.value).split(': ')[1]
         elif new == 'EUD':
             control_chart.yaxis.axis_label = 'EUD (Gy)'
         elif new == 'NTCP/TCP':
@@ -2637,6 +2638,16 @@ def multi_var_include_selection(attr, old, new):
     corr_chart_x.value = source_multi_var_include.data['var_name'][row_index]
 
 
+def update_source_endpoint_view_selection(attr, old, new):
+    if new['1d']['indices']:
+        source_endpoint_view.selected = new
+
+
+def update_dvh_table_selection(attr, old, new):
+    if new['1d']['indices']:
+        source.selected = new
+
+
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Selection Filter UI objects
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2875,6 +2886,7 @@ columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="dist_to_ptv_min", title="Dist to PTV", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="ptv_overlap", title="PTV Overlap", width=80, formatter=NumberFormatter(format="0.0"))]
 data_table = DataTable(source=source, columns=columns, width=1200, editable=True)
+source.on_change('selected', update_source_endpoint_view_selection)
 
 # Set up EndPoint DataTable
 endpoint_table_title = Div(text="<b>DVH Endpoints</b>", width=1200)
@@ -2892,6 +2904,7 @@ columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="ep9", title="ep9", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="ep10", title="ep10", width=80, formatter=NumberFormatter(format="0.00"))]
 data_table_endpoints = DataTable(source=source_endpoint_view, columns=columns, width=1200, editable=True)
+source_endpoint_view.on_change('selected', update_dvh_table_selection)
 
 # Set up Beams DataTable
 beam_table_title = Div(text="<b>Beams</b>", width=1500)
