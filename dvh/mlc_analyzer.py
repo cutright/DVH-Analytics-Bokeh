@@ -41,15 +41,15 @@ class Beam:
         self.meter_set = meter_set
 
         self.control_point = [ControlPoint(cp_seq) for cp_seq in beam_seq.ControlPointSequence]
-        self.control_point_count = len(self.control_points)
+        self.control_point_count = len(self.control_point)
 
         for bld_seq in beam_seq.BeamLimitingDeviceSequence:
             if hasattr(bld_seq, 'LeafPositionBoundaries'):
                 self.leaf_boundaries = np.array(map(float, bld_seq.LeafPositionBoundaries))
 
-        self.aperture = [self.get_shapely_from_cp(cp) for cp in self.control_points]
+        self.aperture = [self.get_shapely_from_cp(cp) for cp in self.control_point]
 
-        self.control_point_meter_set = np.append([0], np.diff(np.array([cp.cum_mu for cp in self.control_points])))
+        self.control_point_meter_set = np.append([0], np.diff(np.array([cp.cum_mu for cp in self.control_point])))
 
     def get_shapely_from_cp(self, cp):
         lb = self.leaf_boundaries
