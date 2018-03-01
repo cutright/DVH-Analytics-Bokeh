@@ -45,57 +45,13 @@ class Beam:
 
         for bld_seq in beam_seq.BeamLimitingDeviceSequence:
             if hasattr(bld_seq, 'LeafPositionBoundaries'):
-                self.leaf_boundaries = np.array(map(float, bld_seq.LeafPositionBoundaries))
+                lb = bld_seq.LeafPositionBoundaries
+                lb.sort(reverse=True)
+                self.leaf_boundaries = np.array(map(float, lb))
 
-        self.aperture = [self.get_shapely_from_cp(cp) for cp in self.control_point]
+        self.aperture = [get_shapely_from_cp(self.leaf_boundaries, cp) for cp in self.control_point]
 
         self.control_point_meter_set = np.append([0], np.diff(np.array([cp.cum_mu for cp in self.control_point])))
-
-    def get_shapely_from_cp(self, cp):
-        lb = self.leaf_boundaries
-
-        if hasattr(cp, 'mlcx'):
-            mlc = cp.mlcx
-            order = 1
-        elif hasattr(cp, 'mlcy'):
-            mlc = cp.mlcy
-            order = -1
-        else:
-            return False
-
-        # Get list of points defining MLC open area
-        leaf_pair_count = len(lb) - 1
-        points = []
-        for i in range(0, leaf_pair_count - 1):
-            points.append((mlc[0][i], lb[i])[::order])
-            points.append((mlc[0][i], lb[i + 1])[::order])
-        for i in range(0, leaf_pair_count - 1)[::-1]:
-            points.append((mlc[1][i], lb[i])[::order])
-            points.append((mlc[1][i], lb[i + 1])[::order])
-        points.append(points[0])  # explicitly close polygon
-        open_polygon_mlc = Polygon(points).buffer(0)  # may turn into MultiPolygon
-
-        # Get list of points defining Jaw open area
-        if hasattr(cp, 'asymy'):
-            y_min = cp.asymy[0]
-            y_max = cp.asymy[1]
-        else:
-            y_min = np.float(-MAX_FIELD_SIZE_Y/2)
-            y_max = np.float(MAX_FIELD_SIZE_Y/2)
-        if hasattr(cp, 'asymx'):
-            x_min = cp.asymx[0]
-            x_max = cp.asymx[1]
-        else:
-            x_min = np.float(-MAX_FIELD_SIZE_X/2)
-            x_max = np.float(MAX_FIELD_SIZE_X/2)
-        points = [(x_min, y_min), (x_max, y_min),
-                  (x_max, y_max), (x_min, y_max),
-                  (x_min, y_min)]
-        open_polygon_jaw = Polygon(points)
-
-        aperture = open_polygon_mlc.intersection(open_polygon_jaw)
-
-        return aperture
 
 
 class ControlPoint:
@@ -114,4 +70,60 @@ class ControlPoint:
             setattr(self, key, cp[key])
 
 
-# test = get_mlc_data("/Users/nightowl/PycharmProjects/DVH-Analytics/dvh/test_files/2.16.840.1.114362.1.6.6.12.17310.7693757184.449478830.864.1265.dcm")
+def get_shapely_from_cp(leaf_boundaries, control_point):
+    lb = leaf_boundaries  # NOTE: this is in DESCENDING order
+    cp = control_point
+
+    # Determine jaw opening
+    if hasattr(cp, 'asymy'):
+        y_min = min(cp.asymy)
+        y_max = max(cp.asymy)
+    else:
+        y_min = np.float(-MAX_FIELD_SIZE_Y / 2)
+        y_max = np.float(MAX_FIELD_SIZE_Y / 2)
+    if hasattr(cp, 'asymx'):
+        x_min = min(cp.asymx)
+        x_max = max(cp.asymx)
+    else:
+        x_min = np.float(-MAX_FIELD_SIZE_X / 2)
+        x_max = np.float(MAX_FIELD_SIZE_X / 2)
+
+    # Get mlc positions and start/end indices based on jaws
+    if hasattr(cp, 'mlcx'):
+        mlc = cp.mlcx
+        order = 1
+    elif hasattr(cp, 'mlcy'):
+        mlc = cp.mlcy
+        order = -1
+    else:
+        return False
+
+    v_max = [x_max, y_max][int((order+1)/2)]
+    v_min = [x_min, y_min][int((order+1)/2)]
+
+    lb_start_index = int(np.argmax(lb < v_max) - 1)
+    lb_end_index = int(np.argmax(lb <= v_min))
+
+    # Get list of points defining MLC open area
+    # To avoid using the intersection function for MLC and Jaw openings
+    points = []
+    points.append((mlc[0][lb_start_index], v_max)[::order])
+    points.append((mlc[0][lb_start_index], lb[lb_start_index + 1])[::order])
+    for i in range(lb_start_index+1, lb_end_index):
+        points.append((mlc[0][i], lb[i])[::order])
+        points.append((mlc[0][i], lb[i+1])[::order])
+    points.append((mlc[0][lb_end_index], lb[lb_end_index])[::order])
+    points.append((mlc[0][lb_end_index], v_min)[::order])
+
+    points.append((mlc[1][lb_end_index], v_min)[::order])
+    points.append((mlc[1][lb_end_index], lb[lb_end_index])[::order])
+    for i in range(lb_start_index+1, lb_end_index)[::-1]:
+        points.append((mlc[1][i], lb[i+1])[::order])
+        points.append((mlc[1][i], lb[i])[::order])
+    points.append((mlc[1][lb_start_index], lb[lb_start_index + 1])[::order])
+    points.append((mlc[1][lb_start_index], v_max)[::order])
+    points.append(points[0])  # explicitly close polygon
+
+    aperture = Polygon(points).buffer(0)  # may turn into MultiPolygon
+
+    return aperture
