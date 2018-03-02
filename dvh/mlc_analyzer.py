@@ -9,17 +9,17 @@ Created on Wed, Feb 28 2018
 import numpy as np
 from shapely.geometry import Polygon
 
-MAX_FIELD_SIZE_X = 40  # in cm
-MAX_FIELD_SIZE_Y = 40  # in cm
+MAX_FIELD_SIZE_X = 400  # in mm
+MAX_FIELD_SIZE_Y = 400  # in mm
 
 
 class Plan:
     def __init__(self, rt_plan):
-        self.fx_group = [FxGroup(fx_grp_seq, rt_plan) for fx_grp_seq in rt_plan.FractionGroupSequence]
+        self.fx_group = [FxGroup(fx_grp_seq, rt_plan.BeamSequence) for fx_grp_seq in rt_plan.FractionGroupSequence]
 
 
 class FxGroup:
-    def __init__(self, fx_grp_seq, rt_plan):
+    def __init__(self, fx_grp_seq, plan_beam_sequences):
         self.fxs = fx_grp_seq.NumberOfFractionsPlanned
 
         meter_set = {}
@@ -28,7 +28,7 @@ class FxGroup:
             meter_set[ref_beam_num] = float(ref_beam.BeamMeterset)
 
         self.beam = []
-        for beam_seq in rt_plan.BeamSequence:
+        for beam_seq in plan_beam_sequences:
             beam_num = str(beam_seq.BeamNumber)
             if beam_num in meter_set:
                 self.beam.append(Beam(beam_seq, meter_set[beam_num]))
@@ -46,8 +46,8 @@ class Beam:
         for bld_seq in beam_seq.BeamLimitingDeviceSequence:
             if hasattr(bld_seq, 'LeafPositionBoundaries'):
                 lb = bld_seq.LeafPositionBoundaries
-                lb.sort(reverse=True)
-                self.leaf_boundaries = np.array(map(float, lb))
+                lb.sort(reverse=True)  # Ensure descending order, not sure if a mlcy defaults to that in DICOM
+                self.leaf_boundaries = lb
 
         self.aperture = [get_shapely_from_cp(self.leaf_boundaries, cp) for cp in self.control_point]
 
@@ -101,20 +101,28 @@ def get_shapely_from_cp(leaf_boundaries, control_point):
     v_max = [x_max, y_max][int((order+1)/2)]
     v_min = [x_min, y_min][int((order+1)/2)]
 
-    lb_start_index = int(np.argmax(lb < v_max) - 1)
-    lb_end_index = int(np.argmax(lb <= v_min))
+    # These indices are selected to ignore MLCs under the jaws
+    # Needs validation, definitely lb_end_index is not tight enough
+    lb_start_index = int(np.argmax(lb < v_max)) - 1
+    lb_end_index = int(np.argmax(lb < v_min)) - 1
 
     # Get list of points defining MLC open area
     # To avoid using the intersection function for MLC and Jaw openings
     points = []
+
+    # Accumulate points representing top and bottom positions of A side MLCs
+    # First MLC may be split by Jaw
     points.append((mlc[0][lb_start_index], v_max)[::order])
     points.append((mlc[0][lb_start_index], lb[lb_start_index + 1])[::order])
+    # The MLCs excluding first and last
     for i in range(lb_start_index+1, lb_end_index):
         points.append((mlc[0][i], lb[i])[::order])
         points.append((mlc[0][i], lb[i+1])[::order])
+    # Last MLC may be split by Jaw
     points.append((mlc[0][lb_end_index], lb[lb_end_index])[::order])
     points.append((mlc[0][lb_end_index], v_min)[::order])
 
+    # Accumulate points representing top and bottom positions of B side MLCs, in reverse order
     points.append((mlc[1][lb_end_index], v_min)[::order])
     points.append((mlc[1][lb_end_index], lb[lb_end_index])[::order])
     for i in range(lb_start_index+1, lb_end_index)[::-1]:
@@ -122,6 +130,7 @@ def get_shapely_from_cp(leaf_boundaries, control_point):
         points.append((mlc[1][i], lb[i])[::order])
     points.append((mlc[1][lb_start_index], lb[lb_start_index + 1])[::order])
     points.append((mlc[1][lb_start_index], v_max)[::order])
+
     points.append(points[0])  # explicitly close polygon
 
     aperture = Polygon(points).buffer(0)  # may turn into MultiPolygon
