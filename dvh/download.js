@@ -7,17 +7,7 @@ if (cb_obj.get('value') == 'anon_dvhs') {
 
     var data = source.data;
     var ep_names = source_endpoint_names.data;
-    filetext = 'DVH Data\npatient#,roi_name,roi_type,rx_dose,volume,surface_area,min_dose,mean_dose,max_dose,dist_to_ptv_min,dist_to_ptv_mean,dist_to_ptv_median,dist_to_ptv_max,ptv_overlap,';
-    ep_names_string = [ep_names['ep1'][0].toString(),
-                       ep_names['ep2'][0].toString(),
-                       ep_names['ep3'][0].toString(),
-                       ep_names['ep4'][0].toString(),
-                       ep_names['ep5'][0].toString(),
-                       ep_names['ep6'][0].toString(),
-                       ep_names['ep7'][0].toString(),
-                       ep_names['ep8'][0].toString()]
-    filetext = filetext.concat(ep_names_string.join());
-    filetext = filetext.concat('\n');
+    filetext = 'DVH Data\npatient#,roi_name,roi_type,rx_dose,volume,surface_area,min_dose,mean_dose,max_dose,dist_to_ptv_min,dist_to_ptv_mean,dist_to_ptv_median,dist_to_ptv_max,ptv_overlap\n';
 
     for (i=0; i < data['mrn'].length; i++) {
         var currRow = [data['anon_id'][i].toString(),
@@ -33,15 +23,7 @@ if (cb_obj.get('value') == 'anon_dvhs') {
                        data['dist_to_ptv_mean'][i].toString(),
                        data['dist_to_ptv_median'][i].toString(),
                        data['dist_to_ptv_max'][i].toString(),
-                       data['ptv_overlap'][i].toString(),
-                       data['ep1'][i].toString(),
-                       data['ep2'][i].toString(),
-                       data['ep3'][i].toString(),
-                       data['ep4'][i].toString(),
-                       data['ep5'][i].toString(),
-                       data['ep6'][i].toString(),
-                       data['ep7'][i].toString(),
-                       data['ep8'][i].toString().concat('\n')];
+                       data['ptv_overlap'][i].toString().concat('\n')];
 
         var joined = currRow.join();
         filetext = filetext.concat(joined);
@@ -105,18 +87,7 @@ if (cb_obj.get('value') == 'anon_dvhs') {
 if (cb_obj.get('value') == 'all' || cb_obj.get('value') == 'lite') {
 
     var data = source.data;
-    var ep_names = source_endpoint_names.data;
-    filetext = 'DVH Data\nmrn,uid,roi_name,roi_type,rx_dose,volume,surface_area,min_dose,mean_dose,max_dose,dist_to_ptv_min,dist_to_ptv_mean,dist_to_ptv_median,dist_to_ptv_max,ptv_overlap,';
-    ep_names_string = [ep_names['ep1'][0].toString(),
-                       ep_names['ep2'][0].toString(),
-                       ep_names['ep3'][0].toString(),
-                       ep_names['ep4'][0].toString(),
-                       ep_names['ep5'][0].toString(),
-                       ep_names['ep6'][0].toString(),
-                       ep_names['ep7'][0].toString(),
-                       ep_names['ep8'][0].toString()]
-    filetext = filetext.concat(ep_names_string.join());
-    filetext = filetext.concat('\n');
+    filetext = 'DVH Data\nmrn,uid,roi_name,roi_type,rx_dose,volume,surface_area,min_dose,mean_dose,max_dose,dist_to_ptv_min,dist_to_ptv_mean,dist_to_ptv_median,dist_to_ptv_max,ptv_overlap\n';
 
     for (i=0; i < data['mrn'].length; i++) {
         var currRow = [data['mrn'][i].toString(),
@@ -133,15 +104,7 @@ if (cb_obj.get('value') == 'all' || cb_obj.get('value') == 'lite') {
                        data['dist_to_ptv_mean'][i].toString(),
                        data['dist_to_ptv_median'][i].toString(),
                        data['dist_to_ptv_max'][i].toString(),
-                       data['ptv_overlap'][i].toString(),
-                       data['ep1'][i].toString(),
-                       data['ep2'][i].toString(),
-                       data['ep3'][i].toString(),
-                       data['ep4'][i].toString(),
-                       data['ep5'][i].toString(),
-                       data['ep6'][i].toString(),
-                       data['ep7'][i].toString(),
-                       data['ep8'][i].toString().concat('\n')];
+                       data['ptv_overlap'][i].toString().concat('\n')];
 
         var joined = currRow.join();
         filetext = filetext.concat(joined);

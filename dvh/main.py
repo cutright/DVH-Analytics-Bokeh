@@ -2761,8 +2761,17 @@ ep_data_table = DataTable(source=source_endpoint_defs, columns=columns, width=30
 
 source_endpoint_defs.on_change('selected', update_ep_row_on_selection)
 
-query_button = Button(label="Query", button_type="success", width=200)
+query_button = Button(label="Query", button_type="success", width=100)
 query_button.on_click(update_data)
+
+# define Download button and call download.js on click
+menu = [("All Data", "all"), ("Lite", "lite"), ("Only DVHs", "dvhs"), ("Anonymized DVHs", "anon_dvhs")]
+download_dropdown = Dropdown(label="Download", button_type="default", menu=menu, width=100)
+download_dropdown.callback = CustomJS(args=dict(source=source,
+                                                source_rxs=source_rxs,
+                                                source_plans=source_plans,
+                                                source_beams=source_beams),
+                                      code=open(join(dirname(__file__), "download.js")).read())
 
 
 def custom_title_blue_ticker(attr, old, new):
@@ -3441,7 +3450,7 @@ roi_viewer_scrolling = CheckboxGroup(labels=["Enable Slice Scrolling with Mouse 
 # Layout objects
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 layout_query = column(row(custom_title_query_blue, Spacer(width=50), custom_title_query_red,
-                          Spacer(width=50), query_button),
+                          Spacer(width=50), query_button, Spacer(width=50), download_dropdown),
                       div_selector,
                       add_selector_row_button,
                       row(selector_row, Spacer(width=10), select_category1, select_category2, group_selector,
