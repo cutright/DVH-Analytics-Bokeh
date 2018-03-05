@@ -157,7 +157,7 @@ class PlanRow:
         else:
             tps_software_version = '(NULL)'
 
-        # Because DICOM does not contain Rx's explicitly, the user must create
+        # Because Pinnacle's DICOM does not contain Rx's explicitly, the user must create
         # a point in the RT Structure file called 'rx: '
         # If multiple Rx found, sum will be reported
         # Record tx site from 'tx:' point or RTPlanLabel if no point
