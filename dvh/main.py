@@ -795,18 +795,25 @@ def update_data():
     uids, dvh_query_str = get_query()
     print(str(datetime.now()), 'getting dvh data', sep=' ')
     current_dvh = DVH(uid=uids, dvh_condition=dvh_query_str)
-    print(str(datetime.now()), 'initializing source data ', current_dvh.query, sep=' ')
-    current_dvh_group_1, current_dvh_group_2 = update_dvh_data(current_dvh)
-    print(str(datetime.now()), 'updating correlation data')
-    update_correlation()
-    print(str(datetime.now()), 'correlation data updated')
-    update_source_endpoint_calcs()
-    # calculate_review_dvh()
-    initialize_rad_bio_source()
+    if current_dvh.count:
+        print(str(datetime.now()), 'initializing source data ', current_dvh.query, sep=' ')
+        current_dvh_group_1, current_dvh_group_2 = update_dvh_data(current_dvh)
+        print(str(datetime.now()), 'updating correlation data')
+        update_correlation()
+        print(str(datetime.now()), 'correlation data updated')
+        update_source_endpoint_calcs()
+        #calculate_review_dvh()
+        initialize_rad_bio_source()
+        control_chart_y.value = ''
+        update_roi_viewer_mrn()
+    else:
+        print(str(datetime.now()), 'empty dataset returned', sep=' ')
+        query_button.label = 'No Data'
+        query_button.button_type = 'danger'
+        time.sleep(2.5)
+
     query_button.label = old_update_button_label
     query_button.button_type = old_update_button_type
-    control_chart_y.value = ''
-    update_roi_viewer_mrn()
 
 
 # input is a DVH class from Analysis_Tools.py
