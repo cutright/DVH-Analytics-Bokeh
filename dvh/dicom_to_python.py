@@ -346,7 +346,11 @@ class DVHTable:
 
                     coord = rt_structure.GetStructureCoordinates(key)
                     roi_coord_str = dicompyler_roi_coord_to_db_string(rt_structure.GetStructureCoordinates(key))
-                    surface_area = surface_area_of_roi(coord)
+                    try:
+                        surface_area = surface_area_of_roi(coord)
+                    except:
+                        print("Surface area calculation failed for key, name: %s, %s" % (key, current_dvh_calc.name))
+                        surface_area = '(NULL)'
                     # volume = calc_volume(get_planes_from_string(roi_coord_str))
 
                     current_dvh_row = DVHRow(mrn,

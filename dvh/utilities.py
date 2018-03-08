@@ -17,8 +17,8 @@ from scipy.spatial.distance import cdist
 
 
 SCRIPT_DIR = os.path.dirname(__file__)
-
 PREFERENCE_PATHS = {''}
+MIN_SLICE_THICKNESS = 2  # Update method to pull from DICOM
 
 class Temp_DICOM_FileSet:
     def __init__(self, **kwargs):
@@ -341,57 +341,72 @@ def dicompyler_roi_coord_to_db_string(coord):
 
 
 def surface_area_of_roi(coord):
-    # This function does not account for axial area in between top and bottom slices
-    # Needs a rewrite
     """
-
     :param coord: dicompyler structure coordinates from GetStructureCoordinates()
     :return: surface_area in cm^2
     :rtype: float
     """
-    surface_area = 0.
-    all_z_values = [round(float(z), 1) for z in list(coord)]
-    all_z_values = np.sort(all_z_values)
-    thicknesses = np.abs(np.diff(all_z_values))
-    thicknesses = np.append(thicknesses, np.min(thicknesses))
-    first_slice = str(round(min(all_z_values), 2))
-    final_slice = str(round(max(all_z_values), 2))
-    all_z_values = all_z_values.tolist()
 
-    for z in coord:
-        # z in coord will not necessarily go in order of z, convert z to float to lookup thickness
-        # also used to check for top and bottom slices, to add area of those contours
-        thickness = thicknesses[all_z_values.index(round(float(z), 1))]
+    shapely_roi = get_shapely_from_dicompyler_roi(coord)
+    slice_count = len(shapely_roi['z'])
 
-        previous_contour = []
-        for plane in coord[z]:
+    area = 0.
+    polygon = shapely_roi['polygon']
+    z = shapely_roi['z']
+    thickness = min(shapely_roi['thickness'])
 
-            points = [(point[0], point[1]) for point in plane['data']]
-
-            # if structure is a point or contains only 2 points, assume zero surface area
-            if points and len(points) > 2:
-
-                # Explicitly connect the final point to the first
-                points.append(points[0])
-
-                contour = Polygon(points)
-                perimeter = contour.length
-                surface_area += perimeter * thickness
-
-                # Account for top and bottom surfaces
-                if z in {first_slice, final_slice}:
-                    # if current contour is contained within the previous contour, then current contour is a subtraction
-                    # this is how DICOM handles ring structures
-                    if previous_contour and not Point((points[0][0], points[0][1])).disjoint(previous_contour):
-                        surface_area -= contour.area
-                        previous_contour = []
-                    else:
-                        surface_area += contour.area
-                        previous_contour = contour
+    for i in range(0, slice_count):
+        for j in [-1, 1]:  # -1 for bottom area and 1 for top area
+            # ensure bottom of first slice and top of last slice are fully added
+            # if prev/next slice is not adjacent, assume non-contiguous ROI
+            if (i == 0 and j == -1) or (i == slice_count-1 and j == 1) or abs(z[i] - z[i+j]) > thickness:
+                area += polygon[i].area
             else:
-                previous_contour = []
+                area += polygon[i].difference(polygon[i+j]).area
 
-    return round(surface_area / 100., 2)
+        area += polygon[i].length * thickness
+
+    return round(area/100, 3)
+
+
+def get_shapely_from_dicompyler_roi(dicompyler_roi):
+
+    roi_slice = {'z': [], 'thickness': [], 'polygon': []}
+
+    dicompyler_roi_keys = list(dicompyler_roi)
+    dicompyler_roi_keys.sort()
+
+    all_z_values = [round(float(z), 2) for z in dicompyler_roi_keys]
+    thicknesses = np.abs(np.diff(all_z_values))
+    if len(thicknesses):
+        thicknesses = np.append(thicknesses, np.min(thicknesses))
+    else:
+        thicknesses = np.array([MIN_SLICE_THICKNESS])
+
+    sets_of_points = dicompyler_roi_to_sets_of_points(dicompyler_roi)
+
+    for z in sets_of_points:
+        thickness = thicknesses[all_z_values.index(round(float(z), 2))]
+        shapely_roi = points_to_shapely_polygon(sets_of_points[z])
+        if shapely_roi:
+            roi_slice['z'].append(round(float(z), 2))
+            roi_slice['thickness'].append(thickness)
+            roi_slice['polygon'].append(shapely_roi)
+
+    return roi_slice
+
+
+def dicompyler_roi_to_sets_of_points(coord):
+    all_points = {}
+    for z in coord:
+        all_points[z] = []
+        for plane in coord[z]:
+            plane_points = [[float(point[0]), float(point[1])] for point in plane['data']]
+            for point in plane['data']:
+                plane_points.append([float(point[0]), float(point[1])])
+            if len(plane_points) > 2:
+                all_points[z].append(plane_points)
+    return all_points
 
 
 def points_to_shapely_polygon(sets_of_points):
