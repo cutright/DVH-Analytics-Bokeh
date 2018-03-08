@@ -340,14 +340,20 @@ def dicompyler_roi_coord_to_db_string(coord):
     return ':'.join(contours)
 
 
-def surface_area_of_roi(coord):
+def surface_area_of_roi(coord, **kwargs):
     """
-    :param coord: dicompyler structure coordinates from GetStructureCoordinates()
+    :param coord: dicompyler structure coordinates from GetStructureCoordinates() or sets_of_points
     :return: surface_area in cm^2
     :rtype: float
     """
 
-    shapely_roi = get_shapely_from_dicompyler_roi(coord)
+    if 'coord_type' in kwargs and kwargs['coord_type'] == "sets_of_points":
+        sets_of_points = coord
+    else:
+        sets_of_points = dicompyler_roi_to_sets_of_points(coord)
+
+    shapely_roi = get_shapely_from_sets_of_points(sets_of_points)
+
     slice_count = len(shapely_roi['z'])
 
     area = 0.
@@ -384,6 +390,31 @@ def get_shapely_from_dicompyler_roi(dicompyler_roi):
         thicknesses = np.array([MIN_SLICE_THICKNESS])
 
     sets_of_points = dicompyler_roi_to_sets_of_points(dicompyler_roi)
+
+    for z in sets_of_points:
+        thickness = thicknesses[all_z_values.index(round(float(z), 2))]
+        shapely_roi = points_to_shapely_polygon(sets_of_points[z])
+        if shapely_roi:
+            roi_slice['z'].append(round(float(z), 2))
+            roi_slice['thickness'].append(thickness)
+            roi_slice['polygon'].append(shapely_roi)
+
+    return roi_slice
+
+
+def get_shapely_from_sets_of_points(sets_of_points):
+
+    roi_slice = {'z': [], 'thickness': [], 'polygon': []}
+
+    sets_of_points_keys = list(sets_of_points)
+    sets_of_points_keys.sort()
+
+    all_z_values = [round(float(z), 2) for z in sets_of_points_keys]
+    thicknesses = np.abs(np.diff(all_z_values))
+    if len(thicknesses):
+        thicknesses = np.append(thicknesses, np.min(thicknesses))
+    else:
+        thicknesses = np.array([MIN_SLICE_THICKNESS])
 
     for z in sets_of_points:
         thickness = thicknesses[all_z_values.index(round(float(z), 2))]
@@ -704,6 +735,24 @@ def update_volumes_in_db(study_instance_uid, roi_name):
     DVH_SQL().update('dvhs',
                      'volume',
                      round(float(volume), 2),
+                     "study_instance_uid = '%s' and roi_name = '%s'"
+                     % (study_instance_uid, roi_name))
+
+
+def update_surface_areas_in_db(study_instance_uid, roi_name):
+
+    coordinates_string = DVH_SQL().query('dvhs',
+                                         'roi_coord_string',
+                                         "study_instance_uid = '%s' and roi_name = '%s'"
+                                         % (study_instance_uid, roi_name))
+
+    roi = get_planes_from_string(coordinates_string[0][0])
+
+    surface_area = surface_area_of_roi(roi, coord_type="sets_of_points")
+
+    DVH_SQL().update('dvhs',
+                     'surface_area',
+                     round(float(surface_area), 2),
                      "study_instance_uid = '%s' and roi_name = '%s'"
                      % (study_instance_uid, roi_name))
 
