@@ -47,13 +47,6 @@ SELECT_CATEGORY_DEFAULT = 'Rx Dose'
 # Used to keep Query UI clean
 ALLOW_SOURCE_UPDATE = True
 
-# This depends on a user defined function in dvh/auth.py.  By default, this returns True
-# It is up to the user/installer to write their own function (e.g., using python-ldap)
-# Proper execution of this requires placing Bokeh behind a reverse proxy with SSL setup (HTTPS)
-# Please see Bokeh documentation for more information
-ACCESS_GRANTED = not AUTH_USER_REQ
-
-
 # Declare variables
 colors = itertools.cycle(palette)
 current_dvh, current_dvh_group_1, current_dvh_group_2 = [], [], []
@@ -189,6 +182,7 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
                     'ROI Mean Dose': {'var_name': 'mean_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
                     'ROI Max Dose': {'var_name': 'max_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
                     'ROI Volume': {'var_name': 'volume', 'table': 'DVHs', 'units': 'cc', 'source': source},
+                    'ROI Surface Area': {'var_name': 'surface_area', 'table': 'DVHs', 'units': 'cm^2', 'source': source},
                     'PTV Distance (Min)': {'var_name': 'dist_to_ptv_min', 'table': 'DVHs', 'units': 'cm', 'source': source},
                     'PTV Distance (Mean)': {'var_name': 'dist_to_ptv_mean', 'table': 'DVHs', 'units': 'cm', 'source': source},
                     'PTV Distance (Median)': {'var_name': 'dist_to_ptv_median', 'table': 'DVHs', 'units': 'cm', 'source': source},
