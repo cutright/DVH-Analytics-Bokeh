@@ -20,6 +20,7 @@ SCRIPT_DIR = os.path.dirname(__file__)
 PREFERENCE_PATHS = {''}
 MIN_SLICE_THICKNESS = 2  # Update method to pull from DICOM
 
+
 class Temp_DICOM_FileSet:
     def __init__(self, **kwargs):
 
