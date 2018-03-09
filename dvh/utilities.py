@@ -375,33 +375,6 @@ def surface_area_of_roi(coord, **kwargs):
     return round(area/100, 3)
 
 
-def get_shapely_from_dicompyler_roi(dicompyler_roi):
-
-    roi_slice = {'z': [], 'thickness': [], 'polygon': []}
-
-    dicompyler_roi_keys = list(dicompyler_roi)
-    dicompyler_roi_keys.sort()
-
-    all_z_values = [round(float(z), 2) for z in dicompyler_roi_keys]
-    thicknesses = np.abs(np.diff(all_z_values))
-    if len(thicknesses):
-        thicknesses = np.append(thicknesses, np.min(thicknesses))
-    else:
-        thicknesses = np.array([MIN_SLICE_THICKNESS])
-
-    sets_of_points = dicompyler_roi_to_sets_of_points(dicompyler_roi)
-
-    for z in sets_of_points:
-        thickness = thicknesses[all_z_values.index(round(float(z), 2))]
-        shapely_roi = points_to_shapely_polygon(sets_of_points[z])
-        if shapely_roi:
-            roi_slice['z'].append(round(float(z), 2))
-            roi_slice['thickness'].append(thickness)
-            roi_slice['polygon'].append(shapely_roi)
-
-    return roi_slice
-
-
 def get_shapely_from_sets_of_points(sets_of_points):
 
     roi_slice = {'z': [], 'thickness': [], 'polygon': []}
