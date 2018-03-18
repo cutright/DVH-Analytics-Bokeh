@@ -10,6 +10,7 @@ from future.utils import listitems
 import numpy as np
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL, get_unique_list
+from options import RESAMPLED_DVH_BIN_COUNT
 
 
 # This class retrieves DVH data from the SQL database and calculates statistical DVHs (min, max, quartiles)
@@ -18,31 +19,17 @@ class DVH:
     def __init__(self, **kwargs):
 
         if 'uid' in kwargs:
-            study_instance_uid = kwargs['uid']
-            db_constraints_list = []
-            for i in range(0, len(study_instance_uid)):
-                db_constraints_list.append(study_instance_uid[i])
-            uid_constraints_str = "study_instance_uid in ('"
-            uid_constraints_str += "', '".join(db_constraints_list)
-            uid_constraints_str += "')"
+            uid_constraints_str = "study_instance_uid in ('%s')" % "', '".join(kwargs['uid'])
             if 'dvh_condition' in kwargs and kwargs['dvh_condition']:
                 uid_constraints_str = " and " + uid_constraints_str
         else:
             uid_constraints_str = ''
 
         if 'dvh_condition' in kwargs and kwargs['dvh_condition']:
-            uid_constraints_str = '(' + kwargs['dvh_condition'] + ')' + uid_constraints_str
+            uid_constraints_str = "(%s)%s" % (kwargs['dvh_condition'], uid_constraints_str)
             self.query = kwargs['dvh_condition']
         else:
             self.query = ''
-
-        if 'uncategorized' in kwargs:
-            if kwargs['uncategorized']:
-                self.uncategorized = True
-            else:
-                self.uncategorized = False
-        else:
-            self.uncategorized = False
 
         cnx = DVH_SQL()
 
@@ -67,9 +54,7 @@ class DVH:
         # Get needed values not in DVHs table
         for i in range(0, self.count):
             # Get Rx Doses
-            condition = "mrn = '" + self.mrn[i]
-            condition += "' and study_instance_uid = '"
-            condition += str(self.study_instance_uid[i]) + "'"
+            condition = "mrn = '%s' and study_instance_uid = '%s'" % (self.mrn[i], self.study_instance_uid[i])
             rx_dose_cursor = cnx.query('Plans', 'rx_dose', condition)
             self.rx_dose.append(rx_dose_cursor[0][0])
 
@@ -105,7 +90,7 @@ class DVH:
             if self.rx_dose[0]:
                 doses = np.divide(doses * 100, self.rx_dose[0:self.count])
             else:
-                self.rx_dose[0] = 1
+                self.rx_dose[0] = 1  # if review dvh isn't defined, the following line would crash
                 doses = np.divide(doses * 100, self.rx_dose[0:self.count])
                 self.rx_dose[0] = 0
                 doses[0] = 0
@@ -142,49 +127,32 @@ class DVH:
 
         return answer
 
-    def get_stat_dvh(self, **kwargs):
-        f = 5000
+    def get_resampled_x_axis(self):
+        x_axis, dvhs = self.resample_dvh()
+        return x_axis
 
+    def get_stat_dvh(self, **kwargs):
         if 'type' in kwargs:
-            bin_count = self.bin_count
+            stat_type = kwargs['type']
             if 'dose' in kwargs and kwargs['dose'] == 'relative':
-                x_axis, dvhs = self.resample_dvh(f)
-                bin_count = np.size(x_axis)
-                if not kwargs['type']:
-                    return x_axis
+                x_axis, dvhs = self.resample_dvh()
             else:
                 dvhs = self.dvh
 
-            dvh = np.zeros(bin_count)
-
             if 'volume' in kwargs and kwargs['volume'] == 'absolute':
-                print('converting dvh to abs volume')
                 dvhs = self.dvhs_to_abs_vol(dvhs)
 
-            if kwargs['type'] == 'min':
-                for x in range(0, bin_count):
-                    dvh[x] = np.min(dvhs[x, :])
-
-            elif kwargs['type'] == 'mean':
-                for x in range(0, bin_count):
-                    dvh[x] = np.mean(dvhs[x, :])
-
-            elif kwargs['type'] == 'median':
-                for x in range(0, bin_count):
-                    dvh[x] = np.median(dvhs[x, :])
-
-            elif kwargs['type'] == 'max':
-                for x in range(0, bin_count):
-                    dvh[x] = np.max(dvhs[x, :])
-
-            elif kwargs['type'] == 'percentile':
+            if kwargs['type'] == 'percentile':
                 if 'percent' in kwargs and kwargs['percent']:
-                    for x in range(0, bin_count):
-                        dvh[x] = np.percentile(dvhs[x, :], kwargs['percent'])
+                    dvh = np.percentile(dvhs, kwargs['percent'], 1)
+                    return dvh
 
-            elif kwargs['type'] == 'std':
-                for x in range(0, bin_count):
-                    dvh[x] = np.std(dvhs[x, :])
+            stat_function = {'min': np.min,
+                             'mean': np.mean,
+                             'median': np.median,
+                             'max': np.max,
+                             'std': np.std}
+            dvh = stat_function[stat_type](dvhs, 1)
 
             return dvh
         else:
@@ -192,39 +160,20 @@ class DVH:
             return False
 
     def get_standard_stat_dvh(self, **kwargs):
-        f = 5000
-
-        bin_count = self.bin_count
         if 'dose' in kwargs and kwargs['dose'] == 'relative':
-            x_axis, dvhs = self.resample_dvh(f)
-            bin_count = np.size(x_axis)
+            x_axis, dvhs = self.resample_dvh()
         else:
             dvhs = self.dvh
 
         if 'volume' in kwargs and kwargs['volume'] == 'absolute':
             dvhs = self.dvhs_to_abs_vol(dvhs)
 
-        dvh_min = np.zeros(bin_count)
-        dvh_q1 = np.zeros(bin_count)
-        dvh_mean = np.zeros(bin_count)
-        dvh_median = np.zeros(bin_count)
-        dvh_q3 = np.zeros(bin_count)
-        dvh_max = np.zeros(bin_count)
-
-        for x in range(0, bin_count):
-            dvh_min[x] = np.min(dvhs[x, :])
-            dvh_mean[x] = np.mean(dvhs[x, :])
-            dvh_median[x] = np.median(dvhs[x, :])
-            dvh_max[x] = np.max(dvhs[x, :])
-            dvh_q1[x] = np.percentile(dvhs[x, :], 25)
-            dvh_q3[x] = np.percentile(dvhs[x, :], 75)
-
-        standard_stat_dvh = {'min': dvh_min,
-                             'q1': dvh_q1,
-                             'mean': dvh_mean,
-                             'median': dvh_median,
-                             'q3': dvh_q3,
-                             'max': dvh_max}
+        standard_stat_dvh = {'min': np.min(dvhs, 1),
+                             'q1': np.percentile(dvhs, 25, 1),
+                             'mean': np.mean(dvhs, 1),
+                             'median': np.median(dvhs, 1),
+                             'q3': np.percentile(dvhs, 75, 1),
+                             'max': np.max(dvhs, 1)}
 
         return standard_stat_dvh
 
@@ -234,16 +183,17 @@ class DVH:
             new_dvhs[:, i] = np.multiply(dvhs[:, i], self.volume[i])
         return new_dvhs
 
-    def resample_dvh(self, f):
+    def resample_dvh(self):
         min_rx_dose = np.min(self.rx_dose) * 100.
-        new_bin_count = int(np.divide(float(self.bin_count), min_rx_dose) * f)
+        new_bin_count = int(np.divide(float(self.bin_count), min_rx_dose) * RESAMPLED_DVH_BIN_COUNT)
 
         x1 = np.linspace(0, self.bin_count, self.bin_count)
         y2 = np.zeros([new_bin_count, self.count])
         for i in range(0, self.count):
-            x2 = np.multiply(np.linspace(0, new_bin_count, new_bin_count), self.rx_dose[i] * 100. / f)
+            x2 = np.multiply(np.linspace(0, new_bin_count, new_bin_count),
+                             self.rx_dose[i] * 100. / RESAMPLED_DVH_BIN_COUNT)
             y2[:, i] = np.interp(x2, x1, self.dvh[:, i])
-        x2 = np.divide(np.linspace(0, new_bin_count, new_bin_count), f)
+        x2 = np.divide(np.linspace(0, new_bin_count, new_bin_count), RESAMPLED_DVH_BIN_COUNT)
         return x2, y2
 
 
@@ -292,23 +242,16 @@ def calc_eud(dvh, a):
 
 
 def get_study_instance_uids(**kwargs):
-    study_instance_uids = {}
+    uids = {}
     complete_list = []
     for key, value in listitems(kwargs):
-        if key not in {'Plans', 'DVHs', 'Beams', 'Rxs'}:
-            print(key, ' is not a valid table name\nSelect from Plans, DVHs, Beams, or Rxs.', sep=' ')
-            return
-        study_instance_uids[key] = QuerySQL(key, value).study_instance_uid
-        for sub_value in study_instance_uids[key]:
-            complete_list.append(sub_value)
-    study_instance_uids['unique'] = get_unique_list(complete_list)
-    union_list = []
-    for value in study_instance_uids['unique']:
-        if is_uid_in_all_keys(value, study_instance_uids):
-            union_list.append(value)
-    study_instance_uids['union'] = union_list
+        uids[key] = QuerySQL(key, value).study_instance_uid
+        complete_list.extend(uids[key])
 
-    return study_instance_uids
+    uids['unique'] = get_unique_list(complete_list)
+    uids['union'] = [value for value in uids['unique'] if is_uid_in_all_keys(value, uids)]
+
+    return uids
 
 
 def is_uid_in_all_keys(uid, uid_kwlist):
