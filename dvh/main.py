@@ -835,7 +835,7 @@ def update_dvh_data(dvh):
 
     if radio_group_dose.active == 1:
         stat_dose_scale = 'relative'
-        x_axis_stat = dvh.get_stat_dvh(type=False, dose=stat_dose_scale)
+        x_axis_stat = dvh.get_resampled_x_axis()
     else:
         stat_dose_scale = 'absolute'
         x_axis_stat = x_axis
@@ -867,7 +867,7 @@ def update_dvh_data(dvh):
         stat_dvhs_1 = dvh_group_1.get_standard_stat_dvh(dose=stat_dose_scale, volume=stat_volume_scale)
 
         if radio_group_dose.active == 1:
-            x_axis_1 = dvh_group_1.get_stat_dvh(type=False, dose=stat_dose_scale)
+            x_axis_1 = dvh_group_1.get_resampled_x_axis()
         else:
             x_axis_1 = np.add(np.linspace(0, dvh_group_1.bin_count, dvh_group_1.bin_count) / 100., 0.005)
 
@@ -899,7 +899,7 @@ def update_dvh_data(dvh):
         stat_dvhs_2 = dvh_group_2.get_standard_stat_dvh(dose=stat_dose_scale, volume=stat_volume_scale)
 
         if radio_group_dose.active == 1:
-            x_axis_2 = dvh_group_2.get_stat_dvh(type=False, dose=stat_dose_scale)
+            x_axis_2 = dvh_group_2.get_resampled_x_axis()
         else:
             x_axis_2 = np.add(np.linspace(0, dvh_group_2.bin_count, dvh_group_2.bin_count) / 100., 0.005)
 
