@@ -176,6 +176,11 @@ def recalculate_total_mu(*custom_condition):
 
 
 def datetime_str_to_obj(datetime_str):
+    """
+    :param datetime_str: a string representation of a datetime as formatted in DICOM (YYYYMMDDHHMMSS)
+    :return: a datetime object
+    :rtype: datetime
+    """
 
     year = int(datetime_str[0:4])
     month = int(datetime_str[4:6])
@@ -190,6 +195,11 @@ def datetime_str_to_obj(datetime_str):
 
 
 def date_str_to_obj(date_str):
+    """
+    :param date_str: a string representation of a date as formatted in DICOM (YYYYMMDD)
+    :return: a datetime object
+    :rtype: datetime
+    """
 
     year = int(date_str[0:4])
     month = int(date_str[4:6])
@@ -207,6 +217,10 @@ def platform():
 
 
 def is_import_settings_defined():
+    """
+    Checks if import_settings.txt exists
+    :rtype: bool
+    """
 
     rel_path = "preferences/import_settings.txt"
     abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
@@ -218,6 +232,10 @@ def is_import_settings_defined():
 
 
 def is_sql_connection_defined():
+    """
+    Checks if sql_connection.cnf exists
+    :rtype: bool
+    """
 
     rel_path = "preferences/sql_connection.cnf"
     abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
@@ -308,6 +326,12 @@ def validate_sql_connection(*config, **kwargs):
 
 
 def change_angle_origin(angles, max_positive_angle):
+    """
+    :param angles: a list of angles
+    :param max_positive_angle: the maximum positive angle, angles greater than this will be shifted to negative angles
+    :return: list of the same angles, but none exceed the max
+    :rtype: list
+    """
     if len(angles) == 1:
         if angles[0] > max_positive_angle:
             return [angles[0] - 360]
@@ -330,6 +354,11 @@ def change_angle_origin(angles, max_positive_angle):
 
 
 def dicompyler_roi_coord_to_db_string(coord):
+    """
+    :param coord: dicompyler structure coordinates from GetStructureCoordinates()
+    :return: string representation of roi, <z1>: <x1 y1 x2 y2... xn yn>, <zn>: <x1 y1 x2 y2... xn yn>
+    :rtype: str
+    """
     contours = []
     for z in coord:
         for plane in coord[z]:
@@ -377,6 +406,12 @@ def surface_area_of_roi(coord, **kwargs):
 
 
 def get_shapely_from_sets_of_points(sets_of_points):
+    """
+    :param sets_of_points: a dictionary of slices with key being a str representation of z value, value is a list
+    of points defining a polygon in the slice.  point[0] is x and point[1] is y
+    :return: roi_slice which is a dictionary of lists of z, thickness, and a Shapely Polygon class object
+    :rtype: list
+    """
 
     roi_slice = {'z': [], 'thickness': [], 'polygon': []}
 
@@ -402,6 +437,11 @@ def get_shapely_from_sets_of_points(sets_of_points):
 
 
 def dicompyler_roi_to_sets_of_points(coord):
+    """
+    :param coord: dicompyler structure coordinates from GetStructureCoordinates()
+    :return: a dictionary of lists of points that define contours in each slice z
+    :rtype: dict
+    """
     all_points = {}
     for z in coord:
         all_points[z] = []
@@ -443,12 +483,12 @@ def points_to_shapely_polygon(sets_of_points):
 
 
 def calc_roi_overlap(oar, tv):
-
-    # oar and ptv are lists using str(z) as keys
-    # each item is an ordered list of points representing a polygon
-    # polygon n is inside polygon n-1, then the current accumulated polygon is
-    #    polygon n subtracted from the accumulated polygon up to and including polygon n-1
-    #    Same method DICOM uses to handle rings and islands
+    """
+    :param oar: dict representing organ-at-risk, follows format of "sets of points" in dicompyler_roi_to_sets_of_points
+    :param tv: dict representing tumor volume
+    :return: volume of overlap between ROIs
+    :rtype: float
+    """
 
     intersection_volume = 0.
     all_z_values = [round(float(z), 2) for z in list(tv)]
@@ -472,6 +512,11 @@ def calc_roi_overlap(oar, tv):
 
 
 def get_union(rois):
+    """
+    :param rois: a list of "sets of points"
+    :return: a "sets of points" representing the union of the rois, each item in "sets of points" is a plane
+    :rtype: list
+    """
 
     new_roi = {}
 
@@ -522,6 +567,11 @@ def get_union(rois):
 
 
 def calc_volume(roi):
+    """
+    :param roi: a "sets of points" formatted list
+    :return: volume in cm^3 of roi
+    :rtype: float
+    """
 
     # oar and ptv are lists using str(z) as keys
     # each item is an ordered list of points representing a polygon
@@ -549,6 +599,11 @@ def calc_volume(roi):
 
 
 def get_roi_coordinates_from_string(roi_coord_string):
+    """
+    :param roi_coord_string: the string reprentation of an roi in the SQL database
+    :return: a list of numpy arrays, each array is the x, y, z coordinates of the given point
+    :rtype: list
+    """
     roi_coordinates = []
     contours = roi_coord_string.split(':')
 
@@ -565,6 +620,11 @@ def get_roi_coordinates_from_string(roi_coord_string):
 
 
 def get_roi_coordinates_from_planes(planes):
+    """
+    :param planes: a "sets of points" formatted list
+    :return: a list of numpy arrays, each array is the x, y, z coordinates of the given point
+    :rtype: list
+    """
     roi_coordinates = []
 
     for z in list(planes):
@@ -575,6 +635,11 @@ def get_roi_coordinates_from_planes(planes):
 
 
 def get_planes_from_string(roi_coord_string):
+    """
+    :param roi_coord_string: roi string represntation of an roi as formatted in the SQL database
+    :return: a "sets of points" formatted list
+    :rtype: list
+    """
     planes = {}
     contours = roi_coord_string.split(':')
 
