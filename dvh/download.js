@@ -140,7 +140,7 @@ if (cb_obj.get('value') == 'all' || cb_obj.get('value') == 'lite') {
                        data['age'][i].toString(),
                        data['birth_date'][i].toString(),
                        data['fxs'][i].toString(),
-                       data['heterogeneity_correction'][i].toString(),
+                       data['heterogeneity_correction'][i].toString().replace(',', ' & '),
                        data['patient_orientation'][i].toString(),
                        data['patient_sex'][i].toString(),
                        data['physician'][i].toString(),
