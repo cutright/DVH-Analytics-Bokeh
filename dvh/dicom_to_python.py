@@ -14,7 +14,8 @@ from dicompylercore import dicomparser, dvhcalc
 from datetime import datetime
 from dateutil.relativedelta import relativedelta  # python-dateutil
 from roi_name_manager import DatabaseROIs, clean_name
-from utilities import datetime_str_to_obj, dicompyler_roi_coord_to_db_string, change_angle_origin, surface_area_of_roi
+from utilities import datetime_str_to_obj, dicompyler_roi_coord_to_db_string, change_angle_origin,\
+    surface_area_of_roi, date_str_to_obj
 import numpy as np
 
 
@@ -78,16 +79,13 @@ class PlanRow:
 
         # Record gender
         patient_sex = rt_plan.PatientSex.upper()
-        if not (patient_sex == 'M' or patient_sex == 'F'):
+        if patient_sex not in {'M', 'F'}:
             patient_sex = '-'
 
         # Parse and record sim date
         sim_study_date = rt_plan.StudyDate
         if sim_study_date:
-            sim_study_year = int(sim_study_date[0:4])
-            sim_study_month = int(sim_study_date[4:6])
-            sim_study_day = int(sim_study_date[6:8])
-            sim_study_date_obj = datetime(sim_study_year, sim_study_month, sim_study_day)
+            sim_study_date_obj = date_str_to_obj(sim_study_date)
         else:
             sim_study_date = '(NULL)'
 
@@ -98,10 +96,7 @@ class PlanRow:
             birth_date = '(NULL)'
             age = '(NULL)'
         else:
-            birth_year = int(birth_date[0:4])
-            birth_month = int(birth_date[4:6])
-            birth_day = int(birth_date[6:8])
-            birth_date_obj = datetime(birth_year, birth_month, birth_day)
+            birth_date_obj = date_str_to_obj(birth_date)
             if sim_study_date == '(NULL)':
                 age = '(NULL)'
             else:
@@ -374,10 +369,7 @@ class DVHTable:
 
         for attr in dir(values[0]):
             if not attr.startswith('_'):
-                new_list = []
-                for x in dvh_range:
-                    new_list.append(getattr(values[x], attr))
-                setattr(self, attr, new_list)
+                setattr(self, attr, [getattr(values[x], attr) for x in dvh_range])
 
 
 class BeamTable:

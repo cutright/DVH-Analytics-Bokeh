@@ -39,9 +39,9 @@ class DVH:
             if not key.startswith("__"):
                 setattr(self, key, value)
 
-        # Add this properties to dvh_data since they aren't in the DVHs SQL table
+        # Add these properties to dvh_data since they aren't in the DVHs SQL table
         self.count = len(self.mrn)
-        setattr(self, 'rx_dose', [])
+        self.rx_dose = []
 
         self.bin_count = 0
         for value in self.dvh_string:
@@ -49,7 +49,7 @@ class DVH:
             current_size = np.size(current_dvh_str)
             if current_size > self.bin_count:
                 self.bin_count = current_size
-        setattr(self, 'dvh', np.zeros([self.bin_count, self.count]))
+        self.dvh = np.zeros([self.bin_count, self.count])
 
         # Get needed values not in DVHs table
         for i in range(0, self.count):
@@ -61,16 +61,14 @@ class DVH:
             # Process dvh_string to numpy array, and pad with zeros at the end
             # so that all dvhs are the same length
             current_dvh = np.array(self.dvh_string[i].split(','), dtype='|S4').astype(np.float)
-            if np.max(current_dvh) > 0:
-                current_dvh = np.divide(current_dvh, np.max(current_dvh))
+            current_dvh_max = np.max(current_dvh)
+            if current_dvh_max > 0:
+                current_dvh = np.divide(current_dvh, current_dvh_max)
             zero_fill = np.zeros(self.bin_count - len(current_dvh))
             self.dvh[:, i] = np.concatenate((current_dvh, zero_fill))
 
     def get_percentile_dvh(self, percentile):
-        dvh = np.zeros(self.bin_count)
-        for x in range(0, self.bin_count):
-            dvh[x] = np.percentile(self.dvh[x, :], percentile)
-        return dvh
+        return np.percentile(self.dvh, percentile, 1)
 
     def get_dose_to_volume(self, volume, **kwargs):
         doses = np.zeros(self.count)
@@ -142,11 +140,6 @@ class DVH:
             if 'volume' in kwargs and kwargs['volume'] == 'absolute':
                 dvhs = self.dvhs_to_abs_vol(dvhs)
 
-            if kwargs['type'] == 'percentile':
-                if 'percent' in kwargs and kwargs['percent']:
-                    dvh = np.percentile(dvhs, kwargs['percent'], 1)
-                    return dvh
-
             stat_function = {'min': np.min,
                              'mean': np.mean,
                              'median': np.median,
@@ -178,10 +171,7 @@ class DVH:
         return standard_stat_dvh
 
     def dvhs_to_abs_vol(self, dvhs):
-        new_dvhs = np.zeros_like(dvhs)
-        for i in range(0, self.count):
-            new_dvhs[:, i] = np.multiply(dvhs[:, i], self.volume[i])
-        return new_dvhs
+        return np.multiply(dvhs, self.volume)
 
     def resample_dvh(self):
         min_rx_dose = np.min(self.rx_dose) * 100.
