@@ -19,14 +19,14 @@ class DVH:
     def __init__(self, **kwargs):
 
         if 'uid' in kwargs:
-            uid_constraints_str = "study_instance_uid in ('%s')" % "', '".join(kwargs['uid'])
+            constraints_str = "study_instance_uid in ('%s')" % "', '".join(kwargs['uid'])
             if 'dvh_condition' in kwargs and kwargs['dvh_condition']:
-                uid_constraints_str = " and " + uid_constraints_str
+                constraints_str = " and " + constraints_str
         else:
-            uid_constraints_str = ''
+            constraints_str = ''
 
         if 'dvh_condition' in kwargs and kwargs['dvh_condition']:
-            uid_constraints_str = "(%s)%s" % (kwargs['dvh_condition'], uid_constraints_str)
+            constraints_str = "(%s)%s" % (kwargs['dvh_condition'], constraints_str)
             self.query = kwargs['dvh_condition']
         else:
             self.query = ''
@@ -34,7 +34,7 @@ class DVH:
         cnx = DVH_SQL()
 
         # Get DVH data from SQL
-        dvh_data = QuerySQL('DVHs', uid_constraints_str)
+        dvh_data = QuerySQL('DVHs', constraints_str)
         for key, value in dvh_data.__dict__.items():
             if not key.startswith("__"):
                 setattr(self, key, value)
