@@ -1877,6 +1877,8 @@ def update_correlation():
     corr_chart_x.options = [''] + categories
     corr_chart_y.options = [''] + categories
 
+    validate_correlation()
+
 
 def update_endpoints_in_correlation():
     global correlation_1, correlation_2
@@ -2645,6 +2647,190 @@ def update_dvh_table_selection(attr, old, new):
         source.selected = new
 
 
+def update_dvh_review_rois(attr, old, new):
+    global temp_dvh_info, dvh_review_rois
+    if select_reviewed_mrn.value:
+        # initial_button_type = calculate_review_dvh_button.button_type
+        # calculate_review_dvh_button.button_type = "warning"
+        #
+        # initial_label = calculate_review_dvh_button.label
+        # calculate_review_dvh_button.label = "Updating..."
+        if new != '':
+            dvh_review_rois = temp_dvh_info.get_roi_names(new).values()
+            select_reviewed_dvh.options = dvh_review_rois
+            select_reviewed_dvh.value = dvh_review_rois[0]
+        else:
+            select_reviewed_dvh.options = ['']
+            select_reviewed_dvh.value = ['']
+            #
+            # calculate_review_dvh_button.button_type = initial_button_type
+            # calculate_review_dvh_button.label = initial_label
+    else:
+        select_reviewed_dvh.options = ['']
+        select_reviewed_dvh.value = ''
+        patches = {'x': [(0, [])],
+                   'y': [(0, [])],
+                   'roi_name': [(0, '')],
+                   'volume': [(0, '')],
+                   'min_dose': [(0, '')],
+                   'mean_dose': [(0, '')],
+                   'max_dose': [(0, '')],
+                   'mrn': [(0, '')],
+                   'rx_dose': [(0, '')]}
+        source.patch(patches)
+
+
+def calculate_review_dvh():
+    global temp_dvh_info, dvh_review_rois, x, y
+
+    patches = {'x': [(0, [])],
+               'y': [(0, [])],
+               'roi_name': [(0, '')],
+               'volume': [(0, 1)],
+               'min_dose': [(0, '')],
+               'mean_dose': [(0, '')],
+               'max_dose': [(0, '')],
+               'mrn': [(0, '')],
+               'rx_dose': [(0, 1)]}
+
+    try:
+        if not source.data['x']:
+            # calculate_review_dvh_button.button_type = 'warning'
+            # calculate_review_dvh_button.label = 'Waiting...'
+            update_data()
+
+        else:
+            # calculate_review_dvh_button.button_type = 'warning'
+            # calculate_review_dvh_button.label = 'Calculating...'
+
+            file_index = temp_dvh_info.mrn.index(select_reviewed_mrn.value)
+            roi_index = dvh_review_rois.index(select_reviewed_dvh.value)
+            structure_file = temp_dvh_info.structure[file_index]
+            plan_file = temp_dvh_info.plan[file_index]
+            dose_file = temp_dvh_info.dose[file_index]
+            key = list(temp_dvh_info.get_roi_names(select_reviewed_mrn.value))[roi_index]
+
+            rt_st = dicomparser.DicomParser(structure_file)
+            rt_structures = rt_st.GetStructures()
+            review_dvh = dvhcalc.get_dvh(structure_file, dose_file, key)
+            dicompyler_plan = dicomparser.DicomParser(plan_file).GetPlan()
+
+            roi_name = rt_structures[key]['name']
+            volume = review_dvh.volume
+            min_dose = review_dvh.min
+            mean_dose = review_dvh.mean
+            max_dose = review_dvh.max
+            if not review_rx.value:
+                rx_dose = float(dicompyler_plan['rxdose']) / 100.
+                review_rx.value = str(round(rx_dose, 2))
+            else:
+                rx_dose = round(float(review_rx.value), 2)
+
+            x = review_dvh.bincenters
+            if max(review_dvh.counts):
+                y = np.divide(review_dvh.counts, max(review_dvh.counts))
+            else:
+                y = review_dvh.counts
+
+            if radio_group_dose.active == 1:
+                f = 5000
+                bin_count = len(x)
+                new_bin_count = int(bin_count * f / (rx_dose * 100.))
+
+                x1 = np.linspace(0, bin_count, bin_count)
+                x2 = np.multiply(np.linspace(0, new_bin_count, new_bin_count), rx_dose * 100. / f)
+                y = np.interp(x2, x1, review_dvh.counts)
+                y = np.divide(y, np.max(y))
+                x = np.divide(np.linspace(0, new_bin_count, new_bin_count), f)
+
+            if radio_group_volume.active == 0:
+                y = np.multiply(y, volume)
+
+            patches = {'x': [(0, x)],
+                       'y': [(0, y)],
+                       'roi_name': [(0, roi_name)],
+                       'volume': [(0, volume)],
+                       'min_dose': [(0, min_dose)],
+                       'mean_dose': [(0, mean_dose)],
+                       'max_dose': [(0, max_dose)],
+                       'mrn': [(0, select_reviewed_mrn.value)],
+                       'rx_dose': [(0, rx_dose)]}
+
+    except:
+        pass
+
+    source.patch(patches)
+
+    # calculate_review_dvh_button.button_type = 'success'
+    # calculate_review_dvh_button.label = 'Calculate Review DVH'
+
+
+def select_reviewed_dvh_ticker(attr, old, new):
+    calculate_review_dvh()
+
+
+def review_rx_ticker(attr, old, new):
+    if radio_group_dose.active == 0:
+        source.patch({'rx_dose': [(0, round(float(review_rx.value), 2))]})
+    else:
+        calculate_review_dvh()
+
+
+# Ticker function for abs/rel dose radio buttons
+# any change will call update_data, if any source data has been retrieved from SQL
+def radio_group_dose_ticker(attr, old, new):
+    if source.data['x'] != '':
+        update_data()
+        calculate_review_dvh()
+
+
+# Ticker function for abs/rel volume radio buttons
+# any change will call update_data, if any source data has been retrieved from SQL
+def radio_group_volume_ticker(attr, old, new):
+    if source.data['x'] != '':
+        update_data()
+        calculate_review_dvh()
+
+
+def auth_button_click():
+    global ACCESS_GRANTED
+
+    if not ACCESS_GRANTED:
+        ACCESS_GRANTED = auth.check_credentials(auth_user.value, auth_pass.value, 'generic')
+        if ACCESS_GRANTED:
+            auth_button.label = 'Access Granted'
+            auth_button.button_type = 'success'
+            curdoc().clear()
+            curdoc().add_root(tabs)
+        else:
+            auth_button.label = 'Failed'
+            auth_button.button_type = 'danger'
+            time.sleep(3)
+            auth_button.label = 'Authenticate'
+            auth_button.button_type = 'warning'
+
+
+def validate_correlation():
+    global correlation_1, correlation_2
+
+    for corr in [correlation_1, correlation_2]:
+        if corr:
+            bad_data = []
+            for range_var in list(corr):
+                for i, j in enumerate(corr[range_var]['data']):
+                    if j == 'None':
+                        bad_data.append(i)
+                        print("%s[%s] is non-numerical, will remove all data from correlation for this patient"
+                              % (range_var, i))
+            bad_data = list(set(bad_data))
+            bad_data.sort()
+
+            for bad_index in bad_data[::-1]:
+                for range_var in list(corr):
+                    for col in {'mrn', 'data', 'uid'}:
+                        corr[range_var][col].pop(bad_index)
+
+
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Selection Filter UI objects
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2799,169 +2985,6 @@ def custom_title_red_ticker(attr, old, new):
     custom_title_time_series_red.value = new
     custom_title_correlation_red.value = new
     custom_title_regression_red.value = new
-
-
-def update_dvh_review_rois(attr, old, new):
-    global temp_dvh_info, dvh_review_rois
-    if select_reviewed_mrn.value:
-        # initial_button_type = calculate_review_dvh_button.button_type
-        # calculate_review_dvh_button.button_type = "warning"
-        #
-        # initial_label = calculate_review_dvh_button.label
-        # calculate_review_dvh_button.label = "Updating..."
-        if new != '':
-            dvh_review_rois = temp_dvh_info.get_roi_names(new).values()
-            select_reviewed_dvh.options = dvh_review_rois
-            select_reviewed_dvh.value = dvh_review_rois[0]
-        else:
-            select_reviewed_dvh.options = ['']
-            select_reviewed_dvh.value = ['']
-        #
-        # calculate_review_dvh_button.button_type = initial_button_type
-        # calculate_review_dvh_button.label = initial_label
-    else:
-        select_reviewed_dvh.options = ['']
-        select_reviewed_dvh.value = ''
-        patches = {'x': [(0, [])],
-                   'y': [(0, [])],
-                   'roi_name': [(0, '')],
-                   'volume': [(0, '')],
-                   'min_dose': [(0, '')],
-                   'mean_dose': [(0, '')],
-                   'max_dose': [(0, '')],
-                   'mrn': [(0, '')],
-                   'rx_dose': [(0, '')]}
-        source.patch(patches)
-
-
-def calculate_review_dvh():
-    global temp_dvh_info, dvh_review_rois, x, y
-
-    patches = {'x': [(0, [])],
-               'y': [(0, [])],
-               'roi_name': [(0, '')],
-               'volume': [(0, 1)],
-               'min_dose': [(0, '')],
-               'mean_dose': [(0, '')],
-               'max_dose': [(0, '')],
-               'mrn': [(0, '')],
-               'rx_dose': [(0, 1)]}
-
-    try:
-        if not source.data['x']:
-            # calculate_review_dvh_button.button_type = 'warning'
-            # calculate_review_dvh_button.label = 'Waiting...'
-            update_data()
-
-        else:
-            # calculate_review_dvh_button.button_type = 'warning'
-            # calculate_review_dvh_button.label = 'Calculating...'
-
-            file_index = temp_dvh_info.mrn.index(select_reviewed_mrn.value)
-            roi_index = dvh_review_rois.index(select_reviewed_dvh.value)
-            structure_file = temp_dvh_info.structure[file_index]
-            plan_file = temp_dvh_info.plan[file_index]
-            dose_file = temp_dvh_info.dose[file_index]
-            key = list(temp_dvh_info.get_roi_names(select_reviewed_mrn.value))[roi_index]
-
-            rt_st = dicomparser.DicomParser(structure_file)
-            rt_structures = rt_st.GetStructures()
-            review_dvh = dvhcalc.get_dvh(structure_file, dose_file, key)
-            dicompyler_plan = dicomparser.DicomParser(plan_file).GetPlan()
-
-            roi_name = rt_structures[key]['name']
-            volume = review_dvh.volume
-            min_dose = review_dvh.min
-            mean_dose = review_dvh.mean
-            max_dose = review_dvh.max
-            if not review_rx.value:
-                rx_dose = float(dicompyler_plan['rxdose']) / 100.
-                review_rx.value = str(round(rx_dose, 2))
-            else:
-                rx_dose = round(float(review_rx.value), 2)
-
-            x = review_dvh.bincenters
-            if max(review_dvh.counts):
-                y = np.divide(review_dvh.counts, max(review_dvh.counts))
-            else:
-                y = review_dvh.counts
-
-            if radio_group_dose.active == 1:
-                f = 5000
-                bin_count = len(x)
-                new_bin_count = int(bin_count * f / (rx_dose * 100.))
-
-                x1 = np.linspace(0, bin_count, bin_count)
-                x2 = np.multiply(np.linspace(0, new_bin_count, new_bin_count), rx_dose * 100. / f)
-                y = np.interp(x2, x1, review_dvh.counts)
-                y = np.divide(y, np.max(y))
-                x = np.divide(np.linspace(0, new_bin_count, new_bin_count), f)
-
-            if radio_group_volume.active == 0:
-                y = np.multiply(y, volume)
-
-            patches = {'x': [(0, x)],
-                       'y': [(0, y)],
-                       'roi_name': [(0, roi_name)],
-                       'volume': [(0, volume)],
-                       'min_dose': [(0, min_dose)],
-                       'mean_dose': [(0, mean_dose)],
-                       'max_dose': [(0, max_dose)],
-                       'mrn': [(0, select_reviewed_mrn.value)],
-                       'rx_dose': [(0, rx_dose)]}
-
-    except:
-        pass
-
-    source.patch(patches)
-
-    # calculate_review_dvh_button.button_type = 'success'
-    # calculate_review_dvh_button.label = 'Calculate Review DVH'
-
-
-def select_reviewed_dvh_ticker(attr, old, new):
-    calculate_review_dvh()
-
-
-def review_rx_ticker(attr, old, new):
-    if radio_group_dose.active == 0:
-        source.patch({'rx_dose': [(0, round(float(review_rx.value), 2))]})
-    else:
-        calculate_review_dvh()
-
-
-# Ticker function for abs/rel dose radio buttons
-# any change will call update_data, if any source data has been retrieved from SQL
-def radio_group_dose_ticker(attr, old, new):
-    if source.data['x'] != '':
-        update_data()
-        calculate_review_dvh()
-
-
-# Ticker function for abs/rel volume radio buttons
-# any change will call update_data, if any source data has been retrieved from SQL
-def radio_group_volume_ticker(attr, old, new):
-    if source.data['x'] != '':
-        update_data()
-        calculate_review_dvh()
-
-
-def auth_button_click():
-    global ACCESS_GRANTED
-
-    if not ACCESS_GRANTED:
-        ACCESS_GRANTED = auth.check_credentials(auth_user.value, auth_pass.value, 'generic')
-        if ACCESS_GRANTED:
-            auth_button.label = 'Access Granted'
-            auth_button.button_type = 'success'
-            curdoc().clear()
-            curdoc().add_root(tabs)
-        else:
-            auth_button.label = 'Failed'
-            auth_button.button_type = 'danger'
-            time.sleep(3)
-            auth_button.label = 'Authenticate'
-            auth_button.button_type = 'warning'
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
