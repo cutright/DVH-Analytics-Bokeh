@@ -108,8 +108,10 @@ class PlanRow:
         # In Pinnacle, PhysiciansOfRecord refers to the Radiation Oncologist field
         if hasattr(rt_plan, 'PhysiciansOfRecord'):
             physician = rt_plan.PhysiciansOfRecord.upper()
-        else:
+        elif hasattr(rt_plan, 'ReferringPhysicianName'):
             physician = rt_plan.ReferringPhysicianName.upper()
+        else:
+            physician = '(NULL)'
 
         # Initialize fx and MU counters, iterate over all rx's
         fxs = 0
@@ -305,8 +307,10 @@ class DVHTable:
 
         if hasattr(rt_structure_dicom, 'PhysiciansOfRecord'):
             physician = rt_structure_dicom.PhysiciansOfRecord.upper()
-        else:
+        elif hasattr(rt_structure_dicom, 'ReferringPhysicianName'):
             physician = rt_structure_dicom.ReferringPhysicianName.upper()
+        else:
+            physician = '(NULL)'
 
         values = {}
         row_counter = 0

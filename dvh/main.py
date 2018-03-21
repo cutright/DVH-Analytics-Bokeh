@@ -9,9 +9,9 @@ Created on Sun Apr 21 2017
 
 from __future__ import print_function
 from future.utils import listitems
-from analysis_tools import DVH, get_study_instance_uids, calc_eud
+from analysis_tools import DVH, calc_eud
 from utilities import Temp_DICOM_FileSet, get_planes_from_string, get_union,\
-    collapse_into_single_dates, moving_avg, calc_stats
+    collapse_into_single_dates, moving_avg, calc_stats, get_study_instance_uids
 import auth
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL
@@ -51,6 +51,7 @@ ALLOW_SOURCE_UPDATE = True
 colors = itertools.cycle(palette)
 current_dvh, current_dvh_group_1, current_dvh_group_2 = [], [], []
 anon_id_map = {}
+x, y = [], []
 uids_1, uids_2 = [], []
 correlation_1, correlation_2 = {}, {}
 
@@ -423,7 +424,7 @@ def update_range_source():
         text_max.value = str(max_float)
 
 
-def update_range_titles(**kwargs):
+def update_range_titles(reset_values=False):
     table = range_categories[select_category.value]['table']
     var_name = range_categories[select_category.value]['var_name']
     min_value = DVH_SQL().get_min_value(table, var_name)
@@ -431,7 +432,7 @@ def update_range_titles(**kwargs):
     max_value = DVH_SQL().get_max_value(table, var_name)
     text_max.title = 'Max: ' + str(max_value) + ' ' + range_categories[select_category.value]['units']
 
-    if kwargs and 'reset_values' in kwargs and kwargs['reset_values']:
+    if reset_values:
         text_min.value = str(min_value)
         text_max.value = str(max_value)
 
@@ -667,7 +668,7 @@ def update_ep_row_on_selection(attr, old, new):
             ep_units_in.active = 0
 
         # update output
-        if 'Volume' in data['output_type'][r]:
+        if 'Dose' in data['output_type'][r]:
             if '%' in data['units_in'][r]:
                 select_ep_type.value = ep_options[1]
             else:
@@ -689,12 +690,12 @@ def update_ep_row_on_selection(attr, old, new):
 # SQL_to_Python.py (i.e., uids and dvh_condition)
 # This function can be used for one group at a time, or both groups. Using both groups is useful so that duplicate
 # DVHs do not show up in the plot (i.e., if a DVH satisfies both group criteria)
-def get_query(**kwargs):
+def get_query(group=None):
 
-    if kwargs and 'group' in kwargs:
-        if kwargs['group'] == 1:
+    if group:
+        if group == 1:
             active_groups = [1]
-        elif kwargs['group'] == 2:
+        elif group == 2:
             active_groups = [2]
     else:
         active_groups = [1, 2]
@@ -771,7 +772,7 @@ def get_query(**kwargs):
     # Get a list of UIDs that fit the plan, rx, and beam query criteria.  DVH query criteria will not alter the
     # list of UIDs, therefore dvh_query is not needed to get the UID list
     print(str(datetime.now()), 'getting uids', sep=' ')
-    uids = get_study_instance_uids(Plans=queries['Plans'], Rxs=queries['Rxs'], Beams=queries['Beams'])['union']
+    uids = get_study_instance_uids(plans=queries['Plans'], rxs=queries['Rxs'], beams=queries['Beams'])['union']
 
     # uids: a unique list of all uids that satisfy the criteria
     # queries['DVHs']: the dvh query string for SQL
@@ -796,7 +797,7 @@ def update_data():
         update_correlation()
         print(str(datetime.now()), 'correlation data updated')
         update_source_endpoint_calcs()
-        #calculate_review_dvh()
+        calculate_review_dvh()
         initialize_rad_bio_source()
         control_chart_y.value = ''
         update_roi_viewer_mrn()
@@ -846,8 +847,6 @@ def update_dvh_data(dvh):
 
     print(str(datetime.now()), 'calculating patches', sep=' ')
 
-    # stat_dvhs = dvh.get_standard_stat_dvh(dose=stat_dose_scale, volume=stat_volume_scale)
-
     if group_1_constraint_count == 0:
         uids_1 = []
         source_patch_1.data = {'x_patch': [],
@@ -864,7 +863,7 @@ def update_dvh_data(dvh):
         uids_1, dvh_query_str = get_query(group=1)
         dvh_group_1 = DVH(uid=uids_1, dvh_condition=dvh_query_str)
         uids_1 = dvh_group_1.study_instance_uid
-        stat_dvhs_1 = dvh_group_1.get_standard_stat_dvh(dose=stat_dose_scale, volume=stat_volume_scale)
+        stat_dvhs_1 = dvh_group_1.get_standard_stat_dvh(dose_scale=stat_dose_scale, volume_scale=stat_volume_scale)
 
         if radio_group_dose.active == 1:
             x_axis_1 = dvh_group_1.get_resampled_x_axis()
@@ -896,7 +895,7 @@ def update_dvh_data(dvh):
         uids_2, dvh_query_str = get_query(group=2)
         dvh_group_2 = DVH(uid=uids_2, dvh_condition=dvh_query_str)
         uids_2 = dvh_group_2.study_instance_uid
-        stat_dvhs_2 = dvh_group_2.get_standard_stat_dvh(dose=stat_dose_scale, volume=stat_volume_scale)
+        stat_dvhs_2 = dvh_group_2.get_standard_stat_dvh(dose_scale=stat_dose_scale, volume_scale=stat_volume_scale)
 
         if radio_group_dose.active == 1:
             x_axis_2 = dvh_group_2.get_resampled_x_axis()
@@ -1250,22 +1249,26 @@ def update_source_endpoint_calcs():
                 endpoint_output = 'absolute'
 
             if 'Dose' in data['output_type'][r]:
-                ep[ep_name] = current_dvh.get_dose_to_volume(x, input=endpoint_input, output=endpoint_output)
+                ep[ep_name] = current_dvh.get_dose_to_volume(x, volume_scale=endpoint_input, dose_scale=endpoint_output)
                 if current_dvh_group_1:
-                    ep_1[ep_name] = current_dvh_group_1.get_dose_to_volume(x, input=endpoint_input,
-                                                                           output=endpoint_output)
+                    ep_1[ep_name] = current_dvh_group_1.get_dose_to_volume(x,
+                                                                           volume_scale=endpoint_input,
+                                                                           dose_scale=endpoint_output)
                 if current_dvh_group_2:
-                    ep_2[ep_name] = current_dvh_group_2.get_dose_to_volume(x, input=endpoint_input,
-                                                                           output=endpoint_output)
+                    ep_2[ep_name] = current_dvh_group_2.get_dose_to_volume(x,
+                                                                           volume_scale=endpoint_input,
+                                                                           dose_scale=endpoint_output)
 
             else:
-                ep[ep_name] = current_dvh.get_volume_of_dose(x, input=endpoint_input, output=endpoint_output)
+                ep[ep_name] = current_dvh.get_volume_of_dose(x, dose_scale=endpoint_input, volume_scale=endpoint_output)
                 if current_dvh_group_1:
-                    ep_1[ep_name] = current_dvh_group_1.get_volume_of_dose(x, input=endpoint_input,
-                                                                           output=endpoint_output)
+                    ep_1[ep_name] = current_dvh_group_1.get_volume_of_dose(x,
+                                                                           dose_scale=endpoint_input,
+                                                                           volume_scale=endpoint_output)
                 if current_dvh_group_2:
-                    ep_2[ep_name] = current_dvh_group_2.get_volume_of_dose(x, input=endpoint_input,
-                                                                           output=endpoint_output)
+                    ep_2[ep_name] = current_dvh_group_2.get_volume_of_dose(x,
+                                                                           dose_scale=endpoint_input,
+                                                                           volume_scale=endpoint_output)
 
             if group_1_constraint_count and group_2_constraint_count:
                 ep_1_stats = calc_stats(ep_1[ep_name])
@@ -1721,6 +1724,8 @@ def rad_bio_apply():
              'td_tcd': [(i, new_td_tcd) for i in range(0, row_count) if i in include]}
 
     source_rad_bio.patch(patch)
+
+    update_eud()
 
 
 def update_eud():
@@ -2797,12 +2802,141 @@ def custom_title_red_ticker(attr, old, new):
     custom_title_regression_red.value = new
 
 
+def update_dvh_review_rois(attr, old, new):
+    global temp_dvh_info, dvh_review_rois
+    if select_reviewed_mrn.value:
+        # initial_button_type = calculate_review_dvh_button.button_type
+        # calculate_review_dvh_button.button_type = "warning"
+        #
+        # initial_label = calculate_review_dvh_button.label
+        # calculate_review_dvh_button.label = "Updating..."
+        if new != '':
+            dvh_review_rois = temp_dvh_info.get_roi_names(new).values()
+            select_reviewed_dvh.options = dvh_review_rois
+            select_reviewed_dvh.value = dvh_review_rois[0]
+        else:
+            select_reviewed_dvh.options = ['']
+            select_reviewed_dvh.value = ['']
+        #
+        # calculate_review_dvh_button.button_type = initial_button_type
+        # calculate_review_dvh_button.label = initial_label
+    else:
+        select_reviewed_dvh.options = ['']
+        select_reviewed_dvh.value = ''
+        patches = {'x': [(0, [])],
+                   'y': [(0, [])],
+                   'roi_name': [(0, '')],
+                   'volume': [(0, '')],
+                   'min_dose': [(0, '')],
+                   'mean_dose': [(0, '')],
+                   'max_dose': [(0, '')],
+                   'mrn': [(0, '')],
+                   'rx_dose': [(0, '')]}
+        source.patch(patches)
+
+
+def calculate_review_dvh():
+    global temp_dvh_info, dvh_review_rois, x, y
+
+    patches = {'x': [(0, [])],
+               'y': [(0, [])],
+               'roi_name': [(0, '')],
+               'volume': [(0, 1)],
+               'min_dose': [(0, '')],
+               'mean_dose': [(0, '')],
+               'max_dose': [(0, '')],
+               'mrn': [(0, '')],
+               'rx_dose': [(0, 1)]}
+
+    try:
+        if not source.data['x']:
+            # calculate_review_dvh_button.button_type = 'warning'
+            # calculate_review_dvh_button.label = 'Waiting...'
+            update_data()
+
+        else:
+            # calculate_review_dvh_button.button_type = 'warning'
+            # calculate_review_dvh_button.label = 'Calculating...'
+
+            file_index = temp_dvh_info.mrn.index(select_reviewed_mrn.value)
+            roi_index = dvh_review_rois.index(select_reviewed_dvh.value)
+            structure_file = temp_dvh_info.structure[file_index]
+            plan_file = temp_dvh_info.plan[file_index]
+            dose_file = temp_dvh_info.dose[file_index]
+            key = list(temp_dvh_info.get_roi_names(select_reviewed_mrn.value))[roi_index]
+
+            rt_st = dicomparser.DicomParser(structure_file)
+            rt_structures = rt_st.GetStructures()
+            review_dvh = dvhcalc.get_dvh(structure_file, dose_file, key)
+            dicompyler_plan = dicomparser.DicomParser(plan_file).GetPlan()
+
+            roi_name = rt_structures[key]['name']
+            volume = review_dvh.volume
+            min_dose = review_dvh.min
+            mean_dose = review_dvh.mean
+            max_dose = review_dvh.max
+            if not review_rx.value:
+                rx_dose = float(dicompyler_plan['rxdose']) / 100.
+                review_rx.value = str(round(rx_dose, 2))
+            else:
+                rx_dose = round(float(review_rx.value), 2)
+
+            x = review_dvh.bincenters
+            if max(review_dvh.counts):
+                y = np.divide(review_dvh.counts, max(review_dvh.counts))
+            else:
+                y = review_dvh.counts
+
+            if radio_group_dose.active == 1:
+                f = 5000
+                bin_count = len(x)
+                new_bin_count = int(bin_count * f / (rx_dose * 100.))
+
+                x1 = np.linspace(0, bin_count, bin_count)
+                x2 = np.multiply(np.linspace(0, new_bin_count, new_bin_count), rx_dose * 100. / f)
+                y = np.interp(x2, x1, review_dvh.counts)
+                y = np.divide(y, np.max(y))
+                x = np.divide(np.linspace(0, new_bin_count, new_bin_count), f)
+
+            if radio_group_volume.active == 0:
+                y = np.multiply(y, volume)
+
+            patches = {'x': [(0, x)],
+                       'y': [(0, y)],
+                       'roi_name': [(0, roi_name)],
+                       'volume': [(0, volume)],
+                       'min_dose': [(0, min_dose)],
+                       'mean_dose': [(0, mean_dose)],
+                       'max_dose': [(0, max_dose)],
+                       'mrn': [(0, select_reviewed_mrn.value)],
+                       'rx_dose': [(0, rx_dose)]}
+
+    except:
+        pass
+
+    source.patch(patches)
+
+    # calculate_review_dvh_button.button_type = 'success'
+    # calculate_review_dvh_button.label = 'Calculate Review DVH'
+
+
+def select_reviewed_dvh_ticker(attr, old, new):
+    calculate_review_dvh()
+
+
+def review_rx_ticker(attr, old, new):
+    if radio_group_dose.active == 0:
+        source.patch({'rx_dose': [(0, round(float(review_rx.value), 2))]})
+    else:
+        calculate_review_dvh()
+
+
 # Ticker function for abs/rel dose radio buttons
 # any change will call update_data, if any source data has been retrieved from SQL
 def radio_group_dose_ticker(attr, old, new):
     if source.data['x'] != '':
         update_data()
-        # calculate_review_dvh()
+        calculate_review_dvh()
 
 
 # Ticker function for abs/rel volume radio buttons
@@ -2810,7 +2944,25 @@ def radio_group_dose_ticker(attr, old, new):
 def radio_group_volume_ticker(attr, old, new):
     if source.data['x'] != '':
         update_data()
-        # calculate_review_dvh()
+        calculate_review_dvh()
+
+
+def auth_button_click():
+    global ACCESS_GRANTED
+
+    if not ACCESS_GRANTED:
+        ACCESS_GRANTED = auth.check_credentials(auth_user.value, auth_pass.value, 'generic')
+        if ACCESS_GRANTED:
+            auth_button.label = 'Access Granted'
+            auth_button.button_type = 'success'
+            curdoc().clear()
+            curdoc().add_root(tabs)
+        else:
+            auth_button.label = 'Failed'
+            auth_button.button_type = 'danger'
+            time.sleep(3)
+            auth_button.label = 'Authenticate'
+            auth_button.button_type = 'warning'
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3318,16 +3470,16 @@ select_reviewed_mrn = Select(title='MRN to review',
                              value='',
                              options=dvh_review_mrns,
                              width=300)
-# select_reviewed_mrn.on_change('value', update_dvh_review_rois)
+select_reviewed_mrn.on_change('value', update_dvh_review_rois)
 
 select_reviewed_dvh = Select(title='ROI to review',
                              value='',
                              options=[''],
                              width=360)
-# select_reviewed_dvh.on_change('value', select_reviewed_dvh_ticker)
+select_reviewed_dvh.on_change('value', select_reviewed_dvh_ticker)
 
 review_rx = TextInput(value='', title="Rx Dose (Gy):", width=170)
-# review_rx.on_change('value', review_rx_ticker)
+review_rx.on_change('value', review_rx_ticker)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Radbio Objects
@@ -3337,10 +3489,8 @@ rad_bio_gamma_50_input = TextInput(value='', title=u"\u03b3_50:", width=150)
 rad_bio_td_tcd_input = TextInput(value='', title='TD_50 or TCD_50:', width=150)
 rad_bio_apply_button = Button(label="Apply parameters", button_type="primary", width=150)
 rad_bio_apply_filter = CheckboxButtonGroup(labels=["Group 1", "Group 2", "Selected"], active=[0], width=300)
-rad_bio_update_button = Button(label="Calc EUD and NTCP/TCP", button_type="primary", width=150)
 
 rad_bio_apply_button.on_click(rad_bio_apply)
-rad_bio_update_button.on_click(update_eud)
 
 columns = [TableColumn(field="mrn", title="MRN", width=150),
            TableColumn(field="group", title="Group", width=100),
@@ -3485,7 +3635,6 @@ layout_rad_bio = column(row(custom_title_rad_bio_blue, Spacer(width=50), custom_
                         row(rad_bio_eud_a_input, Spacer(width=50),
                             rad_bio_gamma_50_input, Spacer(width=50), rad_bio_td_tcd_input, Spacer(width=50),
                             rad_bio_apply_filter, Spacer(width=50), rad_bio_apply_button),
-                        row(rad_bio_update_button),
                         data_table_rad_bio_text,
                         data_table_rad_bio,
                         Spacer(width=1000, height=100))
@@ -3556,5 +3705,20 @@ correlation_tab = Panel(child=layout_regression, title='Regression')
 tabs = Tabs(tabs=[query_tab, dvh_tab, rad_bio_tab, roi_viewer_tab, planning_data_tab, time_series_tab,
                   correlation_matrix_tab, correlation_tab])
 
-curdoc().add_root(tabs)
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Custom authorization
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+auth_user = TextInput(value='', title='User Name:', width=150)
+auth_pass = PasswordInput(value='', title='Password:', width=150)
+auth_button = Button(label="Authenticate", button_type="warning", width=100)
+auth_button.on_click(auth_button_click)
+layout_login = row(auth_user, Spacer(width=50), auth_pass, Spacer(width=50), auth_button)
+
+# Create the document Bokeh server will use to generate the webpage
+if ACCESS_GRANTED:
+    curdoc().add_root(tabs)
+else:
+    curdoc().add_root(layout_login)
+
 curdoc().title = "DVH Analytics"

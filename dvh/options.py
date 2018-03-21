@@ -86,5 +86,5 @@ CORRELATION_2_ALPHA = 0.5
 CORRELATION_2_LINE_WIDTH = 2
 CORRELATION_2_LINE_DASH = 'dashed'
 
-# This is the number of bins used when resampling a DVH
+# This is the number of bins up do 100% used when resampling a DVH to fractional dose
 RESAMPLED_DVH_BIN_COUNT = 5000

@@ -96,6 +96,8 @@ def reload_directories():
     input_inbox.value = directories['inbox']
     input_imported.value = directories['imported']
     input_review.value = directories['review']
+    save_dir_button.button_type = 'success'
+    save_dir_button.label = 'Save'
 
 
 def reload_sql_settings():
@@ -105,6 +107,8 @@ def reload_sql_settings():
     input_dbname.value = config['dbname']
     input_user.value = config['user']
     input_password.value = config['password']
+    save_sql_settings_button.button_type = 'success'
+    save_sql_settings_button.label = 'Save'
 
 
 def save_directories():
@@ -188,7 +192,7 @@ def echo():
     update_sql_settings()
     initial_button_type = echo_button.button_type
     initial_label = echo_button.label
-    if validate_sql_connection(config):
+    if validate_sql_connection(config=config, verbose=False):
         echo_button.button_type = 'success'
         echo_button.label = 'Success'
     else:

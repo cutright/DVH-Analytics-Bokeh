@@ -11,16 +11,14 @@ from dicom_to_sql import dicom_to_sql
 from utilities import Temp_DICOM_FileSet
 from sql_connector import DVH_SQL
 from analysis_tools import DVH
-from utilities import is_import_settings_defined, is_sql_connection_defined,\
+from utilities import is_import_settings_defined, is_sql_connection_defined, \
     write_import_settings, write_sql_connection_settings, validate_import_settings, validate_sql_connection
 import os
 from getpass import getpass
 import argparse
 from subprocess import call
 
-
 script_dir = os.path.dirname(__file__)
-
 
 if is_sql_connection_defined():
     try:
@@ -29,14 +27,14 @@ if is_sql_connection_defined():
         print("Warning: could not initialize SQL database")
 
 
-def settings(**kwargs):
-    if not kwargs:
+def settings(dir=False, sql=False):
+    if not dir and not sql:
         set_import_settings()
         set_sql_connection_parameters()
     else:
-        if 'dir' in kwargs and kwargs['dir']:
+        if dir:
             set_import_settings()
-        if 'sql' in kwargs and kwargs['sql']:
+        if sql:
             set_sql_connection_parameters()
 
 
@@ -45,23 +43,21 @@ def test_import_sql_cnx_definitions():
         print("ERROR: Import and SQL settings are not yet defined.",
               "Please run:\n",
               "    $ python start.py settings_simple", sep='')
-        return False
     elif not is_import_settings_defined():
         print("ERROR: Import settings are not yet defined.",
               "Please run:\n",
               "    $ python start.py settings_simple --dir", sep='')
-        return False
     elif not is_sql_connection_defined():
         print("ERROR: Invalid or empty SQL settings.",
               "Please run:\n",
               "    $ python start.py settings_simple --sql", sep='')
-        return False
     else:
         return True
 
+    return False
+
 
 def test_dvh_code():
-
     if test_import_sql_cnx_definitions():
         is_import_valid = validate_import_settings()
         is_sql_connection_valid = validate_sql_connection()
@@ -80,8 +76,6 @@ def test_dvh_code():
         else:
             print("Importing test files")
             dicom_to_sql(start_path="test_files/",
-                         organize_files=False,
-                         move_files=False,
                          force_update=False)
 
             print("Reading data from SQL DB with analysis_tools.py")
@@ -119,7 +113,6 @@ def get_import_settings_from_user():
 
 
 def get_sql_connection_parameters_from_user():
-
     print("Please enter the host address\n(defaults to 'localhost' if left empty)")
     host = raw_input('Host: ')
     if not host:

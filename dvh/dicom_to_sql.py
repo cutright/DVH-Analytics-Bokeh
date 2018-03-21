@@ -15,10 +15,10 @@ import dicom
 from datetime import datetime
 
 
-file_types = {'rtplan', 'rtstruct', 'rtdose'}
+FILE_TYPES = {'rtplan', 'rtstruct', 'rtdose'}
 
 
-def dicom_to_sql(**kwargs): \
+def dicom_to_sql(start_path=None, force_update=False):
 
     start_time = datetime.now()
     print(str(start_time), 'Beginning import', sep=' ')
@@ -42,17 +42,11 @@ def dicom_to_sql(**kwargs): \
             elif line[1:][0].lower() == 'false':
                 import_settings[line[0]] = False
 
-    if 'start_path' in kwargs and kwargs['start_path']:
-        rel_path = kwargs['start_path']
-        abs_file_path = os.path.join(script_dir, rel_path)
+    if start_path:
+        abs_file_path = os.path.join(script_dir, start_path)
         import_settings['inbox'] = abs_file_path
 
     sqlcnx = DVH_SQL()
-
-    if 'force_update' in kwargs and kwargs['force_update']:
-        force_update = True
-    else:
-        force_update = False
 
     file_paths = get_file_paths(import_settings['inbox'])
 
@@ -63,7 +57,7 @@ def dicom_to_sql(**kwargs): \
             if not force_update:
                 print("Must delete content associated with this UID from database before reimporting.")
                 print("These files have been moved into the 'misc' folder within your 'imported' folder.")
-                for file_type in file_types:
+                for file_type in FILE_TYPES:
                     print(file_paths[uid][file_type]['file_path'])
                 print("The UID is %s" % uid)
                 continue
@@ -139,7 +133,7 @@ def dicom_to_sql(**kwargs): \
 
         # convert file_paths[uid] into a list of file paths
         files_to_move = []
-        move_types = [i for i in file_types] + ['other']
+        move_types = list(FILE_TYPES) + ['other']
         for file_type in move_types:
             files_to_move.extend(file_paths[uid][file_type]['file_path'])
 
@@ -159,7 +153,7 @@ def dicom_to_sql(**kwargs): \
     move_all_files(import_settings['imported'], import_settings['inbox'])
     remove_empty_folders(import_settings['inbox'])
 
-    sqlcnx.cnx.close()
+    sqlcnx.close()
 
     end_time = datetime.now()
     print(str(end_time), 'Import complete', sep=' ')
@@ -202,14 +196,14 @@ def get_file_paths(start_path):
                                    'rtdose': {'file_path': [], 'timestamp': [], 'latest_file': []},
                                    'other': {'file_path': [], 'timestamp': []}}
 
-            if file_type not in file_types:
+            if file_type not in FILE_TYPES:
                 file_type = 'other'
 
             file_paths[uid][file_type]['file_path'].append(file_path)
             file_paths[uid][file_type]['timestamp'].append(timestamp)
 
     for uid in list(file_paths):
-        for file_type in file_types:
+        for file_type in FILE_TYPES:
             latest_index, latest_time = [], []
             for i, ts in enumerate(file_paths[uid][file_type]['timestamp']):
                 if not latest_time or ts > latest_time:
@@ -298,14 +292,16 @@ def remove_empty_folders(start_path):
 
 
 def move_all_files(new_dir, old_dir):
+    """
+    This function will move all files from the old to new directory, it will ignore all files in subdirectories
+    :param new_dir: absolute directory path
+    :param old_dir: absolute directory path
+    """
     initial_path = os.path.dirname(os.path.realpath(__file__))
 
     os.chdir(old_dir)
 
-    file_paths = []
-    for path, subdirs, files in os.walk(old_dir):
-        for name in files:
-            file_paths.append(os.path.join(path, name))
+    file_paths = [f for f in os.listdir(old_dir) if os.path.isfile(os.path.join(old_dir, f))]
 
     misc_path = os.path.join(new_dir, 'misc')
     if not os.path.isdir(misc_path):

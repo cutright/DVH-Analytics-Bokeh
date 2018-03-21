@@ -326,7 +326,7 @@ class DatabaseROIs:
                         return True
         return False
 
-    def get_best_roi_match(self, roi, **kwargs):
+    def get_best_roi_match(self, roi, length=None):
         roi = clean_name(roi)
 
         scores = []
@@ -350,11 +350,9 @@ class DatabaseROIs:
 
         best = []
 
-        if 'length' in kwargs:
-            if kwargs['length'] > len(scores):
+        if length:
+            if length > len(scores):
                 length = len(scores)
-            else:
-                length = kwargs['length']
         else:
             length = 1
 
@@ -554,23 +552,23 @@ def print_uncategorized_rois():
         print(physician, institutional_roi, physician_roi, roi_name, sep=' ')
 
 
-def get_combined_fuzz_score(a, b, **kwargs):
+def get_combined_fuzz_score(a, b, simple=None, partial=None):
     a = clean_name(a)
     b = clean_name(b)
 
-    if 'simple' in kwargs:
-        w_simple = float(kwargs['simple'])
+    if simple:
+        w_simple = float(simple)
     else:
-        w_simple = float(1)
+        w_simple = 1.
 
-    if 'partial' in kwargs:
-        w_partial = float(kwargs['partial'])
+    if partial:
+        w_partial = float(partial)
     else:
-        w_partial = float(1)
+        w_partial = 1.
 
     simple = fuzz.ratio(a, b) * w_simple
     partial = fuzz.partial_ratio(a, b) * w_partial
-    combined = float(simple) * float(partial) / float(10000)
+    combined = float(simple) * float(partial) / 10000.
     return combined
 
 

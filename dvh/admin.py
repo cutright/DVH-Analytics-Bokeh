@@ -8,7 +8,7 @@ Created on Fri Mar 24 13:43:28 2017
 from __future__ import print_function
 from utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection, \
     recalculate_ages, update_min_distances_in_db, update_treatment_volume_overlap_in_db, update_volumes_in_db, \
-    update_surface_areas_in_db
+    update_surface_area_in_db
 import os
 from os.path import dirname, join
 from datetime import datetime
@@ -487,7 +487,7 @@ def update_ignored_variations_select():
 
 def get_uncategorized_variations(physician):
     global config
-    if validate_sql_connection(config, verbose=False):
+    if validate_sql_connection(config=config, verbose=False):
         physician = clean_name(physician).upper()
         condition = "physician_roi = 'uncategorized'"
         cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', condition)
@@ -512,7 +512,7 @@ def get_uncategorized_variations(physician):
 
 def get_ignored_variations(physician):
     global config
-    if validate_sql_connection(config, verbose=False):
+    if validate_sql_connection(config=config, verbose=False):
         physician = clean_name(physician).upper()
         condition = "physician_roi = 'ignored'"
         cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', condition)
@@ -586,7 +586,7 @@ def ignore_dvh():
         delete_uncategorized_button_roi.label = 'Delete DVH'
     else:
         cnx = DVH_SQL()
-        if validate_sql_connection(config, verbose=False):
+        if validate_sql_connection(config=config, verbose=False):
             condition = "physician_roi = 'uncategorized'"
             cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', condition)
             for row in cursor_rtn:
@@ -611,7 +611,7 @@ def unignore_dvh():
         delete_ignored_button_roi.label = 'Delete DVH'
     else:
         cnx = DVH_SQL()
-        if validate_sql_connection(config, verbose=False):
+        if validate_sql_connection(config=config, verbose=False):
             condition = "physician_roi = 'ignored'"
             cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', condition)
             for row in cursor_rtn:
@@ -1175,7 +1175,7 @@ def recalculate_surface_areas(*condition):
     for roi in rois:
         counter += 1.
         print('updating surface area:', roi[1], int(100. * counter / total_rois), sep=' ')
-        update_surface_areas_in_db(roi[0], roi[1])
+        update_surface_area_in_db(roi[0], roi[1])
 
 
 def auth_button_click():

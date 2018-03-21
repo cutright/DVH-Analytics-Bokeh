@@ -6,28 +6,33 @@ Created on Thu Mar  9 18:48:19 2017
 """
 
 from __future__ import print_function
-from future.utils import listitems
 import numpy as np
 from sql_connector import DVH_SQL
-from sql_to_python import QuerySQL, get_unique_list
+from sql_to_python import QuerySQL
 from options import RESAMPLED_DVH_BIN_COUNT
 
 
 # This class retrieves DVH data from the SQL database and calculates statistical DVHs (min, max, quartiles)
 # It also provides some inspection tools of the retrieved data
 class DVH:
-    def __init__(self, **kwargs):
+    def __init__(self, uid=None, dvh_condition=None):
+        """
+        This class will retrieve DVHs and other data in the DVH SQL table meeting the given constraints,
+        it will also parse the DVH_string into python lists and retrieve the associated Rx dose
+        :param uid: a list of allowed study_instance_uids in data set
+        :param dvh_condition: a string in SQL syntax applied to a DVH Table query
+        """
 
-        if 'uid' in kwargs:
-            constraints_str = "study_instance_uid in ('%s')" % "', '".join(kwargs['uid'])
-            if 'dvh_condition' in kwargs and kwargs['dvh_condition']:
+        if uid:
+            constraints_str = "study_instance_uid in ('%s')" % "', '".join(uid)
+            if dvh_condition:
                 constraints_str = " and " + constraints_str
         else:
             constraints_str = ''
 
-        if 'dvh_condition' in kwargs and kwargs['dvh_condition']:
-            constraints_str = "(%s)%s" % (kwargs['dvh_condition'], constraints_str)
-            self.query = kwargs['dvh_condition']
+        if dvh_condition:
+            constraints_str = "(%s)%s" % (dvh_condition, constraints_str)
+            self.query = dvh_condition
         else:
             self.query = ''
 
@@ -68,23 +73,34 @@ class DVH:
             self.dvh[:, i] = np.concatenate((current_dvh, zero_fill))
 
     def get_percentile_dvh(self, percentile):
+        """
+        :param percentile: the percentile to calculate for each dose-bin
+        :return: a single DVH such that each bin is the given percentile of each bin over the whole sample
+        :rtype: numpy 1D array
+        """
         return np.percentile(self.dvh, percentile, 1)
 
-    def get_dose_to_volume(self, volume, **kwargs):
+    def get_dose_to_volume(self, volume, volume_scale='absolute', dose_scale='absolute'):
+        """
+        :param volume: the specified volume in cm^3
+        :param volume_scale: either 'relative' or 'absolute'
+        :param dose_scale: either 'relative' or 'absolute'
+        :return: the dose in Gy to the specified volume
+        :rtype: list
+        """
         doses = np.zeros(self.count)
         for x in range(0, self.count):
             dvh = np.zeros(len(self.dvh))
             for y in range(0, len(self.dvh)):
                 dvh[y] = self.dvh[y][x]
-            if 'input' in kwargs and kwargs['input'] == 'relative':
+            if volume_scale == 'relative':
                 doses[x] = dose_to_volume(dvh, volume)
             else:
-                # if self.volume[x] is zero, dose_to_volume encounters a divide / 0 error
                 if self.volume[x]:
-                    doses[x] = dose_to_volume(dvh, volume, self.volume[x])
+                    doses[x] = dose_to_volume(dvh, volume/self.volume[x])
                 else:
                     doses[x] = 0
-        if 'output' in kwargs and kwargs['output'] == 'relative':
+        if dose_scale == 'relative':
             if self.rx_dose[0]:
                 doses = np.divide(doses * 100, self.rx_dose[0:self.count])
             else:
@@ -95,14 +111,21 @@ class DVH:
 
         return doses.tolist()
 
-    def get_volume_of_dose(self, dose, **kwargs):
+    def get_volume_of_dose(self, dose, dose_scale='absolute', volume_scale='absolute'):
+        """
+        :param dose: input dose use to calculate a volume of dose for entire sample
+        :param dose_scale: either 'absolute' or 'relative'
+        :param volume_scale: either 'absolute' or 'relative'
+        :return: a list of V_dose
+        :rtype: list
+        """
         volumes = np.zeros(self.count)
         for x in range(0, self.count):
 
             dvh = np.zeros(len(self.dvh))
             for y in range(0, len(self.dvh)):
                 dvh[y] = self.dvh[y][x]
-            if 'input' in kwargs and kwargs['input'] == 'relative':
+            if dose_scale == 'relative':
                 if isinstance(self.rx_dose[x], basestring):
                     volumes[x] = 0
                 else:
@@ -110,7 +133,7 @@ class DVH:
             else:
                 volumes[x] = volume_of_dose(dvh, dose)
 
-        if 'output' in kwargs and kwargs['output'] == 'absolute':
+        if volume_scale == 'absolute':
             volumes = np.multiply(volumes, self.volume[0:self.count])
         else:
             volumes = np.multiply(volumes, 100.)
@@ -118,6 +141,11 @@ class DVH:
         return volumes.tolist()
 
     def coverage(self, rx_dose_fraction):
+        """
+        :param rx_dose_fraction: relative rx dose to calculate fractional coverage
+        :return: fractional coverage
+        :rtype: list
+        """
 
         answer = np.zeros(self.count)
         for x in range(0, self.count):
@@ -126,39 +154,50 @@ class DVH:
         return answer
 
     def get_resampled_x_axis(self):
+        """
+        :return: the x axis of a resampled dvh
+        """
         x_axis, dvhs = self.resample_dvh()
         return x_axis
 
-    def get_stat_dvh(self, **kwargs):
-        if 'type' in kwargs:
-            stat_type = kwargs['type']
-            if 'dose' in kwargs and kwargs['dose'] == 'relative':
-                x_axis, dvhs = self.resample_dvh()
-            else:
-                dvhs = self.dvh
-
-            if 'volume' in kwargs and kwargs['volume'] == 'absolute':
-                dvhs = self.dvhs_to_abs_vol(dvhs)
-
-            stat_function = {'min': np.min,
-                             'mean': np.mean,
-                             'median': np.median,
-                             'max': np.max,
-                             'std': np.std}
-            dvh = stat_function[stat_type](dvhs, 1)
-
-            return dvh
-        else:
-            print("keyword argument of 'type=': min, mean, median, max, percentile, or std required")
-            return False
-
-    def get_standard_stat_dvh(self, **kwargs):
-        if 'dose' in kwargs and kwargs['dose'] == 'relative':
+    def get_stat_dvh(self, stat_type='mean', dose_scale='absolute', volume_scale='relative'):
+        """
+        :param stat_type: either min, mean, median, max, or std
+        :param dose_scale: either 'absolute' or 'relative'
+        :param volume_scale: either 'absolute' or 'relative'
+        :return: a single dvh where each bin is the stat_type of each bin for the entire sample
+        :rtype: numpy 1D array
+        """
+        if dose_scale == 'relative':
             x_axis, dvhs = self.resample_dvh()
         else:
             dvhs = self.dvh
 
-        if 'volume' in kwargs and kwargs['volume'] == 'absolute':
+        if volume_scale == 'absolute':
+            dvhs = self.dvhs_to_abs_vol(dvhs)
+
+        stat_function = {'min': np.min,
+                         'mean': np.mean,
+                         'median': np.median,
+                         'max': np.max,
+                         'std': np.std}
+        dvh = stat_function[stat_type](dvhs, 1)
+
+        return dvh
+
+    def get_standard_stat_dvh(self, dose_scale='absolute', volume_scale='relative'):
+        """
+        :param dose_scale: either 'absolute' or 'relative'
+        :param volume_scale: either 'absolute' or 'relative'
+        :return: a standard set of statistical dvhs (min, q1, mean, median, q1, and max)
+        :rtype: dict
+        """
+        if dose_scale == 'relative':
+            x_axis, dvhs = self.resample_dvh()
+        else:
+            dvhs = self.dvh
+
+        if volume_scale == 'absolute':
             dvhs = self.dvhs_to_abs_vol(dvhs)
 
         standard_stat_dvh = {'min': np.min(dvhs, 1),
@@ -171,9 +210,17 @@ class DVH:
         return standard_stat_dvh
 
     def dvhs_to_abs_vol(self, dvhs):
+        """
+        :param dvhs: relative DVHs (dvh[bin, roi_index])
+        :return: absolute DVHs
+        :rtype: numpy 2D array
+        """
         return np.multiply(dvhs, self.volume)
 
     def resample_dvh(self):
+        """
+        :return: x-axis, y-axis of resampled DVHs
+        """
         min_rx_dose = np.min(self.rx_dose) * 100.
         new_bin_count = int(np.divide(float(self.bin_count), min_rx_dose) * RESAMPLED_DVH_BIN_COUNT)
 
@@ -188,18 +235,15 @@ class DVH:
 
 
 # Returns the isodose level outlining the given volume
-def dose_to_volume(dvh, volume, *roi_volume):
+def dose_to_volume(dvh, rel_volume):
+    """
+    :param dvh: a single dvh
+    :param rel_volume: fractional volume
+    :return: minimum dose in Gy of specified volume
+    """
 
-    # if an roi_volume is not given, volume is assumed to be fractional
-    if roi_volume:
-        if isinstance(roi_volume[0], basestring):
-            return 0
-        roi_volume = roi_volume[0]
-    else:
-        roi_volume = 1
-
-    dose_high = np.argmax(dvh < (volume / roi_volume))
-    y = volume / roi_volume
+    dose_high = np.argmax(dvh < rel_volume)
+    y = rel_volume
     x_range = [dose_high - 1, dose_high]
     y_range = [dvh[dose_high - 1], dvh[dose_high]]
     dose = np.interp(y, y_range, x_range) * 0.01
@@ -208,6 +252,11 @@ def dose_to_volume(dvh, volume, *roi_volume):
 
 
 def volume_of_dose(dvh, dose):
+    """
+    :param dvh: a single dvh
+    :param dose: dose in cGy
+    :return: volume in cm^3 of roi receiving at least the specified dose
+    """
 
     x = [int(np.floor(dose * 100)), int(np.ceil(dose * 100))]
     if len(dvh) < x[1]:
@@ -218,48 +267,22 @@ def volume_of_dose(dvh, dose):
     return roi_volume
 
 
-# EUD = sum[ v(i) * D(i)^a ] ^ [1/a]
 def calc_eud(dvh, a):
+    """
+    EUD = sum[ v(i) * D(i)^a ] ^ [1/a]
+    :param dvh: a single DVH as a list of numpy 1D array with 1cGy bins
+    :param a: standard a-value for EUD calculations, organ and dose fractionation specific
+    :return: equivalent uniform dose
+    """
     v = -np.gradient(dvh)
 
     dose_bins = np.linspace(1, np.size(dvh), np.size(dvh))
     dose_bins = np.round(dose_bins, 3)
     bin_centers = dose_bins - 0.5
-    eud = np.power(np.sum(np.multiply(v, np.power(bin_centers, a))), 1 / float(a))
+    eud = np.power(np.sum(np.multiply(v, np.power(bin_centers, a))), 1. / float(a))
     eud = np.round(eud, 2) * 0.01
 
     return eud
-
-
-def get_study_instance_uids(**kwargs):
-    uids = {}
-    complete_list = []
-    for key, value in listitems(kwargs):
-        uids[key] = QuerySQL(key, value).study_instance_uid
-        complete_list.extend(uids[key])
-
-    uids['unique'] = get_unique_list(complete_list)
-    uids['union'] = [value for value in uids['unique'] if is_uid_in_all_keys(value, uids)]
-
-    return uids
-
-
-def is_uid_in_all_keys(uid, uid_kwlist):
-    key_answer = {}
-    # Initialize a False value for each key
-    for key in list(uid_kwlist):
-        key_answer[key] = False
-    # search for uid in each keyword fof uid_kwlist
-    for key, value in listitems(uid_kwlist):
-        if uid in value:
-            key_answer[key] = True
-
-    final_answer = True
-    # Product of all answer[key] values (except 'unique')
-    for key, value in listitems(key_answer):
-        if key not in 'unique':
-            final_answer *= value
-    return final_answer
 
 
 if __name__ == '__main__':

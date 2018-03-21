@@ -22,16 +22,15 @@ MIN_SLICE_THICKNESS = 2  # Update method to pull from DICOM
 
 
 class Temp_DICOM_FileSet:
-    def __init__(self, **kwargs):
+    def __init__(self, start_path=None):
 
         # Read SQL configuration file
-        if 'start_path' in kwargs:
-            rel_path = kwargs['start_path']
-            abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
+        if start_path:
+            abs_file_path = os.path.join(SCRIPT_DIR, start_path)
             start_path = abs_file_path
         else:
-            rel_path = "preferences/import_settings.txt"
-            abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
+            start_path = "preferences/import_settings.txt"
+            abs_file_path = os.path.join(SCRIPT_DIR, start_path)
             with open(abs_file_path, 'r') as document:
                 for line in document:
                     line = line.split()
@@ -58,7 +57,6 @@ class Temp_DICOM_FileSet:
         study_uid_structure = []
         dose_files = []
         study_uid_dose = []
-        mrns = []
 
         for x in range(0, len(f)):
             try:
@@ -296,24 +294,28 @@ def validate_import_settings():
     return valid
 
 
-def validate_sql_connection(*config, **kwargs):
+def validate_sql_connection(config=None, verbose=False):
+    """
+    :param verbose: boolean indicating if cmd line printing should be performed
+    :param config:
+    :return:
+    """
 
+    valid = True
     if config:
         try:
-            cnx = DVH_SQL(config[0])
+            cnx = DVH_SQL(config)
             cnx.close()
-            valid = True
         except:
             valid = False
     else:
         try:
             cnx = DVH_SQL()
             cnx.close()
-            valid = True
         except:
             valid = False
 
-    if not kwargs or ('verbose' in kwargs and kwargs['verbose']):
+    if verbose:
         if valid:
             print("SQL DB is alive!")
         else:
@@ -370,14 +372,15 @@ def dicompyler_roi_coord_to_db_string(coord):
     return ':'.join(contours)
 
 
-def surface_area_of_roi(coord, **kwargs):
+def surface_area_of_roi(coord, coord_type='dicompyler'):
     """
     :param coord: dicompyler structure coordinates from GetStructureCoordinates() or sets_of_points
+    :param coord_type: either 'dicompyler' or 'sets_of_points'
     :return: surface_area in cm^2
     :rtype: float
     """
 
-    if 'coord_type' in kwargs and kwargs['coord_type'] == "sets_of_points":
+    if coord_type == "sets_of_points":
         sets_of_points = coord
     else:
         sets_of_points = dicompyler_roi_to_sets_of_points(coord)
@@ -395,7 +398,7 @@ def surface_area_of_roi(coord, **kwargs):
         for j in [-1, 1]:  # -1 for bottom area and 1 for top area
             # ensure bottom of first slice and top of last slice are fully added
             # if prev/next slice is not adjacent, assume non-contiguous ROI
-            if (i == 0 and j == -1) or (i == slice_count-1 and j == 1) or abs(z[i] - z[i+j]) > thickness:
+            if (i == 0 and j == -1) or (i == slice_count-1 and j == 1) or abs(z[i] - z[i+j]) > 2*thickness:
                 area += polygon[i].area
             else:
                 area += polygon[i].difference(polygon[i+j]).area
@@ -455,6 +458,10 @@ def dicompyler_roi_to_sets_of_points(coord):
 
 
 def points_to_shapely_polygon(sets_of_points):
+    """
+    :param sets_of_points: sets of points is a dictionary of lists using str(z) as keys
+    :return: a composite polygon as a shapely object (eith polygon or multipolygon)
+    """
     # sets of points are lists using str(z) as keys
     # each item is an ordered list of points representing a polygon, each point is a 3-item list [x, y, z]
     # polygon n is inside polygon n-1, then the current accumulated polygon is
@@ -663,9 +670,7 @@ def get_planes_from_string(roi_coord_string):
 
 
 def get_min_distances_to_target(oar_coordinates, target_coordinates):
-    # type: ([np.array], [np.array]) -> [float]
     """
-
     :param oar_coordinates: list of numpy arrays of 3D points defining the surface of the OAR
     :param target_coordinates: list of numpy arrays of 3D points defining the surface of the PTV
     :return: min_distances: list of numpy arrays of 3D points defining the surface of the OAR
@@ -680,6 +685,11 @@ def get_min_distances_to_target(oar_coordinates, target_coordinates):
 
 
 def update_min_distances_in_db(study_instance_uid, roi_name):
+    """
+    This function will recalculate the min, mean, median, and max PTV distances an roi based on data in the SQL DB.
+    :param study_instance_uid: uid as specified in SQL DB
+    :param roi_name: roi_name as specified in SQL DB
+    """
 
     oar_coordinates_string = DVH_SQL().query('dvhs',
                                              'roi_coord_string',
@@ -695,11 +705,8 @@ def update_min_distances_in_db(study_instance_uid, roi_name):
 
         oar_coordinates = get_roi_coordinates_from_string(oar_coordinates_string[0][0])
 
-        ptvs = []
-        for ptv in ptv_coordinates_strings:
-            ptvs.append(get_planes_from_string(ptv[0]))
-        tv_planes = get_union(ptvs)
-        tv_coordinates = get_roi_coordinates_from_planes(tv_planes)
+        ptvs = [get_planes_from_string(ptv[0]) for ptv in ptv_coordinates_strings]
+        tv_coordinates = get_roi_coordinates_from_planes(get_union(ptvs))
 
         try:
             min_distances = get_min_distances_to_target(oar_coordinates, tv_coordinates)
@@ -732,6 +739,11 @@ def update_min_distances_in_db(study_instance_uid, roi_name):
 
 
 def update_treatment_volume_overlap_in_db(study_instance_uid, roi_name):
+    """
+    This function will recalculate the PTV overlap of an roi based on data in the SQL DB.
+    :param study_instance_uid: uid as specified in SQL DB
+    :param roi_name: roi_name as specified in SQL DB
+    """
 
     oar_coordinates_string = DVH_SQL().query('dvhs',
                                              'roi_coord_string',
@@ -746,9 +758,7 @@ def update_treatment_volume_overlap_in_db(study_instance_uid, roi_name):
     if ptv_coordinates_strings:
         oar = get_planes_from_string(oar_coordinates_string[0][0])
 
-        ptvs = []
-        for ptv in ptv_coordinates_strings:
-            ptvs.append(get_planes_from_string(ptv[0]))
+        ptvs = [get_planes_from_string(ptv[0]) for ptv in ptv_coordinates_strings]
 
         tv = get_union(ptvs)
         overlap = calc_roi_overlap(oar, tv)
@@ -761,6 +771,11 @@ def update_treatment_volume_overlap_in_db(study_instance_uid, roi_name):
 
 
 def update_volumes_in_db(study_instance_uid, roi_name):
+    """
+    This function will recalculate the volume of an roi based on data in the SQL DB.
+    :param study_instance_uid: uid as specified in SQL DB
+    :param roi_name: roi_name as specified in SQL DB
+    """
 
     coordinates_string = DVH_SQL().query('dvhs',
                                          'roi_coord_string',
@@ -778,7 +793,12 @@ def update_volumes_in_db(study_instance_uid, roi_name):
                      % (study_instance_uid, roi_name))
 
 
-def update_surface_areas_in_db(study_instance_uid, roi_name):
+def update_surface_area_in_db(study_instance_uid, roi_name):
+    """
+    This function will recalculate the surface area of an roi based on data in the SQL DB.
+    :param study_instance_uid: uid as specified in SQL DB
+    :param roi_name: roi_name as specified in SQL DB
+    """
 
     coordinates_string = DVH_SQL().query('dvhs',
                                          'roi_coord_string',
@@ -797,6 +817,12 @@ def update_surface_areas_in_db(study_instance_uid, roi_name):
 
 
 def collapse_into_single_dates(x, y):
+    """
+    :param x: a list of dates in ascending order
+    :param y: a list of values as a function of date
+    :return: a unique list of dates, sum of y for that date, and number of original points for that date
+    :rtype: dict
+    """
 
     # average daily data and keep track of points per day
     x_collapsed = [x[0]]
@@ -815,9 +841,12 @@ def collapse_into_single_dates(x, y):
 
 
 def moving_avg(xyw, avg_len):
-    x = xyw['x']
-    y = xyw['y']
-    w = xyw['w']
+    """
+    :param xyw: a dictionary of of lists x, y, w: x, y being coordinates and w being the weight
+    :param avg_len: average of these number of points, i.e., look-back window
+    :return: list of x values, list of y values
+    """
+    x, y, w = xyw['x'], xyw['y'], xyw['w']
     cumsum, moving_aves = [0], []
 
     for i, y in enumerate(y, 1):
@@ -825,14 +854,18 @@ def moving_avg(xyw, avg_len):
         if i >= avg_len:
             moving_ave = (cumsum[i] - cumsum[i - avg_len]) / avg_len
             moving_aves.append(moving_ave)
-    x_final = []
-    for i in range(avg_len - 1, len(x)):
-        x_final.append(x[i])
+    x_final = [x[i] for i in range(avg_len - 1, len(x))]
 
     return x_final, moving_aves
 
 
 def calc_stats(data):
+    """
+    :param data: a list or numpy 1D array of numbers
+    :return: a standard list of stats (max, 75%, median, mean, 25%, and min)
+    :rtype: list
+    """
+    data = [x for x in data if x != 'None']
     try:
         data_np = np.array(data)
         rtn_data = [np.max(data_np),
@@ -843,4 +876,36 @@ def calc_stats(data):
                     np.min(data_np)]
     except:
         rtn_data = [0, 0, 0, 0, 0, 0]
+        print("calc_stats() received non-numerical data")
     return rtn_data
+
+
+def get_study_instance_uids(**kwargs):
+    uids = {}
+    complete_list = []
+    for key, value in listitems(kwargs):
+        uids[key] = QuerySQL(key, value).study_instance_uid
+        complete_list.extend(uids[key])
+
+    uids['unique'] = list(set(complete_list))
+    uids['union'] = [uid for uid in uids['unique'] if is_uid_in_all_keys(value, uids)]
+
+    return uids
+
+
+def is_uid_in_all_keys(uid, uids):
+    key_answer = {}
+    # Initialize a False value for each key
+    for key in list(uids):
+        key_answer[key] = False
+    # search for uid in each keyword fof uid_kwlist
+    for key, value in listitems(uids):
+        if uid in value:
+            key_answer[key] = True
+
+    final_answer = True
+    # Product of all answer[key] values (except 'unique')
+    for key, value in listitems(key_answer):
+        if key not in 'unique':
+            final_answer *= value
+    return final_answer

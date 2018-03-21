@@ -379,16 +379,16 @@ class DVH_SQL:
         cursor_return = self.cursor.fetchone()
         return cursor_return[0]
 
-    def get_roi_count_from_query(self, **kwargs):
-        if 'uid' in kwargs:
-            condition = "study_instance_uid in ('%s')" % "', '".join(kwargs['uid'])
-            if 'dvh_condition' in kwargs and kwargs['dvh_condition']:
+    def get_roi_count_from_query(self, uid=None, dvh_condition=None):
+        if uid:
+            condition = "study_instance_uid in ('%s')" % "', '".join(dvh_condition)
+            if dvh_condition:
                 condition = " and " + condition
         else:
             condition = ''
 
-        if 'dvh_condition' in kwargs and kwargs['dvh_condition']:
-            condition = kwargs['dvh_condition'] + condition
+        if dvh_condition:
+            condition = dvh_condition + condition
 
         return len(self.query('DVHs', 'mrn', condition))
 

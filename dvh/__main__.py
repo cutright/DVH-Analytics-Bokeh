@@ -29,14 +29,14 @@ if is_sql_connection_defined():
         print("Warning: could not initialize SQL database")
 
 
-def settings(**kwargs):
-    if not kwargs:
+def settings(dir=False, sql=False):
+    if not dir and not sql:
         set_import_settings()
         set_sql_connection_parameters()
     else:
-        if 'dir' in kwargs and kwargs['dir']:
+        if dir:
             set_import_settings()
-        if 'sql' in kwargs and kwargs['sql']:
+        if sql:
             set_sql_connection_parameters()
 
 
@@ -44,20 +44,19 @@ def test_import_sql_cnx_definitions():
     if not is_import_settings_defined() and not is_sql_connection_defined():
         print("ERROR: Import and SQL settings are not yet defined.",
               "Please run:\n",
-              "    $ dvh settings_simple", sep='')
-        return False
+              "    $ python start.py settings_simple", sep='')
     elif not is_import_settings_defined():
         print("ERROR: Import settings are not yet defined.",
               "Please run:\n",
-              "    $ dvh settings_simple --dir", sep='')
-        return False
+              "    $ python start.py settings_simple --dir", sep='')
     elif not is_sql_connection_defined():
         print("ERROR: Invalid or empty SQL settings.",
               "Please run:\n",
-              "    $ dvh settings_simple --sql", sep='')
-        return False
+              "    $ python start.py settings_simple --sql", sep='')
     else:
         return True
+
+    return False
 
 
 def test_dvh_code():
@@ -68,20 +67,18 @@ def test_dvh_code():
         if not is_import_valid and not is_sql_connection_valid:
             print("ERROR: Create the directories listed above or input valid directories.\n",
                   "ERROR: Cannot connect to SQL.\n",
-                  "Please run:\n    $ dvh settings", sep='')
+                  "Please run:\n    $ python start.py settings", sep='')
         elif not is_import_valid:
             print("ERROR: Create the directories listed above or input valid directories by running:\n",
-                  "    $ dvh settings --dir", sep='')
+                  "    $ python start.py settings --dir", sep='')
         elif not is_sql_connection_valid:
             print("ERROR: Cannot connect to SQL.\n",
                   "Verify database is active and/or update SQL connection information with:\n",
-                  "    $ dvh settings --sql", sep='')
+                  "    $ python start.py settings --sql", sep='')
 
         else:
             print("Importing test files")
             dicom_to_sql(start_path="test_files/",
-                         organize_files=False,
-                         move_files=False,
                          force_update=False)
 
             print("Reading data from SQL DB with analysis_tools.py")
@@ -274,6 +271,8 @@ def main():
                     if args.port:
                         command.append("--port")  # Defaults to 5006
                         command.append(args.port)
+                    if not args.allow_websocket_origin and not args.port:
+                        command.append("--show")
 
                     command.append(script_dir)
 
@@ -285,7 +284,7 @@ def main():
         elif args.command[0] == 'admin':
             if test_import_sql_cnx_definitions():
 
-                command = ["bokeh", "serve", "--port"]
+                command = ["bokeh", "serve", "--show", "--port"]
                 if args.port:
                     command.append(args.port)
                 else:
@@ -309,7 +308,7 @@ def main():
             initialize_default_import_settings_file()
             initialize_default_sql_connection_config_file()
 
-            command = ["bokeh", "serve", "--port"]
+            command = ["bokeh", "serve", "--show", "--port"]
             if args.port:
                 command.append(args.port)
             else:

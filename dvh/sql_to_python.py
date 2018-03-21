@@ -6,7 +6,7 @@ from sql_connector import DVH_SQL
 
 
 class QuerySQL:
-    def __init__(self, table_name, condition_str, *unique):
+    def __init__(self, table_name, condition_str, unique=False):
 
         table_name = table_name.lower()
 
@@ -44,7 +44,6 @@ class QuerySQL:
 
 def get_unique_list(input_list):
     rtn_list_unique = []
-
     for value in input_list:
         if value not in rtn_list_unique:
             rtn_list_unique.append(value)
