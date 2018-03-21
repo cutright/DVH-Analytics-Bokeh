@@ -1,11 +1,11 @@
 ## To Do List
 ### Higher Priorities
 
-- [ ] Redesign Query Tab
+- [X] Redesign Query Tab
   - [ ] Allow user to input list of MRNs to restrict population
-  - [ ] Add a 'not' condition
-  - [ ] Layout should be static, use Data Table to display accumulating list of query contstraints
-  - [ ] Remove limit of 8 on DVH Endpoints
+  - [X] Add a 'not' condition
+  - [X] Layout should be static, use Data Table to display accumulating list of query contstraints
+  - [X] Remove limit of 8 on DVH Endpoints
   - [ ] Dashboard of potential data issues in query
 
 - [X] Rewrite import process
