@@ -1661,7 +1661,6 @@ def initialize_rad_bio_source():
     ptv_overlap = [j for i, j in enumerate(source.data['ptv_overlap']) if include[i]]
     roi_type = [j for i, j in enumerate(source.data['roi_type']) if include[i]]
     rx_dose = [j for i, j in enumerate(source.data['rx_dose']) if include[i]]
-    empty = [0] * len(uid)
 
     # Get data from beam table
     fxs, fx_dose = [], []
@@ -1684,11 +1683,11 @@ def initialize_rad_bio_source():
                            'rx_dose': rx_dose,
                            'fxs': fxs,
                            'fx_dose': fx_dose,
-                           'eud_a': empty,
-                           'gamma_50': empty,
-                           'td_tcd': empty,
-                           'eud': empty,
-                           'ntcp_tcp': empty}
+                           'eud_a': [0] * len(uid),
+                           'gamma_50': [0] * len(uid),
+                           'td_tcd': [0] * len(uid),
+                           'eud': [0] * len(uid),
+                           'ntcp_tcp': [0] * len(uid)}
 
 
 def rad_bio_apply():
