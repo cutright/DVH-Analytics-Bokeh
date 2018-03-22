@@ -2650,11 +2650,6 @@ def update_dvh_table_selection(attr, old, new):
 def update_dvh_review_rois(attr, old, new):
     global temp_dvh_info, dvh_review_rois
     if select_reviewed_mrn.value:
-        # initial_button_type = calculate_review_dvh_button.button_type
-        # calculate_review_dvh_button.button_type = "warning"
-        #
-        # initial_label = calculate_review_dvh_button.label
-        # calculate_review_dvh_button.label = "Updating..."
         if new != '':
             dvh_review_rois = temp_dvh_info.get_roi_names(new).values()
             select_reviewed_dvh.options = dvh_review_rois
@@ -2662,9 +2657,7 @@ def update_dvh_review_rois(attr, old, new):
         else:
             select_reviewed_dvh.options = ['']
             select_reviewed_dvh.value = ['']
-            #
-            # calculate_review_dvh_button.button_type = initial_button_type
-            # calculate_review_dvh_button.label = initial_label
+
     else:
         select_reviewed_dvh.options = ['']
         select_reviewed_dvh.value = ''
@@ -2695,14 +2688,9 @@ def calculate_review_dvh():
 
     try:
         if not source.data['x']:
-            # calculate_review_dvh_button.button_type = 'warning'
-            # calculate_review_dvh_button.label = 'Waiting...'
             update_data()
 
         else:
-            # calculate_review_dvh_button.button_type = 'warning'
-            # calculate_review_dvh_button.label = 'Calculating...'
-
             file_index = temp_dvh_info.mrn.index(select_reviewed_mrn.value)
             roi_index = dvh_review_rois.index(select_reviewed_dvh.value)
             structure_file = temp_dvh_info.structure[file_index]
@@ -2761,9 +2749,6 @@ def calculate_review_dvh():
 
     source.patch(patches)
 
-    # calculate_review_dvh_button.button_type = 'success'
-    # calculate_review_dvh_button.label = 'Calculate Review DVH'
-
 
 def select_reviewed_dvh_ticker(attr, old, new):
     calculate_review_dvh()
@@ -2813,22 +2798,53 @@ def auth_button_click():
 def validate_correlation():
     global correlation_1, correlation_2
 
-    for corr in [correlation_1, correlation_2]:
-        if corr:
-            bad_data = []
-            for range_var in list(corr):
-                for i, j in enumerate(corr[range_var]['data']):
-                    if j == 'None':
-                        bad_data.append(i)
-                        print("%s[%s] is non-numerical, will remove all data from correlation for this patient"
-                              % (range_var, i))
-            bad_data = list(set(bad_data))
-            bad_data.sort()
+    if correlation_1:
+        bad_data = []
+        for range_var in list(correlation_1):
+            for i, j in enumerate(correlation_1[range_var]['data']):
+                if j == 'None':
+                    bad_data.append(i)
+                    print("%s[%s] is non-numerical, will remove all data from correlation for this patient"
+                          % (range_var, i))
+        bad_data = list(set(bad_data))
+        bad_data.sort()
 
-            for bad_index in bad_data[::-1]:
-                for range_var in list(corr):
-                    for col in {'mrn', 'data', 'uid'}:
-                        corr[range_var][col].pop(bad_index)
+        new_correlation_1 = {}
+        for range_var in list(correlation_1):
+            new_correlation_1[range_var] = {'mrn': [],
+                                            'uid': [],
+                                            'data': [],
+                                            'units': correlation_1[range_var]['units']}
+            for i in range(0, len(correlation_1[range_var]['data'])):
+                if i not in bad_data:
+                    for j in {'mrn', 'uid', 'data'}:
+                        new_correlation_1[range_var][j].append(correlation_1[range_var][j][i])
+
+        correlation_1 = new_correlation_1
+
+    if correlation_2:
+        bad_data = []
+        for range_var in list(correlation_2):
+            for i, j in enumerate(correlation_2[range_var]['data']):
+                if j == 'None':
+                    bad_data.append(i)
+                    print("%s[%s] is non-numerical, will remove all data from correlation for this patient"
+                          % (range_var, i))
+        bad_data = list(set(bad_data))
+        bad_data.sort()
+
+        new_correlation_2 = {}
+        for range_var in list(correlation_1):
+            new_correlation_2[range_var] = {'mrn': [],
+                                            'uid': [],
+                                            'data': [],
+                                            'units': correlation_2[range_var]['units']}
+            for i in range(0, len(correlation_2[range_var]['data'])):
+                if i not in bad_data:
+                    for j in {'mrn', 'uid', 'data'}:
+                        new_correlation_2[range_var][j].append(correlation_2[range_var][j][i])
+
+        correlation_2 = new_correlation_2
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
