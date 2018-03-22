@@ -2360,23 +2360,25 @@ def update_control_chart():
             y_mrns_sorted.append(y_mrns[sort_index[s]])
             colors_sorted.append(colors[sort_index[s]])
 
-        source_time_1_data = {'x': [], 'y': [], 'mrn': []}
-        source_time_2_data = {'x': [], 'y': [], 'mrn': []}
+        source_time_1_data = {'x': [], 'y': [], 'mrn': [], 'date_str': []}
+        source_time_2_data = {'x': [], 'y': [], 'mrn': [], 'date_str': []}
         for i in range(0, len(x_values_sorted)):
             if colors_sorted[i] in {GROUP_1_COLOR, GROUP_1_and_2_COLOR}:
                 source_time_1_data['x'].append(x_values_sorted[i])
                 source_time_1_data['y'].append(y_values_sorted[i])
                 source_time_1_data['mrn'].append(y_mrns_sorted[i])
+                source_time_1_data['date_str'].append(x_values_sorted[i].strftime("%Y-%m-%d"))
             if colors_sorted[i] in {GROUP_2_COLOR, GROUP_1_and_2_COLOR}:
                 source_time_2_data['x'].append(x_values_sorted[i])
                 source_time_2_data['y'].append(y_values_sorted[i])
                 source_time_2_data['mrn'].append(y_mrns_sorted[i])
+                source_time_2_data['date_str'].append(x_values_sorted[i].strftime("%Y-%m-%d"))
 
         source_time_1.data = source_time_1_data
         source_time_2.data = source_time_2_data
     else:
-        source_time_1.data = {'x': [], 'y': [], 'mrn': []}
-        source_time_2.data = {'x': [], 'y': [], 'mrn': []}
+        source_time_1.data = {'x': [], 'y': [], 'mrn': [], 'date_str': []}
+        source_time_2.data = {'x': [], 'y': [], 'mrn': [], 'date_str': []}
 
     control_chart_update_trend()
 
@@ -3256,6 +3258,11 @@ control_chart_lookback_units.on_change('value', update_control_chart_ticker)
 trend_update_button = Button(label="Update Trend", button_type="primary", width=150)
 trend_update_button.on_click(control_chart_update_trend)
 
+download_time_plot = Button(label="Download Plot Data", button_type="default", width=150)
+download_time_plot.callback = CustomJS(args=dict(source_1=source_time_1,
+                                                 source_2=source_time_2),
+                                       code=open(join(dirname(__file__), "download_time_plot.js")).read())
+
 div_horizontal_bar = Div(text="<hr>", width=1050)
 
 # histograms
@@ -3300,7 +3307,7 @@ histograms.legend.click_policy = "hide"
 # Plot
 corr_fig = figure(plot_width=900, plot_height=700,
                   x_axis_location="above",
-                  tools="pan, box_zoom, wheel_zoom, reset",
+                  tools="pan, box_zoom, wheel_zoom, reset, save",
                   logo=None,
                   x_range=[''], y_range=[''])
 corr_fig.xaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
@@ -3357,6 +3364,13 @@ corr_fig_include_2 = CheckboxGroup(labels=['DVH Endpoints', 'EUD', 'NTCP / TCP']
                                    active=[])
 corr_fig_include.on_change('active', corr_fig_include_ticker)
 corr_fig_include_2.on_change('active', corr_fig_include_ticker)
+
+download_corr_fig = Button(label="Download Correlation Figure Data", button_type="default", width=150)
+download_corr_fig.callback = CustomJS(args=dict(source_1_neg=source_correlation_1_neg,
+                                                source_1_pos=source_correlation_1_pos,
+                                                source_2_neg=source_correlation_2_neg,
+                                                source_2_pos=source_correlation_2_pos),
+                                      code=open(join(dirname(__file__), "download_correlation_matrix.js")).read())
 
 # Control Chart layout
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
@@ -3686,6 +3700,7 @@ layout_time_series = column(row(custom_title_time_series_blue, Spacer(width=50),
                             row(control_chart_y, control_chart_lookback_units, control_chart_text_lookback_distance,
                                 Spacer(width=10), control_chart_percentile, Spacer(width=10), trend_update_button),
                             control_chart,
+                            download_time_plot,
                             div_horizontal_bar,
                             row(histogram_bin_slider, histogram_radio_group),
                             row(histogram_normaltest_1_text, histogram_ttest_text),
@@ -3711,6 +3726,7 @@ layout_roi_viewer = column(row(custom_title_roi_viewer_blue, Spacer(width=50), c
                            row(Spacer(width=1000, height=100)))
 
 layout_correlation_matrix = column(row(custom_title_correlation_blue, Spacer(width=50), custom_title_correlation_red),
+                                   download_corr_fig,
                                    row(corr_fig_text, corr_fig_text_1, corr_fig_text_2),
                                    row(corr_fig, corr_fig_include, corr_fig_include_2))
 
