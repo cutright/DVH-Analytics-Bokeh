@@ -16,6 +16,7 @@ MAX_FIELD_SIZE_Y = 400  # in mm
 class Plan:
     def __init__(self, rt_plan):
         self.fx_group = [FxGroup(fx_grp_seq, rt_plan.BeamSequence) for fx_grp_seq in rt_plan.FractionGroupSequence]
+        self.name = rt_plan.RTPlanLabel
 
 
 class FxGroup:
@@ -33,6 +34,7 @@ class FxGroup:
             if beam_num in meter_set:
                 self.beam.append(Beam(beam_seq, meter_set[beam_num]))
         self.beam_count = len(self.beam)
+        self.beam_names = [b.name for b in self.beam]
 
 
 class Beam:
@@ -52,6 +54,8 @@ class Beam:
         self.aperture = [get_shapely_from_cp(self.leaf_boundaries, cp) for cp in self.control_point]
 
         self.control_point_meter_set = np.append([0], np.diff(np.array([cp.cum_mu for cp in self.control_point])))
+
+        self.name = beam_seq.BeamDescription
 
 
 class ControlPoint:
