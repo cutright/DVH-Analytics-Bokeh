@@ -131,6 +131,7 @@ source_multi_var_model_results_1 = ColumnDataSource(data=dict(model_p=[], model_
 source_multi_var_coeff_results_2 = ColumnDataSource(data=dict(var_name=[], coeff=[], coeff_str=[], p=[], p_str=[]))
 source_multi_var_model_results_2 = ColumnDataSource(data=dict(model_p=[], model_p_str=[],
                                                               r_sq=[], r_sq_str=[], y_var=[]))
+source_mlc_viewer = ColumnDataSource(data=dict(x=[], y=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -1722,7 +1723,23 @@ def mlc_analyzer_beam_ticker(attr, old, new):
 
 
 def mlc_analyzer_cp_ticker(attr, old, new):
-    pass
+    update_mlc_viewer()
+
+
+def update_mlc_viewer():
+    fx_grp = mlc_data.fx_group[int(mlc_analyzer_fx_grp_select.value) - 1]
+    beam_number = int(mlc_analyzer_beam_select.value.split(':')[0])
+    beam = fx_grp.beam[beam_number - 1]
+    cp_index = int(mlc_analyzer_cp_select.value) - 1
+    x, y = beam.aperture_x[cp_index], beam.aperture_y[cp_index]
+    x_final, y_final = [], []
+    for shape in x:
+        x_final.extend(shape)
+    for shape in y:
+        y_final.extend(shape)
+
+    source_mlc_viewer.data = {'x': x_final,
+                              'y': y_final}
 
 
 def get_include_map():
@@ -3776,6 +3793,7 @@ mlc_viewer.min_border_left = min_border
 mlc_viewer.min_border_bottom = min_border
 mlc_viewer.xaxis.axis_label = "X-Axis (A/B direction) (mm)"
 mlc_viewer.yaxis.axis_label = "Y-Axis (Gun/Target direction) (mm)"
+mlc_viewer.line('x', 'y', source=source_mlc_viewer, line_width=2)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Layout objects

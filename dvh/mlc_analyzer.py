@@ -51,11 +51,26 @@ class Beam:
                 lb.sort(reverse=True)  # Ensure descending order, not sure if a mlcy defaults to that in DICOM
                 self.leaf_boundaries = lb
 
-        self.aperture = [get_shapely_from_cp(self.leaf_boundaries, cp) for cp in self.control_point]
+        self.aperture_shape = [get_shapely_from_cp(self.leaf_boundaries, cp) for cp in self.control_point]
 
         self.control_point_meter_set = np.append([0], np.diff(np.array([cp.cum_mu for cp in self.control_point])))
 
         self.name = beam_seq.BeamDescription
+
+        self.aperture_x = []
+        self.aperture_y = []
+        for ap in self.aperture_shape:
+            x, y = [], []
+            if ap.geom_type in {'MultiPolygon'}:
+                for shape in ap:
+                    x.append(shape.exterior.coords.xy[0].tolist())
+                    y.append(shape.exterior.coords.xy[1].tolist())
+            else:
+                x.append(ap.exterior.coords.xy[0].tolist())
+                y.append(ap.exterior.coords.xy[1].tolist())
+
+            self.aperture_x.append(x)
+            self.aperture_y.append(y)
 
 
 class ControlPoint:
