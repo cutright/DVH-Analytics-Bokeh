@@ -88,3 +88,7 @@ CORRELATION_2_LINE_DASH = 'dashed'
 
 # This is the number of bins up do 100% used when resampling a DVH to fractional dose
 RESAMPLED_DVH_BIN_COUNT = 5000
+
+# For MLC Analyzer module
+MAX_FIELD_SIZE_X = 400  # in mm
+MAX_FIELD_SIZE_Y = 400  # in mm
