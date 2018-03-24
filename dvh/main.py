@@ -132,6 +132,10 @@ source_multi_var_coeff_results_2 = ColumnDataSource(data=dict(var_name=[], coeff
 source_multi_var_model_results_2 = ColumnDataSource(data=dict(model_p=[], model_p_str=[],
                                                               r_sq=[], r_sq_str=[], y_var=[]))
 source_mlc_viewer = ColumnDataSource(data=dict(x=[], y=[]))
+source_mlc_viewer_jaw_x1 = ColumnDataSource(data=dict(top=[200], bottom=[-200], left=[-200], right=[200]))
+source_mlc_viewer_jaw_x2 = ColumnDataSource(data=dict(top=[200], bottom=[-200], left=[-200], right=[200]))
+source_mlc_viewer_jaw_y1 = ColumnDataSource(data=dict(top=[200], bottom=[-200], left=[-200], right=[200]))
+source_mlc_viewer_jaw_y2 = ColumnDataSource(data=dict(top=[200], bottom=[-200], left=[-200], right=[200]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -1699,6 +1703,7 @@ def mlc_analyzer_uid_ticker(attr, old, new):
 
     mlc_analyzer_fx_grp_select.options = [str(i+1) for i in range(0, len(mlc_data.fx_group))]
     mlc_analyzer_fx_grp_select.value = '1'
+    update_mlc_viewer()
 
 
 def mlc_analyzer_plan_ticker(attr, old, new):
@@ -1732,9 +1737,32 @@ def update_mlc_viewer():
     beam = fx_grp.beam[beam_number - 1]
     cp_index = int(mlc_analyzer_cp_select.value) - 1
 
-    ap = beam.aperture[cp_index]
+    ap = beam.mlc[cp_index]
     source_mlc_viewer.data = {'x': ap.exterior.coords.xy[0],
                               'y': ap.exterior.coords.xy[1]}
+
+    x_min, x_max = -MAX_FIELD_SIZE_X / 2, MAX_FIELD_SIZE_X / 2
+    y_min, y_max = -MAX_FIELD_SIZE_Y / 2, MAX_FIELD_SIZE_Y / 2
+    # source_mlc_viewer_jaw.data = {'top': [y_max, y_max, y_max, beam.jaws[cp_index]['y_min']],
+    #                               'bottom': [y_min, y_min, beam.jaws[cp_index]['y_max'], y_min],
+    #                               'left': [x_min, beam.jaws[cp_index]['x_max'], x_min, x_min],
+    #                               'right': [beam.jaws[cp_index]['x_min'], x_max, x_max, x_max]}
+    source_mlc_viewer_jaw_x1.data = {'top': [y_max],
+                                     'bottom': [y_min],
+                                     'left': [x_min],
+                                     'right': beam.jaws[cp_index]['x_min']}
+    source_mlc_viewer_jaw_x2.data = {'top': [y_max],
+                                     'bottom': [y_min],
+                                     'left': beam.jaws[cp_index]['x_max'],
+                                     'right': [x_max]}
+    source_mlc_viewer_jaw_y1.data = {'top': [y_max],
+                                     'bottom': beam.jaws[cp_index]['y_max'],
+                                     'left': [x_min],
+                                     'right': [x_max]}
+    source_mlc_viewer_jaw_y2.data = {'top': beam.jaws[cp_index]['y_min'],
+                                     'bottom': [y_min],
+                                     'left': [x_min],
+                                     'right': [x_max]}
 
 
 def get_include_map():
@@ -3789,9 +3817,13 @@ mlc_viewer.min_border_bottom = min_border
 mlc_viewer.xaxis.axis_label = "X-Axis (A/B direction) (mm)"
 mlc_viewer.yaxis.axis_label = "Y-Axis (Gun/Target direction) (mm)"
 mlc_viewer.patch('x', 'y', source=source_mlc_viewer, line_width=2)
+mlc_viewer.quad(top='top', bottom='bottom', left='left', right='right', source=source_mlc_viewer_jaw_x1, alpha=0.25)
+mlc_viewer.quad(top='top', bottom='bottom', left='left', right='right', source=source_mlc_viewer_jaw_x2, alpha=0.25)
+mlc_viewer.quad(top='top', bottom='bottom', left='left', right='right', source=source_mlc_viewer_jaw_y1, alpha=0.25)
+mlc_viewer.quad(top='top', bottom='bottom', left='left', right='right', source=source_mlc_viewer_jaw_y2, alpha=0.25)
 
-mlc_viewer.x_range=Range1d(-200, 200)
-mlc_viewer.y_range=Range1d(-200, 200)
+mlc_viewer.x_range = Range1d(-200, 200)
+mlc_viewer.y_range = Range1d(-200, 200)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Layout objects
