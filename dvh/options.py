@@ -93,3 +93,5 @@ RESAMPLED_DVH_BIN_COUNT = 5000
 MAX_FIELD_SIZE_X = 400  # in mm
 MAX_FIELD_SIZE_Y = 400  # in mm
 CP_TIME_SPACING = 0.2  # in sec
+MLC_COLOR = 'green'
+JAW_COLOR = 'blue'

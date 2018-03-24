@@ -72,6 +72,21 @@ class Beam:
 
         self.mlc_borders = [get_mlc_borders(cp, self.leaf_boundaries) for cp in self.control_point]
 
+        self.summary = {'cp': range(1, len(self.control_point)+1),
+                        'cum_mu_frac': [cp.cum_mu for cp in self.control_point],
+                        'cum_mu': [cp.cum_mu * self.meter_set for cp in self.control_point],
+                        'gantry': self.gantry_angle,
+                        'collimator': self.collimator_angle,
+                        'couch': self.couch_angle,
+                        'jaw_x1': [j['x_min'] for j in self.jaws],
+                        'jaw_x2': [j['x_max'] for j in self.jaws],
+                        'jaw_y1': [j['y_min'] for j in self.jaws],
+                        'jaw_y2': [j['y_max'] for j in self.jaws]}
+        for key in self.summary:
+            if len(self.summary[key]) == 1:
+                self.summary[key] = self.summary[key] * len(self.summary['cp'])
+        self.summary['cp_mu'] = np.diff(np.array(self.summary['cum_mu'])).tolist() + [0]
+
 
 class ControlPoint:
     def __init__(self, cp_seq):

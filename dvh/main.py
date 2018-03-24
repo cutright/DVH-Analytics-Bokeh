@@ -132,6 +132,7 @@ source_multi_var_coeff_results_2 = ColumnDataSource(data=dict(var_name=[], coeff
 source_multi_var_model_results_2 = ColumnDataSource(data=dict(model_p=[], model_p_str=[],
                                                               r_sq=[], r_sq_str=[], y_var=[]))
 source_mlc_viewer = ColumnDataSource(data=dict(top=[], bottom=[], left=[], right=[], color=[]))
+source_mlc_summary = ColumnDataSource(data=dict())
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -1741,10 +1742,14 @@ def update_mlc_analyzer_beam():
         update_mlc_viewer()
     else:
         mlc_analyzer_cp_select.value = cp_numbers[0]
+    source_mlc_summary.data = beam.summary
 
 
 def mlc_analyzer_cp_ticker(attr, old, new):
     update_mlc_viewer()
+    source_mlc_summary.selected = {'0d': {'glyph': None, 'indices': []},
+                                   '1d': {'indices': [int(mlc_analyzer_cp_select.value)-1]},
+                                   '2d': {'indices': {}}}
 
 
 def update_mlc_viewer():
@@ -1762,7 +1767,7 @@ def update_mlc_viewer():
                'right': [beam.jaws[cp_index]['x_min'], x_max, x_max, x_max]}
     for edge in list(borders):
         borders[edge].extend(beam.mlc_borders[cp_index][edge])
-    borders['color'] = ['blue'] * 4 + ['green'] * len(beam.mlc_borders[cp_index]['top'])
+    borders['color'] = [JAW_COLOR] * 4 + [MLC_COLOR] * len(beam.mlc_borders[cp_index]['top'])
 
     source_mlc_viewer.data = borders
 
@@ -1786,6 +1791,11 @@ def mlc_viewer_play():
     for i in range(start, end):
         mlc_viewer_go_to_next_cp()
         time.sleep(CP_TIME_SPACING)
+
+
+def update_cp_on_selection(attr, old, new):
+    if new['1d']['indices']:
+        mlc_analyzer_cp_select.value = mlc_analyzer_cp_select.options[min(new['1d']['indices'])]
 
 
 def get_include_map():
@@ -3829,8 +3839,8 @@ mlc_analyzer_fx_grp_select.on_change('value', mlc_analyzer_fx_grp_ticker)
 mlc_analyzer_beam_select.on_change('value', mlc_analyzer_beam_ticker)
 mlc_analyzer_cp_select.on_change('value', mlc_analyzer_cp_ticker)
 
-mlc_viewer = figure(plot_width=825, plot_height=600, logo=None, match_aspect=True,
-                    tools="pan,wheel_zoom,reset,crosshair,save")
+mlc_viewer = figure(plot_width=500, plot_height=500, logo=None, match_aspect=True,
+                    tools="crosshair,save")
 mlc_viewer.xaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
 mlc_viewer.yaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
 mlc_viewer.xaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
@@ -3839,19 +3849,33 @@ mlc_viewer.min_border_left = min_border
 mlc_viewer.min_border_bottom = min_border
 mlc_viewer.xaxis.axis_label = "X-Axis (A/B direction) (mm)"
 mlc_viewer.yaxis.axis_label = "Y-Axis (Gun/Target direction) (mm)"
-# mlc_viewer.patch('x', 'y', source=source_mlc_viewer, line_width=2)
 mlc_viewer.quad(top='top', bottom='bottom', left='left', right='right',
                 source=source_mlc_viewer, alpha=0.25, color='color')
 mlc_viewer_previous_cp = Button(label="<", button_type="primary", width=50)
 mlc_viewer_next_cp = Button(label=">", button_type="primary", width=50)
 mlc_viewer_play_button = Button(label="Play", button_type="success", width=100)
 
+columns = [TableColumn(field="cp", title="CP#"),
+           TableColumn(field="cum_mu_frac", title="Frac MU", formatter=NumberFormatter(format="0.000")),
+           TableColumn(field="cum_mu", title="MU", formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="cp_mu", title="CP MU", formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="gantry", title="Gantry", formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="collimator", title="Col", formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="couch", title="Couch", formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="jaw_x1", title="X1", formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="jaw_x2", title="X2", formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="jaw_y1", title="Y1", formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="jaw_y2", title="Y2", formatter=NumberFormatter(format="0.0"))]
+mlc_viewer_data_table = DataTable(source=source_mlc_summary, columns=columns,
+                                  editable=False, width=550, height=400, row_headers=False)
+
 mlc_viewer_previous_cp.on_click(mlc_viewer_go_to_previous_cp)
 mlc_viewer_next_cp.on_click(mlc_viewer_go_to_next_cp)
 mlc_viewer_play_button.on_click(mlc_viewer_play)
+source_mlc_summary.on_change('selected', update_cp_on_selection)
 
-mlc_viewer.x_range = Range1d(-200, 200)
-mlc_viewer.y_range = Range1d(-200, 200)
+mlc_viewer.x_range = Range1d(-MAX_FIELD_SIZE_X/2, MAX_FIELD_SIZE_X/2)
+mlc_viewer.y_range = Range1d(-MAX_FIELD_SIZE_Y/2, MAX_FIELD_SIZE_Y/2)
 mlc_viewer.xgrid.grid_line_color = None
 mlc_viewer.ygrid.grid_line_color = None
 
@@ -3957,9 +3981,9 @@ layout_mlc_analyzer = column(row(custom_title_mlc_analyzer_blue, Spacer(width=50
                              row(mlc_analyzer_mrn_select, mlc_analyzer_study_date_select, mlc_analyzer_uid_select),
                              Div(text="<hr>", width=800),
                              row(mlc_analyzer_fx_grp_select, mlc_analyzer_beam_select,
-                                 mlc_analyzer_cp_select, mlc_viewer_previous_cp, mlc_viewer_next_cp,
+                                 mlc_viewer_previous_cp, mlc_viewer_next_cp,
                                  Spacer(width=10), mlc_viewer_play_button),
-                             mlc_viewer)
+                             row(mlc_viewer, mlc_viewer_data_table))
 
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
