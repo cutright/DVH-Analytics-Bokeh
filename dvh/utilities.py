@@ -909,3 +909,7 @@ def is_uid_in_all_keys(uid, uids):
         if key not in 'unique':
             final_answer *= value
     return final_answer
+
+
+def flatten_list_of_lists(some_list):
+    return [item for sublist in some_list for item in sublist]
