@@ -51,7 +51,7 @@ class Beam:
                 lb.sort(reverse=True)  # Ensure descending order, not sure if a mlcy defaults to that in DICOM
                 self.leaf_boundaries = lb
 
-        self.aperture_shape = [get_shapely_from_cp(self.leaf_boundaries, cp) for cp in self.control_point]
+        self.aperture = [get_shapely_from_cp(self.leaf_boundaries, cp) for cp in self.control_point]
 
         self.control_point_meter_set = np.append([0], np.diff(np.array([cp.cum_mu for cp in self.control_point])))
 
@@ -59,15 +59,15 @@ class Beam:
 
         self.aperture_x = []
         self.aperture_y = []
-        for ap in self.aperture_shape:
+        for ap in self.aperture:
             x, y = [], []
             if ap.geom_type in {'MultiPolygon'}:
                 for shape in ap:
-                    x.append(shape.exterior.coords.xy[0].tolist())
-                    y.append(shape.exterior.coords.xy[1].tolist())
+                    x.extend(shape.exterior.coords.xy[0].tolist())
+                    y.extend(shape.exterior.coords.xy[1].tolist())
             else:
-                x.append(ap.exterior.coords.xy[0].tolist())
-                y.append(ap.exterior.coords.xy[1].tolist())
+                x.extend(ap.exterior.coords.xy[0].tolist())
+                y.extend(ap.exterior.coords.xy[1].tolist())
 
             self.aperture_x.append(x)
             self.aperture_y.append(y)
@@ -152,6 +152,6 @@ def get_shapely_from_cp(leaf_boundaries, control_point):
 
     points.append(points[0])  # explicitly close polygon
 
-    aperture = Polygon(points).buffer(0)  # may turn into MultiPolygon
+    aperture = Polygon(points)  # may turn into MultiPolygon
 
     return aperture

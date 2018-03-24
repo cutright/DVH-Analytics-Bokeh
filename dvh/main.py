@@ -20,7 +20,7 @@ import itertools
 from datetime import datetime
 from os.path import dirname, join
 from bokeh.layouts import column, row
-from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider, Spacer
+from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider, Spacer, Range1d
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
@@ -1731,15 +1731,10 @@ def update_mlc_viewer():
     beam_number = int(mlc_analyzer_beam_select.value.split(':')[0])
     beam = fx_grp.beam[beam_number - 1]
     cp_index = int(mlc_analyzer_cp_select.value) - 1
-    x, y = beam.aperture_x[cp_index], beam.aperture_y[cp_index]
-    x_final, y_final = [], []
-    for shape in x:
-        x_final.extend(shape)
-    for shape in y:
-        y_final.extend(shape)
 
-    source_mlc_viewer.data = {'x': x_final,
-                              'y': y_final}
+    ap = beam.aperture[cp_index]
+    source_mlc_viewer.data = {'x': ap.exterior.coords.xy[0],
+                              'y': ap.exterior.coords.xy[1]}
 
 
 def get_include_map():
@@ -3793,7 +3788,10 @@ mlc_viewer.min_border_left = min_border
 mlc_viewer.min_border_bottom = min_border
 mlc_viewer.xaxis.axis_label = "X-Axis (A/B direction) (mm)"
 mlc_viewer.yaxis.axis_label = "Y-Axis (Gun/Target direction) (mm)"
-mlc_viewer.line('x', 'y', source=source_mlc_viewer, line_width=2)
+mlc_viewer.patch('x', 'y', source=source_mlc_viewer, line_width=2)
+
+mlc_viewer.x_range=Range1d(-200, 200)
+mlc_viewer.y_range=Range1d(-200, 200)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Layout objects
