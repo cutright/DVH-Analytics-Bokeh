@@ -8,9 +8,8 @@ Created on Wed, Feb 28 2018
 
 import numpy as np
 from shapely.geometry import Polygon
-
-MAX_FIELD_SIZE_X = 400  # in mm
-MAX_FIELD_SIZE_Y = 400  # in mm
+from utilities import flatten_list_of_lists as flatten
+from options import MAX_FIELD_SIZE_X, MAX_FIELD_SIZE_Y
 
 
 class Plan:
@@ -47,30 +46,16 @@ class Beam:
 
         for bld_seq in beam_seq.BeamLimitingDeviceSequence:
             if hasattr(bld_seq, 'LeafPositionBoundaries'):
-                lb = bld_seq.LeafPositionBoundaries
-                lb.sort(reverse=True)  # Ensure descending order, not sure if a mlcy defaults to that in DICOM
-                self.leaf_boundaries = lb
+                self.leaf_boundaries = bld_seq.LeafPositionBoundaries
 
-        self.aperture = [get_shapely_from_cp(self.leaf_boundaries, cp) for cp in self.control_point]
+        self.mlc = [get_shapely_from_cp(self.leaf_boundaries, cp) for cp in self.control_point]
+        self.jaws = [get_jaws(cp) for cp in self.control_point]
 
         self.control_point_meter_set = np.append([0], np.diff(np.array([cp.cum_mu for cp in self.control_point])))
 
         self.name = beam_seq.BeamDescription
 
-        self.aperture_x = []
-        self.aperture_y = []
-        for ap in self.aperture:
-            x, y = [], []
-            if ap.geom_type in {'MultiPolygon'}:
-                for shape in ap:
-                    x.extend(shape.exterior.coords.xy[0].tolist())
-                    y.extend(shape.exterior.coords.xy[1].tolist())
-            else:
-                x.extend(ap.exterior.coords.xy[0].tolist())
-                y.extend(ap.exterior.coords.xy[1].tolist())
-
-            self.aperture_x.append(x)
-            self.aperture_y.append(y)
+        self.aperture = [get_apertures(self.leaf_boundaries, cp) for cp in self.control_point]
 
 
 class ControlPoint:
@@ -90,7 +75,39 @@ class ControlPoint:
 
 
 def get_shapely_from_cp(leaf_boundaries, control_point):
+    """
+    This function will return the outline of MLCs regardless of jaws
+    :param leaf_boundaries: an ordered list of leaf boundaries
+    :param control_point: a ControlPoint class object
+    :return: a shapely Polygon of the complete MLC aperture as one shape (including MLC overlap)
+    """
     lb = leaf_boundaries  # NOTE: this is in DESCENDING order
+    cp = control_point
+
+    # Get mlc positions and start/end indices based on jaws
+    if hasattr(cp, 'mlcx'):
+        mlc = cp.mlcx
+    elif hasattr(cp, 'mlcy'):
+        mlc = cp.mlcy
+    else:
+        return False
+
+    a = flatten([[(m, lb[i]), (m, lb[i+1])] for i, m in enumerate(mlc[0])])
+    b = flatten([[(m, lb[i]), (m, lb[i+1])] for i, m in enumerate(mlc[1])])
+    points = a + b[::-1] + [a[0]]  # concatenate a and reverse(b), then explicitly close polygon
+
+    aperture = Polygon(points)
+
+    return aperture
+
+
+def get_jaws(control_point):
+    """
+    :param control_point: a ControlPoint class object
+    :return: jaw positions (or max field size in lieu of a jaw)
+    :rtype: dict
+    """
+
     cp = control_point
 
     # Determine jaw opening
@@ -98,27 +115,47 @@ def get_shapely_from_cp(leaf_boundaries, control_point):
         y_min = min(cp.asymy)
         y_max = max(cp.asymy)
     else:
-        y_min = np.float(-MAX_FIELD_SIZE_Y / 2)
-        y_max = np.float(MAX_FIELD_SIZE_Y / 2)
+        y_min = -MAX_FIELD_SIZE_Y / 2.
+        y_max = MAX_FIELD_SIZE_Y / 2.
     if hasattr(cp, 'asymx'):
         x_min = min(cp.asymx)
         x_max = max(cp.asymx)
     else:
-        x_min = np.float(-MAX_FIELD_SIZE_X / 2)
-        x_max = np.float(MAX_FIELD_SIZE_X / 2)
+        x_min = -MAX_FIELD_SIZE_X / 2.
+        x_max = MAX_FIELD_SIZE_X / 2.
+
+    jaws = {'x_min': x_min,
+            'x_max': x_max,
+            'y_min': y_min,
+            'y_max': y_max}
+
+    return jaws
+
+
+def get_apertures(leaf_boundaries, control_point):
+    """
+    It is significantly slower to calculate the union of the jaws and full MLC shape than it is to recalculate a new
+    shape ignoring positions beyond the jaws.
+    :param leaf_boundaries: an ordered list of leaf boundaries
+    :param control_point: a ControlPoint class object
+    :return: shapely MultiPolygon (or a [Polygon] so return is always iterable)
+    """
+    lb = leaf_boundaries  # NOTE: this is in DESCENDING order
+    cp = control_point
+
+    jaws = get_jaws(control_point)
+    x_min, x_max = jaws['x_min'], jaws['x_max']
+    y_min, y_max = jaws['y_min'], jaws['y_max']
 
     # Get mlc positions and start/end indices based on jaws
     if hasattr(cp, 'mlcx'):
         mlc = cp.mlcx
-        order = 1
+        v_min, v_max = y_min, y_max
     elif hasattr(cp, 'mlcy'):
         mlc = cp.mlcy
-        order = -1
+        v_min, v_max = x_min, x_max
     else:
         return False
-
-    v_max = [x_max, y_max][int((order+1)/2)]
-    v_min = [x_min, y_min][int((order+1)/2)]
 
     # These indices are selected to ignore MLCs under the jaws
     # Needs validation, definitely lb_end_index is not tight enough
@@ -131,27 +168,31 @@ def get_shapely_from_cp(leaf_boundaries, control_point):
 
     # Accumulate points representing top and bottom positions of A side MLCs
     # First MLC may be split by Jaw
-    points.append((mlc[0][lb_start_index], v_max)[::order])
-    points.append((mlc[0][lb_start_index], lb[lb_start_index + 1])[::order])
+    points.append((mlc[0][lb_start_index], v_max))
+    points.append((mlc[0][lb_start_index], lb[lb_start_index + 1]))
     # The MLCs excluding first and last
-    for i in range(lb_start_index+1, lb_end_index):
-        points.append((mlc[0][i], lb[i])[::order])
-        points.append((mlc[0][i], lb[i+1])[::order])
+    for i in range(lb_start_index + 1, lb_end_index):
+        points.append((mlc[0][i], lb[i]))
+        points.append((mlc[0][i], lb[i + 1]))
     # Last MLC may be split by Jaw
-    points.append((mlc[0][lb_end_index], lb[lb_end_index])[::order])
-    points.append((mlc[0][lb_end_index], v_min)[::order])
+    points.append((mlc[0][lb_end_index], lb[lb_end_index]))
+    points.append((mlc[0][lb_end_index], v_min))
 
     # Accumulate points representing top and bottom positions of B side MLCs, in reverse order
-    points.append((mlc[1][lb_end_index], v_min)[::order])
-    points.append((mlc[1][lb_end_index], lb[lb_end_index])[::order])
-    for i in range(lb_start_index+1, lb_end_index)[::-1]:
-        points.append((mlc[1][i], lb[i+1])[::order])
-        points.append((mlc[1][i], lb[i])[::order])
-    points.append((mlc[1][lb_start_index], lb[lb_start_index + 1])[::order])
-    points.append((mlc[1][lb_start_index], v_max)[::order])
+    points.append((mlc[1][lb_end_index], v_min))
+    points.append((mlc[1][lb_end_index], lb[lb_end_index]))
+    for i in range(lb_start_index + 1, lb_end_index)[::-1]:
+        points.append((mlc[1][i], lb[i + 1]))
+        points.append((mlc[1][i], lb[i]))
+    points.append((mlc[1][lb_start_index], lb[lb_start_index + 1]))
+    points.append((mlc[1][lb_start_index], v_max))
 
     points.append(points[0])  # explicitly close polygon
 
-    aperture = Polygon(points)  # may turn into MultiPolygon
+    aperture = Polygon(points).buffer(0)  # may turn into MultiPolygon
 
-    return aperture
+    # Ensure an iterable is returned for ease of code later
+    if aperture.geom_type in {'MultiPolygon'}:
+        return aperture
+    else:
+        return [aperture]
