@@ -131,11 +131,7 @@ source_multi_var_model_results_1 = ColumnDataSource(data=dict(model_p=[], model_
 source_multi_var_coeff_results_2 = ColumnDataSource(data=dict(var_name=[], coeff=[], coeff_str=[], p=[], p_str=[]))
 source_multi_var_model_results_2 = ColumnDataSource(data=dict(model_p=[], model_p_str=[],
                                                               r_sq=[], r_sq_str=[], y_var=[]))
-source_mlc_viewer = ColumnDataSource(data=dict(x=[], y=[]))
-source_mlc_viewer_jaw_x1 = ColumnDataSource(data=dict(top=[200], bottom=[-200], left=[-200], right=[200]))
-source_mlc_viewer_jaw_x2 = ColumnDataSource(data=dict(top=[200], bottom=[-200], left=[-200], right=[200]))
-source_mlc_viewer_jaw_y1 = ColumnDataSource(data=dict(top=[200], bottom=[-200], left=[-200], right=[200]))
-source_mlc_viewer_jaw_y2 = ColumnDataSource(data=dict(top=[200], bottom=[-200], left=[-200], right=[200]))
+source_mlc_viewer = ColumnDataSource(data=dict(top=[], bottom=[], left=[], right=[], color=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -1690,6 +1686,8 @@ def update_mlc_analyzer_uid():
         mlc_analyzer_uid_select.options = options
         mlc_analyzer_uid_select.value = options[0]
 
+    update_mlc_analyzer_fx_grp()
+
 
 def mlc_analyzer_uid_ticker(attr, old, new):
     global mlc_data
@@ -1702,8 +1700,10 @@ def mlc_analyzer_uid_ticker(attr, old, new):
     mlc_analyzer_plan_select.value = mlc_data.name
 
     mlc_analyzer_fx_grp_select.options = [str(i+1) for i in range(0, len(mlc_data.fx_group))]
-    mlc_analyzer_fx_grp_select.value = '1'
-    update_mlc_viewer()
+    if mlc_analyzer_fx_grp_select.value == mlc_analyzer_fx_grp_select.options[0]:
+        update_mlc_analyzer_beam()
+    else:
+        mlc_analyzer_fx_grp_select.value = '1'
 
 
 def mlc_analyzer_plan_ticker(attr, old, new):
@@ -1711,20 +1711,36 @@ def mlc_analyzer_plan_ticker(attr, old, new):
 
 
 def mlc_analyzer_fx_grp_ticker(attr, old, new):
+    update_mlc_analyzer_fx_grp()
+    if old == new:
+        update_mlc_analyzer_beam()
+
+
+def update_mlc_analyzer_fx_grp():
     fx_grp = mlc_data.fx_group[int(mlc_analyzer_fx_grp_select.value)-1]
     beam_options = ["%s: %s" % (i+1, j) for i, j in enumerate(fx_grp.beam_names)]
     mlc_analyzer_beam_select.options = beam_options
-    mlc_analyzer_beam_select.value = beam_options[0]
+    if mlc_analyzer_beam_select.value == mlc_analyzer_beam_select.options[0]:
+        update_mlc_analyzer_beam()
+    else:
+        mlc_analyzer_beam_select.value = beam_options[0]
 
 
 def mlc_analyzer_beam_ticker(attr, old, new):
+    update_mlc_analyzer_beam()
+
+
+def update_mlc_analyzer_beam():
     fx_grp = mlc_data.fx_group[int(mlc_analyzer_fx_grp_select.value)-1]
     beam_number = int(mlc_analyzer_beam_select.value.split(':')[0])
     beam = fx_grp.beam[beam_number-1]
     cp_count = beam.control_point_count
     cp_numbers = [str(i + 1) for i in range(0, cp_count)]
     mlc_analyzer_cp_select.options = cp_numbers
-    mlc_analyzer_cp_select.value = cp_numbers[0]
+    if mlc_analyzer_cp_select.value == mlc_analyzer_cp_select.options[0]:
+        update_mlc_viewer()
+    else:
+        mlc_analyzer_cp_select.value = cp_numbers[0]
 
 
 def mlc_analyzer_cp_ticker(attr, old, new):
@@ -1737,32 +1753,39 @@ def update_mlc_viewer():
     beam = fx_grp.beam[beam_number - 1]
     cp_index = int(mlc_analyzer_cp_select.value) - 1
 
-    ap = beam.mlc[cp_index]
-    source_mlc_viewer.data = {'x': ap.exterior.coords.xy[0],
-                              'y': ap.exterior.coords.xy[1]}
-
     x_min, x_max = -MAX_FIELD_SIZE_X / 2, MAX_FIELD_SIZE_X / 2
     y_min, y_max = -MAX_FIELD_SIZE_Y / 2, MAX_FIELD_SIZE_Y / 2
-    # source_mlc_viewer_jaw.data = {'top': [y_max, y_max, y_max, beam.jaws[cp_index]['y_min']],
-    #                               'bottom': [y_min, y_min, beam.jaws[cp_index]['y_max'], y_min],
-    #                               'left': [x_min, beam.jaws[cp_index]['x_max'], x_min, x_min],
-    #                               'right': [beam.jaws[cp_index]['x_min'], x_max, x_max, x_max]}
-    source_mlc_viewer_jaw_x1.data = {'top': [y_max],
-                                     'bottom': [y_min],
-                                     'left': [x_min],
-                                     'right': beam.jaws[cp_index]['x_min']}
-    source_mlc_viewer_jaw_x2.data = {'top': [y_max],
-                                     'bottom': [y_min],
-                                     'left': beam.jaws[cp_index]['x_max'],
-                                     'right': [x_max]}
-    source_mlc_viewer_jaw_y1.data = {'top': [y_max],
-                                     'bottom': beam.jaws[cp_index]['y_max'],
-                                     'left': [x_min],
-                                     'right': [x_max]}
-    source_mlc_viewer_jaw_y2.data = {'top': beam.jaws[cp_index]['y_min'],
-                                     'bottom': [y_min],
-                                     'left': [x_min],
-                                     'right': [x_max]}
+
+    borders = {'top': [y_max, y_max, y_max, beam.jaws[cp_index]['y_min']],
+               'bottom': [y_min, y_min, beam.jaws[cp_index]['y_max'], y_min],
+               'left': [x_min, beam.jaws[cp_index]['x_max'], x_min, x_min],
+               'right': [beam.jaws[cp_index]['x_min'], x_max, x_max, x_max]}
+    for edge in list(borders):
+        borders[edge].extend(beam.mlc_borders[cp_index][edge])
+    borders['color'] = ['blue'] * 4 + ['green'] * len(beam.mlc_borders[cp_index]['top'])
+
+    source_mlc_viewer.data = borders
+
+
+def mlc_viewer_go_to_previous_cp():
+    index = mlc_analyzer_cp_select.options.index(mlc_analyzer_cp_select.value)
+    mlc_analyzer_cp_select.value = mlc_analyzer_cp_select.options[index - 1]
+
+
+def mlc_viewer_go_to_next_cp():
+    index = mlc_analyzer_cp_select.options.index(mlc_analyzer_cp_select.value)
+    if index + 1 == len(mlc_analyzer_cp_select.options):
+        index = -1
+    mlc_analyzer_cp_select.value = mlc_analyzer_cp_select.options[index + 1]
+
+
+def mlc_viewer_play():
+    start = mlc_analyzer_cp_select.options.index(mlc_analyzer_cp_select.value)
+    end = len(mlc_analyzer_cp_select.options) - 1
+
+    for i in range(start, end):
+        mlc_viewer_go_to_next_cp()
+        time.sleep(CP_TIME_SPACING)
 
 
 def get_include_map():
@@ -3816,14 +3839,21 @@ mlc_viewer.min_border_left = min_border
 mlc_viewer.min_border_bottom = min_border
 mlc_viewer.xaxis.axis_label = "X-Axis (A/B direction) (mm)"
 mlc_viewer.yaxis.axis_label = "Y-Axis (Gun/Target direction) (mm)"
-mlc_viewer.patch('x', 'y', source=source_mlc_viewer, line_width=2)
-mlc_viewer.quad(top='top', bottom='bottom', left='left', right='right', source=source_mlc_viewer_jaw_x1, alpha=0.25)
-mlc_viewer.quad(top='top', bottom='bottom', left='left', right='right', source=source_mlc_viewer_jaw_x2, alpha=0.25)
-mlc_viewer.quad(top='top', bottom='bottom', left='left', right='right', source=source_mlc_viewer_jaw_y1, alpha=0.25)
-mlc_viewer.quad(top='top', bottom='bottom', left='left', right='right', source=source_mlc_viewer_jaw_y2, alpha=0.25)
+# mlc_viewer.patch('x', 'y', source=source_mlc_viewer, line_width=2)
+mlc_viewer.quad(top='top', bottom='bottom', left='left', right='right',
+                source=source_mlc_viewer, alpha=0.25, color='color')
+mlc_viewer_previous_cp = Button(label="<", button_type="primary", width=50)
+mlc_viewer_next_cp = Button(label=">", button_type="primary", width=50)
+mlc_viewer_play_button = Button(label="Play", button_type="success", width=100)
+
+mlc_viewer_previous_cp.on_click(mlc_viewer_go_to_previous_cp)
+mlc_viewer_next_cp.on_click(mlc_viewer_go_to_next_cp)
+mlc_viewer_play_button.on_click(mlc_viewer_play)
 
 mlc_viewer.x_range = Range1d(-200, 200)
 mlc_viewer.y_range = Range1d(-200, 200)
+mlc_viewer.xgrid.grid_line_color = None
+mlc_viewer.ygrid.grid_line_color = None
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Layout objects
@@ -3926,8 +3956,9 @@ layout_regression = column(row(custom_title_regression_blue, Spacer(width=50), c
 layout_mlc_analyzer = column(row(custom_title_mlc_analyzer_blue, Spacer(width=50), custom_title_mlc_analyzer_red),
                              row(mlc_analyzer_mrn_select, mlc_analyzer_study_date_select, mlc_analyzer_uid_select),
                              Div(text="<hr>", width=800),
-                             row(mlc_analyzer_plan_select, mlc_analyzer_fx_grp_select,
-                                 mlc_analyzer_beam_select, mlc_analyzer_cp_select),
+                             row(mlc_analyzer_fx_grp_select, mlc_analyzer_beam_select,
+                                 mlc_analyzer_cp_select, mlc_viewer_previous_cp, mlc_viewer_next_cp,
+                                 Spacer(width=10), mlc_viewer_play_button),
                              mlc_viewer)
 
 query_tab = Panel(child=layout_query, title='Query')

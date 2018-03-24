@@ -92,3 +92,4 @@ RESAMPLED_DVH_BIN_COUNT = 5000
 # For MLC Analyzer module
 MAX_FIELD_SIZE_X = 400  # in mm
 MAX_FIELD_SIZE_Y = 400  # in mm
+CP_TIME_SPACING = 0.2  # in sec

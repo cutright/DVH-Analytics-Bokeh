@@ -14,6 +14,9 @@ from options import MAX_FIELD_SIZE_X, MAX_FIELD_SIZE_Y
 
 class Plan:
     def __init__(self, rt_plan):
+        """
+        :param rt_plan: dicompyler rt_plan (output from dicomparser.read_file() of an DICOM RT Plan file)
+        """
         self.fx_group = [FxGroup(fx_grp_seq, rt_plan.BeamSequence) for fx_grp_seq in rt_plan.FractionGroupSequence]
         self.name = rt_plan.RTPlanLabel
 
@@ -51,11 +54,23 @@ class Beam:
         self.mlc = [get_shapely_from_cp(self.leaf_boundaries, cp) for cp in self.control_point]
         self.jaws = [get_jaws(cp) for cp in self.control_point]
 
+        self.gantry_angle = [float(cp.GantryAngle) for cp in beam_seq.ControlPointSequence if
+                             hasattr(cp, 'GantryAngle')]
+        self.collimator_angle = [float(cp.BeamLimitingDeviceAngle) for cp in beam_seq.ControlPointSequence if
+                                 hasattr(cp, 'BeamLimitingDeviceAngle')]
+        self.couch_angle = [float(cp.PatientSupportAngle) for cp in beam_seq.ControlPointSequence if
+                            hasattr(cp, 'PatientSupportAngle')]
+
         self.control_point_meter_set = np.append([0], np.diff(np.array([cp.cum_mu for cp in self.control_point])))
 
-        self.name = beam_seq.BeamDescription
+        if hasattr(beam_seq, 'BeamDescription'):
+            self.name = beam_seq.BeamDescription
+        else:
+            self.name = beam_seq.BeamName
 
         self.aperture = [get_apertures(self.leaf_boundaries, cp) for cp in self.control_point]
+
+        self.mlc_borders = [get_mlc_borders(cp, self.leaf_boundaries) for cp in self.control_point]
 
 
 class ControlPoint:
@@ -72,6 +87,22 @@ class ControlPoint:
 
         for key in cp:
             setattr(self, key, cp[key])
+
+
+def get_mlc_borders(control_point, leaf_boundaries, mlc_type='mlcx'):
+    top = leaf_boundaries[0:-1] + leaf_boundaries[0:-1]
+    top = [float(i) for i in top]
+    bottom = leaf_boundaries[1::] + leaf_boundaries[1::]
+    bottom = [float(i) for i in bottom]
+    left = [- MAX_FIELD_SIZE_X / 2] * len(control_point.mlcx[0])
+    left.extend(control_point.mlcx[1])
+    right = control_point.mlcx[0].tolist()
+    right.extend([MAX_FIELD_SIZE_X / 2] * len(control_point.mlcx[1]))
+
+    return {'top': top,
+            'bottom': bottom,
+            'left': left,
+            'right': right}
 
 
 def get_shapely_from_cp(leaf_boundaries, control_point):
@@ -94,7 +125,7 @@ def get_shapely_from_cp(leaf_boundaries, control_point):
 
     a = flatten([[(m, lb[i]), (m, lb[i+1])] for i, m in enumerate(mlc[0])])
     b = flatten([[(m, lb[i]), (m, lb[i+1])] for i, m in enumerate(mlc[1])])
-    points = a + b[::-1] + [a[0]]  # concatenate a and reverse(b), then explicitly close polygon
+    points = a + b[::-1]  # concatenate a and reverse(b)
 
     aperture = Polygon(points)
 
@@ -124,10 +155,10 @@ def get_jaws(control_point):
         x_min = -MAX_FIELD_SIZE_X / 2.
         x_max = MAX_FIELD_SIZE_X / 2.
 
-    jaws = {'x_min': x_min,
-            'x_max': x_max,
-            'y_min': y_min,
-            'y_max': y_max}
+    jaws = {'x_min': float(x_min),
+            'x_max': float(x_max),
+            'y_min': float(y_min),
+            'y_max': float(y_max)}
 
     return jaws
 
@@ -186,8 +217,6 @@ def get_apertures(leaf_boundaries, control_point):
         points.append((mlc[1][i], lb[i]))
     points.append((mlc[1][lb_start_index], lb[lb_start_index + 1]))
     points.append((mlc[1][lb_start_index], v_max))
-
-    points.append(points[0])  # explicitly close polygon
 
     aperture = Polygon(points).buffer(0)  # may turn into MultiPolygon
 
