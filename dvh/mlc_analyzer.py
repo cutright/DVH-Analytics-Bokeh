@@ -200,36 +200,17 @@ def get_jaws(control_point):
 
 
 def get_xy_pathlengths(shapely_object):
-
+    path = np.array([0, 0])
     if shapely_object.type == 'GeometryCollection':
-        x_path, y_path = 0., 0.
         for geometry in shapely_object.geoms:
             if geometry.type in {'MultiPolygon', 'Polygon'}:
-                x, y = get_xy_pathlengths(geometry)
-                x_path += x
-                y_path += y
-
+                path = np.add(path, get_xy_pathlengths(geometry))
     elif shapely_object.type == 'MultiPolygon':
-        x_paths, y_paths = np.array([]), np.array([])
         for shape in shapely_object:
-            x, y = get_xy_pathlength_from_polygon(shape)
-            x_paths = np.append(x_paths, x)
-            y_paths = np.append(y_paths, y)
-        x_path, y_path = np.sum(x_paths), np.sum(y_paths)
+            path = np.add(path, get_xy_pathlengths(shape))
     elif shapely_object.type == 'Polygon':
-        x_path, y_path = get_xy_pathlength_from_polygon(shapely_object)
-    else:
-        x_path, y_path = 0., 0.
+        x, y = np.array(shapely_object.exterior.xy[0]), np.array(shapely_object.exterior.xy[1])
+        path = np.array([np.sum(np.abs(np.diff(x))), np.sum(np.abs(np.diff(y)))])
 
-    return [float(x_path), float(y_path)]
+    return path.tolist()
 
-
-def get_xy_pathlength_from_polygon(polygon):
-
-    x = np.array(polygon.exterior.xy[0])
-    y = np.array(polygon.exterior.xy[1])
-
-    x_path_length = np.sum(np.abs(np.diff(x)))
-    y_path_length = np.sum(np.abs(np.diff(y)))
-
-    return x_path_length, y_path_length
