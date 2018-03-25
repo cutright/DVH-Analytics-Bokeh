@@ -1694,8 +1694,7 @@ def mlc_analyzer_uid_ticker(attr, old, new):
     global mlc_data
     rt_plan = DVH_SQL().query('DICOM_Files', 'folder_path, plan_file', "study_instance_uid = '%s'" % new)[0]
     rt_plan_file = os.path.join(rt_plan[0], rt_plan[1])
-    rt_plan = dicomparser.read_file(rt_plan_file)
-    mlc_data = mlc_analyzer.Plan(rt_plan)
+    mlc_data = mlc_analyzer.Plan(rt_plan_file)
 
     mlc_analyzer_plan_select.options = [mlc_data.name]
     mlc_analyzer_plan_select.value = mlc_data.name
@@ -1729,6 +1728,14 @@ def update_mlc_analyzer_fx_grp():
 
 def mlc_analyzer_beam_ticker(attr, old, new):
     update_mlc_analyzer_beam()
+    update_beam_score()
+
+
+def update_beam_score():
+    scores = source_mlc_summary.data['cmp_score']
+    mu = source_mlc_summary.data['cum_mu'][-1]
+    score = np.sum(scores) / float(mu)
+    mlc_viewer_beam_score.text = "<b>Beam Complexity Score: </b>%s" % round(score, 3)
 
 
 def update_mlc_analyzer_beam():
@@ -3847,17 +3854,18 @@ mlc_viewer.xaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
 mlc_viewer.yaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
 mlc_viewer.min_border_left = min_border
 mlc_viewer.min_border_bottom = min_border
-mlc_viewer.xaxis.axis_label = "X-Axis (A/B direction) (mm)"
-mlc_viewer.yaxis.axis_label = "Y-Axis (Gun/Target direction) (mm)"
+mlc_viewer.xaxis.axis_label = "X-Axis (mm)"
+mlc_viewer.yaxis.axis_label = "Y-Axis (mm)"
 mlc_viewer.quad(top='top', bottom='bottom', left='left', right='right',
                 source=source_mlc_viewer, alpha=0.25, color='color')
 mlc_viewer_previous_cp = Button(label="<", button_type="primary", width=50)
 mlc_viewer_next_cp = Button(label=">", button_type="primary", width=50)
 mlc_viewer_play_button = Button(label="Play", button_type="success", width=100)
+mlc_viewer_beam_score = Div(text="<b>Beam Complexity Score: </b>", width=300)
 
-columns = [TableColumn(field="cp", title="CP#"),
-           TableColumn(field="cum_mu_frac", title="Frac MU", formatter=NumberFormatter(format="0.000")),
-           TableColumn(field="cum_mu", title="Cum MU", formatter=NumberFormatter(format="0.0")),
+columns = [TableColumn(field="cp", title="CP"),
+           TableColumn(field="cum_mu_frac", title="Rel MU", formatter=NumberFormatter(format="0.000")),
+           TableColumn(field="cum_mu", title="MU", formatter=NumberFormatter(format="0.0")),
            TableColumn(field="cp_mu", title="CP MU", formatter=NumberFormatter(format="0.0")),
            TableColumn(field="gantry", title="Gantry", formatter=NumberFormatter(format="0.0")),
            TableColumn(field="collimator", title="Col", formatter=NumberFormatter(format="0.0")),
@@ -3866,9 +3874,12 @@ columns = [TableColumn(field="cp", title="CP#"),
            TableColumn(field="jaw_x2", title="X2", formatter=NumberFormatter(format="0.0")),
            TableColumn(field="jaw_y1", title="Y1", formatter=NumberFormatter(format="0.0")),
            TableColumn(field="jaw_y2", title="Y2", formatter=NumberFormatter(format="0.0")),
-           TableColumn(field="area", title="Area", formatter=NumberFormatter(format="0.0"))]
+           TableColumn(field="area", title="Area", formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="x_perim", title="X Path", formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="y_perim", title="Y Path", formatter=NumberFormatter(format="0.00")),
+           TableColumn(field="cmp_score", title="Score", formatter=NumberFormatter(format="0.000"))]
 mlc_viewer_data_table = DataTable(source=source_mlc_summary, columns=columns,
-                                  editable=False, width=550, height=400, row_headers=False)
+                                  editable=False, width=700, height=425, row_headers=False)
 
 mlc_viewer_previous_cp.on_click(mlc_viewer_go_to_previous_cp)
 mlc_viewer_next_cp.on_click(mlc_viewer_go_to_next_cp)
@@ -3983,7 +3994,7 @@ layout_mlc_analyzer = column(row(custom_title_mlc_analyzer_blue, Spacer(width=50
                              Div(text="<hr>", width=800),
                              row(mlc_analyzer_fx_grp_select, mlc_analyzer_beam_select,
                                  mlc_viewer_previous_cp, mlc_viewer_next_cp,
-                                 Spacer(width=10), mlc_viewer_play_button),
+                                 Spacer(width=10), mlc_viewer_play_button, Spacer(width=10), mlc_viewer_beam_score),
                              row(mlc_viewer, mlc_viewer_data_table))
 
 query_tab = Panel(child=layout_query, title='Query')

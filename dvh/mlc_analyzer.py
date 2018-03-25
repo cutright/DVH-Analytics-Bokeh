@@ -6,17 +6,19 @@ Created on Wed, Feb 28 2018
 @author: Dan Cutright, PhD
 """
 
+from dicompylercore import dicomparser
 import numpy as np
 from shapely.geometry import Polygon
 from utilities import flatten_list_of_lists as flatten
-from options import MAX_FIELD_SIZE_X, MAX_FIELD_SIZE_Y
+from options import MAX_FIELD_SIZE_X, MAX_FIELD_SIZE_Y, COMPLEXITY_SCORE_X_WEIGHT, COMPLEXITY_SCORE_Y_WEIGHT
 
 
 class Plan:
-    def __init__(self, rt_plan):
+    def __init__(self, rt_plan_file):
         """
-        :param rt_plan: dicompyler rt_plan (output from dicomparser.read_file() of an DICOM RT Plan file)
+        :param rt_plan_file: absolute file path of an rt_plan_file)
         """
+        rt_plan = dicomparser.read_file(rt_plan_file)
         self.fx_group = [FxGroup(fx_grp_seq, rt_plan.BeamSequence) for fx_grp_seq in rt_plan.FractionGroupSequence]
         self.name = rt_plan.RTPlanLabel
 
@@ -66,9 +68,18 @@ class Beam:
         else:
             self.name = beam_seq.BeamName
 
+        cum_mu = [cp.cum_mu * self.meter_set for cp in self.control_point]
+        cp_mu = np.diff(np.array(cum_mu)).tolist() + [0]
+        x_paths = np.array([get_xy_pathlengths(cp)[0] for cp in self.aperture])
+        y_paths = np.array([get_xy_pathlengths(cp)[1] for cp in self.aperture])
+        area = [cp.area for cp in self.aperture]
+        c1, c2 = COMPLEXITY_SCORE_X_WEIGHT, COMPLEXITY_SCORE_Y_WEIGHT
+        complexity_score = np.divide(np.multiply(np.add(c1*x_paths, c2*y_paths), cp_mu), area)
+
         self.summary = {'cp': range(1, len(self.control_point)+1),
                         'cum_mu_frac': [cp.cum_mu for cp in self.control_point],
-                        'cum_mu': [cp.cum_mu * self.meter_set for cp in self.control_point],
+                        'cum_mu': cum_mu,
+                        'cp_mu': cp_mu,
                         'gantry': self.gantry_angle,
                         'collimator': self.collimator_angle,
                         'couch': self.couch_angle,
@@ -76,8 +87,10 @@ class Beam:
                         'jaw_x2': [j['x_max']/10 for j in self.jaws],
                         'jaw_y1': [j['y_min']/10 for j in self.jaws],
                         'jaw_y2': [j['y_max']/10 for j in self.jaws],
-                        'area': [cp.area/100 for cp in self.aperture]}
-        self.summary['cp_mu'] = np.diff(np.array(self.summary['cum_mu'])).tolist() + [0]
+                        'area': np.divide(area, 100.).tolist(),
+                        'x_perim': np.divide(x_paths, 10.).tolist(),
+                        'y_perim': np.divide(y_paths, 10.).tolist(),
+                        'cmp_score': complexity_score.tolist()}
 
         for key in self.summary:
             if len(self.summary[key]) == 1:
@@ -148,9 +161,9 @@ def get_shapely_from_cp(leaf_boundaries, control_point):
         return jaw_shapely
 
     mlc_points = a + b[::-1]  # concatenate a and reverse(b)
-    mlc_aperture = Polygon(mlc_points)
+    mlc_aperture = Polygon(mlc_points).buffer(0)
 
-    aperture = mlc_aperture.union(jaw_shapely)
+    aperture = mlc_aperture.intersection(jaw_shapely)
 
     return aperture
 
@@ -184,3 +197,39 @@ def get_jaws(control_point):
             'y_max': float(y_max)}
 
     return jaws
+
+
+def get_xy_pathlengths(shapely_object):
+
+    if shapely_object.type == 'GeometryCollection':
+        x_path, y_path = 0., 0.
+        for geometry in shapely_object.geoms:
+            if geometry.type in {'MultiPolygon', 'Polygon'}:
+                x, y = get_xy_pathlengths(geometry)
+                x_path += x
+                y_path += y
+
+    elif shapely_object.type == 'MultiPolygon':
+        x_paths, y_paths = np.array([]), np.array([])
+        for shape in shapely_object:
+            x, y = get_xy_pathlength_from_polygon(shape)
+            x_paths = np.append(x_paths, x)
+            y_paths = np.append(y_paths, y)
+        x_path, y_path = np.sum(x_paths), np.sum(y_paths)
+    elif shapely_object.type == 'Polygon':
+        x_path, y_path = get_xy_pathlength_from_polygon(shapely_object)
+    else:
+        x_path, y_path = 0., 0.
+
+    return [float(x_path), float(y_path)]
+
+
+def get_xy_pathlength_from_polygon(polygon):
+
+    x = np.array(polygon.exterior.xy[0])
+    y = np.array(polygon.exterior.xy[1])
+
+    x_path_length = np.sum(np.abs(np.diff(x)))
+    y_path_length = np.sum(np.abs(np.diff(y)))
+
+    return x_path_length, y_path_length
