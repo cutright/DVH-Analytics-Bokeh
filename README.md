@@ -33,8 +33,9 @@ This application was presented at the AAPM Midwest Chapter 2017 Fall meetings. T
 #### New MLC Analyzer Module added
 MLC Analyzer module added to DVH Analytics. Still in development, current complexity score based on:
 Younge KC, Matuszak MM, Moran JM, McShan DL, Fraass BA, Roberts DA. Penalization of aperture complexity in inversely planned volumetric modulated arc therapy. Med Phys. 2012;39(11):7160–70.
-<img src='https://user-images.githubusercontent.com/4778878/37878772-09faa32a-303c-11e8-8732-39346f516ec8.png' width='300' alt="DVH Analytics screenshot">  
-
+<h3 align="left">
+<img src='https://user-images.githubusercontent.com/4778878/37878772-09faa32a-303c-11e8-8732-39346f516ec8.png' width='600' alt="DVH Analytics screenshot">  
+</h3>
 
 ## Dependencies
 * [Python](https://www.python.org) 2.7  
