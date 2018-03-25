@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
-Input an rt_plan from pydicom into the Plan class to parse MLC data
+Input an rt_plan file path into the Plan class to parse MLC data and calculate metrics
 Created on Wed, Feb 28 2018
 @author: Dan Cutright, PhD
 """
@@ -70,8 +70,8 @@ class Beam:
 
         cum_mu = [cp.cum_mu * self.meter_set for cp in self.control_point]
         cp_mu = np.diff(np.array(cum_mu)).tolist() + [0]
-        x_paths = np.array([get_xy_pathlengths(cp)[0] for cp in self.aperture])
-        y_paths = np.array([get_xy_pathlengths(cp)[1] for cp in self.aperture])
+        x_paths = np.array([get_xy_path_lengths(cp)[0] for cp in self.aperture])
+        y_paths = np.array([get_xy_path_lengths(cp)[1] for cp in self.aperture])
         area = [cp.area for cp in self.aperture]
         c1, c2 = COMPLEXITY_SCORE_X_WEIGHT, COMPLEXITY_SCORE_Y_WEIGHT
         complexity_score = np.divide(np.multiply(np.add(c1*x_paths, c2*y_paths), cp_mu), area)
@@ -120,6 +120,13 @@ class ControlPoint:
 
 
 def get_mlc_borders(control_point, leaf_boundaries):
+    """
+    This function returns the boundaries of each MLC leaf for purposes of displaying a beam's eye view using
+    bokeh's quad() glyph
+    :param control_point: a ControlPoint class object
+    :param leaf_boundaries: the leaf boundaries as stored in the Beam class object
+    :return: the boundaries of each leaf within the control point
+    """
     top = leaf_boundaries[0:-1] + leaf_boundaries[0:-1]
     top = [float(i) for i in top]
     bottom = leaf_boundaries[1::] + leaf_boundaries[1::]
@@ -140,7 +147,7 @@ def get_shapely_from_cp(leaf_boundaries, control_point):
     This function will return the outline of MLCs within jaws
     :param leaf_boundaries: an ordered list of leaf boundaries
     :param control_point: a ControlPoint class object
-    :return: a shapely Polygon of the complete MLC aperture as one shape (including MLC overlap)
+    :return: a shapely object of the complete MLC aperture as one shape (including MLC overlap)
     """
     lb = leaf_boundaries
     mlc = control_point.mlc
@@ -199,15 +206,20 @@ def get_jaws(control_point):
     return jaws
 
 
-def get_xy_pathlengths(shapely_object):
-    path = np.array([0, 0])
+def get_xy_path_lengths(shapely_object):
+    """
+    :param shapely_object: either 'GeometryCollection', 'MultiPolygon', or 'Polygon'
+    :return: pathl engths in the x and y directions
+    :rtype: list
+    """
+    path = np.array([0., 0.])
     if shapely_object.type == 'GeometryCollection':
         for geometry in shapely_object.geoms:
             if geometry.type in {'MultiPolygon', 'Polygon'}:
-                path = np.add(path, get_xy_pathlengths(geometry))
+                path = np.add(path, get_xy_path_lengths(geometry))
     elif shapely_object.type == 'MultiPolygon':
         for shape in shapely_object:
-            path = np.add(path, get_xy_pathlengths(shape))
+            path = np.add(path, get_xy_path_lengths(shape))
     elif shapely_object.type == 'Polygon':
         x, y = np.array(shapely_object.exterior.xy[0]), np.array(shapely_object.exterior.xy[1])
         path = np.array([np.sum(np.abs(np.diff(x))), np.sum(np.abs(np.diff(y)))])
