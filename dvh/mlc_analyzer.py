@@ -74,7 +74,10 @@ class Beam:
         y_paths = np.array([get_xy_path_lengths(cp)[1] for cp in self.aperture])
         area = [cp.area for cp in self.aperture]
         c1, c2 = COMPLEXITY_SCORE_X_WEIGHT, COMPLEXITY_SCORE_Y_WEIGHT
-        complexity_score = np.divide(np.multiply(np.add(c1*x_paths, c2*y_paths), cp_mu), area)
+        complexity_scores = np.divide(np.multiply(np.add(c1*x_paths, c2*y_paths), cp_mu), area)
+        # Complexity score based on:
+        # Younge KC, Matuszak MM, Moran JM, McShan DL, Fraass BA, Roberts DA. Penalization of aperture
+        # complexity in inversely planned volumetric modulated arc therapy. Med Phys. 2012;39(11):7160–70.
 
         self.summary = {'cp': range(1, len(self.control_point)+1),
                         'cum_mu_frac': [cp.cum_mu for cp in self.control_point],
@@ -90,7 +93,7 @@ class Beam:
                         'area': np.divide(area, 100.).tolist(),
                         'x_perim': np.divide(x_paths, 10.).tolist(),
                         'y_perim': np.divide(y_paths, 10.).tolist(),
-                        'cmp_score': complexity_score.tolist()}
+                        'cmp_score': complexity_scores.tolist()}
 
         for key in self.summary:
             if len(self.summary[key]) == 1:
