@@ -3857,7 +3857,7 @@ mlc_viewer_play_button = Button(label="Play", button_type="success", width=100)
 
 columns = [TableColumn(field="cp", title="CP#"),
            TableColumn(field="cum_mu_frac", title="Frac MU", formatter=NumberFormatter(format="0.000")),
-           TableColumn(field="cum_mu", title="MU", formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="cum_mu", title="Cum MU", formatter=NumberFormatter(format="0.0")),
            TableColumn(field="cp_mu", title="CP MU", formatter=NumberFormatter(format="0.0")),
            TableColumn(field="gantry", title="Gantry", formatter=NumberFormatter(format="0.0")),
            TableColumn(field="collimator", title="Col", formatter=NumberFormatter(format="0.0")),
@@ -3865,7 +3865,8 @@ columns = [TableColumn(field="cp", title="CP#"),
            TableColumn(field="jaw_x1", title="X1", formatter=NumberFormatter(format="0.0")),
            TableColumn(field="jaw_x2", title="X2", formatter=NumberFormatter(format="0.0")),
            TableColumn(field="jaw_y1", title="Y1", formatter=NumberFormatter(format="0.0")),
-           TableColumn(field="jaw_y2", title="Y2", formatter=NumberFormatter(format="0.0"))]
+           TableColumn(field="jaw_y2", title="Y2", formatter=NumberFormatter(format="0.0")),
+           TableColumn(field="area", title="Area", formatter=NumberFormatter(format="0.0"))]
 mlc_viewer_data_table = DataTable(source=source_mlc_summary, columns=columns,
                                   editable=False, width=550, height=400, row_headers=False)
 

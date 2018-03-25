@@ -42,25 +42,23 @@ class FxGroup:
 class Beam:
     def __init__(self, beam_seq, meter_set):
 
-        self.meter_set = meter_set
-
-        self.control_point = [ControlPoint(cp_seq) for cp_seq in beam_seq.ControlPointSequence]
+        cp_seq = beam_seq.ControlPointSequence
+        self.control_point = [ControlPoint(cp) for cp in cp_seq]
         self.control_point_count = len(self.control_point)
 
         for bld_seq in beam_seq.BeamLimitingDeviceSequence:
             if hasattr(bld_seq, 'LeafPositionBoundaries'):
                 self.leaf_boundaries = bld_seq.LeafPositionBoundaries
 
-        self.mlc = [get_shapely_from_cp(self.leaf_boundaries, cp) for cp in self.control_point]
         self.jaws = [get_jaws(cp) for cp in self.control_point]
+        self.aperture = [get_shapely_from_cp(self.leaf_boundaries, cp) for cp in self.control_point]
+        self.mlc_borders = [get_mlc_borders(cp, self.leaf_boundaries) for cp in self.control_point]
 
-        self.gantry_angle = [float(cp.GantryAngle) for cp in beam_seq.ControlPointSequence if
-                             hasattr(cp, 'GantryAngle')]
-        self.collimator_angle = [float(cp.BeamLimitingDeviceAngle) for cp in beam_seq.ControlPointSequence if
-                                 hasattr(cp, 'BeamLimitingDeviceAngle')]
-        self.couch_angle = [float(cp.PatientSupportAngle) for cp in beam_seq.ControlPointSequence if
-                            hasattr(cp, 'PatientSupportAngle')]
+        self.gantry_angle = [float(cp.GantryAngle) for cp in cp_seq if hasattr(cp, 'GantryAngle')]
+        self.collimator_angle = [float(cp.BeamLimitingDeviceAngle) for cp in cp_seq if hasattr(cp, 'BeamLimitingDeviceAngle')]
+        self.couch_angle = [float(cp.PatientSupportAngle) for cp in cp_seq if hasattr(cp, 'PatientSupportAngle')]
 
+        self.meter_set = meter_set
         self.control_point_meter_set = np.append([0], np.diff(np.array([cp.cum_mu for cp in self.control_point])))
 
         if hasattr(beam_seq, 'BeamDescription'):
@@ -68,24 +66,22 @@ class Beam:
         else:
             self.name = beam_seq.BeamName
 
-        self.aperture = [get_apertures(self.leaf_boundaries, cp) for cp in self.control_point]
-
-        self.mlc_borders = [get_mlc_borders(cp, self.leaf_boundaries) for cp in self.control_point]
-
         self.summary = {'cp': range(1, len(self.control_point)+1),
                         'cum_mu_frac': [cp.cum_mu for cp in self.control_point],
                         'cum_mu': [cp.cum_mu * self.meter_set for cp in self.control_point],
                         'gantry': self.gantry_angle,
                         'collimator': self.collimator_angle,
                         'couch': self.couch_angle,
-                        'jaw_x1': [j['x_min'] for j in self.jaws],
-                        'jaw_x2': [j['x_max'] for j in self.jaws],
-                        'jaw_y1': [j['y_min'] for j in self.jaws],
-                        'jaw_y2': [j['y_max'] for j in self.jaws]}
+                        'jaw_x1': [j['x_min']/10 for j in self.jaws],
+                        'jaw_x2': [j['x_max']/10 for j in self.jaws],
+                        'jaw_y1': [j['y_min']/10 for j in self.jaws],
+                        'jaw_y2': [j['y_max']/10 for j in self.jaws],
+                        'area': [cp.area/100 for cp in self.aperture]}
+        self.summary['cp_mu'] = np.diff(np.array(self.summary['cum_mu'])).tolist() + [0]
+
         for key in self.summary:
             if len(self.summary[key]) == 1:
                 self.summary[key] = self.summary[key] * len(self.summary['cp'])
-        self.summary['cp_mu'] = np.diff(np.array(self.summary['cum_mu'])).tolist() + [0]
 
 
 class ControlPoint:
@@ -93,6 +89,9 @@ class ControlPoint:
         cp = {'cum_mu': float(cp_seq.CumulativeMetersetWeight)}
         for device_position_seq in cp_seq.BeamLimitingDevicePositionSequence:
             leaf_jaw_type = str(device_position_seq.RTBeamLimitingDeviceType).lower()
+            if leaf_jaw_type.startswith('mlc'):
+                cp['leaf_type'] = leaf_jaw_type
+                leaf_jaw_type = 'mlc'
 
             positions = np.array(map(float, device_position_seq.LeafJawPositions))
 
@@ -100,19 +99,22 @@ class ControlPoint:
             cp[leaf_jaw_type] = [positions[0:pos_count / 2],
                                  positions[pos_count / 2:pos_count]]
 
+        if 'leaf_type' not in list(cp):
+            cp['leaf_type'] = False
+
         for key in cp:
             setattr(self, key, cp[key])
 
 
-def get_mlc_borders(control_point, leaf_boundaries, mlc_type='mlcx'):
+def get_mlc_borders(control_point, leaf_boundaries):
     top = leaf_boundaries[0:-1] + leaf_boundaries[0:-1]
     top = [float(i) for i in top]
     bottom = leaf_boundaries[1::] + leaf_boundaries[1::]
     bottom = [float(i) for i in bottom]
-    left = [- MAX_FIELD_SIZE_X / 2] * len(control_point.mlcx[0])
-    left.extend(control_point.mlcx[1])
-    right = control_point.mlcx[0].tolist()
-    right.extend([MAX_FIELD_SIZE_X / 2] * len(control_point.mlcx[1]))
+    left = [- MAX_FIELD_SIZE_X / 2] * len(control_point.mlc[0])
+    left.extend(control_point.mlc[1])
+    right = control_point.mlc[0].tolist()
+    right.extend([MAX_FIELD_SIZE_X / 2] * len(control_point.mlc[1]))
 
     return {'top': top,
             'bottom': bottom,
@@ -122,27 +124,33 @@ def get_mlc_borders(control_point, leaf_boundaries, mlc_type='mlcx'):
 
 def get_shapely_from_cp(leaf_boundaries, control_point):
     """
-    This function will return the outline of MLCs regardless of jaws
+    This function will return the outline of MLCs within jaws
     :param leaf_boundaries: an ordered list of leaf boundaries
     :param control_point: a ControlPoint class object
     :return: a shapely Polygon of the complete MLC aperture as one shape (including MLC overlap)
     """
-    lb = leaf_boundaries  # NOTE: this is in DESCENDING order
-    cp = control_point
+    lb = leaf_boundaries
+    mlc = control_point.mlc
+    jaws = get_jaws(control_point)
+    x_min, x_max = jaws['x_min'], jaws['x_max']
+    y_min, y_max = jaws['y_min'], jaws['y_max']
 
-    # Get mlc positions and start/end indices based on jaws
-    if hasattr(cp, 'mlcx'):
-        mlc = cp.mlcx
-    elif hasattr(cp, 'mlcy'):
-        mlc = cp.mlcy
+    jaw_points = [(x_min, y_min), (x_min, y_max), (x_max, y_max), (x_max, y_min)]
+    jaw_shapely = Polygon(jaw_points)
+
+    if control_point.leaf_type == 'mlcx':
+        a = flatten([[(m, lb[i]), (m, lb[i+1])] for i, m in enumerate(mlc[0])])
+        b = flatten([[(m, lb[i]), (m, lb[i+1])] for i, m in enumerate(mlc[1])])
+    elif control_point.leaf_type == 'mlcy':
+        a = flatten([[(lb[i], m), (lb[i + 1], m)] for i, m in enumerate(mlc[0])])
+        b = flatten([[(lb[i], m), (lb[i + 1], m)] for i, m in enumerate(mlc[1])])
     else:
-        return False
+        return jaw_shapely
 
-    a = flatten([[(m, lb[i]), (m, lb[i+1])] for i, m in enumerate(mlc[0])])
-    b = flatten([[(m, lb[i]), (m, lb[i+1])] for i, m in enumerate(mlc[1])])
-    points = a + b[::-1]  # concatenate a and reverse(b)
+    mlc_points = a + b[::-1]  # concatenate a and reverse(b)
+    mlc_aperture = Polygon(mlc_points)
 
-    aperture = Polygon(points)
+    aperture = mlc_aperture.union(jaw_shapely)
 
     return aperture
 
@@ -176,67 +184,3 @@ def get_jaws(control_point):
             'y_max': float(y_max)}
 
     return jaws
-
-
-def get_apertures(leaf_boundaries, control_point):
-    """
-    It is significantly slower to calculate the union of the jaws and full MLC shape than it is to recalculate a new
-    shape ignoring positions beyond the jaws.
-    :param leaf_boundaries: an ordered list of leaf boundaries
-    :param control_point: a ControlPoint class object
-    :return: shapely MultiPolygon (or a [Polygon] so return is always iterable)
-    """
-    lb = leaf_boundaries  # NOTE: this is in DESCENDING order
-    cp = control_point
-
-    jaws = get_jaws(control_point)
-    x_min, x_max = jaws['x_min'], jaws['x_max']
-    y_min, y_max = jaws['y_min'], jaws['y_max']
-
-    # Get mlc positions and start/end indices based on jaws
-    if hasattr(cp, 'mlcx'):
-        mlc = cp.mlcx
-        v_min, v_max = y_min, y_max
-    elif hasattr(cp, 'mlcy'):
-        mlc = cp.mlcy
-        v_min, v_max = x_min, x_max
-    else:
-        return False
-
-    # These indices are selected to ignore MLCs under the jaws
-    # Needs validation, definitely lb_end_index is not tight enough
-    lb_start_index = int(np.argmax(lb < v_max)) - 1
-    lb_end_index = int(np.argmax(lb < v_min)) - 1
-
-    # Get list of points defining MLC open area
-    # To avoid using the intersection function for MLC and Jaw openings
-    points = []
-
-    # Accumulate points representing top and bottom positions of A side MLCs
-    # First MLC may be split by Jaw
-    points.append((mlc[0][lb_start_index], v_max))
-    points.append((mlc[0][lb_start_index], lb[lb_start_index + 1]))
-    # The MLCs excluding first and last
-    for i in range(lb_start_index + 1, lb_end_index):
-        points.append((mlc[0][i], lb[i]))
-        points.append((mlc[0][i], lb[i + 1]))
-    # Last MLC may be split by Jaw
-    points.append((mlc[0][lb_end_index], lb[lb_end_index]))
-    points.append((mlc[0][lb_end_index], v_min))
-
-    # Accumulate points representing top and bottom positions of B side MLCs, in reverse order
-    points.append((mlc[1][lb_end_index], v_min))
-    points.append((mlc[1][lb_end_index], lb[lb_end_index]))
-    for i in range(lb_start_index + 1, lb_end_index)[::-1]:
-        points.append((mlc[1][i], lb[i + 1]))
-        points.append((mlc[1][i], lb[i]))
-    points.append((mlc[1][lb_start_index], lb[lb_start_index + 1]))
-    points.append((mlc[1][lb_start_index], v_max))
-
-    aperture = Polygon(points).buffer(0)  # may turn into MultiPolygon
-
-    # Ensure an iterable is returned for ease of code later
-    if aperture.geom_type in {'MultiPolygon'}:
-        return aperture
-    else:
-        return [aperture]
