@@ -259,6 +259,9 @@ def write_import_settings(directories):
 
 
 def write_sql_connection_settings(config):
+    """
+    :param config: a dict with keys 'host', 'dbname', 'port' and optionally 'user' and 'password'
+    """
 
     text = ["%s %s" % (key, value) for key, value in listitems(config) if value]
     text = '\n'.join(text)
@@ -296,8 +299,8 @@ def validate_import_settings():
 
 def validate_sql_connection(config=None, verbose=False):
     """
+    :param config: a dict with keys 'host', 'dbname', 'port' and optionally 'user' and 'password'
     :param verbose: boolean indicating if cmd line printing should be performed
-    :param config:
     :return:
     """
 
@@ -909,3 +912,7 @@ def is_uid_in_all_keys(uid, uids):
         if key not in 'unique':
             final_answer *= value
     return final_answer
+
+
+def flatten_list_of_lists(some_list):
+    return [item for sublist in some_list for item in sublist]
