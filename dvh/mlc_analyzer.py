@@ -16,7 +16,7 @@ from options import MAX_FIELD_SIZE_X, MAX_FIELD_SIZE_Y, COMPLEXITY_SCORE_X_WEIGH
 class Plan:
     def __init__(self, rt_plan_file):
         """
-        :param rt_plan_file: absolute file path of an rt_plan_file)
+        :param rt_plan_file: absolute file path of an DICOM RT Plan file
         """
         rt_plan = dicomparser.read_file(rt_plan_file)
         self.fx_group = [FxGroup(fx_grp_seq, rt_plan.BeamSequence) for fx_grp_seq in rt_plan.FractionGroupSequence]
