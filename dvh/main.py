@@ -1792,6 +1792,8 @@ def mlc_viewer_go_to_next_cp():
 
 
 def mlc_viewer_play():
+    if mlc_analyzer_cp_select.value == mlc_analyzer_cp_select.options[-1]:
+        mlc_analyzer_cp_select.value = mlc_analyzer_cp_select.options[0]
     start = mlc_analyzer_cp_select.options.index(mlc_analyzer_cp_select.value)
     end = len(mlc_analyzer_cp_select.options) - 1
 
