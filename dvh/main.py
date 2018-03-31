@@ -36,6 +36,7 @@ import time
 from options import *
 import mlc_analyzer
 import os
+from dateutil.parser import parse
 
 # This depends on a user defined function in dvh/auth.py.  By default, this returns True
 # It is up to the user/installer to write their own function (e.g., using python-ldap)
@@ -393,40 +394,48 @@ def update_range_source():
         group_label = group_labels[group-1]
         not_status = ['', 'Not'][len(range_not_operator_checkbox.active)]
 
-        try:
-            min_float = float(text_min.value)
-        except ValueError:
-            try:
-                min_float = float(DVH_SQL().get_min_value(table, var_name))
-            except TypeError:
-                min_float = ''
+        if select_category.value == 'Simulation Date':
+            min_value = str(parse(text_min.value).date())
+            min_display = min_value
 
-        try:
-            max_float = float(text_max.value)
-        except ValueError:
-            try:
-                max_float = float(DVH_SQL().get_max_value(table, var_name))
-            except TypeError:
-                max_float = ''
-
-        if min_float or min_float == 0.:
-            min_display = "%s %s" % (str(min_float), range_categories[select_category.value]['units'])
+            max_value = str(parse(text_max.value).date())
+            max_display = max_value
         else:
-            min_display = 'None'
 
-        if max_float or max_float == 0.:
-            max_display = "%s %s" % (str(max_float), range_categories[select_category.value]['units'])
-        else:
-            max_display = 'None'
+            try:
+                min_value = float(text_min.value)
+            except ValueError:
+                try:
+                    min_value = float(DVH_SQL().get_min_value(table, var_name))
+                except TypeError:
+                    min_value = ''
 
-        patch = {'category': [(r, select_category.value)], 'min': [(r, min_float)], 'max': [(r, max_float)],
+            try:
+                max_value = float(text_max.value)
+            except ValueError:
+                try:
+                    max_value = float(DVH_SQL().get_max_value(table, var_name))
+                except TypeError:
+                    max_value = ''
+
+            if min_value or min_value == 0.:
+                min_display = "%s %s" % (str(min_value), range_categories[select_category.value]['units'])
+            else:
+                min_display = 'None'
+
+            if max_value or max_value == 0.:
+                max_display = "%s %s" % (str(max_value), range_categories[select_category.value]['units'])
+            else:
+                max_display = 'None'
+
+        patch = {'category': [(r, select_category.value)], 'min': [(r, min_value)], 'max': [(r, max_value)],
                  'min_display': [(r, min_display)], 'max_display': [(r, max_display)],
                  'group': [(r, group)], 'group_label': [(r, group_label)], 'not_status': [(r, not_status)]}
         source_ranges.patch(patch)
 
         group_range.active = [[0], [1], [0, 1]][group - 1]
-        text_min.value = str(min_float)
-        text_max.value = str(max_float)
+        text_min.value = str(min_value)
+        text_max.value = str(max_value)
 
 
 def update_range_titles(reset_values=False):
@@ -743,13 +752,14 @@ def get_query(group=None):
                 var_name = range_categories[data['category'][r-1]]['var_name']
                 table = range_categories[data['category'][r-1]]['table']
 
-                value_low = float(data['min'][r-1])
-                value_high = float(data['max'][r-1])
+                value_low, value_high = data['min'][r-1], data['max'][r-1]
+                if data['category'][r-1] != 'Simulation Date':
+                    value_low, value_high = float(value_low), float(value_high)
 
                 # Modify value_low and value_high so SQL interprets values as dates, if applicable
                 if var_name in {'sim_study_date', 'birth_date'}:
-                    value_low = "'%s'::date" % value_low
-                    value_high = "'%s'::date" % value_high
+                    value_low = "'%s'" % value_low
+                    value_high = "'%s'" % value_high
 
                 if data['not_status'][r-1]:
                     query_str = var_name + " NOT BETWEEN " + str(value_low) + " AND " + str(value_high)

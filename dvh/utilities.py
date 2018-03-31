@@ -891,7 +891,7 @@ def get_study_instance_uids(**kwargs):
         complete_list.extend(uids[key])
 
     uids['unique'] = list(set(complete_list))
-    uids['union'] = [uid for uid in uids['unique'] if is_uid_in_all_keys(value, uids)]
+    uids['union'] = [uid for uid in uids['unique'] if is_uid_in_all_keys(uid, uids)]
 
     return uids
 
