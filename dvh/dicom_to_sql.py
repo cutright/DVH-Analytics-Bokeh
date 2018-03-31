@@ -18,7 +18,7 @@ from datetime import datetime
 FILE_TYPES = {'rtplan', 'rtstruct', 'rtdose'}
 
 
-def dicom_to_sql(start_path=None, force_update=False):
+def dicom_to_sql(start_path=None, force_update=False, move_files=True, update_dicom_catalogue_table=True):
 
     start_time = datetime.now()
     print(str(start_time), 'Beginning import', sep=' ')
@@ -132,26 +132,29 @@ def dicom_to_sql(start_path=None, force_update=False):
             mrn = 'NoMRN'
 
         # convert file_paths[uid] into a list of file paths
-        files_to_move = []
-        move_types = list(FILE_TYPES) + ['other']
-        for file_type in move_types:
-            files_to_move.extend(file_paths[uid][file_type]['file_path'])
+        if move_files:
+            files_to_move = []
+            move_types = list(FILE_TYPES) + ['other']
+            for file_type in move_types:
+                files_to_move.extend(file_paths[uid][file_type]['file_path'])
 
-        new_folder = os.path.join(import_settings['imported'], mrn)
-        move_files_to_new_path(files_to_move, new_folder)
+            new_folder = os.path.join(import_settings['imported'], mrn)
+            move_files_to_new_path(files_to_move, new_folder)
 
-        if plan_file:
-            plan_file = os.path.basename(plan_file)
-        if struct_file:
-            struct_file = os.path.basename(struct_file)
-        if dose_file:
-            dose_file = os.path.basename(dose_file)
+            if plan_file:
+                plan_file = os.path.basename(plan_file)
+            if struct_file:
+                struct_file = os.path.basename(struct_file)
+            if dose_file:
+                dose_file = os.path.basename(dose_file)
 
-        update_dicom_catalogue(mrn, uid, new_folder, plan_file, struct_file, dose_file)
+        if update_dicom_catalogue_table:
+            update_dicom_catalogue(mrn, uid, new_folder, plan_file, struct_file, dose_file)
 
     # Move remaining files, if any
-    move_all_files(import_settings['imported'], import_settings['inbox'])
-    remove_empty_folders(import_settings['inbox'])
+    if move_files:
+        move_all_files(import_settings['imported'], import_settings['inbox'])
+        remove_empty_folders(import_settings['inbox'])
 
     sqlcnx.close()
 

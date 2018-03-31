@@ -1196,6 +1196,41 @@ def auth_button_click():
             auth_button.button_type = 'warning'
 
 
+def reimport_mrn_ticker(attr, old, new):
+    new_options = DVH_SQL().get_unique_values('Plans', 'sim_study_date', "mrn = '%s'" % new)
+    if not new_options:
+        new_options = ['MRN not found']
+    reimport_study_date_select.options = new_options
+    reimport_study_date_select.value = new_options[0]
+
+
+def reimport_study_date_ticker(attr, old, new):
+    if new != 'MRN not found':
+        new_options = DVH_SQL().get_unique_values('Plans',
+                                                  'study_instance_uid',
+                                                  "mrn = '%s' and sim_study_date = '%s'" %
+                                                  (reimport_mrn_text.value, new))
+    else:
+        new_options = ['Study Date not found']
+
+    reimport_uid_select.options = new_options
+    reimport_uid_select.value = new_options[0]
+
+
+def reimport_button_click():
+    reimport_button.label = "Updating..."
+    reimport_button.button_type = 'danger'
+    if reimport_old_data_select.value == "Delete from DB":
+        DVH_SQL().delete_rows("study_instance_uid = '%s'" % reimport_uid_select.value, ignore_table=['DICOM_Files'])
+
+    dicom_directory = DVH_SQL().query('DICOM_Files',
+                                      "folder_path",
+                                      "study_instance_uid = '%s'" % reimport_uid_select.value)[0][0]
+    dicom_to_sql(start_path=dicom_directory, force_update=True, move_files=False, update_dicom_catalogue_table=False)
+    reimport_button.label = "Reimport"
+    reimport_button.button_type = 'warning'
+
+
 ######################################################
 # Layout objects
 ######################################################
@@ -1409,6 +1444,18 @@ update_db_button.on_click(update_db)
 update_query_columns()
 update_update_db_column()
 
+reimport_title = Div(text="<b>Reimport from DICOM</b>", width=1025)
+reimport_mrn_text = TextInput(value='', width=200, title='MRN')
+reimport_study_date_select = Select(value='', options=[''], width=200, height=100, title='Sim Study Date')
+reimport_uid_select = Select(value='', options=[''], width=425, height=100, title='Study Instance UID')
+reimport_old_data_select = Select(value='Delete from DB', options=['Delete from DB', 'Keep in DB'], width=150,
+                                  height=100, title='Current Data')
+reimport_button = Button(label='Reimport', button_type='warning', width=100)
+
+reimport_mrn_text.on_change('value', reimport_mrn_ticker)
+reimport_study_date_select.on_change('value', reimport_study_date_ticker)
+reimport_button.on_click(reimport_button_click)
+
 query_data_table = DataTable(source=query_source, columns=[], width=1000)
 
 delete_from_db_title = Div(text="<b>Delete all data with mrn or study_instance_uid</b>", width=1000)
@@ -1448,6 +1495,9 @@ db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [update_db_title],
                            [update_db_table, update_db_column, update_db_condition, update_db_value,
                             update_db_button],
+                           [reimport_title],
+                           [reimport_mrn_text, Spacer(width=10), reimport_study_date_select, reimport_uid_select,
+                            reimport_old_data_select, Spacer(width=10), reimport_button],
                            [delete_from_db_title],
                            [delete_from_db_column, delete_from_db_value, delete_auth_text, delete_from_db_button],
                            [change_mrn_uid_title],

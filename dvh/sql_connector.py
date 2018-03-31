@@ -293,9 +293,9 @@ class DVH_SQL:
         self.cursor.execute(sql_cmd)
         self.cnx.commit()
 
-    def delete_rows(self, condition_str):
-
-        for table in self.tables:
+    def delete_rows(self, condition_str, ignore_table=[]):
+        tables = [t for t in self.tables if t not in ignore_table]
+        for table in tables:
             self.cursor.execute("DELETE FROM %s WHERE %s;" % (table, condition_str))
             self.cnx.commit()
 
