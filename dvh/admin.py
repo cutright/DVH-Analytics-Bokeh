@@ -1218,17 +1218,27 @@ def reimport_study_date_ticker(attr, old, new):
 
 
 def reimport_button_click():
-    reimport_button.label = "Updating..."
-    reimport_button.button_type = 'danger'
-    if reimport_old_data_select.value == "Delete from DB":
-        DVH_SQL().delete_rows("study_instance_uid = '%s'" % reimport_uid_select.value, ignore_table=['DICOM_Files'])
-
     dicom_directory = DVH_SQL().query('DICOM_Files',
                                       "folder_path",
                                       "study_instance_uid = '%s'" % reimport_uid_select.value)[0][0]
-    dicom_to_sql(start_path=dicom_directory, force_update=True, move_files=False, update_dicom_catalogue_table=False)
-    reimport_button.label = "Reimport"
-    reimport_button.button_type = 'warning'
+    if os.path.isdir(dicom_directory):
+        if not os.listdir(dicom_directory):
+            print("WARNING: %s is empty." % dicom_directory)
+            print("Aborting DICOM reimport.")
+        else:
+            reimport_button.label = "Updating..."
+            reimport_button.button_type = 'danger'
+            if reimport_old_data_select.value == "Delete from DB":
+                DVH_SQL().delete_rows("study_instance_uid = '%s'" % reimport_uid_select.value,
+                                      ignore_table=['DICOM_Files'])
+
+            dicom_to_sql(start_path=dicom_directory, force_update=True,
+                         move_files=False, update_dicom_catalogue_table=False)
+            reimport_button.label = "Reimport"
+            reimport_button.button_type = 'warning'
+    else:
+        print("WARNING: %s does not exist" % dicom_directory)
+        print("Aborting DICOM reimport.")
 
 
 ######################################################
