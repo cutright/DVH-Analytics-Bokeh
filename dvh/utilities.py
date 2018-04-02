@@ -849,15 +849,39 @@ def moving_avg(xyw, avg_len):
     :param avg_len: average of these number of points, i.e., look-back window
     :return: list of x values, list of y values
     """
-    x, y, w = xyw['x'], xyw['y'], xyw['w']
-    cumsum, moving_aves = [0], []
+    cumsum, moving_aves, x_final = [0], [], []
 
-    for i, y in enumerate(y, 1):
-        cumsum.append(cumsum[i - 1] + y / w[i - 1])
+    for i, y in enumerate(xyw['y'], 1):
+        cumsum.append(cumsum[i - 1] + y / xyw['w'][i - 1])
         if i >= avg_len:
             moving_ave = (cumsum[i] - cumsum[i - avg_len]) / avg_len
             moving_aves.append(moving_ave)
-    x_final = [x[i] for i in range(avg_len - 1, len(x))]
+    x_final = [xyw['x'][i] for i in range(avg_len - 1, len(xyw['x']))]
+
+    return x_final, moving_aves
+
+
+def moving_avg_by_calendar_day(xyw, avg_days):
+    """
+    :param xyw: a dictionary of of lists x, y, w: x, y being coordinates and w being the weight
+    :param avg_days: number of calendar days in look-back window
+    :return: list of x values, list of y values
+    """
+    cumsum, moving_aves, x_final = [0], [], []
+
+    for i, y in enumerate(xyw['y'], 1):
+        cumsum.append(cumsum[i - 1] + y / xyw['w'][i - 1])
+
+        first_date_index = i - 1
+        for j, x in enumerate(xyw['x']):
+            delta_x = relativedelta(xyw['x'][i-1], x)
+            delta_x_days = delta_x.years * 365.25 + delta_x.days
+            if delta_x_days <= avg_days:
+                first_date_index = j
+                break
+        moving_ave = (cumsum[i] - cumsum[first_date_index]) / (i - first_date_index)
+        moving_aves.append(moving_ave)
+        x_final.append(xyw['x'][i-1])
 
     return x_final, moving_aves
 

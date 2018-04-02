@@ -11,7 +11,7 @@ from __future__ import print_function
 from future.utils import listitems
 from analysis_tools import DVH, calc_eud
 from utilities import Temp_DICOM_FileSet, get_planes_from_string, get_union,\
-    collapse_into_single_dates, moving_avg, calc_stats, get_study_instance_uids
+    collapse_into_single_dates, moving_avg, calc_stats, get_study_instance_uids, moving_avg_by_calendar_day
 import auth
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL
@@ -2600,7 +2600,10 @@ def control_chart_update_trend():
         # average daily data and keep track of points per day, calculate moving average
         if group_1['x']:
             group_1_collapsed = collapse_into_single_dates(group_1['x'], group_1['y'])
-            x_trend_1, moving_avgs_1 = moving_avg(group_1_collapsed, avg_len)
+            if control_chart_lookback_units.value == "Dates with a Sim":
+                x_trend_1, moving_avgs_1 = moving_avg(group_1_collapsed, avg_len)
+            else:
+                x_trend_1, moving_avgs_1 = moving_avg_by_calendar_day(group_1_collapsed, avg_len)
 
             y_np_1 = np.array(group_1['y'])
             upper_bound_1 = float(np.percentile(y_np_1, 50. + percentile / 2.))
@@ -2622,7 +2625,10 @@ def control_chart_update_trend():
             source_time_patch_1.data = {'x': [], 'y': []}
         if group_2['x']:
             group_2_collapsed = collapse_into_single_dates(group_2['x'], group_2['y'])
-            x_trend_2, moving_avgs_2 = moving_avg(group_2_collapsed, avg_len)
+            if control_chart_lookback_units.value == "Dates with a Sim":
+                x_trend_2, moving_avgs_2 = moving_avg(group_2_collapsed, avg_len)
+            else:
+                x_trend_2, moving_avgs_2 = moving_avg_by_calendar_day(group_2_collapsed, avg_len)
 
             y_np_2 = np.array(group_2['y'])
             upper_bound_2 = float(np.percentile(y_np_2, 50. + percentile / 2.))
@@ -2646,8 +2652,7 @@ def control_chart_update_trend():
 
         x_var = str(control_chart_y.value)
         if x_var.startswith('DVH Endpoint'):
-            x_var_name = "ep%s" % x_var[-1]
-            # histograms.xaxis.axis_label = source_endpoint_names.data[x_var_name][0]
+            histograms.xaxis.axis_label = x_var.split("DVH Endpoint: ")[1]
         elif x_var == 'EUD':
             histograms.xaxis.axis_label = "%s (Gy)" % x_var
         elif x_var == 'NTCP/TCP':
@@ -3434,7 +3439,7 @@ control_chart_text_lookback_distance.on_change('value', update_control_chart_tre
 control_chart_percentile = TextInput(value='90', title="Percentile", width=200)
 control_chart_percentile.on_change('value', update_control_chart_trend_ticker)
 
-lookback_units_options = ['Dates with a Sim', 'Days', 'Patients']
+lookback_units_options = ['Dates with a Sim', 'Days']
 control_chart_lookback_units = Select(value=lookback_units_options[0], options=lookback_units_options, width=200)
 control_chart_lookback_units.title = 'Lookback Units'
 control_chart_lookback_units.on_change('value', update_control_chart_ticker)
