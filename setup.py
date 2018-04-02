@@ -26,7 +26,7 @@ setup(
     name='dvh-analytics',
     include_package_data=True,
     packages=find_packages(),
-    version='0.3.3',
+    version='0.3.4',
     description='Create a database of DVHs, views with Bokeh',
     author='Dan Cutright',
     author_email='dan.cutright@gmail.com',
@@ -43,14 +43,12 @@ setup(
     },
     long_description="""DVH Database for Clinicians and Researchers
     
-    DVH Analytics is a code to help radiation oncology departments build an in-house database of treatment planning 
-    data for the purpose of historical comparisons.
+    DVH Analytics is a software application to help radiation oncology departments build an in-house database of 
+    treatment planning data for the purpose of historical comparisons and statistical analysis. This code is still in 
+    development. Please contact the developer if you are interested in testing or collaborating.
 
-    This code builds a SQL database of DVHs and various planning parameters from DICOM files (i.e., Plan, Structure, 
-    Dose). Currently, only photon and electron plans have been tested with Philips Pinnacle, however, we intend to 
-    accomodate proton and brachytherapy plans as well. Since this code extracts data directly from DICOM files, 
-    and we intend to accommodate an array of treatment planning system vendors.
-    
-    This is a work in progress and just now in testing. Please see our TODO.md on github to see our upcoming improvements.
+    The application builds a SQL database of DVHs and various planning parameters from DICOM files (i.e., Plan, Structure, 
+    Dose). Since the data is extracted directly from DICOM files, we intend to accommodate an array of treatment planning 
+    system vendors.
     """
 )
