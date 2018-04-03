@@ -242,6 +242,10 @@ def dose_to_volume(dvh, rel_volume):
     :return: minimum dose in Gy of specified volume
     """
 
+    # Return the maximum dose instead of extrapolating
+    if rel_volume < dvh[-1]:
+        return len(dvh) * 0.01
+
     dose_high = np.argmax(dvh < rel_volume)
     y = rel_volume
     x_range = [dose_high - 1, dose_high]
