@@ -1206,10 +1206,16 @@ def reimport_mrn_ticker(attr, old, new):
 
 def reimport_study_date_ticker(attr, old, new):
     if new != 'MRN not found':
-        new_options = DVH_SQL().get_unique_values('Plans',
-                                                  'study_instance_uid',
-                                                  "mrn = '%s' and sim_study_date = '%s'" %
-                                                  (reimport_mrn_text.value, new))
+        if new == 'None':
+            new_options = DVH_SQL().get_unique_values('Plans',
+                                                      'study_instance_uid',
+                                                      "mrn = '%s'" %
+                                                      reimport_mrn_text.value)
+        else:
+            new_options = DVH_SQL().get_unique_values('Plans',
+                                                      'study_instance_uid',
+                                                      "mrn = '%s' and sim_study_date = '%s'" %
+                                                      (reimport_mrn_text.value, new))
     else:
         new_options = ['Study Date not found']
 
