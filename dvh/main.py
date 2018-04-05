@@ -58,6 +58,7 @@ x, y = [], []
 uids_1, uids_2 = [], []
 correlation_1, correlation_2 = {}, {}
 mlc_data = []
+bad_uid_1, bad_uid_2 = [], []
 
 temp_dvh_info = Temp_DICOM_FileSet()
 dvh_review_mrns = temp_dvh_info.mrn
@@ -796,7 +797,8 @@ def get_query(group=None):
 
 # main update function
 def update_data():
-    global current_dvh, current_dvh_group_1, current_dvh_group_2
+    global current_dvh, current_dvh_group_1, current_dvh_group_2, bad_uid
+    bad_uid = []
     old_update_button_label = query_button.label
     old_update_button_type = query_button.button_type
     query_button.label = 'Updating...'
@@ -2112,6 +2114,7 @@ def update_endpoints_in_correlation():
     corr_chart_x.options = [''] + categories
     corr_chart_y.options = [''] + categories
 
+    validate_correlation()
     update_correlation_matrix()
     update_corr_chart()
 
@@ -2153,6 +2156,7 @@ def update_eud_in_correlation():
     corr_chart_x.options = [''] + categories
     corr_chart_y.options = [''] + categories
 
+    validate_correlation()
     update_correlation_matrix()
     update_corr_chart()
 
@@ -2208,7 +2212,7 @@ def update_correlation_matrix():
                 if x > y and correlation_1[categories[0]]['uid']:
                     x_data = correlation_1[categories[x]]['data']
                     y_data = correlation_1[categories[y]]['data']
-                    if x_data:
+                    if x_data and len(x_data) == len(y_data):
                         r, p_value = pearsonr(x_data, y_data)
                     else:
                         r, p_value = 0, 0
@@ -2224,7 +2228,7 @@ def update_correlation_matrix():
                 elif x < y and correlation_2[categories[0]]['uid']:
                     x_data = correlation_2[categories[x]]['data']
                     y_data = correlation_2[categories[y]]['data']
-                    if x_data:
+                    if x_data and len(x_data) == len(y_data):
                         r, p_value = pearsonr(x_data, y_data)
                     else:
                         r, p_value = 0, 0
@@ -2986,18 +2990,17 @@ def auth_button_click():
 
 
 def validate_correlation():
-    global correlation_1, correlation_2
+    global correlation_1, correlation_2, bad_uid_1, bad_uid_2
 
     if correlation_1:
-        bad_data = []
         for range_var in list(correlation_1):
             for i, j in enumerate(correlation_1[range_var]['data']):
                 if j == 'None':
-                    bad_data.append(i)
-                    print("%s[%s] is non-numerical, will remove all data from correlation for this patient"
+                    current_uid = correlation_1[range_var]['uid'][i]
+                    if current_uid not in bad_uid_1:
+                        bad_uid_1.append(current_uid)
+                    print("%s[%s] is non-numerical, will remove this patient from correlation data"
                           % (range_var, i))
-        bad_data = list(set(bad_data))
-        bad_data.sort()
 
         new_correlation_1 = {}
         for range_var in list(correlation_1):
@@ -3006,31 +3009,32 @@ def validate_correlation():
                                             'data': [],
                                             'units': correlation_1[range_var]['units']}
             for i in range(0, len(correlation_1[range_var]['data'])):
-                if i not in bad_data:
+                current_uid = correlation_1[range_var]['uid'][i]
+                if current_uid not in bad_uid_1:
                     for j in {'mrn', 'uid', 'data'}:
                         new_correlation_1[range_var][j].append(correlation_1[range_var][j][i])
 
         correlation_1 = new_correlation_1
 
     if correlation_2:
-        bad_data = []
         for range_var in list(correlation_2):
             for i, j in enumerate(correlation_2[range_var]['data']):
                 if j == 'None':
-                    bad_data.append(i)
-                    print("%s[%s] is non-numerical, will remove all data from correlation for this patient"
+                    current_uid = correlation_2[range_var]['uid'][i]
+                    if current_uid not in bad_uid_2:
+                        bad_uid_2.append(current_uid)
+                    print("%s[%s] is non-numerical, will remove this patient from correlation data"
                           % (range_var, i))
-        bad_data = list(set(bad_data))
-        bad_data.sort()
 
         new_correlation_2 = {}
-        for range_var in list(correlation_1):
+        for range_var in list(correlation_2):
             new_correlation_2[range_var] = {'mrn': [],
                                             'uid': [],
                                             'data': [],
                                             'units': correlation_2[range_var]['units']}
             for i in range(0, len(correlation_2[range_var]['data'])):
-                if i not in bad_data:
+                current_uid = correlation_2[range_var]['uid'][i]
+                if current_uid not in bad_uid_2:
                     for j in {'mrn', 'uid', 'data'}:
                         new_correlation_2[range_var][j].append(correlation_2[range_var][j][i])
 
