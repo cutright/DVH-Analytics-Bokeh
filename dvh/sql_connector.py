@@ -9,6 +9,7 @@ Created on Sat Mar  4 11:33:10 2017
 from __future__ import print_function
 import psycopg2
 import os
+from datetime import datetime
 
 
 class DVH_SQL:
@@ -143,6 +144,8 @@ class DVH_SQL:
         os.remove(file_path)
         print('DVHs imported')
 
+        write_import_errors(dvh_table)
+
     def insert_plan(self, plan):
         file_path = 'insert_plan_' + plan.mrn + '.sql'
 
@@ -186,6 +189,8 @@ class DVH_SQL:
         self.execute_file(file_path)
         os.remove(file_path)
         print('Plan imported')
+
+        write_import_errors(plan)
 
     def insert_beams(self, beams):
 
@@ -252,6 +257,8 @@ class DVH_SQL:
         os.remove(file_path)
         print('Beams imported')
 
+        write_import_errors(beams)
+
     def insert_rxs(self, rx_table):
 
         file_path = 'insert_values_rxs.sql'
@@ -284,6 +291,8 @@ class DVH_SQL:
         self.execute_file(file_path)
         os.remove(file_path)
         print('Rxs imported')
+
+        write_import_errors(rx_table)
 
     def insert_dicom_file_row(self, mrn, uid, dir_name, plan_file, struct_file, dose_file):
 
@@ -391,6 +400,26 @@ class DVH_SQL:
             condition = dvh_condition + condition
 
         return len(self.query('DVHs', 'mrn', condition))
+
+
+def write_import_errors(obj):
+    detail_col = [c for c in ['beam_name', 'roi_name', 'plan_name'] if hasattr(obj, c)]
+    with open("import_warning_log.txt", "a") as warning_log:
+        for key, value in obj.__dict__.items():
+            if not key.startswith("__"):
+                if type(value) == list:  # beams, rxs, and dvhs tables will be lists here
+                    for i in range(0, len(value)):
+                        if getattr(obj, key)[i] == '(NULL)':
+                            detail = "%s %s" % (detail_col[0], getattr(obj, detail_col[0])[i])
+                            line = "%s %s: %s: %s is NULL\n" % (str(datetime.now()).split('.')[0],
+                                                                obj.mrn[i], detail, key)
+                            warning_log.write(line)
+
+                else:  # this only occurs if obj is plans table data
+                    if value == '(NULL)':
+                        line = "%s %s: plan %s: %s is NULL\n" % (str(datetime.now()).split('.')[0],
+                                                                 obj.mrn, obj.tx_site, key)
+                        warning_log.write(line)
 
 
 if __name__ == '__main__':
