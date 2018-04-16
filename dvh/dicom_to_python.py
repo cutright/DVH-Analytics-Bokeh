@@ -587,6 +587,7 @@ class RxTable:
     def __init__(self, plan_file, structure_file):
         values = {}
         rt_plan = dicom.read_file(plan_file)
+        dicompyler_plan = dicomparser.DicomParser(plan_file).GetPlan()
         rt_structure = dicom.read_file(structure_file)
         fx_grp_seq = rt_plan.FractionGroupSequence
 
@@ -610,8 +611,10 @@ class RxTable:
             plan_name = rt_plan.RTPlanLabel
 
             if hasattr(rt_plan, 'DoseReferenceSequence'):
-                rx_dose = rt_plan.DoseReferenceSequence[i].TargetPrescriptionDose
-                normalization_method = rt_plan.DoseReferenceSequence[i].DoseReferenceStructureType
+                if hasattr(rt_plan.DoseReferenceSequence[i], 'TargetPrescriptionDose'):
+                    rx_dose = rt_plan.DoseReferenceSequence[i].TargetPrescriptionDose
+                if hasattr(rt_plan.DoseReferenceSequence[i], 'DoseReferenceStructureType'):
+                    normalization_method = rt_plan.DoseReferenceSequence[i].DoseReferenceStructureType
                 if normalization_method.lower() == 'coordinates':
                     normalization_object_found = True
                     normalization_object = 'COORDINATE'
@@ -638,6 +641,9 @@ class RxTable:
                     fx_dose += ref_app_seq.BrachyApplicationSetupDose
 
             fxs = fx_grp_seq[i].NumberOfFractionsPlanned
+
+            if rx_dose == 0:
+                rx_dose = float(dicompyler_plan['rxdose']) / 100.
 
             if fx_dose == 0:
                 fx_dose = round(rx_dose / float(fxs), 2)
