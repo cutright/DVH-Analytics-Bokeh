@@ -101,3 +101,14 @@ COMPLEXITY_SCORE_Y_WEIGHT = 1.
 # The automated import will only take the latest plan file if set to True
 # If set to false, all plan files will be processed and imported
 IMPORT_LATEST_PLAN_ONLY = False
+
+# The following tabs are not dependent on each other, therefore could be excluded from the user view
+# The layout for DVH Analytics is relatively large for Bokeh and can be relatively slow due to this
+# Therefore, if there are particular tabs a user does not want to render, they can be set to False
+# here to speed-up load times
+OPTIONAL_TABS = {'ROI Viewer': True,
+                 'Planning Data': True,
+                 'Time-Series': True,
+                 'Correlation': True,
+                 'Regression': True,
+                 'MLC Analyzer': True}

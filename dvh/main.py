@@ -4022,15 +4022,16 @@ layout_mlc_analyzer = column(row(custom_title_mlc_analyzer_blue, Spacer(width=50
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
 rad_bio_tab = Panel(child=layout_rad_bio, title='Rad Bio')
-roi_viewer_tab = Panel(child=layout_roi_viewer, title='ROI Viewer')
-planning_data_tab = Panel(child=layout_planning_data, title='Planning Data')
-time_series_tab = Panel(child=layout_time_series, title='Time-Series')
-correlation_matrix_tab = Panel(child=layout_correlation_matrix, title='Correlation')
-correlation_tab = Panel(child=layout_regression, title='Regression')
-mlc_analyzer_tab = Panel(child=layout_mlc_analyzer, title='MLC Analyzer')
+optional_tabs = [('ROI Viewer', Panel(child=layout_roi_viewer, title='ROI Viewer')),
+                 ('Planning Data', Panel(child=layout_planning_data, title='Planning Data')),
+                 ('Time-Series', Panel(child=layout_time_series, title='Time-Series')),
+                 ('Correlation', Panel(child=layout_correlation_matrix, title='Correlation')),
+                 ('Regression', Panel(child=layout_regression, title='Regression')),
+                 ('MLC Analyzer', Panel(child=layout_mlc_analyzer, title='MLC Analyzer'))]
+rendered_tabs = [query_tab, dvh_tab, rad_bio_tab] + \
+                [tab for (title, tab) in optional_tabs if OPTIONAL_TABS[title]]
 
-tabs = Tabs(tabs=[query_tab, dvh_tab, rad_bio_tab, roi_viewer_tab, planning_data_tab, time_series_tab,
-                  correlation_matrix_tab, correlation_tab, mlc_analyzer_tab])
+tabs = Tabs(tabs=rendered_tabs)
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
