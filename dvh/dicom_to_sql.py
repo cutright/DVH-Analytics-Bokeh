@@ -13,6 +13,7 @@ import os
 import shutil
 import dicom
 from datetime import datetime
+from options import IMPORT_LATEST_PLAN_ONLY
 
 
 FILE_TYPES = {'rtplan', 'rtstruct', 'rtdose'}
@@ -72,7 +73,11 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True, update_di
         plan_file = file_paths[uid]['rtplan']['latest_file']
         struct_file = file_paths[uid]['rtstruct']['latest_file']
         dose_file = file_paths[uid]['rtdose']['latest_file']
-        print("plan file: %s" % plan_file)
+        if IMPORT_LATEST_PLAN_ONLY:
+            print("plan file: %s" % plan_file)
+        else:
+            for f in file_paths[uid]['rtplan']['file_path']:
+                print("plan file: %s" % f)
         print("struct file: %s" % struct_file)
         print("dose file: %s" % dose_file)
 
@@ -91,7 +96,13 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True, update_di
             continue
 
         if plan_file and struct_file and dose_file:
+            if IMPORT_LATEST_PLAN_ONLY:
                 plan = PlanRow(plan_file, struct_file, dose_file)
+                sqlcnx.insert_plan(plan)
+            else:
+                for f in file_paths[uid]['rtplan']['file_path']:
+                    plan = PlanRow(f, struct_file, dose_file)
+                    sqlcnx.insert_plan(plan)
         else:
             print('WARNING: Missing complete set of plan, struct, and dose files for uid %s' % uid)
             if not force_update:
@@ -101,22 +112,23 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True, update_di
 
         if plan_file:
             if not hasattr(dicom.read_file(plan_file), 'BrachyTreatmentType'):
-                beams = BeamTable(plan_file)
+                if IMPORT_LATEST_PLAN_ONLY:
+                    beams = BeamTable(plan_file)
+                    sqlcnx.insert_beams(beams)
+                else:
+                    for f in file_paths[uid]['rtplan']['file_path']:
+                        sqlcnx.insert_beams(BeamTable(f))
         if struct_file and dose_file:
             dvhs = DVHTable(struct_file, dose_file)
             setattr(dvhs, 'ptv_number', rank_ptvs_by_D95(dvhs))
-        if plan_file and struct_file:
-            rxs = RxTable(plan_file, struct_file)
-
-        # Insert data from Python objects into SQL tables
-        if plan:
-            sqlcnx.insert_plan(plan)
-        if beams:
-            sqlcnx.insert_beams(beams)
-        if dvhs:
             sqlcnx.insert_dvhs(dvhs)
-        if rxs:
-            sqlcnx.insert_rxs(rxs)
+        if plan_file and struct_file:
+            if IMPORT_LATEST_PLAN_ONLY:
+                rxs = RxTable(plan_file, struct_file)
+                sqlcnx.insert_rxs(rxs)
+            else:
+                for f in file_paths[uid]['rtplan']['file_path']:
+                    sqlcnx.insert_rxs(RxTable(f, struct_file))
 
         # get mrn for folder name, can't assume a complete set of dose, plan, struct files
         mrn = []
@@ -141,14 +153,16 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True, update_di
             new_folder = os.path.join(import_settings['imported'], mrn)
             move_files_to_new_path(files_to_move, new_folder)
 
-            if plan_file:
-                plan_file = os.path.basename(plan_file)
-            if struct_file:
-                struct_file = os.path.basename(struct_file)
-            if dose_file:
-                dose_file = os.path.basename(dose_file)
+        if plan_file:
+            plan_file = os.path.basename(plan_file)
+        if struct_file:
+            struct_file = os.path.basename(struct_file)
+        if dose_file:
+            dose_file = os.path.basename(dose_file)
 
         if update_dicom_catalogue_table:
+            if not IMPORT_LATEST_PLAN_ONLY:
+                plan_file = ', '.join([os.path.basename(fp) for fp in file_paths[uid]['rtplan']['file_path']])
             update_dicom_catalogue(mrn, uid, new_folder, plan_file, struct_file, dose_file)
 
     # Move remaining files, if any

@@ -97,3 +97,7 @@ MLC_COLOR = 'green'
 JAW_COLOR = 'blue'
 COMPLEXITY_SCORE_X_WEIGHT = 1.
 COMPLEXITY_SCORE_Y_WEIGHT = 1.
+
+# The automated import will only take the latest plan file if set to True
+# If set to false, all plan files will be processed and imported
+IMPORT_LATEST_PLAN_ONLY = False
