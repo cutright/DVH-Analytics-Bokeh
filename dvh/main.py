@@ -1703,23 +1703,23 @@ def update_mlc_analyzer_uid():
 
 
 def mlc_analyzer_uid_ticker(attr, old, new):
-    global mlc_data
     rt_plan = DVH_SQL().query('DICOM_Files', 'folder_path, plan_file', "study_instance_uid = '%s'" % new)[0]
-    rt_plan_file = os.path.join(rt_plan[0], rt_plan[1])
-    mlc_data = mlc_analyzer.Plan(rt_plan_file)
+    folder_path = rt_plan[0]
+    plan_files = [os.path.join(folder_path, file_path) for file_path in rt_plan[1].split(', ')]
 
-    mlc_analyzer_plan_select.options = [mlc_data.name]
-    mlc_analyzer_plan_select.value = mlc_data.name
+    mlc_analyzer_plan_select.options = plan_files
+    mlc_analyzer_plan_select.value = plan_files[0]
 
-    mlc_analyzer_fx_grp_select.options = [str(i+1) for i in range(0, len(mlc_data.fx_group))]
+
+def mlc_analyzer_plan_ticker(attr, old, new):
+    global mlc_data
+    mlc_data = mlc_analyzer.Plan(new)
+
+    mlc_analyzer_fx_grp_select.options = [str(i + 1) for i in range(0, len(mlc_data.fx_group))]
     if mlc_analyzer_fx_grp_select.value == mlc_analyzer_fx_grp_select.options[0]:
         update_mlc_analyzer_beam()
     else:
         mlc_analyzer_fx_grp_select.value = '1'
-
-
-def mlc_analyzer_plan_ticker(attr, old, new):
-    pass
 
 
 def mlc_analyzer_fx_grp_ticker(attr, old, new):
@@ -4011,7 +4011,8 @@ layout_regression = column(row(custom_title_regression_blue, Spacer(width=50), c
                            Spacer(width=1000, height=100))
 
 layout_mlc_analyzer = column(row(custom_title_mlc_analyzer_blue, Spacer(width=50), custom_title_mlc_analyzer_red),
-                             row(mlc_analyzer_mrn_select, mlc_analyzer_study_date_select, mlc_analyzer_uid_select),
+                             row(mlc_analyzer_mrn_select, mlc_analyzer_study_date_select, mlc_analyzer_uid_select,
+                                 mlc_analyzer_plan_select),
                              Div(text="<hr>", width=800),
                              row(mlc_analyzer_fx_grp_select, mlc_analyzer_beam_select,
                                  mlc_viewer_previous_cp, mlc_viewer_next_cp,
