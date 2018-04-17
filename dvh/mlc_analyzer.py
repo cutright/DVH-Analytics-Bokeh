@@ -40,6 +40,8 @@ class FxGroup:
         self.beam_count = len(self.beam)
         self.beam_names = [b.name for b in self.beam]
 
+        self.beam = update_missing_jaws(self.beam)
+
 
 class Beam:
     def __init__(self, beam_seq, meter_set):
@@ -228,4 +230,23 @@ def get_xy_path_lengths(shapely_object):
         path = np.array([np.sum(np.abs(np.diff(x))), np.sum(np.abs(np.diff(y)))])
 
     return path.tolist()
+
+
+def update_missing_jaws(beam_list):
+    """
+    :param beam_list: a list of Beam Class objects
+    :return: a list of Beam Class objects, but any control point where jaws are set to max will be replaced by the
+    first control point jaw settings (some DICOM RT Plan files may not provide jaw settings in every control point
+    :rtype: list
+    """
+
+    for i, beam in enumerate(beam_list):
+        for j, cp in enumerate(beam.jaws):
+            if cp['x_min'] == -MAX_FIELD_SIZE_X / 2 and \
+                            cp['x_max'] == MAX_FIELD_SIZE_X / 2 and \
+                            cp['y_min'] == -MAX_FIELD_SIZE_Y / 2 and \
+                            cp['y_max'] == MAX_FIELD_SIZE_Y / 2:
+                beam_list[i].jaws[j] = beam.jaws[0]
+
+    return beam_list
 
