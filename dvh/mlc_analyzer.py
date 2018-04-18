@@ -16,11 +16,31 @@ from options import MAX_FIELD_SIZE_X, MAX_FIELD_SIZE_Y, COMPLEXITY_SCORE_X_WEIGH
 class Plan:
     def __init__(self, rt_plan_file):
         """
-        :param rt_plan_file: absolute file path of an DICOM RT Plan file
+        :param rt_plan_file: absolute file path of a DICOM RT Plan file
         """
         rt_plan = dicomparser.read_file(rt_plan_file)
-        self.fx_group = [FxGroup(fx_grp_seq, rt_plan.BeamSequence) for fx_grp_seq in rt_plan.FractionGroupSequence]
-        self.name = rt_plan.RTPlanLabel
+
+        beam_seq = rt_plan.BeamSequence
+        fx_grp_seq = rt_plan.FractionGroupSequence
+        self.fx_group = [FxGroup(fx_grp, beam_seq) for fx_grp in fx_grp_seq]
+
+        self.plan_name = rt_plan.RTPlanLabel
+        self.patient_name = rt_plan.PatientName
+        self.patient_id = rt_plan.PatientID
+        self.study_instance_uid = rt_plan.StudyInstanceUID
+        self.tps = '%s %s' % (rt_plan.Manufacturer, rt_plan.ManufacturerModelName)
+
+    def __str__(self):
+        summary = ['Patient Name:       %s' % self.patient_name,
+                   'Patient MRN:        %s' % self.patient_id,
+                   'Study Instance UID: %s' % self.study_instance_uid,
+                   'TPS:                %s' % self.tps,
+                   'Plan name:          %s' % self.plan_name,
+                   '# of Fx Groups:     %s' % len(self.fx_group)]
+        return '\n'.join(summary)
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class FxGroup:
@@ -175,6 +195,7 @@ def get_shapely_from_cp(leaf_boundaries, control_point):
     mlc_points = a + b[::-1]  # concatenate a and reverse(b)
     mlc_aperture = Polygon(mlc_points).buffer(0)
 
+    # This function is very slow, since jaws are rectangular, perhaps there's a more efficient method?
     aperture = mlc_aperture.intersection(jaw_shapely)
 
     return aperture
