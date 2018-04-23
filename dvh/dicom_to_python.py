@@ -9,14 +9,16 @@ Created on Sun Feb 26 11:06:28 2017
 
 from __future__ import print_function
 from future.utils import listitems
-import dicom  # pydicom
 from dicompylercore import dicomparser, dvhcalc
-from datetime import datetime
 from dateutil.relativedelta import relativedelta  # python-dateutil
 from roi_name_manager import DatabaseROIs, clean_name
 from utilities import datetime_str_to_obj, dicompyler_roi_coord_to_db_string, change_angle_origin,\
     surface_area_of_roi, date_str_to_obj
 import numpy as np
+try:
+    import pydicom as dicom  # for pydicom >= 1.0
+except:
+    import dicom
 
 
 class DVHRow:

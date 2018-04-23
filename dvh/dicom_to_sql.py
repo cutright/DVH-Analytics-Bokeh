@@ -11,9 +11,12 @@ from sql_connector import DVH_SQL
 from dicom_to_python import DVHTable, PlanRow, BeamTable, RxTable
 import os
 import shutil
-import dicom
 from datetime import datetime
 from options import IMPORT_LATEST_PLAN_ONLY
+try:
+    import pydicom as dicom  # for pydicom >= 1.0
+except:
+    import dicom
 
 
 FILE_TYPES = {'rtplan', 'rtstruct', 'rtdose'}

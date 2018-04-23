@@ -8,10 +8,9 @@ Jinja2
 Requests
 Tornado
 PyYaml
-bokeh
+bokeh >=0.12.10, <0.12.15
 python-dateutil
 psycopg2
-fuzzywuzzy[speedup]
 scipy
 shapely[vectorized]
 statsmodels

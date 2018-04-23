@@ -9,11 +9,14 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from dicompylercore import dicomparser
 import os
-import dicom
 import sys
 from shapely.geometry import Polygon, Point
 import numpy as np
 from scipy.spatial.distance import cdist
+try:
+    import pydicom as dicom  # for pydicom >= 1.0
+except:
+    import dicom
 
 
 SCRIPT_DIR = os.path.dirname(__file__)
