@@ -1937,10 +1937,11 @@ def update_eud():
 
 
 def emami_selection(attr, old, new):
-    row_index = source_emami.selected.indices[0]
-    rad_bio_eud_a_input.value = str(source_emami.data['eud_a'][row_index])
-    rad_bio_gamma_50_input.value = str(source_emami.data['gamma_50'][row_index])
-    rad_bio_td_tcd_input.value = str(source_emami.data['td_tcd'][row_index])
+    if new.indices:
+        row_index = min(new.indices)
+        rad_bio_eud_a_input.value = str(source_emami.data['eud_a'][row_index])
+        rad_bio_gamma_50_input.value = str(source_emami.data['gamma_50'][row_index])
+        rad_bio_td_tcd_input.value = str(source_emami.data['td_tcd'][row_index])
 
 
 def update_correlation():
@@ -3080,6 +3081,7 @@ columns = [TableColumn(field="row", title="Row", width=60),
            TableColumn(field="not_status", title="Apply Not Operator", width=150)]
 selection_filter_data_table = DataTable(source=source_selectors,
                                         columns=columns, width=1000, height=150)
+selection_filter_data_table.index_position = None
 source_selectors.on_change('selected', update_selector_row_on_selection)
 update_selector_source()
 
@@ -3126,6 +3128,7 @@ columns = [TableColumn(field="row", title="Row", width=60),
            TableColumn(field="not_status", title="Apply Not Operator", width=150)]
 range_filter_data_table = DataTable(source=source_ranges,
                                     columns=columns, width=1000, height=150)
+range_filter_data_table.index_position = None
 source_ranges.on_change('selected', update_range_row_on_selection)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3270,6 +3273,7 @@ columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="ptv_overlap", title="PTV Overlap", width=80, formatter=NumberFormatter(format="0.0"))]
 data_table = DataTable(source=source, columns=columns, width=1200, editable=True)
 source.on_change('selected', update_source_endpoint_view_selection)
+data_table.index_position = None
 
 # Set up EndPoint DataTable
 endpoint_table_title = Div(text="<b>DVH Endpoints</b>", width=1200)
@@ -3286,7 +3290,10 @@ columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="ep8", title="ep8", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="ep9", title="ep9", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="ep10", title="ep10", width=80, formatter=NumberFormatter(format="0.00"))]
-data_table_endpoints = DataTable(source=source_endpoint_view, columns=columns, width=1200, editable=True)
+data_table_endpoints = DataTable(source=source_endpoint_view, columns=columns, width=1200,
+                                 editable=True)
+data_table_endpoints.index_position = None
+
 source_endpoint_view.on_change('selected', update_dvh_table_selection)
 
 # Set up Beams DataTable
@@ -3312,6 +3319,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=105),
            TableColumn(field="ssd", title="SSD", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="treatment_machine", title="Tx Machine", width=80)]
 data_table_beams = DataTable(source=source_beams, columns=columns, width=1300, editable=True)
+data_table_beams.index_position = None
 beam_table_title2 = Div(text="<b>Beams Continued</b>", width=1500)
 columns = [TableColumn(field="mrn", title="MRN", width=105),
            TableColumn(field="group", title="Group", width=230),
@@ -3335,6 +3343,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=105),
            TableColumn(field="couch_min", title="Min", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="couch_max", title="Max", width=80, formatter=NumberFormatter(format="0.0"))]
 data_table_beams2 = DataTable(source=source_beams, columns=columns, width=1300, editable=True)
+data_table_beams2.index_position = None
 
 # Set up Plans DataTable
 plans_table_title = Div(text="<b>Plans</b>", width=1200)
@@ -3355,6 +3364,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=420),
            TableColumn(field="tx_site", title="Tx Site"),
            TableColumn(field="baseline", title="Baseline")]
 data_table_plans = DataTable(source=source_plans, columns=columns, width=1300, editable=True)
+data_table_plans.index_position = None
 
 # Set up Rxs DataTable
 rxs_table_title = Div(text="<b>Rxs</b>", width=1000)
@@ -3371,7 +3381,7 @@ columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="normalization_method", title="Norm Method"),
            TableColumn(field="normalization_object", title="Norm Object")]
 data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1300, editable=True)
-
+data_table_rxs.index_position = None
 
 # Control Chart layout
 tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
@@ -3628,10 +3638,12 @@ columns = [TableColumn(field="stat", title="Single-Var Regression", width=100),
            TableColumn(field="group_2", title="Group 2", width=60)]
 data_table_corr_chart = DataTable(source=source_corr_chart_stats, columns=columns, editable=True,
                                   height=180, width=300)
+data_table_corr_chart.index_position = None
 
 columns = [TableColumn(field="var_name", title="Variables for Multi-Var Regression", width=100)]
 data_table_multi_var_include = DataTable(source=source_multi_var_include, columns=columns,
                                          height=175, width=275)
+data_table_multi_var_include.index_position = None
 
 div_horizontal_bar_2 = Div(text="<hr>", width=1050)
 
@@ -3641,11 +3653,13 @@ columns = [TableColumn(field="var_name", title="Independent Variable", width=300
            TableColumn(field="p_str", title="p-value", width=150)]
 data_table_multi_var_model_1 = DataTable(source=source_multi_var_coeff_results_1, columns=columns, editable=True,
                                          height=200)
+data_table_multi_var_model_1.index_position = None
 columns = [TableColumn(field="y_var", title="Dependent Variable", width=150),
            TableColumn(field="r_sq_str", title="R-squared", width=150),
            TableColumn(field="model_p_str", title="Prob for F-statistic", width=150)]
 data_table_multi_var_coeff_1 = DataTable(source=source_multi_var_model_results_1, columns=columns, editable=True,
                                          height=60)
+data_table_multi_var_coeff_1.index_position = None
 
 multi_var_text_2 = Div(text="<b>Group 2</b>", width=500)
 columns = [TableColumn(field="var_name", title="Independent Variable", width=300),
