@@ -20,7 +20,7 @@ import itertools
 from datetime import datetime
 from os.path import dirname, join
 from bokeh.layouts import column, row
-from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider, Spacer, Range1d
+from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider, Spacer, Range1d, Selection
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
@@ -322,8 +322,8 @@ def selector_row_ticker(attr, old, new):
 
 
 def update_selector_row_on_selection(attr, old, new):
-    if new['1d']['indices']:
-        selector_row.value = selector_row.options[min(new['1d']['indices'])]
+    if new.indices:
+        selector_row.value = selector_row.options[min(new.indices)]
 
 
 def delete_selector_row():
@@ -534,14 +534,12 @@ def ensure_range_group_is_assigned(attrname, old, new):
 
 
 def update_range_row_on_selection(attr, old, new):
-    if new['1d']['indices']:
-        range_row.value = range_row.options[min(new['1d']['indices'])]
+    if new.indices:
+        range_row.value = range_row.options[min(new.indices)]
 
 
 def clear_source_selection(src):
-    src.selected = {'0d': {'glyph': None, 'indices': []},
-                    '1d': {'indices': []},
-                    '2d': {'indices': {}}}
+    src.selected = Selection(indices=[], line_indices=[], multiline_indices={})
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -666,9 +664,9 @@ def update_ep_row_on_selection(attr, old, new):
     global ALLOW_SOURCE_UPDATE
     ALLOW_SOURCE_UPDATE = False
 
-    if new['1d']['indices']:
+    if new.indices:
         data = source_endpoint_defs.data
-        r = min(new['1d']['indices'])
+        r = min(new.indices)
 
         # update row
         ep_row.value = ep_row.options[r]
@@ -1766,9 +1764,7 @@ def update_mlc_analyzer_beam():
 
 def mlc_analyzer_cp_ticker(attr, old, new):
     update_mlc_viewer()
-    source_mlc_summary.selected = {'0d': {'glyph': None, 'indices': []},
-                                   '1d': {'indices': [int(mlc_analyzer_cp_select.value)-1]},
-                                   '2d': {'indices': {}}}
+    source_mlc_summary.selected = Selection(indices=[int(mlc_analyzer_cp_select.value)-1])
 
 
 def update_mlc_viewer():
@@ -1815,8 +1811,8 @@ def mlc_viewer_play():
 
 
 def update_cp_on_selection(attr, old, new):
-    if new['1d']['indices']:
-        mlc_analyzer_cp_select.value = mlc_analyzer_cp_select.options[min(new['1d']['indices'])]
+    if new.indices:
+        mlc_analyzer_cp_select.value = mlc_analyzer_cp_select.options[min(new.indices)]
 
 
 def get_include_map():
@@ -1888,7 +1884,7 @@ def rad_bio_apply():
         include = []
 
     if 2 in rad_bio_apply_filter.active:
-        include.extend([i for i in range(row_count) if i in source_rad_bio.selected['1d']['indices']])
+        include.extend([i for i in range(row_count) if i in source_rad_bio.selected.indices])
 
     try:
         new_eud_a = float(rad_bio_eud_a_input.value)
@@ -1941,7 +1937,7 @@ def update_eud():
 
 
 def emami_selection(attr, old, new):
-    row_index = source_emami.selected['1d']['indices'][0]
+    row_index = source_emami.selected.indices[0]
     rad_bio_eud_a_input.value = str(source_emami.data['eud_a'][row_index])
     rad_bio_gamma_50_input.value = str(source_emami.data['gamma_50'][row_index])
     rad_bio_td_tcd_input.value = str(source_emami.data['td_tcd'][row_index])
@@ -2436,7 +2432,6 @@ def update_control_chart_y_axis_label():
 def update_control_chart():
     new = str(control_chart_y.value)
     if new:
-
         clear_source_selection(source_time_1)
         clear_source_selection(source_time_2)
 
@@ -2572,8 +2567,8 @@ def update_control_chart():
 
 def control_chart_update_trend():
     if control_chart_y.value:
-        selected_indices_1 = source_time_1.selected['1d']['indices']
-        selected_indices_2 = source_time_2.selected['1d']['indices']
+        selected_indices_1 = source_time_1.selected.indices
+        selected_indices_2 = source_time_2.selected.indices
 
         if not selected_indices_1:
             selected_indices_1 = range(len(source_time_1.data['x']))
@@ -2827,17 +2822,17 @@ def multi_var_linear_regression():
 
 
 def multi_var_include_selection(attr, old, new):
-    row_index = source_multi_var_include.selected['1d']['indices'][0]
+    row_index = source_multi_var_include.selected.indices[0]
     corr_chart_x.value = source_multi_var_include.data['var_name'][row_index]
 
 
 def update_source_endpoint_view_selection(attr, old, new):
-    if new['1d']['indices']:
+    if new.indices:
         source_endpoint_view.selected = new
 
 
 def update_dvh_table_selection(attr, old, new):
-    if new['1d']['indices']:
+    if new.indices:
         source.selected = new
 
 
@@ -3084,7 +3079,7 @@ columns = [TableColumn(field="row", title="Row", width=60),
            TableColumn(field="group_label", title="Group", width=170),
            TableColumn(field="not_status", title="Apply Not Operator", width=150)]
 selection_filter_data_table = DataTable(source=source_selectors,
-                                        columns=columns, width=1000, height=150, row_headers=False)
+                                        columns=columns, width=1000, height=150)
 source_selectors.on_change('selected', update_selector_row_on_selection)
 update_selector_source()
 
@@ -3130,7 +3125,7 @@ columns = [TableColumn(field="row", title="Row", width=60),
            TableColumn(field="group_label", title="Group", width=180),
            TableColumn(field="not_status", title="Apply Not Operator", width=150)]
 range_filter_data_table = DataTable(source=source_ranges,
-                                    columns=columns, width=1000, height=150, row_headers=False)
+                                    columns=columns, width=1000, height=150)
 source_ranges.on_change('selected', update_range_row_on_selection)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3158,7 +3153,7 @@ div_endpoint_start = Div(text="<hr>", width=1050)
 columns = [TableColumn(field="row", title="Row", width=60),
            TableColumn(field="label", title="Endpoint", width=180),
            TableColumn(field="units_out", title="Units", width=60)]
-ep_data_table = DataTable(source=source_endpoint_defs, columns=columns, width=300, height=150, row_headers=False)
+ep_data_table = DataTable(source=source_endpoint_defs, columns=columns, width=300, height=150)
 
 source_endpoint_defs.on_change('selected', update_ep_row_on_selection)
 
@@ -3632,11 +3627,11 @@ columns = [TableColumn(field="stat", title="Single-Var Regression", width=100),
            TableColumn(field="group_1", title="Group 1", width=60),
            TableColumn(field="group_2", title="Group 2", width=60)]
 data_table_corr_chart = DataTable(source=source_corr_chart_stats, columns=columns, editable=True,
-                                  height=180, width=300, row_headers=False)
+                                  height=180, width=300)
 
 columns = [TableColumn(field="var_name", title="Variables for Multi-Var Regression", width=100)]
 data_table_multi_var_include = DataTable(source=source_multi_var_include, columns=columns,
-                                         height=175, width=275, row_headers=False)
+                                         height=175, width=275)
 
 div_horizontal_bar_2 = Div(text="<hr>", width=1050)
 
@@ -3645,24 +3640,24 @@ columns = [TableColumn(field="var_name", title="Independent Variable", width=300
            TableColumn(field="coeff_str", title="coefficient",  width=150),
            TableColumn(field="p_str", title="p-value", width=150)]
 data_table_multi_var_model_1 = DataTable(source=source_multi_var_coeff_results_1, columns=columns, editable=True,
-                                         height=200, row_headers=False)
+                                         height=200)
 columns = [TableColumn(field="y_var", title="Dependent Variable", width=150),
            TableColumn(field="r_sq_str", title="R-squared", width=150),
            TableColumn(field="model_p_str", title="Prob for F-statistic", width=150)]
 data_table_multi_var_coeff_1 = DataTable(source=source_multi_var_model_results_1, columns=columns, editable=True,
-                                         height=60, row_headers=False)
+                                         height=60)
 
 multi_var_text_2 = Div(text="<b>Group 2</b>", width=500)
 columns = [TableColumn(field="var_name", title="Independent Variable", width=300),
            TableColumn(field="coeff_str", title="coefficient",  width=150),
            TableColumn(field="p_str", title="p-value", width=150)]
 data_table_multi_var_model_2 = DataTable(source=source_multi_var_coeff_results_2, columns=columns, editable=True,
-                                         height=200, row_headers=False)
+                                         height=200)
 columns = [TableColumn(field="y_var", title="Dependent Variable", width=150),
            TableColumn(field="r_sq_str", title="R-squared", width=150),
            TableColumn(field="model_p_str", title="Prob for F-statistic", width=150)]
 data_table_multi_var_coeff_2 = DataTable(source=source_multi_var_model_results_2, columns=columns, editable=True,
-                                         height=60, row_headers=False)
+                                         height=60)
 
 source_multi_var_include.on_change('selected', multi_var_include_selection)
 
@@ -3900,7 +3895,7 @@ columns = [TableColumn(field="cp", title="CP"),
            TableColumn(field="y_perim", title="Y Path", formatter=NumberFormatter(format="0.00")),
            TableColumn(field="cmp_score", title="Score", formatter=NumberFormatter(format="0.000"))]
 mlc_viewer_data_table = DataTable(source=source_mlc_summary, columns=columns,
-                                  editable=False, width=700, height=425, row_headers=False)
+                                  editable=False, width=700, height=425)
 
 mlc_viewer_previous_cp.on_click(mlc_viewer_go_to_previous_cp)
 mlc_viewer_next_cp.on_click(mlc_viewer_go_to_next_cp)
