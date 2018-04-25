@@ -3,7 +3,7 @@ numpy >= 1.2
 pydicom >= 0.9.9
 matplotlib
 six >= 1.5
-dicompyler-core == 0.5.3
+dicompyler-core
 Jinja2
 Requests
 Tornado == 4.4.2
