@@ -85,7 +85,7 @@ def test_dvh_code():
             test_files = Temp_DICOM_FileSet(start_path="test_files/")
 
             print("Deleting test data from SQL database")
-            for i in range(0, test_files.count):
+            for i in range(test_files.count):
                 cond_str = "mrn = '" + test_files.mrn[i]
                 cond_str += "' and study_instance_uid = '" + test_files.study_instance_uid[i] + "'"
                 DVH_SQL().delete_rows(cond_str)
@@ -162,7 +162,7 @@ def print_mrns():
         print("No plans have been imported")
 
     printed_mrns = []
-    for i in range(0, len(mrns)):
+    for i in range(len(mrns)):
         current_mrn = mrns[i]
         if current_mrn not in printed_mrns:
             printed_mrns.append(current_mrn)

@@ -124,7 +124,7 @@ class PlanRow:
         for fx_grp in fx_grp_seq:
             fxs += fx_grp.NumberOfFractionsPlanned
             fx_mu = 0
-            for Beam in range(0, fx_grp.NumberOfBeams):
+            for Beam in range(fx_grp.NumberOfBeams):
                 if hasattr(fx_grp.ReferencedBeamSequence[Beam], 'BeamMeterset'):
                     fx_mu += fx_grp.ReferencedBeamSequence[Beam].BeamMeterset
             total_mu += fx_grp.NumberOfFractionsPlanned * fx_mu
@@ -371,7 +371,7 @@ class DVHTable:
                     row_counter += 1
 
         self.count = row_counter
-        dvh_range = range(0, self.count)
+        dvh_range = range(self.count)
 
         for attr in dir(values[0]):
             if not attr.startswith('_'):
@@ -395,7 +395,7 @@ class BeamTable:
             fxs = int(fx_grp_seq.NumberOfFractionsPlanned)
             fx_grp_beam_count = int(fx_grp_seq.NumberOfBeams)
 
-            for fx_grp_beam in range(0, fx_grp_beam_count):
+            for fx_grp_beam in range(fx_grp_beam_count):
                 if hasattr(rt_plan, 'BeamSequence'):
                     beam_seq = rt_plan.BeamSequence[beam_num]  # Photons and electrons
                 else:
@@ -574,7 +574,7 @@ class BeamTable:
                 beam_num += 1
 
         self.count = beam_num
-        beam_range = range(0, self.count)
+        beam_range = range(self.count)
 
         # Rearrange values into separate attributes
         for attr in dir(values[0]):
@@ -601,7 +601,7 @@ class RxTable:
 
         fx_group_count = len(fx_grp_seq)
 
-        for i in range(0, fx_group_count):
+        for i in range(fx_group_count):
             rx_dose = 0
             rx_pt_found = False
             normalization_method = 'default'
@@ -687,7 +687,7 @@ class RxTable:
                                        normalization_object)
             values[i] = current_fx_grp_row
 
-        fx_group_range = range(0, fx_group_count)
+        fx_group_range = range(fx_group_count)
         self.count = fx_group_count
         # Rearrange values into separate attributes
         for attr in dir(values[0]):

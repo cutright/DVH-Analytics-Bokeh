@@ -6,7 +6,7 @@ six >= 1.5
 dicompyler-core == 0.5.3
 Jinja2
 Requests
-Tornado
+Tornado == 4.4.2
 PyYaml
 bokeh >=0.12.10, <0.12.15
 python-dateutil

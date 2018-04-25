@@ -257,7 +257,7 @@ def is_uid_imported(uid):
 
 def rank_ptvs_by_D95(dvhs):
     ptv_number_list = [0] * dvhs.count
-    ptv_index = [i for i in range(0, dvhs.count) if dvhs.roi_type[i] == 'PTV']
+    ptv_index = [i for i in range(dvhs.count) if dvhs.roi_type[i] == 'PTV']
 
     ptv_count = len(ptv_index)
 
@@ -266,7 +266,7 @@ def rank_ptvs_by_D95(dvhs):
     order_index = sorted(range(ptv_count), key=lambda k: doses_to_rank[k])
     final_order = sorted(range(ptv_count), key=lambda k: order_index[k])
 
-    for i in range(0, ptv_count):
+    for i in range(ptv_count):
         ptv_number_list[ptv_index[i]] = final_order[i] + 1
 
     return ptv_number_list

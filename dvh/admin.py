@@ -742,7 +742,7 @@ def update_query_source():
         query_cursor = DVH_SQL().query(query_table.value, columns_str)
 
     for row in query_cursor:
-        for i in range(0, len(columns)):
+        for i in range(len(columns)):
             new_data[columns[i]].append(str(row[i]))
 
     if new_data:
@@ -997,7 +997,7 @@ def update_baseline_source():
         query_cursor = DVH_SQL().query('Plans', columns_str)
 
     for row in query_cursor:
-        for i in range(0, len(columns)):
+        for i in range(len(columns)):
             new_data[columns[i]].append(str(row[i]))
 
     baseline_source.data = new_data
@@ -1013,7 +1013,7 @@ def update_baseline_mrns():
         options = ['']
     else:
         options = []
-        for i in range(0, len(baseline_source.data['mrn'])):
+        for i in range(len(baseline_source.data['mrn'])):
             options.append(baseline_source.data['mrn'][i])
         options.sort()
 
@@ -1030,12 +1030,12 @@ def update_baseline_study_dates():
     else:
         study_dates = []
 
-        for i in range(0, len(baseline_source.data['mrn'])):
+        for i in range(len(baseline_source.data['mrn'])):
             if baseline_source.data['mrn'][i] == baseline_mrn_select.value:
                 study_dates.append(baseline_source.data['sim_study_date'][i])
 
         options = []
-        for i in range(0, len(study_dates)):
+        for i in range(len(study_dates)):
             options.append(study_dates[i])
         options.sort()
 
@@ -1051,7 +1051,7 @@ def update_baseline_uid():
     else:
         uids = []
 
-        for i in range(0, len(baseline_source.data['mrn'])):
+        for i in range(len(baseline_source.data['mrn'])):
             if baseline_source.data['mrn'][i] == baseline_mrn_select.value:
                 if baseline_source.data['sim_study_date'][i] == baseline_study_date_select.value:
                     uids.append(baseline_source.data['study_instance_uid'][i])

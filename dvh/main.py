@@ -275,7 +275,7 @@ def add_selector_row():
         temp['row'][-1] = len(temp['row'])
 
         source_selectors.data = temp
-        new_options = [str(x+1) for x in range(0, len(temp['row']))]
+        new_options = [str(x+1) for x in range(len(temp['row']))]
         selector_row.options = new_options
         selector_row.value = new_options[-1]
         select_category1.value = SELECT_CATEGORY1_DEFAULT
@@ -347,7 +347,7 @@ def delete_selector_row():
             for i in range(index_to_delete, new_source_length):
                 new_selectors_source['row'][i] -= 1
 
-            selector_row.options = [str(x+1) for x in range(0, new_source_length)]
+            selector_row.options = [str(x+1) for x in range(new_source_length)]
             if selector_row.value not in selector_row.options:
                 selector_row.value = selector_row.options[-1]
             source_selectors.data = new_selectors_source
@@ -366,7 +366,7 @@ def add_range_row():
             temp[key].append('')
         temp['row'][-1] = len(temp['row'])
         source_ranges.data = temp
-        new_options = [str(x+1) for x in range(0, len(temp['row']))]
+        new_options = [str(x+1) for x in range(len(temp['row']))]
         range_row.options = new_options
         range_row.value = new_options[-1]
         select_category.value = SELECT_CATEGORY_DEFAULT
@@ -519,7 +519,7 @@ def delete_range_row():
             for i in range(index_to_delete, new_source_length):
                 new_range_source['row'][i] -= 1
 
-            range_row.options = [str(x+1) for x in range(0, new_source_length)]
+            range_row.options = [str(x+1) for x in range(new_source_length)]
             if range_row.value not in range_row.options:
                 range_row.value = range_row.options[-1]
             source_ranges.data = new_range_source
@@ -556,7 +556,7 @@ def add_endpoint():
             temp[key].append('')
         temp['row'][-1] = len(temp['row'])
         source_endpoint_defs.data = temp
-        new_options = [str(x+1) for x in range(0, len(temp['row']))]
+        new_options = [str(x+1) for x in range(len(temp['row']))]
         ep_row.options = new_options
         ep_row.value = new_options[-1]
     else:
@@ -653,7 +653,7 @@ def delete_ep_row():
             for i in range(index_to_delete, new_source_length):
                 new_ep_source['row'][i] -= 1
 
-            ep_row.options = [str(x+1) for x in range(0, new_source_length)]
+            ep_row.options = [str(x+1) for x in range(new_source_length)]
             if ep_row.value not in ep_row.options:
                 ep_row.value = ep_row.options[-1]
             source_endpoint_defs.data = new_ep_source
@@ -846,7 +846,7 @@ def update_dvh_data(dvh):
         extra_rows = 0
 
     print(str(datetime.now()), 'updating dvh data', sep=' ')
-    line_colors = [color for j, color in itertools.izip(range(0, dvh.count + extra_rows), colors)]
+    line_colors = [color for j, color in itertools.izip(range(dvh.count + extra_rows), colors)]
 
     x_axis = np.round(np.add(np.linspace(0, dvh.bin_count, dvh.bin_count) / 100., 0.005), 3)
 
@@ -948,7 +948,7 @@ def update_dvh_data(dvh):
     # new_endpoint_columns = [''] * (dvh.count + extra_rows + 1)
 
     x_data, y_data = [], []
-    for n in range(0, dvh.count):
+    for n in range(dvh.count):
         if radio_group_dose.active == 0:
             x_data.append(x_axis.tolist())
         else:
@@ -962,18 +962,18 @@ def update_dvh_data(dvh):
 
     # Determine Population group (blue (1) or red (2))
     dvh_groups = []
-    for r in range(0, len(dvh.study_instance_uid)):
+    for r in range(len(dvh.study_instance_uid)):
 
         current_uid = dvh.study_instance_uid[r]
         current_roi = dvh.roi_name[r]
 
         if dvh_group_1:
-            for r1 in range(0, len(dvh_group_1.study_instance_uid)):
+            for r1 in range(len(dvh_group_1.study_instance_uid)):
                 if dvh_group_1.study_instance_uid[r1] == current_uid and dvh_group_1.roi_name[r1] == current_roi:
                     dvh_groups.append('Group 1')
 
         if dvh_group_2:
-            for r2 in range(0, len(dvh_group_2.study_instance_uid)):
+            for r2 in range(len(dvh_group_2.study_instance_uid)):
                 if dvh_group_2.study_instance_uid[r2] == current_uid and dvh_group_2.roi_name[r2] == current_roi:
                     if len(dvh_groups) == r + 1:
                         dvh_groups[r] = 'Group 1 & 2'
@@ -985,7 +985,7 @@ def update_dvh_data(dvh):
 
     dvh_groups.insert(0, 'Review')
 
-    for n in range(0, 6):
+    for n in range(6):
         if group_1_constraint_count > 0:
             dvh.mrn.append(y_names[n])
             dvh.roi_name.append('N/A')
@@ -1058,7 +1058,7 @@ def update_dvh_data(dvh):
 
     # anonymize ids
     anon_id_map = {mrn: i for i, mrn in enumerate(list(set(dvh.mrn)))}
-    anon_id = [anon_id_map[dvh.mrn[i]] for i in range(0, len(dvh.mrn))]
+    anon_id = [anon_id_map[dvh.mrn[i]] for i in range(len(dvh.mrn))]
 
     print(str(datetime.now()), 'writing source.data', sep=' ')
     source.data = {'mrn': dvh.mrn,
@@ -1103,7 +1103,7 @@ def update_beam_data(uids):
 
     groups = get_group_list(beam_data.study_instance_uid)
 
-    anon_id = [anon_id_map[beam_data.mrn[i]] for i in range(0, len(beam_data.mrn))]
+    anon_id = [anon_id_map[beam_data.mrn[i]] for i in range(len(beam_data.mrn))]
 
     source_beams.data = {'mrn': beam_data.mrn,
                          'anon_id': anon_id,
@@ -1156,7 +1156,7 @@ def update_plan_data(uids):
     # Determine Groups
     groups = get_group_list(plan_data.study_instance_uid)
 
-    anon_id = [anon_id_map[plan_data.mrn[i]] for i in range(0, len(plan_data.mrn))]
+    anon_id = [anon_id_map[plan_data.mrn[i]] for i in range(len(plan_data.mrn))]
 
     source_plans.data = {'mrn': plan_data.mrn,
                          'anon_id': anon_id,
@@ -1186,7 +1186,7 @@ def update_rx_data(uids):
 
     groups = get_group_list(rx_data.study_instance_uid)
 
-    anon_id = [anon_id_map[rx_data.mrn[i]] for i in range(0, len(rx_data.mrn))]
+    anon_id = [anon_id_map[rx_data.mrn[i]] for i in range(len(rx_data.mrn))]
 
     source_rxs.data = {'mrn': rx_data.mrn,
                        'anon_id': anon_id,
@@ -1207,7 +1207,7 @@ def update_rx_data(uids):
 def get_group_list(uids):
 
     groups = []
-    for r in range(0, len(uids)):
+    for r in range(len(uids)):
         if uids[r] in uids_1:
             if uids[r] in uids_2:
                 groups.append('Group 1 & 2')
@@ -1250,7 +1250,7 @@ def update_source_endpoint_calcs():
         table_columns.append(TableColumn(field='roi_name', title='ROI Name'))
 
         data = source_endpoint_defs.data
-        for r in range(0, len(data['row'])):
+        for r in range(len(data['row'])):
             ep_name = str(data['label'][r])
             table_columns.append(TableColumn(field=ep_name, title=ep_name, formatter=NumberFormatter(format="0.00")))
             x = data['input_value'][r]
@@ -1292,7 +1292,7 @@ def update_source_endpoint_calcs():
                 ep_1_stats = calc_stats(ep_1[ep_name])
                 ep_2_stats = calc_stats(ep_2[ep_name])
                 stats = []
-                for i in range(0, len(ep_1_stats)):
+                for i in range(len(ep_1_stats)):
                     stats.append(ep_1_stats[i])
                     stats.append(ep_2_stats[i])
                 ep[ep_name].extend(stats)
@@ -1314,7 +1314,7 @@ def update_endpoint_view():
         for i in range(1, ENDPOINT_COUNT+1):
             ep_view["ep%s" % i] = [''] * rows  # filling table with empty strings
 
-        for r in range(0, len(source_endpoint_defs.data['row'])):
+        for r in range(len(source_endpoint_defs.data['row'])):
             if r < ENDPOINT_COUNT:  # limiting UI to 10 columns since create a whole new table is very slow in Bokeh
                 key = source_endpoint_defs.data['label'][r]
                 ep_view["ep%s" % (r+1)] = source_endpoint_calcs.data[key]
@@ -1375,7 +1375,7 @@ def roi_viewer_mrn_ticker(attr, old, new):
         roi_viewer_roi5_select.value = ''
 
         options = []
-        for i in range(0, len(source_plans.data['mrn'])):
+        for i in range(len(source_plans.data['mrn'])):
             if source_plans.data['mrn'][i] == new:
                 options.append(source_plans.data['sim_study_date'][i])
         options.sort()
@@ -1393,7 +1393,7 @@ def roi_viewer_study_date_ticker(attr, old, new):
 def update_roi_viewer_uid():
     if roi_viewer_mrn_select.value != '':
         options = []
-        for i in range(0, len(source_plans.data['mrn'])):
+        for i in range(len(source_plans.data['mrn'])):
             if source_plans.data['mrn'][i] == roi_viewer_mrn_select.value and \
                             source_plans.data['sim_study_date'][i] == roi_viewer_study_date_select.value:
                 options.append(source_plans.data['uid'][i])
@@ -1674,7 +1674,7 @@ def mlc_analyzer_mrn_ticker(attr, old, new):
     else:
 
         options = []
-        for i in range(0, len(source_plans.data['mrn'])):
+        for i in range(len(source_plans.data['mrn'])):
             if source_plans.data['mrn'][i] == new:
                 options.append(source_plans.data['sim_study_date'][i])
         options.sort()
@@ -1692,7 +1692,7 @@ def mlc_analyzer_study_date_ticker(attr, old, new):
 def update_mlc_analyzer_uid():
     if mlc_analyzer_mrn_select.value != '':
         options = []
-        for i in range(0, len(source_plans.data['mrn'])):
+        for i in range(len(source_plans.data['mrn'])):
             if source_plans.data['mrn'][i] == mlc_analyzer_mrn_select.value and \
                             source_plans.data['sim_study_date'][i] == mlc_analyzer_study_date_select.value:
                 options.append(source_plans.data['uid'][i])
@@ -1715,7 +1715,7 @@ def mlc_analyzer_plan_ticker(attr, old, new):
     global mlc_data
     mlc_data = mlc_analyzer.Plan(new)
 
-    mlc_analyzer_fx_grp_select.options = [str(i + 1) for i in range(0, len(mlc_data.fx_group))]
+    mlc_analyzer_fx_grp_select.options = [str(i + 1) for i in range(len(mlc_data.fx_group))]
     if mlc_analyzer_fx_grp_select.value == mlc_analyzer_fx_grp_select.options[0]:
         update_mlc_analyzer_beam()
     else:
@@ -1755,7 +1755,7 @@ def update_mlc_analyzer_beam():
     beam_number = int(mlc_analyzer_beam_select.value.split(':')[0])
     beam = fx_grp.beam[beam_number-1]
     cp_count = beam.control_point_count
-    cp_numbers = [str(i + 1) for i in range(0, cp_count)]
+    cp_numbers = [str(i + 1) for i in range(cp_count)]
     mlc_analyzer_cp_select.options = cp_numbers
     if mlc_analyzer_cp_select.value == mlc_analyzer_cp_select.options[0]:
         update_mlc_viewer()
@@ -1879,16 +1879,16 @@ def rad_bio_apply():
     row_count = len(source_rad_bio.data['uid'])
 
     if rad_bio_apply_filter.active == [0, 1]:
-        include = [i for i in range(0, row_count)]
+        include = [i for i in range(row_count)]
     elif 0 in rad_bio_apply_filter.active:
-        include = [i for i in range(0, row_count) if source_rad_bio.data['group'][i] in {'Group 1', 'Group 1 & 2'}]
+        include = [i for i in range(row_count) if source_rad_bio.data['group'][i] in {'Group 1', 'Group 1 & 2'}]
     elif 1 in rad_bio_apply_filter.active:
-        include = [i for i in range(0, row_count) if source_rad_bio.data['group'][i] in {'Group 2', 'Group 1 & 2'}]
+        include = [i for i in range(row_count) if source_rad_bio.data['group'][i] in {'Group 2', 'Group 1 & 2'}]
     else:
         include = []
 
     if 2 in rad_bio_apply_filter.active:
-        include.extend([i for i in range(0, row_count) if i in source_rad_bio.selected['1d']['indices']])
+        include.extend([i for i in range(row_count) if i in source_rad_bio.selected['1d']['indices']])
 
     try:
         new_eud_a = float(rad_bio_eud_a_input.value)
@@ -1903,9 +1903,9 @@ def rad_bio_apply():
     except:
         new_td_tcd = 1.
 
-    patch = {'eud_a': [(i, new_eud_a) for i in range(0, row_count) if i in include],
-             'gamma_50': [(i, new_gamma_50) for i in range(0, row_count) if i in include],
-             'td_tcd': [(i, new_td_tcd) for i in range(0, row_count) if i in include]}
+    patch = {'eud_a': [(i, new_eud_a) for i in range(row_count) if i in include],
+             'gamma_50': [(i, new_gamma_50) for i in range(row_count) if i in include],
+             'td_tcd': [(i, new_td_tcd) for i in range(row_count) if i in include]}
 
     source_rad_bio.patch(patch)
 
@@ -1964,7 +1964,7 @@ def update_correlation():
 
         if table in {'DVHs'}:
             uids_dvh_1, mrns_dvh_1, data_dvh_1, uids_dvh_2, mrns_dvh_2, data_dvh_2 = [], [], [], [], [], []
-            for i in range(0, len(src.data['uid'])):
+            for i in range(len(src.data['uid'])):
                 if include[i]:
                     if src.data['group'][i] in {'Group 1', 'Group 1 & 2'}:
                         uids_dvh_1.append(src.data['uid'][i])
@@ -1989,7 +1989,7 @@ def update_correlation():
 
         if table in {'Plans'}:
             uids_plans_1, mrns_plans_1, data_plans_1 = [], [], []
-            for i in range(0, len(uid_list_1)):
+            for i in range(len(uid_list_1)):
                 uid = uid_list_1[i]
                 uid_index = src.data['uid'].index(uid)
                 mrn = src.data['mrn'][uid_index]
@@ -1999,7 +1999,7 @@ def update_correlation():
                 data_plans_1.append(plan_value)
 
             uids_plans_2, mrns_plans_2, data_plans_2 = [], [], []
-            for i in range(0, len(uid_list_2)):
+            for i in range(len(uid_list_2)):
                 uid = uid_list_2[i]
                 uid_index = src.data['uid'].index(uid)
                 mrn = src.data['mrn'][uid_index]
@@ -2021,7 +2021,7 @@ def update_correlation():
         if table in {'Beams'}:
             beam_data_1 = {'min': [], 'mean': [], 'median': [], 'max': [], 'uid': [], 'mrn': []}
             beam_data_2 = {'min': [], 'mean': [], 'median': [], 'max': [], 'uid': [], 'mrn': []}
-            for i in range(0, len(uid_list_1)):
+            for i in range(len(uid_list_1)):
                 uid = uid_list_1[i]
                 uid_indices = [j for j, x in enumerate(src.data['uid']) if x == uid]
                 plan_values = [src.data[curr_var][j] for j in uid_indices]
@@ -2034,7 +2034,7 @@ def update_correlation():
                 beam_data_1['uid'].append(uid)
                 beam_data_1['mrn'].append(mrn)
 
-            for i in range(0, len(uid_list_2)):
+            for i in range(len(uid_list_2)):
                 uid = uid_list_2[i]
                 uid_indices = [j for j, x in enumerate(src.data['uid']) if x == uid]
                 plan_values = [src.data[curr_var][j] for j in uid_indices]
@@ -2081,13 +2081,13 @@ def update_endpoints_in_correlation():
                 correlation_2.pop(key, None)
 
     src = source_endpoint_calcs
-    for j in range(0, len(source_endpoint_defs.data['label'])):
+    for j in range(len(source_endpoint_defs.data['label'])):
         key = source_endpoint_defs.data['label'][j]
         units = source_endpoint_defs.data['units_out'][j]
         ep = "DVH Endpoint: %s" % key
 
         uids_ep_1, mrns_ep_1, data_ep_1, uids_ep_2, mrns_ep_2, data_ep_2 = [], [], [], [], [], []
-        for i in range(0, len(src.data['uid'])):
+        for i in range(len(src.data['uid'])):
             if include[i]:
                 if src.data['group'][i] in {'Group 1', 'Group 1 & 2'}:
                     uids_ep_1.append(src.data['uid'][i])
@@ -2205,8 +2205,8 @@ def update_correlation_matrix():
                    'alpha': [], 'r': [], 'p': [], 'group': [], 'size': [], 'x_normality': [], 'y_normality': []}}
 
     max_size = 45
-    for x in range(0, categories_count):
-        for y in range(0, categories_count):
+    for x in range(categories_count):
+        for y in range(categories_count):
             if x != y:
                 data_to_enter = False
                 if x > y and correlation_1[categories[0]]['uid']:
@@ -2468,7 +2468,7 @@ def update_control_chart():
         x_values = []
         skipped = []
         colors = []
-        for v in range(0, len(y_source_values)):
+        for v in range(len(y_source_values)):
             uid = y_source_uids[v]
             try:
                 sim_study_dates_index = sim_study_dates_uids.index(uid)
@@ -2532,7 +2532,7 @@ def update_control_chart():
 
         y_values = []
         y_mrns = []
-        for v in range(0, len(y_source_values)):
+        for v in range(len(y_source_values)):
             if not skipped[v]:
                 y_values.append(y_source_values[v])
                 y_mrns.append(y_source_mrns[v])
@@ -2541,7 +2541,7 @@ def update_control_chart():
 
         sort_index = sorted(range(len(x_values)), key=lambda k: x_values[k])
         x_values_sorted, y_values_sorted, y_mrns_sorted, colors_sorted = [], [], [], []
-        for s in range(0, len(x_values)):
+        for s in range(len(x_values)):
             x_values_sorted.append(x_values[sort_index[s]])
             y_values_sorted.append(y_values[sort_index[s]])
             y_mrns_sorted.append(y_mrns[sort_index[s]])
@@ -2549,7 +2549,7 @@ def update_control_chart():
 
         source_time_1_data = {'x': [], 'y': [], 'mrn': [], 'date_str': []}
         source_time_2_data = {'x': [], 'y': [], 'mrn': [], 'date_str': []}
-        for i in range(0, len(x_values_sorted)):
+        for i in range(len(x_values_sorted)):
             if colors_sorted[i] in {GROUP_1_COLOR, GROUP_1_and_2_COLOR}:
                 source_time_1_data['x'].append(x_values_sorted[i])
                 source_time_1_data['y'].append(y_values_sorted[i])
@@ -2576,17 +2576,17 @@ def control_chart_update_trend():
         selected_indices_2 = source_time_2.selected['1d']['indices']
 
         if not selected_indices_1:
-            selected_indices_1 = range(0, len(source_time_1.data['x']))
+            selected_indices_1 = range(len(source_time_1.data['x']))
         if not selected_indices_2:
-            selected_indices_2 = range(0, len(source_time_2.data['x']))
+            selected_indices_2 = range(len(source_time_2.data['x']))
 
         group_1 = {'x': [], 'y': []}
         group_2 = {'x': [], 'y': []}
-        for i in range(0, len(source_time_1.data['x'])):
+        for i in range(len(source_time_1.data['x'])):
             if i in selected_indices_1:
                 group_1['x'].append(source_time_1.data['x'][i])
                 group_1['y'].append(source_time_1.data['y'][i])
-        for i in range(0, len(source_time_2.data['x'])):
+        for i in range(len(source_time_2.data['x'])):
             if i in selected_indices_2:
                 group_2['x'].append(source_time_2.data['x'][i])
                 group_2['y'].append(source_time_2.data['y'][i])
@@ -2758,7 +2758,7 @@ def multi_var_linear_regression():
     if current_dvh_group_1:
         x = []
         x_count = len(correlation_1[list(correlation_1)[0]]['data'])
-        for i in range(0, x_count):
+        for i in range(x_count):
             current_x = []
             for k in included_vars:
                 current_x.append(correlation_1[k]['data'][i])
@@ -2794,7 +2794,7 @@ def multi_var_linear_regression():
     if current_dvh_group_2:
         x = []
         x_count = len(correlation_2[list(correlation_2)[0]]['data'])
-        for i in range(0, x_count):
+        for i in range(x_count):
             current_x = []
             for k in included_vars:
                 current_x.append(correlation_2[k]['data'][i])
@@ -3008,7 +3008,7 @@ def validate_correlation():
                                             'uid': [],
                                             'data': [],
                                             'units': correlation_1[range_var]['units']}
-            for i in range(0, len(correlation_1[range_var]['data'])):
+            for i in range(len(correlation_1[range_var]['data'])):
                 current_uid = correlation_1[range_var]['uid'][i]
                 if current_uid not in bad_uid_1:
                     for j in {'mrn', 'uid', 'data'}:
@@ -3032,7 +3032,7 @@ def validate_correlation():
                                             'uid': [],
                                             'data': [],
                                             'units': correlation_2[range_var]['units']}
-            for i in range(0, len(correlation_2[range_var]['data'])):
+            for i in range(len(correlation_2[range_var]['data'])):
                 current_uid = correlation_2[range_var]['uid'][i]
                 if current_uid not in bad_uid_2:
                     for j in {'mrn', 'uid', 'data'}:

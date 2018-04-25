@@ -61,7 +61,7 @@ class Temp_DICOM_FileSet:
         dose_files = []
         study_uid_dose = []
 
-        for x in range(0, len(f)):
+        for x in range(len(f)):
             try:
                 dicom_file = dicom.read_file(f[x])
                 if dicom_file.Modality.lower() == 'rtplan':
@@ -78,14 +78,14 @@ class Temp_DICOM_FileSet:
 
         self.count = len(plan_files)
 
-        for a in range(0, self.count):
+        for a in range(self.count):
             self.plan.append(plan_files[a])
             self.mrn.append(dicom.read_file(plan_files[a]).PatientID)
             self.study_instance_uid.append(dicom.read_file(plan_files[a]).StudyInstanceUID)
-            for b in range(0, len(structure_files)):
+            for b in range(len(structure_files)):
                 if study_uid_plan[a] == study_uid_structure[b]:
                     self.structure.append(structure_files[b])
-            for c in range(0, len(dose_files)):
+            for c in range(len(dose_files)):
                 if study_uid_plan[a] == study_uid_dose[c]:
                     self.dose.append(dose_files[c])
 
@@ -119,7 +119,7 @@ def recalculate_ages(*custom_condition):
     dvh_data = QuerySQL('Plans', "mrn != ''" + custom_condition)
     cnx = DVH_SQL()
 
-    for i in range(0, len(dvh_data.mrn)):
+    for i in range(len(dvh_data.mrn)):
         mrn = dvh_data.mrn[i]
         uid = dvh_data.study_instance_uid[i]
         sim_study_date = dvh_data.sim_study_date[i].split('-')
@@ -161,7 +161,7 @@ def recalculate_total_mu(*custom_condition):
     cnx = DVH_SQL()
 
     plan_mus = {}
-    for i in range(0, len(beam_data.study_instance_uid)):
+    for i in range(len(beam_data.study_instance_uid)):
         uid = beam_data.study_instance_uid[i]
         beam_mu = beam_data.beam_mu[i]
         fxs = float(beam_data.fx_count[i])
@@ -400,7 +400,7 @@ def surface_area_of_roi(coord, coord_type='dicompyler'):
     z = shapely_roi['z']
     thickness = min(shapely_roi['thickness'])
 
-    for i in range(0, slice_count):
+    for i in range(slice_count):
         for j in [-1, 1]:  # -1 for bottom area and 1 for top area
             # ensure bottom of first slice and top of last slice are fully added
             # if prev/next slice is not adjacent, assume non-contiguous ROI
@@ -561,7 +561,7 @@ def get_union(rois):
                 xy = polygon.exterior.xy
                 x_coord, y_coord = xy[0], xy[1]
                 points = []
-                for i in range(0, len(x_coord)):
+                for i in range(len(x_coord)):
                     points.append([x_coord[i], y_coord[i], round(float(z), 2)])
                 new_roi[z].append(points)
 
@@ -570,7 +570,7 @@ def get_union(rois):
                         xy = interior.coords.xy
                         x_coord, y_coord = xy[0], xy[1]
                         points = []
-                        for i in range(0, len(x_coord)):
+                        for i in range(len(x_coord)):
                             points.append([x_coord[i], y_coord[i], round(float(z), 2)])
                         new_roi[z].append(points)
         else:

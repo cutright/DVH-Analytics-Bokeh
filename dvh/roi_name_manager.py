@@ -356,7 +356,7 @@ class DatabaseROIs:
         else:
             length = 1
 
-        for i in range(0, length):
+        for i in range(length):
             max_score = max(scores)
             index = scores.index(max_score)
             scores.pop(index)
@@ -501,7 +501,7 @@ def update_uncategorized_rois_in_database():
     dvh_data = QuerySQL('DVHs', "physician_roi = 'uncategorized'")
     cnx = DVH_SQL()
 
-    for i in range(0, len(dvh_data.roi_name)):
+    for i in range(len(dvh_data.roi_name)):
         uid = dvh_data.study_instance_uid[i]
         mrn = dvh_data.mrn[i]
         physician = get_physician_from_uid(uid)
@@ -524,7 +524,7 @@ def reinitialize_roi_categories_in_database():
     dvh_data = QuerySQL('DVHs', "mrn != ''")
     cnx = DVH_SQL()
 
-    for i in range(0, len(dvh_data.roi_name)):
+    for i in range(len(dvh_data.roi_name)):
         uid = dvh_data.study_instance_uid[i]
         physician = get_physician_from_uid(uid)
         roi_name = dvh_data.roi_name[i]
@@ -543,7 +543,7 @@ def reinitialize_roi_categories_in_database():
 def print_uncategorized_rois():
     dvh_data = QuerySQL('DVHs', "physician_roi = 'uncategorized'")
     print('physician, institutional_roi, physician_roi, roi_name')
-    for i in range(0, len(dvh_data.roi_name)):
+    for i in range(len(dvh_data.roi_name)):
         uid = dvh_data.study_instance_uid[i]
         physician = get_physician_from_uid(uid)
         roi_name = dvh_data.roi_name[i]

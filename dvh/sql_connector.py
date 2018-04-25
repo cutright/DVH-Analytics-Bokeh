@@ -109,7 +109,7 @@ class DVH_SQL:
             multi_ptv = True
         else:
             multi_ptv = False
-        for x in range(0, dvh_table.count):
+        for x in range(dvh_table.count):
             if multi_ptv and dvh_table.ptv_number[x] > 0:
                 dvh_table.roi_type[x] = 'PTV' + str(dvh_table.ptv_number[x])
             sql_input = [str(dvh_table.mrn[x]),
@@ -200,7 +200,7 @@ class DVH_SQL:
             os.remove(file_path)
 
         # Import each ROI from ROI_PyTable, append to output text file
-        for x in range(0, beams.count):
+        for x in range(beams.count):
 
             if beams.beam_mu[x] > 0:
                 sql_input = [str(beams.mrn[x]),
@@ -266,7 +266,7 @@ class DVH_SQL:
         if os.path.isfile(file_path):
             os.remove(file_path)
 
-        for x in range(0, rx_table.count):
+        for x in range(rx_table.count):
             sql_input = [str(rx_table.mrn[x]),
                          str(rx_table.study_instance_uid[x]),
                          str(rx_table.plan_name[x]).replace("'", "`"),
@@ -408,7 +408,7 @@ def write_import_errors(obj):
         for key, value in obj.__dict__.items():
             if not key.startswith("__"):
                 if type(value) == list:  # beams, rxs, and dvhs tables will be lists here
-                    for i in range(0, len(value)):
+                    for i in range(len(value)):
                         if getattr(obj, key)[i] == '(NULL)':
                             detail = "%s %s" % (detail_col[0], getattr(obj, detail_col[0])[i])
                             line = "%s %s: %s: %s is NULL\n" % (str(datetime.now()).split('.')[0],

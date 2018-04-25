@@ -57,7 +57,7 @@ class DVH:
         self.dvh = np.zeros([self.bin_count, self.count])
 
         # Get needed values not in DVHs table
-        for i in range(0, self.count):
+        for i in range(self.count):
             # Get Rx Doses
             condition = "mrn = '%s' and study_instance_uid = '%s'" % (self.mrn[i], self.study_instance_uid[i])
             rx_dose_cursor = cnx.query('Plans', 'rx_dose', condition)
@@ -89,9 +89,9 @@ class DVH:
         :rtype: list
         """
         doses = np.zeros(self.count)
-        for x in range(0, self.count):
+        for x in range(self.count):
             dvh = np.zeros(len(self.dvh))
-            for y in range(0, len(self.dvh)):
+            for y in range(len(self.dvh)):
                 dvh[y] = self.dvh[y][x]
             if volume_scale == 'relative':
                 doses[x] = dose_to_volume(dvh, volume)
@@ -120,10 +120,10 @@ class DVH:
         :rtype: list
         """
         volumes = np.zeros(self.count)
-        for x in range(0, self.count):
+        for x in range(self.count):
 
             dvh = np.zeros(len(self.dvh))
-            for y in range(0, len(self.dvh)):
+            for y in range(len(self.dvh)):
                 dvh[y] = self.dvh[y][x]
             if dose_scale == 'relative':
                 if isinstance(self.rx_dose[x], basestring):
@@ -148,7 +148,7 @@ class DVH:
         """
 
         answer = np.zeros(self.count)
-        for x in range(0, self.count):
+        for x in range(self.count):
             answer[x] = self.get_volume_of_dose(float(self.rx_dose[x] * rx_dose_fraction))
 
         return answer
@@ -226,7 +226,7 @@ class DVH:
 
         x1 = np.linspace(0, self.bin_count, self.bin_count)
         y2 = np.zeros([new_bin_count, self.count])
-        for i in range(0, self.count):
+        for i in range(self.count):
             x2 = np.multiply(np.linspace(0, new_bin_count, new_bin_count),
                              self.rx_dose[i] * 100. / RESAMPLED_DVH_BIN_COUNT)
             y2[:, i] = np.interp(x2, x1, self.dvh[:, i])
