@@ -76,6 +76,10 @@ TIME_SERIES_2_PATCH_ALPHA = 0.1
 HISTOGRAM_1_ALPHA = 0.3
 HISTOGRAM_2_ALPHA = 0.3
 
+# Default selections for teh correlation matrix
+CORRELATION_MATRIX_DEFAULTS_1 = list(range(20, 28)) + [29, 30]
+CORRELATION_MATRIX_DEFAULTS_2 = list(range(0, 3))
+
 # Options for the plot in the Multi-Variable Regression tab
 CORRELATION_1_CIRCLE_SIZE = 10
 CORRELATION_1_ALPHA = 0.5

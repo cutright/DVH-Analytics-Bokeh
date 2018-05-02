@@ -217,23 +217,6 @@ correlation_names.sort()
 multi_var_reg_var_names = correlation_names + ['EUD', 'NTCP/TCP']
 multi_var_reg_vars = {name: False for name in multi_var_reg_var_names}
 
-# The following block of code is a work-around for Bokeh 0.12.7 - 0.12.9 (current version)
-source.js_on_change('data', CustomJS(args=dict(source=source), code="source.change.emit()"))
-source_beams.js_on_change('data', CustomJS(args=dict(source=source_beams), code="source.change.emit()"))
-source_plans.js_on_change('data', CustomJS(args=dict(source=source_plans), code="source.change.emit()"))
-source_rxs.js_on_change('data', CustomJS(args=dict(source=source_rxs), code="source.change.emit()"))
-source_rad_bio.js_on_change('data', CustomJS(args=dict(source=source_rad_bio), code="source.change.emit()"))
-source_multi_var_include.js_on_change('data', CustomJS(args=dict(source=source_multi_var_include),
-                                                       code="source.change.emit()"))
-source_multi_var_coeff_results_1.js_on_change('data', CustomJS(args=dict(source=source_multi_var_coeff_results_1),
-                                                               code="source.change.emit()"))
-source_multi_var_coeff_results_2.js_on_change('data', CustomJS(args=dict(source=source_multi_var_coeff_results_2),
-                                                               code="source.change.emit()"))
-source_multi_var_model_results_1.js_on_change('data', CustomJS(args=dict(source=source_multi_var_model_results_1),
-                                                               code="source.change.emit()"))
-source_multi_var_model_results_2.js_on_change('data', CustomJS(args=dict(source=source_multi_var_model_results_2),
-                                                               code="source.change.emit()"))
-
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Functions for Querying by categorical data
@@ -1764,7 +1747,7 @@ def update_mlc_analyzer_beam():
 
 def mlc_analyzer_cp_ticker(attr, old, new):
     update_mlc_viewer()
-    source_mlc_summary.selected = Selection(indices=[int(mlc_analyzer_cp_select.value)-1])
+    source_mlc_summary.selected = Selection(indices=[int(new)-1])
 
 
 def update_mlc_viewer():
@@ -3106,9 +3089,9 @@ select_category = Select(value=SELECT_CATEGORY_DEFAULT, options=category_options
 select_category.on_change('value', select_category_ticker)
 
 # Min and max
-text_min = TextInput(value='', title='Min: ', width=180)
+text_min = TextInput(value='', title='Min: ', width=150)
 text_min.on_change('value', min_text_ticker)
-text_max = TextInput(value='', title='Max: ', width=180)
+text_max = TextInput(value='', title='Max: ', width=150)
 text_max.on_change('value', max_text_ticker)
 
 # Misc
@@ -3558,9 +3541,9 @@ corr_fig_text = Div(text="<b>Sample Sizes</b>", width=100)
 corr_fig_text_1 = Div(text="Group 1:", width=110)
 corr_fig_text_2 = Div(text="Group 2:", width=110)
 
-corr_fig_include = CheckboxGroup(labels=correlation_names, active=[])
+corr_fig_include = CheckboxGroup(labels=correlation_names, active=CORRELATION_MATRIX_DEFAULTS_1)
 corr_fig_include_2 = CheckboxGroup(labels=['DVH Endpoints', 'EUD', 'NTCP / TCP'],
-                                   active=[])
+                                   active=CORRELATION_MATRIX_DEFAULTS_2)
 corr_fig_include.on_change('active', corr_fig_include_ticker)
 corr_fig_include_2.on_change('active', corr_fig_include_ticker)
 
@@ -3866,7 +3849,7 @@ mlc_analyzer_uid_select = Select(value='', options=[''], width=400, title='Study
 mlc_analyzer_plan_select = Select(value='', options=[''], width=200, title='Plan')
 mlc_analyzer_fx_grp_select = Select(value='', options=[''], width=200, title='Fx Group')
 mlc_analyzer_beam_select = Select(value='', options=[''], width=200, title='Beam')
-mlc_analyzer_cp_select = Select(value='', options=[''], width=200, title='Control Point')
+mlc_analyzer_cp_select = Select(value='', options=[''], width=50, title='CP')
 
 mlc_analyzer_mrn_select.on_change('value', mlc_analyzer_mrn_ticker)
 mlc_analyzer_study_date_select.on_change('value', mlc_analyzer_study_date_ticker)
@@ -3910,6 +3893,7 @@ columns = [TableColumn(field="cp", title="CP"),
            TableColumn(field="cmp_score", title="Score", formatter=NumberFormatter(format="0.000"))]
 mlc_viewer_data_table = DataTable(source=source_mlc_summary, columns=columns,
                                   editable=False, width=700, height=425)
+mlc_viewer_data_table.index_position = None
 
 mlc_viewer_previous_cp.on_click(mlc_viewer_go_to_previous_cp)
 mlc_viewer_next_cp.on_click(mlc_viewer_go_to_next_cp)
@@ -3934,7 +3918,8 @@ layout_query = column(row(custom_title_query_blue, Spacer(width=50), custom_titl
                       div_selector_end,
                       div_range,
                       add_range_row_button,
-                      row(range_row, Spacer(width=10), select_category, text_min, text_max, group_range,
+                      row(range_row, Spacer(width=10), select_category, text_min, Spacer(width=30),
+                          text_max, Spacer(width=30), group_range,
                           delete_range_row_button, Spacer(width=10), range_not_operator_checkbox),
                       range_filter_data_table)
 
@@ -4020,8 +4005,8 @@ layout_regression = column(row(custom_title_regression_blue, Spacer(width=50), c
                            Spacer(width=1000, height=100))
 
 layout_mlc_analyzer = column(row(custom_title_mlc_analyzer_blue, Spacer(width=50), custom_title_mlc_analyzer_red),
-                             row(mlc_analyzer_mrn_select, mlc_analyzer_study_date_select, mlc_analyzer_uid_select,
-                                 mlc_analyzer_plan_select),
+                             row(mlc_analyzer_mrn_select, mlc_analyzer_study_date_select, mlc_analyzer_uid_select),
+                             row(mlc_analyzer_plan_select),
                              Div(text="<hr>", width=800),
                              row(mlc_analyzer_fx_grp_select, mlc_analyzer_beam_select,
                                  mlc_viewer_previous_cp, mlc_viewer_next_cp,
