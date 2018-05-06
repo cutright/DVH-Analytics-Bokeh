@@ -1296,7 +1296,7 @@ def update_endpoint_view():
             ep_view["ep%s" % i] = [''] * rows  # filling table with empty strings
 
         for r in range(len(source_endpoint_defs.data['row'])):
-            if r < ENDPOINT_COUNT:  # limiting UI to 10 columns since create a whole new table is very slow in Bokeh
+            if r < ENDPOINT_COUNT:  # limiting UI to ENDPOINT_COUNT columns since create a whole new table is very slow in Bokeh
                 key = source_endpoint_defs.data['label'][r]
                 ep_view["ep%s" % (r+1)] = source_endpoint_calcs.data[key]
 
@@ -3020,6 +3020,36 @@ def validate_correlation():
         correlation_2 = new_correlation_2
 
 
+def update_planning_data_selections(uids):
+    global ALLOW_SOURCE_UPDATE
+
+    ALLOW_SOURCE_UPDATE = False
+
+    source_rxs.selected = Selection(indices=[i for i, j in enumerate(source_rxs.data['uid']) if j in uids])
+    source_plans.selected = Selection(indices=[i for i, j in enumerate(source_plans.data['uid']) if j in uids])
+    source_beams.selected = Selection(indices=[i for i, j in enumerate(source_beams.data['uid']) if j in uids])
+
+    ALLOW_SOURCE_UPDATE = True
+
+
+def source_rxs_selected_ticker(attr, old, new):
+    if ALLOW_SOURCE_UPDATE:
+        uids = list(set([source_rxs.data['uid'][i] for i in new.indices]))
+        update_planning_data_selections(uids)
+
+
+def source_plans_selected_ticker(attr, old, new):
+    if ALLOW_SOURCE_UPDATE:
+        uids = list(set([source_plans.data['uid'][i] for i in new.indices]))
+        update_planning_data_selections(uids)
+
+
+def source_beams_selected_ticker(attr, old, new):
+    if ALLOW_SOURCE_UPDATE:
+        uids = list(set([source_beams.data['uid'][i] for i in new.indices]))
+        update_planning_data_selections(uids)
+
+
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Selection Filter UI objects
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3262,19 +3292,13 @@ data_table.index_position = None
 endpoint_table_title = Div(text="<b>DVH Endpoints</b>", width=1200)
 columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="group", title="Group", width=175),
-           TableColumn(field="roi_name", title="ROI Name"),
-           TableColumn(field="ep1", title="ep1", width=100, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="ep2", title="ep2", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="ep3", title="ep3", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="ep4", title="ep4", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="ep5", title="ep5", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="ep6", title="ep6", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="ep7", title="ep7", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="ep8", title="ep8", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="ep9", title="ep9", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="ep10", title="ep10", width=80, formatter=NumberFormatter(format="0.00"))]
-data_table_endpoints = DataTable(source=source_endpoint_view, columns=columns, width=1200,
-                                 editable=True)
+           TableColumn(field="roi_name", title="ROI Name")]
+for i in range(ENDPOINT_COUNT):
+    columns.append(TableColumn(field="ep%s" % (i+1),
+                               title="ep%s" % (i+1),
+                               width=80,
+                               formatter=NumberFormatter(format="0.00")))
+data_table_endpoints = DataTable(source=source_endpoint_view, columns=columns, width=1200, editable=True)
 data_table_endpoints.index_position = None
 
 source_endpoint_view.on_change('selected', update_dvh_table_selection)
@@ -3327,6 +3351,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=105),
            TableColumn(field="couch_max", title="Max", width=80, formatter=NumberFormatter(format="0.0"))]
 data_table_beams2 = DataTable(source=source_beams, columns=columns, width=1300, editable=True)
 data_table_beams2.index_position = None
+source_beams.on_change('selected', source_beams_selected_ticker)
 
 # Set up Plans DataTable
 plans_table_title = Div(text="<b>Plans</b>", width=1200)
@@ -3348,6 +3373,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=420),
            TableColumn(field="baseline", title="Baseline")]
 data_table_plans = DataTable(source=source_plans, columns=columns, width=1300, editable=True)
 data_table_plans.index_position = None
+source_plans.on_change('selected', source_plans_selected_ticker)
 
 # Set up Rxs DataTable
 rxs_table_title = Div(text="<b>Rxs</b>", width=1000)
@@ -3365,6 +3391,7 @@ columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="normalization_object", title="Norm Object")]
 data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1300, editable=True)
 data_table_rxs.index_position = None
+source_rxs.on_change('selected', source_rxs_selected_ticker)
 
 # Control Chart layout
 tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
@@ -3932,7 +3959,8 @@ layout_dvhs = column(row(custom_title_dvhs_blue, Spacer(width=50), custom_title_
                      div_endpoint_start,
                      div_endpoint,
                      add_endpoint_row_button,
-                     row(ep_row, Spacer(width=10), select_ep_type, ep_text_input, ep_units_in, delete_ep_row_button),
+                     row(ep_row, Spacer(width=10), select_ep_type, ep_text_input, Spacer(width=20),
+                         ep_units_in, delete_ep_row_button),
                      ep_data_table,
                      endpoint_table_title,
                      data_table_endpoints)
