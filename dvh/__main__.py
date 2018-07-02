@@ -44,15 +44,15 @@ def test_import_sql_cnx_definitions():
     if not is_import_settings_defined() and not is_sql_connection_defined():
         print("ERROR: Import and SQL settings are not yet defined.",
               "Please run:\n",
-              "    $ python start.py settings_simple", sep='')
+              "    $ dvh settings_simple", sep='')
     elif not is_import_settings_defined():
         print("ERROR: Import settings are not yet defined.",
               "Please run:\n",
-              "    $ python start.py settings_simple --dir", sep='')
+              "    $ dvh settings_simple --dir", sep='')
     elif not is_sql_connection_defined():
         print("ERROR: Invalid or empty SQL settings.",
               "Please run:\n",
-              "    $ python start.py settings_simple --sql", sep='')
+              "    $ dvh settings_simple --sql", sep='')
     else:
         return True
 
@@ -60,21 +60,20 @@ def test_import_sql_cnx_definitions():
 
 
 def test_dvh_code():
-
     if test_import_sql_cnx_definitions():
         is_import_valid = validate_import_settings()
         is_sql_connection_valid = validate_sql_connection()
         if not is_import_valid and not is_sql_connection_valid:
             print("ERROR: Create the directories listed above or input valid directories.\n",
                   "ERROR: Cannot connect to SQL.\n",
-                  "Please run:\n    $ python start.py settings", sep='')
+                  "Please run:\n    $ dvh settings", sep='')
         elif not is_import_valid:
             print("ERROR: Create the directories listed above or input valid directories by running:\n",
-                  "    $ python start.py settings --dir", sep='')
+                  "    $ dvh settings --dir", sep='')
         elif not is_sql_connection_valid:
             print("ERROR: Cannot connect to SQL.\n",
                   "Verify database is active and/or update SQL connection information with:\n",
-                  "    $ python start.py settings --sql", sep='')
+                  "    $ dvh settings --sql", sep='')
 
         else:
             print("Importing test files")
