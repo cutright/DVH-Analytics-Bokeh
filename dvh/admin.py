@@ -1101,7 +1101,7 @@ def update_baseline_status_ticker(attr, old, new):
 
 
 def source_selection_ticker(attr, old, new):
-    index = baseline_source.selected['1d']['indices'][0]
+    index = baseline_source.selected.indices[0]
     mrn = baseline_source.data['mrn'][index]
     date = baseline_source.data['sim_study_date'][index]
     uid = baseline_source.data['study_instance_uid'][index]

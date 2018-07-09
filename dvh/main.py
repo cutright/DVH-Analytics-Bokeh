@@ -20,7 +20,7 @@ import itertools
 from datetime import datetime
 from os.path import dirname, join
 from bokeh.layouts import column, row
-from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider, Spacer, Range1d
+from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider, Spacer, Range1d, Selection
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
@@ -217,23 +217,6 @@ correlation_names.sort()
 multi_var_reg_var_names = correlation_names + ['EUD', 'NTCP/TCP']
 multi_var_reg_vars = {name: False for name in multi_var_reg_var_names}
 
-# The following block of code is a work-around for Bokeh 0.12.7 - 0.12.9 (current version)
-source.js_on_change('data', CustomJS(args=dict(source=source), code="source.change.emit()"))
-source_beams.js_on_change('data', CustomJS(args=dict(source=source_beams), code="source.change.emit()"))
-source_plans.js_on_change('data', CustomJS(args=dict(source=source_plans), code="source.change.emit()"))
-source_rxs.js_on_change('data', CustomJS(args=dict(source=source_rxs), code="source.change.emit()"))
-source_rad_bio.js_on_change('data', CustomJS(args=dict(source=source_rad_bio), code="source.change.emit()"))
-source_multi_var_include.js_on_change('data', CustomJS(args=dict(source=source_multi_var_include),
-                                                       code="source.change.emit()"))
-source_multi_var_coeff_results_1.js_on_change('data', CustomJS(args=dict(source=source_multi_var_coeff_results_1),
-                                                               code="source.change.emit()"))
-source_multi_var_coeff_results_2.js_on_change('data', CustomJS(args=dict(source=source_multi_var_coeff_results_2),
-                                                               code="source.change.emit()"))
-source_multi_var_model_results_1.js_on_change('data', CustomJS(args=dict(source=source_multi_var_model_results_1),
-                                                               code="source.change.emit()"))
-source_multi_var_model_results_2.js_on_change('data', CustomJS(args=dict(source=source_multi_var_model_results_2),
-                                                               code="source.change.emit()"))
-
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Functions for Querying by categorical data
@@ -322,8 +305,8 @@ def selector_row_ticker(attr, old, new):
 
 
 def update_selector_row_on_selection(attr, old, new):
-    if new['1d']['indices']:
-        selector_row.value = selector_row.options[min(new['1d']['indices'])]
+    if new:
+        selector_row.value = selector_row.options[min(new)]
 
 
 def delete_selector_row():
@@ -534,14 +517,12 @@ def ensure_range_group_is_assigned(attrname, old, new):
 
 
 def update_range_row_on_selection(attr, old, new):
-    if new['1d']['indices']:
-        range_row.value = range_row.options[min(new['1d']['indices'])]
+    if new:
+        range_row.value = range_row.options[min(new)]
 
 
 def clear_source_selection(src):
-    src.selected = {'0d': {'glyph': None, 'indices': []},
-                    '1d': {'indices': []},
-                    '2d': {'indices': {}}}
+    src.selected.indices = []
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -666,9 +647,9 @@ def update_ep_row_on_selection(attr, old, new):
     global ALLOW_SOURCE_UPDATE
     ALLOW_SOURCE_UPDATE = False
 
-    if new['1d']['indices']:
+    if new:
         data = source_endpoint_defs.data
-        r = min(new['1d']['indices'])
+        r = min(new)
 
         # update row
         ep_row.value = ep_row.options[r]
@@ -1315,7 +1296,7 @@ def update_endpoint_view():
             ep_view["ep%s" % i] = [''] * rows  # filling table with empty strings
 
         for r in range(len(source_endpoint_defs.data['row'])):
-            if r < ENDPOINT_COUNT:  # limiting UI to 10 columns since create a whole new table is very slow in Bokeh
+            if r < ENDPOINT_COUNT:  # limiting UI to ENDPOINT_COUNT columns since create a whole new table is very slow in Bokeh
                 key = source_endpoint_defs.data['label'][r]
                 ep_view["ep%s" % (r+1)] = source_endpoint_calcs.data[key]
 
@@ -1766,9 +1747,7 @@ def update_mlc_analyzer_beam():
 
 def mlc_analyzer_cp_ticker(attr, old, new):
     update_mlc_viewer()
-    source_mlc_summary.selected = {'0d': {'glyph': None, 'indices': []},
-                                   '1d': {'indices': [int(mlc_analyzer_cp_select.value)-1]},
-                                   '2d': {'indices': {}}}
+    source_mlc_summary.selected = Selection(indices=[int(new)-1])
 
 
 def update_mlc_viewer():
@@ -1815,8 +1794,8 @@ def mlc_viewer_play():
 
 
 def update_cp_on_selection(attr, old, new):
-    if new['1d']['indices']:
-        mlc_analyzer_cp_select.value = mlc_analyzer_cp_select.options[min(new['1d']['indices'])]
+    if new:
+        mlc_analyzer_cp_select.value = mlc_analyzer_cp_select.options[min(new)]
 
 
 def get_include_map():
@@ -1888,7 +1867,7 @@ def rad_bio_apply():
         include = []
 
     if 2 in rad_bio_apply_filter.active:
-        include.extend([i for i in range(row_count) if i in source_rad_bio.selected['1d']['indices']])
+        include.extend([i for i in range(row_count) if i in source_rad_bio.selected.indices])
 
     try:
         new_eud_a = float(rad_bio_eud_a_input.value)
@@ -1941,10 +1920,11 @@ def update_eud():
 
 
 def emami_selection(attr, old, new):
-    row_index = source_emami.selected['1d']['indices'][0]
-    rad_bio_eud_a_input.value = str(source_emami.data['eud_a'][row_index])
-    rad_bio_gamma_50_input.value = str(source_emami.data['gamma_50'][row_index])
-    rad_bio_td_tcd_input.value = str(source_emami.data['td_tcd'][row_index])
+    if new:
+        row_index = min(new)
+        rad_bio_eud_a_input.value = str(source_emami.data['eud_a'][row_index])
+        rad_bio_gamma_50_input.value = str(source_emami.data['gamma_50'][row_index])
+        rad_bio_td_tcd_input.value = str(source_emami.data['td_tcd'][row_index])
 
 
 def update_correlation():
@@ -2436,7 +2416,6 @@ def update_control_chart_y_axis_label():
 def update_control_chart():
     new = str(control_chart_y.value)
     if new:
-
         clear_source_selection(source_time_1)
         clear_source_selection(source_time_2)
 
@@ -2572,8 +2551,8 @@ def update_control_chart():
 
 def control_chart_update_trend():
     if control_chart_y.value:
-        selected_indices_1 = source_time_1.selected['1d']['indices']
-        selected_indices_2 = source_time_2.selected['1d']['indices']
+        selected_indices_1 = source_time_1.selected.indices
+        selected_indices_2 = source_time_2.selected.indices
 
         if not selected_indices_1:
             selected_indices_1 = range(len(source_time_1.data['x']))
@@ -2827,17 +2806,17 @@ def multi_var_linear_regression():
 
 
 def multi_var_include_selection(attr, old, new):
-    row_index = source_multi_var_include.selected['1d']['indices'][0]
+    row_index = source_multi_var_include.selected.indices[0]
     corr_chart_x.value = source_multi_var_include.data['var_name'][row_index]
 
 
 def update_source_endpoint_view_selection(attr, old, new):
-    if new['1d']['indices']:
+    if new:
         source_endpoint_view.selected = new
 
 
 def update_dvh_table_selection(attr, old, new):
-    if new['1d']['indices']:
+    if new:
         source.selected = new
 
 
@@ -3041,6 +3020,36 @@ def validate_correlation():
         correlation_2 = new_correlation_2
 
 
+def update_planning_data_selections(uids):
+    global ALLOW_SOURCE_UPDATE
+
+    ALLOW_SOURCE_UPDATE = False
+
+    source_rxs.selected = Selection(indices=[i for i, j in enumerate(source_rxs.data['uid']) if j in uids])
+    source_plans.selected = Selection(indices=[i for i, j in enumerate(source_plans.data['uid']) if j in uids])
+    source_beams.selected = Selection(indices=[i for i, j in enumerate(source_beams.data['uid']) if j in uids])
+
+    ALLOW_SOURCE_UPDATE = True
+
+
+def source_rxs_selected_ticker(attr, old, new):
+    if ALLOW_SOURCE_UPDATE:
+        uids = list(set([source_rxs.data['uid'][i] for i in new]))
+        update_planning_data_selections(uids)
+
+
+def source_plans_selected_ticker(attr, old, new):
+    if ALLOW_SOURCE_UPDATE:
+        uids = list(set([source_plans.data['uid'][i] for i in new]))
+        update_planning_data_selections(uids)
+
+
+def source_beams_selected_ticker(attr, old, new):
+    if ALLOW_SOURCE_UPDATE:
+        uids = list(set([source_beams.data['uid'][i] for i in new]))
+        update_planning_data_selections(uids)
+
+
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Selection Filter UI objects
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3084,8 +3093,9 @@ columns = [TableColumn(field="row", title="Row", width=60),
            TableColumn(field="group_label", title="Group", width=170),
            TableColumn(field="not_status", title="Apply Not Operator", width=150)]
 selection_filter_data_table = DataTable(source=source_selectors,
-                                        columns=columns, width=1000, height=150, row_headers=False)
-source_selectors.on_change('selected', update_selector_row_on_selection)
+                                        columns=columns, width=1000, height=150)
+selection_filter_data_table.index_position = None
+source_selectors.selected.on_change('indices', update_selector_row_on_selection)
 update_selector_source()
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3109,9 +3119,9 @@ select_category = Select(value=SELECT_CATEGORY_DEFAULT, options=category_options
 select_category.on_change('value', select_category_ticker)
 
 # Min and max
-text_min = TextInput(value='', title='Min: ', width=180)
+text_min = TextInput(value='', title='Min: ', width=150)
 text_min.on_change('value', min_text_ticker)
-text_max = TextInput(value='', title='Max: ', width=180)
+text_max = TextInput(value='', title='Max: ', width=150)
 text_max.on_change('value', max_text_ticker)
 
 # Misc
@@ -3130,8 +3140,9 @@ columns = [TableColumn(field="row", title="Row", width=60),
            TableColumn(field="group_label", title="Group", width=180),
            TableColumn(field="not_status", title="Apply Not Operator", width=150)]
 range_filter_data_table = DataTable(source=source_ranges,
-                                    columns=columns, width=1000, height=150, row_headers=False)
-source_ranges.on_change('selected', update_range_row_on_selection)
+                                    columns=columns, width=1000, height=150)
+range_filter_data_table.index_position = None
+source_ranges.selected.on_change('indices', update_range_row_on_selection)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # DVH Endpoint Filter UI objects
@@ -3158,9 +3169,9 @@ div_endpoint_start = Div(text="<hr>", width=1050)
 columns = [TableColumn(field="row", title="Row", width=60),
            TableColumn(field="label", title="Endpoint", width=180),
            TableColumn(field="units_out", title="Units", width=60)]
-ep_data_table = DataTable(source=source_endpoint_defs, columns=columns, width=300, height=150, row_headers=False)
+ep_data_table = DataTable(source=source_endpoint_defs, columns=columns, width=300, height=150)
 
-source_endpoint_defs.on_change('selected', update_ep_row_on_selection)
+source_endpoint_defs.selected.on_change('indices', update_ep_row_on_selection)
 
 query_button = Button(label="Query", button_type="success", width=100)
 query_button.on_click(update_data)
@@ -3274,25 +3285,23 @@ columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="dist_to_ptv_min", title="Dist to PTV", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="ptv_overlap", title="PTV Overlap", width=80, formatter=NumberFormatter(format="0.0"))]
 data_table = DataTable(source=source, columns=columns, width=1200, editable=True)
-source.on_change('selected', update_source_endpoint_view_selection)
+source.selected.on_change('indices', update_source_endpoint_view_selection)
+data_table.index_position = None
 
 # Set up EndPoint DataTable
 endpoint_table_title = Div(text="<b>DVH Endpoints</b>", width=1200)
 columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="group", title="Group", width=175),
-           TableColumn(field="roi_name", title="ROI Name"),
-           TableColumn(field="ep1", title="ep1", width=100, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="ep2", title="ep2", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="ep3", title="ep3", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="ep4", title="ep4", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="ep5", title="ep5", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="ep6", title="ep6", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="ep7", title="ep7", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="ep8", title="ep8", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="ep9", title="ep9", width=80, formatter=NumberFormatter(format="0.00")),
-           TableColumn(field="ep10", title="ep10", width=80, formatter=NumberFormatter(format="0.00"))]
+           TableColumn(field="roi_name", title="ROI Name")]
+for i in range(ENDPOINT_COUNT):
+    columns.append(TableColumn(field="ep%s" % (i+1),
+                               title="ep%s" % (i+1),
+                               width=80,
+                               formatter=NumberFormatter(format="0.00")))
 data_table_endpoints = DataTable(source=source_endpoint_view, columns=columns, width=1200, editable=True)
-source_endpoint_view.on_change('selected', update_dvh_table_selection)
+data_table_endpoints.index_position = None
+
+source_endpoint_view.selected.on_change('indices', update_dvh_table_selection)
 
 # Set up Beams DataTable
 beam_table_title = Div(text="<b>Beams</b>", width=1500)
@@ -3317,6 +3326,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=105),
            TableColumn(field="ssd", title="SSD", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="treatment_machine", title="Tx Machine", width=80)]
 data_table_beams = DataTable(source=source_beams, columns=columns, width=1300, editable=True)
+data_table_beams.index_position = None
 beam_table_title2 = Div(text="<b>Beams Continued</b>", width=1500)
 columns = [TableColumn(field="mrn", title="MRN", width=105),
            TableColumn(field="group", title="Group", width=230),
@@ -3340,6 +3350,8 @@ columns = [TableColumn(field="mrn", title="MRN", width=105),
            TableColumn(field="couch_min", title="Min", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="couch_max", title="Max", width=80, formatter=NumberFormatter(format="0.0"))]
 data_table_beams2 = DataTable(source=source_beams, columns=columns, width=1300, editable=True)
+data_table_beams2.index_position = None
+source_beams.selected.on_change('indices', source_beams_selected_ticker)
 
 # Set up Plans DataTable
 plans_table_title = Div(text="<b>Plans</b>", width=1200)
@@ -3360,6 +3372,8 @@ columns = [TableColumn(field="mrn", title="MRN", width=420),
            TableColumn(field="tx_site", title="Tx Site"),
            TableColumn(field="baseline", title="Baseline")]
 data_table_plans = DataTable(source=source_plans, columns=columns, width=1300, editable=True)
+data_table_plans.index_position = None
+source_plans.selected.on_change('indices', source_plans_selected_ticker)
 
 # Set up Rxs DataTable
 rxs_table_title = Div(text="<b>Rxs</b>", width=1000)
@@ -3376,7 +3390,8 @@ columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="normalization_method", title="Norm Method"),
            TableColumn(field="normalization_object", title="Norm Object")]
 data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1300, editable=True)
-
+data_table_rxs.index_position = None
+source_rxs.selected.on_change('indices', source_rxs_selected_ticker)
 
 # Control Chart layout
 tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
@@ -3553,9 +3568,9 @@ corr_fig_text = Div(text="<b>Sample Sizes</b>", width=100)
 corr_fig_text_1 = Div(text="Group 1:", width=110)
 corr_fig_text_2 = Div(text="Group 2:", width=110)
 
-corr_fig_include = CheckboxGroup(labels=correlation_names, active=[])
+corr_fig_include = CheckboxGroup(labels=correlation_names, active=CORRELATION_MATRIX_DEFAULTS_1)
 corr_fig_include_2 = CheckboxGroup(labels=['DVH Endpoints', 'EUD', 'NTCP / TCP'],
-                                   active=[])
+                                   active=CORRELATION_MATRIX_DEFAULTS_2)
 corr_fig_include.on_change('active', corr_fig_include_ticker)
 corr_fig_include_2.on_change('active', corr_fig_include_ticker)
 
@@ -3632,11 +3647,13 @@ columns = [TableColumn(field="stat", title="Single-Var Regression", width=100),
            TableColumn(field="group_1", title="Group 1", width=60),
            TableColumn(field="group_2", title="Group 2", width=60)]
 data_table_corr_chart = DataTable(source=source_corr_chart_stats, columns=columns, editable=True,
-                                  height=180, width=300, row_headers=False)
+                                  height=180, width=300)
+data_table_corr_chart.index_position = None
 
 columns = [TableColumn(field="var_name", title="Variables for Multi-Var Regression", width=100)]
 data_table_multi_var_include = DataTable(source=source_multi_var_include, columns=columns,
-                                         height=175, width=275, row_headers=False)
+                                         height=175, width=275)
+data_table_multi_var_include.index_position = None
 
 div_horizontal_bar_2 = Div(text="<hr>", width=1050)
 
@@ -3645,26 +3662,28 @@ columns = [TableColumn(field="var_name", title="Independent Variable", width=300
            TableColumn(field="coeff_str", title="coefficient",  width=150),
            TableColumn(field="p_str", title="p-value", width=150)]
 data_table_multi_var_model_1 = DataTable(source=source_multi_var_coeff_results_1, columns=columns, editable=True,
-                                         height=200, row_headers=False)
+                                         height=200)
+data_table_multi_var_model_1.index_position = None
 columns = [TableColumn(field="y_var", title="Dependent Variable", width=150),
            TableColumn(field="r_sq_str", title="R-squared", width=150),
            TableColumn(field="model_p_str", title="Prob for F-statistic", width=150)]
 data_table_multi_var_coeff_1 = DataTable(source=source_multi_var_model_results_1, columns=columns, editable=True,
-                                         height=60, row_headers=False)
+                                         height=60)
+data_table_multi_var_coeff_1.index_position = None
 
 multi_var_text_2 = Div(text="<b>Group 2</b>", width=500)
 columns = [TableColumn(field="var_name", title="Independent Variable", width=300),
            TableColumn(field="coeff_str", title="coefficient",  width=150),
            TableColumn(field="p_str", title="p-value", width=150)]
 data_table_multi_var_model_2 = DataTable(source=source_multi_var_coeff_results_2, columns=columns, editable=True,
-                                         height=200, row_headers=False)
+                                         height=200)
 columns = [TableColumn(field="y_var", title="Dependent Variable", width=150),
            TableColumn(field="r_sq_str", title="R-squared", width=150),
            TableColumn(field="model_p_str", title="Prob for F-statistic", width=150)]
 data_table_multi_var_coeff_2 = DataTable(source=source_multi_var_model_results_2, columns=columns, editable=True,
-                                         height=60, row_headers=False)
+                                         height=60)
 
-source_multi_var_include.on_change('selected', multi_var_include_selection)
+source_multi_var_include.selected.on_change('indices', multi_var_include_selection)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Custom group titles
@@ -3773,7 +3792,7 @@ columns = [TableColumn(field="roi", title="Structure", width=150),
            TableColumn(field="gamma_50", title=u"\u03b3_50", width=75),
            TableColumn(field="td_tcd", title="TD_50", width=150)]
 data_table_emami = DataTable(source=source_emami, columns=columns, editable=False, width=1100)
-source_emami.on_change('selected', emami_selection)
+source_emami.selected.on_change('indices', emami_selection)
 emami_text = Div(text="<b>Published EUD Parameters from Emami et. al. for 1.8-2.0Gy fractions</b> (Click to apply)",
                  width=600)
 rad_bio_custom_text = Div(text="<b>Applied Parameters:</b>", width=150)
@@ -3857,7 +3876,7 @@ mlc_analyzer_uid_select = Select(value='', options=[''], width=400, title='Study
 mlc_analyzer_plan_select = Select(value='', options=[''], width=200, title='Plan')
 mlc_analyzer_fx_grp_select = Select(value='', options=[''], width=200, title='Fx Group')
 mlc_analyzer_beam_select = Select(value='', options=[''], width=200, title='Beam')
-mlc_analyzer_cp_select = Select(value='', options=[''], width=200, title='Control Point')
+mlc_analyzer_cp_select = Select(value='', options=[''], width=50, title='CP')
 
 mlc_analyzer_mrn_select.on_change('value', mlc_analyzer_mrn_ticker)
 mlc_analyzer_study_date_select.on_change('value', mlc_analyzer_study_date_ticker)
@@ -3900,12 +3919,13 @@ columns = [TableColumn(field="cp", title="CP"),
            TableColumn(field="y_perim", title="Y Path", formatter=NumberFormatter(format="0.00")),
            TableColumn(field="cmp_score", title="Score", formatter=NumberFormatter(format="0.000"))]
 mlc_viewer_data_table = DataTable(source=source_mlc_summary, columns=columns,
-                                  editable=False, width=700, height=425, row_headers=False)
+                                  editable=False, width=700, height=425)
+mlc_viewer_data_table.index_position = None
 
 mlc_viewer_previous_cp.on_click(mlc_viewer_go_to_previous_cp)
 mlc_viewer_next_cp.on_click(mlc_viewer_go_to_next_cp)
 mlc_viewer_play_button.on_click(mlc_viewer_play)
-source_mlc_summary.on_change('selected', update_cp_on_selection)
+source_mlc_summary.selected.on_change('indices', update_cp_on_selection)
 
 mlc_viewer.x_range = Range1d(-MAX_FIELD_SIZE_X/2, MAX_FIELD_SIZE_X/2)
 mlc_viewer.y_range = Range1d(-MAX_FIELD_SIZE_Y/2, MAX_FIELD_SIZE_Y/2)
@@ -3925,7 +3945,8 @@ layout_query = column(row(custom_title_query_blue, Spacer(width=50), custom_titl
                       div_selector_end,
                       div_range,
                       add_range_row_button,
-                      row(range_row, Spacer(width=10), select_category, text_min, text_max, group_range,
+                      row(range_row, Spacer(width=10), select_category, text_min, Spacer(width=30),
+                          text_max, Spacer(width=30), group_range,
                           delete_range_row_button, Spacer(width=10), range_not_operator_checkbox),
                       range_filter_data_table)
 
@@ -3938,7 +3959,8 @@ layout_dvhs = column(row(custom_title_dvhs_blue, Spacer(width=50), custom_title_
                      div_endpoint_start,
                      div_endpoint,
                      add_endpoint_row_button,
-                     row(ep_row, Spacer(width=10), select_ep_type, ep_text_input, ep_units_in, delete_ep_row_button),
+                     row(ep_row, Spacer(width=10), select_ep_type, ep_text_input, Spacer(width=20),
+                         ep_units_in, delete_ep_row_button),
                      ep_data_table,
                      endpoint_table_title,
                      data_table_endpoints)
@@ -4011,8 +4033,8 @@ layout_regression = column(row(custom_title_regression_blue, Spacer(width=50), c
                            Spacer(width=1000, height=100))
 
 layout_mlc_analyzer = column(row(custom_title_mlc_analyzer_blue, Spacer(width=50), custom_title_mlc_analyzer_red),
-                             row(mlc_analyzer_mrn_select, mlc_analyzer_study_date_select, mlc_analyzer_uid_select,
-                                 mlc_analyzer_plan_select),
+                             row(mlc_analyzer_mrn_select, mlc_analyzer_study_date_select, mlc_analyzer_uid_select),
+                             row(mlc_analyzer_plan_select),
                              Div(text="<hr>", width=800),
                              row(mlc_analyzer_fx_grp_select, mlc_analyzer_beam_select,
                                  mlc_viewer_previous_cp, mlc_viewer_next_cp,
