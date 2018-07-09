@@ -305,8 +305,8 @@ def selector_row_ticker(attr, old, new):
 
 
 def update_selector_row_on_selection(attr, old, new):
-    if new.indices:
-        selector_row.value = selector_row.options[min(new.indices)]
+    if new:
+        selector_row.value = selector_row.options[min(new)]
 
 
 def delete_selector_row():
@@ -517,12 +517,12 @@ def ensure_range_group_is_assigned(attrname, old, new):
 
 
 def update_range_row_on_selection(attr, old, new):
-    if new.indices:
-        range_row.value = range_row.options[min(new.indices)]
+    if new:
+        range_row.value = range_row.options[min(new)]
 
 
 def clear_source_selection(src):
-    src.selected = Selection(indices=[], line_indices=[], multiline_indices={})
+    src.selected.indices = []
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -647,9 +647,9 @@ def update_ep_row_on_selection(attr, old, new):
     global ALLOW_SOURCE_UPDATE
     ALLOW_SOURCE_UPDATE = False
 
-    if new.indices:
+    if new:
         data = source_endpoint_defs.data
-        r = min(new.indices)
+        r = min(new)
 
         # update row
         ep_row.value = ep_row.options[r]
@@ -1794,8 +1794,8 @@ def mlc_viewer_play():
 
 
 def update_cp_on_selection(attr, old, new):
-    if new.indices:
-        mlc_analyzer_cp_select.value = mlc_analyzer_cp_select.options[min(new.indices)]
+    if new:
+        mlc_analyzer_cp_select.value = mlc_analyzer_cp_select.options[min(new)]
 
 
 def get_include_map():
@@ -1920,8 +1920,8 @@ def update_eud():
 
 
 def emami_selection(attr, old, new):
-    if new.indices:
-        row_index = min(new.indices)
+    if new:
+        row_index = min(new)
         rad_bio_eud_a_input.value = str(source_emami.data['eud_a'][row_index])
         rad_bio_gamma_50_input.value = str(source_emami.data['gamma_50'][row_index])
         rad_bio_td_tcd_input.value = str(source_emami.data['td_tcd'][row_index])
@@ -2811,12 +2811,12 @@ def multi_var_include_selection(attr, old, new):
 
 
 def update_source_endpoint_view_selection(attr, old, new):
-    if new.indices:
+    if new:
         source_endpoint_view.selected = new
 
 
 def update_dvh_table_selection(attr, old, new):
-    if new.indices:
+    if new:
         source.selected = new
 
 
@@ -3034,19 +3034,19 @@ def update_planning_data_selections(uids):
 
 def source_rxs_selected_ticker(attr, old, new):
     if ALLOW_SOURCE_UPDATE:
-        uids = list(set([source_rxs.data['uid'][i] for i in new.indices]))
+        uids = list(set([source_rxs.data['uid'][i] for i in new]))
         update_planning_data_selections(uids)
 
 
 def source_plans_selected_ticker(attr, old, new):
     if ALLOW_SOURCE_UPDATE:
-        uids = list(set([source_plans.data['uid'][i] for i in new.indices]))
+        uids = list(set([source_plans.data['uid'][i] for i in new]))
         update_planning_data_selections(uids)
 
 
 def source_beams_selected_ticker(attr, old, new):
     if ALLOW_SOURCE_UPDATE:
-        uids = list(set([source_beams.data['uid'][i] for i in new.indices]))
+        uids = list(set([source_beams.data['uid'][i] for i in new]))
         update_planning_data_selections(uids)
 
 
@@ -3095,7 +3095,7 @@ columns = [TableColumn(field="row", title="Row", width=60),
 selection_filter_data_table = DataTable(source=source_selectors,
                                         columns=columns, width=1000, height=150)
 selection_filter_data_table.index_position = None
-source_selectors.on_change('selected', update_selector_row_on_selection)
+source_selectors.selected.on_change('indices', update_selector_row_on_selection)
 update_selector_source()
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3142,7 +3142,7 @@ columns = [TableColumn(field="row", title="Row", width=60),
 range_filter_data_table = DataTable(source=source_ranges,
                                     columns=columns, width=1000, height=150)
 range_filter_data_table.index_position = None
-source_ranges.on_change('selected', update_range_row_on_selection)
+source_ranges.selected.on_change('indices', update_range_row_on_selection)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # DVH Endpoint Filter UI objects
@@ -3171,7 +3171,7 @@ columns = [TableColumn(field="row", title="Row", width=60),
            TableColumn(field="units_out", title="Units", width=60)]
 ep_data_table = DataTable(source=source_endpoint_defs, columns=columns, width=300, height=150)
 
-source_endpoint_defs.on_change('selected', update_ep_row_on_selection)
+source_endpoint_defs.selected.on_change('indices', update_ep_row_on_selection)
 
 query_button = Button(label="Query", button_type="success", width=100)
 query_button.on_click(update_data)
@@ -3285,7 +3285,7 @@ columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="dist_to_ptv_min", title="Dist to PTV", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="ptv_overlap", title="PTV Overlap", width=80, formatter=NumberFormatter(format="0.0"))]
 data_table = DataTable(source=source, columns=columns, width=1200, editable=True)
-source.on_change('selected', update_source_endpoint_view_selection)
+source.selected.on_change('indices', update_source_endpoint_view_selection)
 data_table.index_position = None
 
 # Set up EndPoint DataTable
@@ -3301,7 +3301,7 @@ for i in range(ENDPOINT_COUNT):
 data_table_endpoints = DataTable(source=source_endpoint_view, columns=columns, width=1200, editable=True)
 data_table_endpoints.index_position = None
 
-source_endpoint_view.on_change('selected', update_dvh_table_selection)
+source_endpoint_view.selected.on_change('indices', update_dvh_table_selection)
 
 # Set up Beams DataTable
 beam_table_title = Div(text="<b>Beams</b>", width=1500)
@@ -3351,7 +3351,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=105),
            TableColumn(field="couch_max", title="Max", width=80, formatter=NumberFormatter(format="0.0"))]
 data_table_beams2 = DataTable(source=source_beams, columns=columns, width=1300, editable=True)
 data_table_beams2.index_position = None
-source_beams.on_change('selected', source_beams_selected_ticker)
+source_beams.selected.on_change('indices', source_beams_selected_ticker)
 
 # Set up Plans DataTable
 plans_table_title = Div(text="<b>Plans</b>", width=1200)
@@ -3373,7 +3373,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=420),
            TableColumn(field="baseline", title="Baseline")]
 data_table_plans = DataTable(source=source_plans, columns=columns, width=1300, editable=True)
 data_table_plans.index_position = None
-source_plans.on_change('selected', source_plans_selected_ticker)
+source_plans.selected.on_change('indices', source_plans_selected_ticker)
 
 # Set up Rxs DataTable
 rxs_table_title = Div(text="<b>Rxs</b>", width=1000)
@@ -3391,7 +3391,7 @@ columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="normalization_object", title="Norm Object")]
 data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1300, editable=True)
 data_table_rxs.index_position = None
-source_rxs.on_change('selected', source_rxs_selected_ticker)
+source_rxs.selected.on_change('indices', source_rxs_selected_ticker)
 
 # Control Chart layout
 tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
@@ -3683,7 +3683,7 @@ columns = [TableColumn(field="y_var", title="Dependent Variable", width=150),
 data_table_multi_var_coeff_2 = DataTable(source=source_multi_var_model_results_2, columns=columns, editable=True,
                                          height=60)
 
-source_multi_var_include.on_change('selected', multi_var_include_selection)
+source_multi_var_include.selected.on_change('indices', multi_var_include_selection)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Custom group titles
@@ -3792,7 +3792,7 @@ columns = [TableColumn(field="roi", title="Structure", width=150),
            TableColumn(field="gamma_50", title=u"\u03b3_50", width=75),
            TableColumn(field="td_tcd", title="TD_50", width=150)]
 data_table_emami = DataTable(source=source_emami, columns=columns, editable=False, width=1100)
-source_emami.on_change('selected', emami_selection)
+source_emami.selected.on_change('indices', emami_selection)
 emami_text = Div(text="<b>Published EUD Parameters from Emami et. al. for 1.8-2.0Gy fractions</b> (Click to apply)",
                  width=600)
 rad_bio_custom_text = Div(text="<b>Applied Parameters:</b>", width=150)
@@ -3925,7 +3925,7 @@ mlc_viewer_data_table.index_position = None
 mlc_viewer_previous_cp.on_click(mlc_viewer_go_to_previous_cp)
 mlc_viewer_next_cp.on_click(mlc_viewer_go_to_next_cp)
 mlc_viewer_play_button.on_click(mlc_viewer_play)
-source_mlc_summary.on_change('selected', update_cp_on_selection)
+source_mlc_summary.selected.on_change('indices', update_cp_on_selection)
 
 mlc_viewer.x_range = Range1d(-MAX_FIELD_SIZE_X/2, MAX_FIELD_SIZE_X/2)
 mlc_viewer.y_range = Range1d(-MAX_FIELD_SIZE_Y/2, MAX_FIELD_SIZE_Y/2)
