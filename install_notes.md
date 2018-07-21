@@ -7,8 +7,7 @@ Please note this software does not work "out-of-the-box."  Some broad strokes:
 `$ dvh settings` or `$ dvh settings_simple`
 * Must import data via the admin GUI or `$ dvh import` prior to running the main Bokeh app.
 
-If you do not install this software with pip install, please replace any reference to `$ dvh` below with `$ python start.py` and
-run from the dvh directory within this code. DVH Analytics relies on Bokeh to create web servers/pages for the GUIs, 
+DVH Analytics relies on Bokeh to create web servers/pages for the GUIs, 
 so it's best to follow this guide as this app may not behave in the way you might expect from a traditional python app.
 
 
