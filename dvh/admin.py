@@ -6,6 +6,7 @@ Created on Fri Mar 24 13:43:28 2017
 """
 
 from __future__ import print_function
+from future.utils import listvalues
 from utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection, \
     recalculate_ages, update_min_distances_in_db, update_treatment_volume_overlap_in_db, update_volumes_in_db, \
     update_surface_area_in_db
@@ -24,6 +25,7 @@ from bokeh.models import ColumnDataSource, LabelSet, Range1d, Slider, CustomJS, 
 import auth
 import time
 from options import *
+from get_settings import get_settings, parse_settings_file
 
 
 # This depends on a user defined function in dvh/auth.py.  By default, this returns True
@@ -48,20 +50,7 @@ def load_directories():
     # Get Import settings
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if is_import_settings_defined():
-        script_dir = os.path.dirname(__file__)
-        rel_path = "preferences/import_settings.txt"
-        abs_file_path = os.path.join(script_dir, rel_path)
-
-        with open(abs_file_path, 'r') as document:
-            directories = {}
-            for line in document:
-                line = line.split()
-                if not line:
-                    continue
-                try:
-                    directories[line[0]] = line[1:][0]
-                except:
-                    directories[line[0]] = ''
+        directories = parse_settings_file(get_settings('import'))
     else:
         directories = {'inbox': '',
                        'imported': '',
@@ -74,20 +63,7 @@ def load_sql_settings():
     # Get SQL settings
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if is_sql_connection_defined():
-        script_dir = os.path.dirname(__file__)
-        rel_path = "preferences/sql_connection.cnf"
-        abs_file_path = os.path.join(script_dir, rel_path)
-
-        with open(abs_file_path, 'r') as document:
-            config = {}
-            for line in document:
-                line = line.split()
-                if not line:
-                    continue
-                try:
-                    config[line[0]] = line[1:][0]
-                except:
-                    config[line[0]] = ''
+        config = parse_settings_file(get_settings('sql'))
 
         if 'user' not in list(config):
             config['user'] = ''
@@ -856,7 +832,7 @@ def backup_db():
 
     os.system("pg_dumpall >" + abs_file_path)
 
-    update_backup_select()
+    update_backup_select(backup_location.value)
 
     backup_db_button.button_type = 'success'
     backup_db_button.label = 'Backup'
@@ -879,14 +855,17 @@ def restore_db():
     restore_db_button.button_type = 'primary'
 
 
-def update_backup_select(*new_index):
-    script_dir = os.path.dirname(__file__)
-    abs_path = os.path.join(script_dir, 'backups')
+def update_backup_select(abs_path, *new_index):
 
     if not os.path.isdir(abs_path):
-        os.mkdir(abs_path)
+        try:
+            os.mkdir(abs_path)
+        except OSError:
+            backup_location.value = 'Invalid Path'
+            time.sleep(2.5)
+            backup_location.value = '/'
 
-    backups = [f for f in os.listdir(abs_path) if os.path.isfile(os.path.join(abs_path, f))]
+    backups = [f for f in os.listdir(abs_path) if os.path.isfile(os.path.join(abs_path, f)) and '.sql' in f]
     if not backups:
         backups = ['']
     backups.sort(reverse=True)
@@ -910,7 +889,7 @@ def delete_backup():
             new_index = old_index
         else:
             new_index = len(backup_select.options) - 2
-        update_backup_select(new_index)
+        update_backup_select(backup_location.value, new_index)
 
 
 def calculate_ptv_distances():
@@ -1247,6 +1226,23 @@ def reimport_button_click():
         print("Aborting DICOM reimport.")
 
 
+options_map = {'Default': os.path.join(os.path.dirname(__file__), 'backups'),
+               'Root': '/',
+               'Home': os.path.expanduser('~'),
+               'Custom': ''}
+
+
+def backup_location_select_ticker(attr, old, new):
+    if new != 'Custom':
+        backup_location.value = options_map[new]
+
+
+def backup_location_ticker(attr, old, new):
+    if new not in listvalues(options_map):
+        backup_location_select.value = 'Custom'
+    update_backup_select(new)
+
+
 ######################################################
 # Layout objects
 ######################################################
@@ -1558,10 +1554,13 @@ baseline_layout = layout([[baseline_title],
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Backup utility
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-backup_select = Select(value=options[0], options=options, title="Available Backups", width=350)
+backup_select = Select(value='', options=[''], title="Available Backups", width=350)
 delete_backup_button = Button(label='Delete', button_type='warning', width=100)
 restore_db_button = Button(label='Restore', button_type='primary', width=100)
 backup_db_button = Button(label='Backup', button_type='success', width=100)
+options = ['Default', 'Root', 'Home', 'Custom']
+backup_location_select = Select(value=options[0], options=options, title="Common Locations")
+backup_location = TextInput(value=options_map['Default'], title='Backup Directory:', width=500)
 warning_div = Div(text="<b>WARNING:</b> Restore requires your OS user name to be both a"
                        " PostgreSQL super user and have ALL PRIVILEGES WITH GRANT OPTIONS.  Do NOT attempt otherwise."
                        " It's possible you have multiple PostgreSQL servers installed, so be sure your backup"
@@ -1573,13 +1572,18 @@ host_div = Div(text="<b>Host</b>: %s" % config['host'])
 port_div = Div(text="<b>Port</b>: %s" % config['port'])
 db_div = Div(text="<b>Database</b>: %s" % config['dbname'])
 
-update_backup_select()
+backup_location_select.on_change('value', backup_location_select_ticker)
+backup_location.on_change('value', backup_location_ticker)
+
+update_backup_select(backup_location.value)
 
 delete_backup_button.on_click(delete_backup)
 backup_db_button.on_click(backup_db)
 restore_db_button.on_click(restore_db)
 
 backup_layout = layout([[backup_select, delete_backup_button, restore_db_button, backup_db_button],
+                        [backup_location_select],
+                        [backup_location],
                         [warning_div],
                         [host_div],
                         [port_div],

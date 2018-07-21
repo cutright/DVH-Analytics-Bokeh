@@ -17,9 +17,8 @@ try:
     import pydicom as dicom  # for pydicom >= 1.0
 except:
     import dicom
+from get_settings import get_settings
 
-
-SCRIPT_DIR = os.path.dirname(__file__)
 PREFERENCE_PATHS = {''}
 MIN_SLICE_THICKNESS = 2  # Update method to pull from DICOM
 
@@ -29,11 +28,11 @@ class Temp_DICOM_FileSet:
 
         # Read SQL configuration file
         if start_path:
-            abs_file_path = os.path.join(SCRIPT_DIR, start_path)
+            abs_file_path = os.path.join(os.path.dirname(__file__), start_path)
             start_path = abs_file_path
         else:
-            start_path = "preferences/import_settings.txt"
-            abs_file_path = os.path.join(SCRIPT_DIR, start_path)
+            abs_file_path = get_settings('import')
+
             with open(abs_file_path, 'r') as document:
                 for line in document:
                     line = line.split()
@@ -218,14 +217,7 @@ def platform():
 
 
 def is_import_settings_defined():
-    """
-    Checks if import_settings.txt exists
-    :rtype: bool
-    """
-
-    rel_path = "preferences/import_settings.txt"
-    abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
-
+    abs_file_path = get_settings('import')
     if os.path.isfile(abs_file_path):
         return True
     else:
@@ -237,10 +229,7 @@ def is_sql_connection_defined():
     Checks if sql_connection.cnf exists
     :rtype: bool
     """
-
-    rel_path = "preferences/sql_connection.cnf"
-    abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
-
+    abs_file_path = get_settings('sql')
     if os.path.isfile(abs_file_path):
         return True
     else:
@@ -254,8 +243,7 @@ def write_import_settings(directories):
                    'review ' + directories['review']]
     import_text = '\n'.join(import_text)
 
-    rel_path = "preferences/import_settings.txt"
-    abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
+    abs_file_path = get_settings('import')
 
     with open(abs_file_path, "w") as text_file:
         text_file.write(import_text)
@@ -269,16 +257,15 @@ def write_sql_connection_settings(config):
     text = ["%s %s" % (key, value) for key, value in listitems(config) if value]
     text = '\n'.join(text)
 
-    rel_path = "preferences/sql_connection.cnf"
-    abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
+    abs_file_path = get_settings('sql')
 
     with open(abs_file_path, "w") as text_file:
         text_file.write(text)
 
 
 def validate_import_settings():
-    rel_path = "preferences/import_settings.txt"
-    abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
+
+    abs_file_path = get_settings('import')
 
     with open(abs_file_path, 'r') as document:
         config = {}

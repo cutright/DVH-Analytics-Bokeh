@@ -12,14 +12,16 @@ from dicom_to_python import DVHTable, PlanRow, BeamTable, RxTable
 import os
 import shutil
 from datetime import datetime
-from options import IMPORT_LATEST_PLAN_ONLY
+from options import IMPORT_LATEST_PLAN_ONLY, SETTINGS_PATHS
 try:
     import pydicom as dicom  # for pydicom >= 1.0
 except:
     import dicom
+from get_settings import get_settings, parse_settings_file
 
 
 FILE_TYPES = {'rtplan', 'rtstruct', 'rtdose'}
+SCRIPT_DIR = os.path.dirname(__file__)
 
 
 def dicom_to_sql(start_path=None, force_update=False, move_files=True, update_dicom_catalogue_table=True):
@@ -30,24 +32,11 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True, update_di
     dicom_catalogue_update = []
 
     # Read SQL configuration file
-    script_dir = os.path.dirname(__file__)
-    rel_path = "preferences/import_settings.txt"
-    abs_file_path = os.path.join(script_dir, rel_path)
-    with open(abs_file_path, 'r') as document:
-        import_settings = {}
-        for line in document:
-            line = line.split()
-            if not line:
-                continue
-            import_settings[line[0]] = line[1:][0]
-            # Convert strings to boolean
-            if line[1:][0].lower() == 'true':
-                import_settings[line[0]] = True
-            elif line[1:][0].lower() == 'false':
-                import_settings[line[0]] = False
+    abs_file_path = get_settings('import')
+    import_settings = parse_settings_file(abs_file_path)
 
     if start_path:
-        abs_file_path = os.path.join(script_dir, start_path)
+        abs_file_path = os.path.join(SCRIPT_DIR, start_path)
         import_settings['inbox'] = abs_file_path
 
     sqlcnx = DVH_SQL()
@@ -297,9 +286,8 @@ def move_files_to_new_path(files, new_dir):
 
 def remove_empty_folders(start_path):
     if start_path[0:2] == './':
-        script_dir = os.path.dirname(__file__)
         rel_path = start_path[2:]
-        start_path = os.path.join(script_dir, rel_path)
+        start_path = os.path.join(SCRIPT_DIR, rel_path)
 
     for (path, dirs, files) in os.walk(start_path, topdown=False):
         if files:

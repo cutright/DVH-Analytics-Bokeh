@@ -116,3 +116,10 @@ OPTIONAL_TABS = {'ROI Viewer': True,
                  'Correlation': True,
                  'Regression': True,
                  'MLC Analyzer': True}
+
+# Note that docker paths are absolute, default will be treated as relative to script directory
+SETTINGS_PATHS = {'docker': {'import': "/import_settings.txt",
+                             'sql': "/sql_connection.cnf"},
+                  'default': {'import': "preferences/import_settings.txt",
+                              'sql': "preferences/sql_connection.cnf"}}
+

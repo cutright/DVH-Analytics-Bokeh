@@ -10,6 +10,7 @@ from __future__ import print_function
 import psycopg2
 import os
 from datetime import datetime
+from get_settings import get_settings, parse_settings_file
 
 
 class DVH_SQL:
@@ -18,16 +19,8 @@ class DVH_SQL:
             config = config[0]
         else:
             # Read SQL configuration file
-            script_dir = os.path.dirname(__file__)
-            rel_path = "preferences/sql_connection.cnf"
-            abs_file_path = os.path.join(script_dir, rel_path)
-            with open(abs_file_path, 'r') as document:
-                config = {}
-                for line in document:
-                    line = line.split()
-                    if not line:
-                        continue
-                    config[line[0]] = line[1:][0]
+            abs_file_path = get_settings('sql')
+            config = parse_settings_file(abs_file_path)
 
         self.dbname = config['dbname']
 

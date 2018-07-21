@@ -13,13 +13,14 @@ from sql_connector import DVH_SQL
 from analysis_tools import DVH
 from utilities import is_import_settings_defined, is_sql_connection_defined,\
     write_import_settings, write_sql_connection_settings, validate_import_settings, validate_sql_connection
+from get_settings import get_settings
 import os
 from getpass import getpass
 import argparse
 from subprocess import call
 
 
-script_dir = os.path.dirname(__file__)
+SCRIPT_DIR = os.path.dirname(__file__)
 
 
 if is_sql_connection_defined():
@@ -174,7 +175,7 @@ def print_mrns():
 
 def initialize_default_import_settings_file():
     # Create default import settings file
-    import_settings_path = os.path.join(script_dir, "preferences/import_settings.txt")
+    import_settings_path = get_settings('import')
     if not os.path.isfile(import_settings_path):
         write_import_settings({'inbox': '',
                                'imported': '',
@@ -183,7 +184,7 @@ def initialize_default_import_settings_file():
 
 def initialize_default_sql_connection_config_file():
     # Create default sql connection config file
-    sql_connection_path = os.path.join(script_dir, "preferences/sql_connection.cnf")
+    sql_connection_path = get_settings('sql')
     if not os.path.isfile(sql_connection_path):
         write_sql_connection_settings({'host': 'localhost',
                                        'dbname': 'dvh',
@@ -216,6 +217,11 @@ def main():
                         dest='port',
                         help='Initializes Bokeh server on a non-default port',
                         default=None)
+    parser.add_argument('--bypass-sql-test',
+                        help='Bypass the initial SQL connection test',
+                        dest='bypass_sql_test',
+                        default=False,
+                        action='store_true')
     parser.add_argument('command', nargs='+', help='bar help')
     args = parser.parse_args()
 
@@ -257,50 +263,55 @@ def main():
                          force_update=force_update)
         elif args.command[0] == 'run':
 
-            if test_import_sql_cnx_definitions():
-                if DVH_SQL().is_sql_table_empty('DVHs'):
-                    print("There is no data in your SQL table.")
-                    print("You may import data from the admin view (use the 'admin' command instead of 'run'")
-                else:
-                    command = ["bokeh", "serve"]
+            command = ["bokeh", "serve"]
 
-                    if args.allow_websocket_origin:
-                        command.append("--allow-websocket-origin")
-                        command.append(args.allow_websocket_origin)
-                    if args.port:
-                        command.append("--port")  # Defaults to 5006
-                        command.append(args.port)
-                    if not args.allow_websocket_origin and not args.port:
-                        command.append("--show")
+            if args.allow_websocket_origin:
+                command.append("--allow-websocket-origin")
+                command.append(args.allow_websocket_origin)
+            if args.port:
+                command.append("--port")  # Defaults to 5006
+                command.append(args.port)
+            if not args.allow_websocket_origin and not args.port:
+                command.append("--show")
 
-                    command.append(script_dir)
+            command.append(SCRIPT_DIR)
+
+            if not args.bypass_sql_test:
+                if test_import_sql_cnx_definitions():
+                    if DVH_SQL().is_sql_table_empty('DVHs'):
+                        print("There is no data in your SQL table.")
+                        print("You may import data from the admin view (use the 'admin' command instead of 'run'")
 
                     call(command)
+                else:
+                    print("Could not connect to SQL. You may need to update/initiate settings.")
+                    print("Try running with 'settings' command instead of 'run'")
             else:
-                print("Could not connect to SQL. You may need to update/initiate settings.")
-                print("Try running with 'settings' command instead of 'run'")
+                call(command)
 
         elif args.command[0] == 'admin':
-            if test_import_sql_cnx_definitions():
-
-                command = ["bokeh", "serve", "--show", "--port"]
-                if args.port:
-                    command.append(args.port)
-                else:
-                    command.append("5007")
-                if args.allow_websocket_origin:
-                    command.append("--allow-websocket-origin")
-                    command.append(args.allow_websocket_origin)
-
-                file_name = 'admin.py'
-                abs_file_path = os.path.join(script_dir, file_name)
-
-                command.append(abs_file_path)
-
-                call(command)
+            command = ["bokeh", "serve", "--show", "--port"]
+            if args.port:
+                command.append(args.port)
             else:
-                print("Could not connect to SQL. You may need to update/initiate settings.")
-                print("Try running with 'settings' command instead of 'admin'")
+                command.append("5007")
+            if args.allow_websocket_origin:
+                command.append("--allow-websocket-origin")
+                command.append(args.allow_websocket_origin)
+
+            file_name = 'admin.py'
+            abs_file_path = os.path.join(SCRIPT_DIR, file_name)
+
+            command.append(abs_file_path)
+
+            if not args.bypass_sql_test:
+                if test_import_sql_cnx_definitions():
+                    call(command)
+                else:
+                    print("Could not connect to SQL. You may need to update/initiate settings.")
+                    print("Try running with 'settings' command instead of 'admin'")
+            else:
+                call(command)
 
         elif args.command[0] == 'settings':
 
@@ -317,7 +328,7 @@ def main():
                 command.append(args.allow_websocket_origin)
 
             file_name = 'settings.py'
-            abs_file_path = os.path.join(script_dir, file_name)
+            abs_file_path = os.path.join(SCRIPT_DIR, file_name)
 
             command.append(abs_file_path)
 

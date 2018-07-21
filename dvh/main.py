@@ -37,6 +37,7 @@ from options import *
 import mlc_analyzer
 import os
 from dateutil.parser import parse
+from get_settings import get_settings, parse_settings_file
 
 # This depends on a user defined function in dvh/auth.py.  By default, this returns True
 # It is up to the user/installer to write their own function (e.g., using python-ldap)
@@ -1213,6 +1214,7 @@ def group_constraint_count():
 
 
 def update_source_endpoint_calcs():
+
     if current_dvh:
         group_1_constraint_count, group_2_constraint_count = group_constraint_count()
 
@@ -1686,6 +1688,9 @@ def update_mlc_analyzer_uid():
 def mlc_analyzer_uid_ticker(attr, old, new):
     rt_plan = DVH_SQL().query('DICOM_Files', 'folder_path, plan_file', "study_instance_uid = '%s'" % new)[0]
     folder_path = rt_plan[0]
+    if not os.path.isdir(folder_path):
+        folder_path = os.path.join(parse_settings_file(get_settings('import'))['imported'],
+                                   os.path.split(folder_path)[-1])
     plan_files = [os.path.join(folder_path, file_path) for file_path in rt_plan[1].split(', ')]
 
     mlc_analyzer_plan_select.options = plan_files
@@ -1747,7 +1752,7 @@ def update_mlc_analyzer_beam():
 
 def mlc_analyzer_cp_ticker(attr, old, new):
     update_mlc_viewer()
-    source_mlc_summary.selected = Selection(indices=[int(new)-1])
+    source_mlc_summary.selected.indices = [int(new)-1]
 
 
 def update_mlc_viewer():
@@ -2812,12 +2817,12 @@ def multi_var_include_selection(attr, old, new):
 
 def update_source_endpoint_view_selection(attr, old, new):
     if new:
-        source_endpoint_view.selected = new
+        source_endpoint_view.selected.indices = new
 
 
 def update_dvh_table_selection(attr, old, new):
     if new:
-        source.selected = new
+        source.selected.indices = new
 
 
 def update_dvh_review_rois(attr, old, new):
@@ -3025,9 +3030,9 @@ def update_planning_data_selections(uids):
 
     ALLOW_SOURCE_UPDATE = False
 
-    source_rxs.selected = Selection(indices=[i for i, j in enumerate(source_rxs.data['uid']) if j in uids])
-    source_plans.selected = Selection(indices=[i for i, j in enumerate(source_plans.data['uid']) if j in uids])
-    source_beams.selected = Selection(indices=[i for i, j in enumerate(source_beams.data['uid']) if j in uids])
+    source_rxs.selected.indices = [i for i, j in enumerate(source_rxs.data['uid']) if j in uids]
+    source_plans.selected.indices = [i for i, j in enumerate(source_plans.data['uid']) if j in uids]
+    source_beams.selected.indices = [i for i, j in enumerate(source_beams.data['uid']) if j in uids]
 
     ALLOW_SOURCE_UPDATE = True
 

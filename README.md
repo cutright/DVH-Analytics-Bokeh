@@ -48,7 +48,6 @@ Med Phys. 2012;39(11):7160–70.
 * [SciPy](https://scipy.org)
 * [pydicom](https://github.com/darcymason/pydicom) 0.9.9
 * [shapely](https://github.com/Toblerity/Shapely) 1.6b2
-* [fuzzy wuzzy](https://github.com/seatgeek/fuzzywuzzy) 0.15
 * [Statsmodels](https://github.com/statsmodels/statsmodels) 0.8.0
 * [dicompyler-core](https://pypi.python.org/pypi/dicompyler-core) 0.5.3
     * requirements per [developer](https://github.com/bastula)
@@ -57,7 +56,7 @@ Med Phys. 2012;39(11):7160–70.
             * pydicom 1.0 is preferred and can be installed via pip using: pip install https://github.com/darcymason/pydicom/archive/master.zip
         * [matplotlib](http://matplotlib.sourceforge.net/) 1.3.0 or higher (for DVH calculation)
         * [six](https://pythonhosted.org/six/) 1.5 or higher
-* [Bokeh](http://bokeh.pydata.org/en/latest/index.html) 0.12.10
+* [Bokeh](http://bokeh.pydata.org/en/latest/index.html) 0.13.0
     * requirements per [developer](http://bokeh.pydata.org/en/latest/docs/installation.html)
         * [NumPy](http://www.numpy.org/)
         * [Jinja2](http://jinja.pocoo.org/)

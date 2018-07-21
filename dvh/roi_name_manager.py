@@ -8,7 +8,7 @@ Created on Fri Mar 24 13:43:28 2017
 
 from __future__ import print_function
 import os
-from fuzzywuzzy import fuzz
+# from fuzzywuzzy import fuzz
 from sql_to_python import QuerySQL
 from sql_connector import DVH_SQL
 
@@ -326,56 +326,56 @@ class DatabaseROIs:
                         return True
         return False
 
-    def get_best_roi_match(self, roi, length=None):
-        roi = clean_name(roi)
-
-        scores = []
-        rois = []
-        physicians = []
-
-        for physician in self.get_physicians():
-            for physician_roi in self.get_physician_rois(physician):
-                scores.append(get_combined_fuzz_score(physician_roi, roi))
-                rois.append(physician_roi)
-                physicians.append(physician)
-                for variation in self.get_variations(physician, physician_roi):
-                    scores.append(get_combined_fuzz_score(variation, roi))
-                    rois.append(variation)
-                    physicians.append(physician)
-
-        for institutional_roi in self.institutional_rois:
-            scores.append(get_combined_fuzz_score(institutional_roi, roi))
-            rois.append(institutional_roi)
-            physicians.append('DEFAULT')
-
-        best = []
-
-        if length:
-            if length > len(scores):
-                length = len(scores)
-        else:
-            length = 1
-
-        for i in range(length):
-            max_score = max(scores)
-            index = scores.index(max_score)
-            scores.pop(index)
-            best_match = rois.pop(index)
-            best_physician = physicians.pop(index)
-            if self.is_institutional_roi(best_match):
-                best_institutional_roi = best_match
-            else:
-                best_institutional_roi = 'uncategorized'
-
-            best_physician_roi = self.get_physician_roi(best_physician, best_match)
-
-            best.append({'variation': best_match,
-                         'physician_roi': best_physician_roi,
-                         'physician': best_physician,
-                         'institutional_roi': best_institutional_roi,
-                         'score': max_score})
-
-        return best
+    # def get_best_roi_match(self, roi, length=None):
+    #     roi = clean_name(roi)
+    #
+    #     scores = []
+    #     rois = []
+    #     physicians = []
+    #
+    #     for physician in self.get_physicians():
+    #         for physician_roi in self.get_physician_rois(physician):
+    #             scores.append(get_combined_fuzz_score(physician_roi, roi))
+    #             rois.append(physician_roi)
+    #             physicians.append(physician)
+    #             for variation in self.get_variations(physician, physician_roi):
+    #                 scores.append(get_combined_fuzz_score(variation, roi))
+    #                 rois.append(variation)
+    #                 physicians.append(physician)
+    #
+    #     for institutional_roi in self.institutional_rois:
+    #         scores.append(get_combined_fuzz_score(institutional_roi, roi))
+    #         rois.append(institutional_roi)
+    #         physicians.append('DEFAULT')
+    #
+    #     best = []
+    #
+    #     if length:
+    #         if length > len(scores):
+    #             length = len(scores)
+    #     else:
+    #         length = 1
+    #
+    #     for i in range(length):
+    #         max_score = max(scores)
+    #         index = scores.index(max_score)
+    #         scores.pop(index)
+    #         best_match = rois.pop(index)
+    #         best_physician = physicians.pop(index)
+    #         if self.is_institutional_roi(best_match):
+    #             best_institutional_roi = best_match
+    #         else:
+    #             best_institutional_roi = 'uncategorized'
+    #
+    #         best_physician_roi = self.get_physician_roi(best_physician, best_match)
+    #
+    #         best.append({'variation': best_match,
+    #                      'physician_roi': best_physician_roi,
+    #                      'physician': best_physician,
+    #                      'institutional_roi': best_institutional_roi,
+    #                      'score': max_score})
+    #
+    #     return best
 
     ########################
     # Export to file

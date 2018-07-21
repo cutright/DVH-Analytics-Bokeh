@@ -19,6 +19,7 @@ from bokeh.layouts import layout, row, column
 from bokeh.io import curdoc
 import auth
 from options import *
+from get_settings import get_settings, parse_settings_file
 
 # This depends on a user defined function in dvh/auth.py.  By default, this returns True
 # It is up to the user/installer to write their own function (e.g., using python-ldap)
@@ -38,20 +39,7 @@ def load_directories():
     # Get Import settings
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if is_import_settings_defined():
-        script_dir = os.path.dirname(__file__)
-        rel_path = "preferences/import_settings.txt"
-        abs_file_path = os.path.join(script_dir, rel_path)
-
-        with open(abs_file_path, 'r') as document:
-            directories = {}
-            for line in document:
-                line = line.split()
-                if not line:
-                    continue
-                try:
-                    directories[line[0]] = line[1:][0]
-                except:
-                    directories[line[0]] = ''
+        directories = parse_settings_file(get_settings('import'))
     else:
         directories = {'inbox': '',
                        'imported': '',
@@ -64,23 +52,13 @@ def load_sql_settings():
     # Get SQL settings
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if is_sql_connection_defined():
-        script_dir = os.path.dirname(__file__)
-        rel_path = "preferences/sql_connection.cnf"
-        abs_file_path = os.path.join(script_dir, rel_path)
-
-        with open(abs_file_path, 'r') as document:
-            config = {}
-            for line in document:
-                line = line.split()
-                if not line:
-                    continue
-                try:
-                    config[line[0]] = line[1:][0]
-                except:
-                    config[line[0]] = ''
+        config = parse_settings_file(get_settings('sql'))
 
         if 'user' not in list(config):
             config['user'] = ''
+            config['password'] = ''
+
+        if 'password' not in list(config):
             config['password'] = ''
 
     else:
