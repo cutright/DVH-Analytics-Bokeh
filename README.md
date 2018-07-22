@@ -43,6 +43,7 @@ Some installation challenges with DVH Analytics that are resolved with Docker:
 DOI: [https://doi.org/10.1002/acm2.12401](https://doi.org/10.1002/acm2.12401)  
 “DVH Analytics: A DVH Database for Clinicians and Researchers,” J. App. Clin. Med. Phys. - JACMP-2018-01083
 
+
 #### New MLC Analyzer Module added
 MLC Analyzer module added to DVH Analytics. Still in development, current complexity score based on:
 Younge et al. Penalization of aperture complexity in inversely planned volumetric modulated arc therapy.  
