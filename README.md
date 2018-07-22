@@ -26,9 +26,22 @@ The code is built upon these core libraries:
 * [dicompyler-core](https://pypi.python.org/pypi/dicompyler-core) - Extensible radiation therapy research platform and viewer for DICOM and DICOM RT
 * [Bokeh](http://bokeh.pydata.org/en/latest/index.html) - Interactive Web Plotting for Python
 
-For installation instructions, see our [installation notes](https://github.com/cutright/DVH-Analytics/blob/master/install_notes.md).
+For installation instructions of the source code, see our [installation notes](https://github.com/cutright/DVH-Analytics/blob/master/install_notes.md).
 
-This application was presented at the AAPM Midwest Chapter 2017 Fall meetings. The slides are available [here](https://www.dropbox.com/s/gtaxd5dp69508cu/DVH%20Analytics.mp4?dl=0).
+
+### Docker
+We're working on an easier way to deploy DVH Analytics [here](https://github.com/cutright/DVH-Analytics-Docker).
+
+Some installation challenges with DVH Analytics that are resolved with Docker:
+* Complete DVH Analytics [docker image](https://hub.docker.com/r/cutright/dvh-analytics/) is used.
+* A workaround for [this](https://github.com/bokeh/bokeh/issues/7771) Bokeh bug is applied.
+* Postgres SQL is included (so no need for setting up a database and user access).
+* All three servers for the main, admin, and settings views are started.
+
+
+### Citing DVH Analytics
+DOI: [https://doi.org/10.1002/acm2.12401](https://doi.org/10.1002/acm2.12401)  
+“DVH Analytics: A DVH Database for Clinicians and Researchers,” J. App. Clin. Med. Phys. - JACMP-2018-01083
 
 #### New MLC Analyzer Module added
 MLC Analyzer module added to DVH Analytics. Still in development, current complexity score based on:
