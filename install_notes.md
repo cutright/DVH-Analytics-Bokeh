@@ -1,7 +1,8 @@
 # Installation notes for DVH Analytics
 
 ## Before you start
-Please note this software does not work "out-of-the-box."  Some broad strokes:
+Please note this software does not work "out-of-the-box."  The smoothest way to run this software is with 
+Docker and [DVH Analytics Docker](https://github.com/cutright/DVH-Analytics-Docker). But if you prefer running the source code, here are some broad strokes:
 * Must have a PostgreSQL DB setup prior to use. [PostgreSQL Notes](#PostgreSQL)
 * Must initialize import_settings.txt and sql_connection.cfg  
 `$ dvh settings` or `$ dvh settings_simple`
