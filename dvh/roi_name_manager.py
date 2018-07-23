@@ -97,8 +97,8 @@ class DatabaseROIs:
         physician = clean_name(physician).upper()
         if physician not in self.get_physicians():
             self.physicians[physician] = Physician(physician)
-        # for institutional_roi in self.institutional_rois:
-        #     self.add_physician_roi(physician, institutional_roi, institutional_roi)
+        for institutional_roi in self.institutional_rois:
+            self.add_physician_roi(physician, institutional_roi, institutional_roi)
 
     def delete_physician(self, physician):
         physician = clean_name(physician).upper()
@@ -401,7 +401,6 @@ class DatabaseROIs:
         for physician in physicians:
             file_name = 'physician_' + physician + '.roi'
             abs_file_path = os.path.join(script_dir, rel_dir, file_name)
-            document = open(abs_file_path, 'w')
             lines = []
             for physician_roi in self.get_physician_rois(physician):
                 institutional_roi = self.get_institutional_roi(physician, physician_roi)
@@ -414,10 +413,11 @@ class DatabaseROIs:
                 line += '\n'
                 lines.append(line)
             lines.sort()
-            for line in lines:
-                document.write(line)
-
-            document.close()
+            if lines:
+                document = open(abs_file_path, 'w')
+                for line in lines:
+                    document.write(line)
+                document.close()
 
         for physician in get_physicians_from_roi_files():
             if physician not in physicians and physician != 'DEFAULT':
@@ -552,24 +552,24 @@ def print_uncategorized_rois():
         print(physician, institutional_roi, physician_roi, roi_name, sep=' ')
 
 
-def get_combined_fuzz_score(a, b, simple=None, partial=None):
-    a = clean_name(a)
-    b = clean_name(b)
-
-    if simple:
-        w_simple = float(simple)
-    else:
-        w_simple = 1.
-
-    if partial:
-        w_partial = float(partial)
-    else:
-        w_partial = 1.
-
-    simple = fuzz.ratio(a, b) * w_simple
-    partial = fuzz.partial_ratio(a, b) * w_partial
-    combined = float(simple) * float(partial) / 10000.
-    return combined
+# def get_combined_fuzz_score(a, b, simple=None, partial=None):
+#     a = clean_name(a)
+#     b = clean_name(b)
+#
+#     if simple:
+#         w_simple = float(simple)
+#     else:
+#         w_simple = 1.
+#
+#     if partial:
+#         w_partial = float(partial)
+#     else:
+#         w_partial = 1.
+#
+#     simple = fuzz.ratio(a, b) * w_simple
+#     partial = fuzz.partial_ratio(a, b) * w_partial
+#     combined = float(simple) * float(partial) / 10000.
+#     return combined
 
 
 if __name__ == '__main__':

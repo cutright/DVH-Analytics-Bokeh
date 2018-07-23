@@ -7,7 +7,7 @@ def get_settings(settings_type):
     :param settings_type: either 'sql' or 'import'
     :return:
     """
-    if os.path.isfile(SETTINGS_PATHS['docker'][settings_type]):
+    if os.path.isfile('/this_is_running_in_docker'):
         return SETTINGS_PATHS['docker'][settings_type]
     else:
         script_dir = os.path.dirname(__file__)

@@ -26,6 +26,7 @@ import auth
 import time
 from options import *
 from get_settings import get_settings, parse_settings_file
+from shutil import copyfile
 
 
 # This depends on a user defined function in dvh/auth.py.  By default, this returns True
@@ -382,6 +383,9 @@ def reload_db():
         new_value = new_options[0]
     select_physician.options = new_options
     select_physician.value = new_value
+
+    save_button_roi.button_type = 'primary'
+    save_button_roi.label = 'Map Saved'
 
 
 def save_db():
@@ -825,12 +829,16 @@ def backup_db():
     if not os.path.isdir(abs_path):
         os.mkdir(abs_path)
 
+    time_id = str(datetime.now()).split('.')[0].replace(':', '-').replace(' ', '_')
     new_file = config['dbname'] + '_' + config['host'] + '_' + config['port'] +\
-               '_' + str(datetime.now()).split('.')[0].replace(':', '-').replace(' ', '_') +\
+               '_' + time_id +\
                '.sql'
     abs_file_path = os.path.join(abs_path, new_file)
 
-    os.system("pg_dumpall >" + abs_file_path)
+    if os.path.isfile('/this_is_running_in_docker'):
+        os.system("pg_dump -U %s -h %s %s > %s" % (config['user'], config['host'], config['dbname'], abs_file_path))
+    else:
+        os.system("pg_dumpall >" + abs_file_path)
 
     update_backup_select(backup_location.value)
 
@@ -855,6 +863,31 @@ def restore_db():
     restore_db_button.button_type = 'primary'
 
 
+def backup_pref():
+    backup_pref_button.button_type = 'warning'
+    backup_pref_button.label = 'Backing up...'
+
+    script_dir = os.path.dirname(__file__)
+    backup_path = os.path.join(script_dir, "backups")
+    pref_path = os.path.join(script_dir, 'preferences')
+    if not os.path.isdir(backup_path):
+        os.mkdir(backup_path)
+
+    time_id = str(datetime.now()).split('.')[0].replace(':', '-').replace(' ', '_')
+    backup_path_pref = os.path.join(backup_path, "preferences_" + time_id)
+    if not os.path.isdir(backup_path_pref):
+        os.mkdir(backup_path_pref)
+
+    files_to_backup = [f for f in os.listdir(pref_path) if os.path.isfile(os.path.join(pref_path, f))]
+    for f in files_to_backup:
+        copyfile(os.path.join(pref_path, f), os.path.join(backup_path_pref, f))
+
+    update_backup_select(backup_location.value)
+
+    backup_pref_button.button_type = 'success'
+    backup_pref_button.label = 'Backup'
+
+
 def update_backup_select(abs_path, *new_index):
 
     if not os.path.isdir(abs_path):
@@ -865,6 +898,7 @@ def update_backup_select(abs_path, *new_index):
             time.sleep(2.5)
             backup_location.value = '/'
 
+    # SQL Backups
     backups = [f for f in os.listdir(abs_path) if os.path.isfile(os.path.join(abs_path, f)) and '.sql' in f]
     if not backups:
         backups = ['']
@@ -874,6 +908,13 @@ def update_backup_select(abs_path, *new_index):
         backup_select.value = backups[new_index[0]]
     else:
         backup_select.value = backups[0]
+
+    # Preferences backups
+    backups = [d for d in os.listdir(abs_path) if os.path.isdir(os.path.join(abs_path, d)) and d.startswith('preferences')]
+    if not backups:
+        backups = ['']
+    backups.sort(reverse=True)
+    backup_pref_select.options = backups
 
 
 def delete_backup():
@@ -890,6 +931,45 @@ def delete_backup():
         else:
             new_index = len(backup_select.options) - 2
         update_backup_select(backup_location.value, new_index)
+
+
+def delete_backup_pref():
+    delete_backup_button_pref.label = 'Restoring...'
+    delete_backup_button_pref.button_type = 'warning'
+
+    script_dir = os.path.dirname(__file__)
+    src_path = os.path.join(script_dir, 'backups', backup_pref_select.value)
+
+    for f in os.listdir(src_path):
+        os.remove(f)
+    os.rmdir(src_path)
+
+    update_backup_select(backup_location.value)
+
+    delete_backup_button_pref.label = 'Restore'
+    delete_backup_button_pref.button_type = 'primary'
+
+
+def restore_preferences():
+    restore_pref_button.label = 'Restoring...'
+    restore_pref_button.button_type = 'warning'
+
+    script_dir = os.path.dirname(__file__)
+    backup_path = os.path.join(script_dir, 'backups')
+    dest_path = os.path.join(script_dir, 'preferences')
+    src_path = os.path.join(backup_path, backup_pref_select.value)
+
+    for f in os.listdir(dest_path):
+        os.remove(f)
+
+    files_to_restore = [f for f in os.listdir(src_path) if os.path.isfile(os.path.join(src_path, f))]
+    for f in files_to_restore:
+        copyfile(os.path.join(src_path, f), os.path.join(dest_path, f))
+
+    update_backup_select(backup_location.value)
+
+    restore_pref_button.label = 'Restore'
+    restore_pref_button.button_type = 'primary'
 
 
 def calculate_ptv_distances():
@@ -1554,14 +1634,18 @@ baseline_layout = layout([[baseline_title],
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Backup utility
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-backup_select = Select(value='', options=[''], title="Available Backups", width=350)
+backup_select = Select(value='', options=[''], title="Available SQL Backups", width=450)
 delete_backup_button = Button(label='Delete', button_type='warning', width=100)
 restore_db_button = Button(label='Restore', button_type='primary', width=100)
 backup_db_button = Button(label='Backup', button_type='success', width=100)
+backup_pref_select = Select(value='', options=[''], title="Available Preferences Backups", width=450)
+delete_backup_button_pref = Button(label='Delete', button_type='warning', width=100)
+restore_pref_button = Button(label='Restore', button_type='primary', width=100)
+backup_pref_button = Button(label='Backup', button_type='success', width=100)
 options = ['Default', 'Root', 'Home', 'Custom']
 backup_location_select = Select(value=options[0], options=options, title="Common Locations")
 backup_location = TextInput(value=options_map['Default'], title='Backup Directory:', width=500)
-warning_div = Div(text="<b>WARNING:</b> Restore requires your OS user name to be both a"
+warning_div = Div(text="<b>WARNING for Non-Docker Users:</b> Restore requires your OS user name to be both a"
                        " PostgreSQL super user and have ALL PRIVILEGES WITH GRANT OPTIONS.  Do NOT attempt otherwise."
                        " It's possible you have multiple PostgreSQL servers installed, so be sure your backup"
                        " file isn't empty.  Validate by typing 'psql' in a terminal/command prompt, then"
@@ -1581,7 +1665,10 @@ delete_backup_button.on_click(delete_backup)
 backup_db_button.on_click(backup_db)
 restore_db_button.on_click(restore_db)
 
+backup_pref_button.on_click(backup_pref)
+
 backup_layout = layout([[backup_select, delete_backup_button, restore_db_button, backup_db_button],
+                        [backup_pref_select, delete_backup_button_pref, restore_pref_button, backup_pref_button],
                         [backup_location_select],
                         [backup_location],
                         [warning_div],
