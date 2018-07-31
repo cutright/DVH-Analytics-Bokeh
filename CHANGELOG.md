@@ -1,5 +1,15 @@
 # Change log of DVH Analytics
 
+### 0.4.2 (2018.07.31)
+* Download button added for DVH endpoints.
+* LITE_VIEW added to options.py. If this is set to True, only Query and DVHs tabs are rendered.  The 
+DVHs tab is stripped down to only calculate endpoints, although they are not displayed.  This is 
+to avoid any table or plots being  displayed. No correlation data is calculated.  Users working 
+with VERY large datasets may find  this useful if all they want is to query and quickly calculate 
+DVH endpoints.
+* The download dropdown button on the Query tab has been non-functional since we updated for Bokeh 
+0.13.0 compatibility.  This button works as expected now.
+
 ### 0.4.1 (2018.07.23)
 * The DVH Analytics Docker image now has an empty file , /this_is_running_from_docker, 
 which is used by DVH Analytics to detect if the user is running Docker. This helps 
