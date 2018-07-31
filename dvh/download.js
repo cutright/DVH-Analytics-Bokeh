@@ -3,7 +3,7 @@
 
 var filetext = '';
 
-if (cb_obj.get('value') == 'anon_dvhs') {
+if (cb_obj.value == 'anon_dvhs') {
 
     var data = source.data;
     var ep_names = source_endpoint_names.data;
@@ -84,7 +84,7 @@ if (cb_obj.get('value') == 'anon_dvhs') {
     }
 }
 
-if (cb_obj.get('value') == 'all' || cb_obj.get('value') == 'lite') {
+if (cb_obj.value == 'all' || cb_obj.value == 'lite') {
 
     var data = source.data;
     filetext = 'DVH Data\nmrn,uid,roi_name,roi_type,rx_dose,volume,surface_area,min_dose,mean_dose,max_dose,dist_to_ptv_min,dist_to_ptv_mean,dist_to_ptv_median,dist_to_ptv_max,ptv_overlap\n';
@@ -155,7 +155,7 @@ if (cb_obj.get('value') == 'all' || cb_obj.get('value') == 'lite') {
     }
 }
 
-if (cb_obj.get('value') == 'all') {
+if (cb_obj.value == 'all') {
 
     var data = source_beams.data;
     filetext = filetext.concat('\n\nBeam Data\nmrn,uid,beam_number,fxs,fx_grp_beam_count,fx_grp_number,');
@@ -207,7 +207,7 @@ if (cb_obj.get('value') == 'all') {
     }
 }
 
-if (cb_obj.get('value') == 'all' || cb_obj.get('value') == 'dvhs') {
+if (cb_obj.value == 'all' || cb_obj.value == 'dvhs') {
 
     var data = source.data;
     filetext = filetext.concat('\n\nDVHs\n');
