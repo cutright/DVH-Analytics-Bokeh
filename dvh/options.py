@@ -123,3 +123,7 @@ SETTINGS_PATHS = {'docker': {'import': "/import_settings.txt",
                   'default': {'import': "preferences/import_settings.txt",
                               'sql': "preferences/sql_connection.cnf"}}
 
+# Set this to True to turn off all modules except Query and DVHs.  No graphics are generated.  Activating this will
+# be useful for VERY large datasets when the user is only interested in raw data and DVH Endpoint calculation
+LITE_VIEW = True
+

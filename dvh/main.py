@@ -3955,20 +3955,27 @@ layout_query = column(row(custom_title_query_blue, Spacer(width=50), custom_titl
                           delete_range_row_button, Spacer(width=10), range_not_operator_checkbox),
                       range_filter_data_table)
 
-layout_dvhs = column(row(custom_title_dvhs_blue, Spacer(width=50), custom_title_dvhs_red),
-                     row(radio_group_dose, radio_group_volume),
-                     row(select_reviewed_mrn, select_reviewed_dvh, review_rx),
-                     dvh_plots,
-                     data_table_title,
-                     data_table,
-                     div_endpoint_start,
-                     div_endpoint,
-                     add_endpoint_row_button,
-                     row(ep_row, Spacer(width=10), select_ep_type, ep_text_input, Spacer(width=20),
-                         ep_units_in, delete_ep_row_button),
-                     ep_data_table,
-                     endpoint_table_title,
-                     data_table_endpoints)
+if LITE_VIEW:
+    layout_dvhs = column(row(radio_group_dose, radio_group_volume),
+                         add_endpoint_row_button,
+                         row(ep_row, Spacer(width=10), select_ep_type, ep_text_input, Spacer(width=20),
+                             ep_units_in, delete_ep_row_button),
+                         ep_data_table)
+else:
+    layout_dvhs = column(row(custom_title_dvhs_blue, Spacer(width=50), custom_title_dvhs_red),
+                         row(radio_group_dose, radio_group_volume),
+                         row(select_reviewed_mrn, select_reviewed_dvh, review_rx),
+                         dvh_plots,
+                         data_table_title,
+                         data_table,
+                         div_endpoint_start,
+                         div_endpoint,
+                         add_endpoint_row_button,
+                         row(ep_row, Spacer(width=10), select_ep_type, ep_text_input, Spacer(width=20),
+                             ep_units_in, delete_ep_row_button),
+                         ep_data_table,
+                         endpoint_table_title,
+                         data_table_endpoints)
 
 layout_rad_bio = column(row(custom_title_rad_bio_blue, Spacer(width=50), custom_title_rad_bio_red),
                         emami_text,
@@ -4055,8 +4062,11 @@ optional_tabs = [('ROI Viewer', Panel(child=layout_roi_viewer, title='ROI Viewer
                  ('Correlation', Panel(child=layout_correlation_matrix, title='Correlation')),
                  ('Regression', Panel(child=layout_regression, title='Regression')),
                  ('MLC Analyzer', Panel(child=layout_mlc_analyzer, title='MLC Analyzer'))]
-rendered_tabs = [query_tab, dvh_tab, rad_bio_tab] + \
-                [tab for (title, tab) in optional_tabs if OPTIONAL_TABS[title]]
+if LITE_VIEW:
+    rendered_tabs = [query_tab, dvh_tab]
+else:
+    rendered_tabs = [query_tab, dvh_tab, rad_bio_tab] + \
+                    [tab for (title, tab) in optional_tabs if OPTIONAL_TABS[title]]
 
 tabs = Tabs(tabs=rendered_tabs)
 
