@@ -125,5 +125,5 @@ SETTINGS_PATHS = {'docker': {'import': "/import_settings.txt",
 
 # Set this to True to turn off all modules except Query and DVHs.  No graphics are generated.  Activating this will
 # be useful for VERY large datasets when the user is only interested in raw data and DVH Endpoint calculation
-LITE_VIEW = True
+LITE_VIEW = False
 

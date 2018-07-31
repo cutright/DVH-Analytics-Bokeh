@@ -792,15 +792,17 @@ def update_data():
     if current_dvh.count:
         print(str(datetime.now()), 'initializing source data ', current_dvh.query, sep=' ')
         current_dvh_group_1, current_dvh_group_2 = update_dvh_data(current_dvh)
-        print(str(datetime.now()), 'updating correlation data')
-        update_correlation()
-        print(str(datetime.now()), 'correlation data updated')
+        if not LITE_VIEW:
+            print(str(datetime.now()), 'updating correlation data')
+            update_correlation()
+            print(str(datetime.now()), 'correlation data updated')
         update_source_endpoint_calcs()
-        calculate_review_dvh()
-        initialize_rad_bio_source()
-        control_chart_y.value = ''
-        update_roi_viewer_mrn()
-        update_mlc_analyzer_mrn()
+        if not LITE_VIEW:
+            calculate_review_dvh()
+            initialize_rad_bio_source()
+            control_chart_y.value = ''
+            update_roi_viewer_mrn()
+            update_mlc_analyzer_mrn()
     else:
         print(str(datetime.now()), 'empty dataset returned', sep=' ')
         query_button.label = 'No Data'
@@ -1285,7 +1287,8 @@ def update_source_endpoint_calcs():
         source_endpoint_calcs.data = ep
         update_endpoint_view()
 
-    update_time_series_options()
+    if not LITE_VIEW:
+        update_time_series_options()
 
 
 def update_endpoint_view():
@@ -1303,7 +1306,8 @@ def update_endpoint_view():
                 ep_view["ep%s" % (r+1)] = source_endpoint_calcs.data[key]
 
         source_endpoint_view.data = ep_view
-        update_endpoints_in_correlation()
+        if not LITE_VIEW:
+            update_endpoints_in_correlation()
 
 
 def update_time_series_options():
@@ -3305,6 +3309,9 @@ for i in range(ENDPOINT_COUNT):
                                formatter=NumberFormatter(format="0.00")))
 data_table_endpoints = DataTable(source=source_endpoint_view, columns=columns, width=1200, editable=True)
 data_table_endpoints.index_position = None
+download_endpoints_button = Button(label="Download Endpoints", button_type="default", width=150)
+download_endpoints_button.callback = CustomJS(args=dict(source=source_endpoint_calcs),
+                                              code=open(join(dirname(__file__), "download_endpoints.js")).read())
 
 source_endpoint_view.selected.on_change('indices', update_dvh_table_selection)
 
@@ -3959,7 +3966,7 @@ if LITE_VIEW:
     layout_dvhs = column(row(radio_group_dose, radio_group_volume),
                          add_endpoint_row_button,
                          row(ep_row, Spacer(width=10), select_ep_type, ep_text_input, Spacer(width=20),
-                             ep_units_in, delete_ep_row_button),
+                             ep_units_in, delete_ep_row_button, Spacer(width=50), download_endpoints_button),
                          ep_data_table)
 else:
     layout_dvhs = column(row(custom_title_dvhs_blue, Spacer(width=50), custom_title_dvhs_red),
@@ -3972,7 +3979,7 @@ else:
                          div_endpoint,
                          add_endpoint_row_button,
                          row(ep_row, Spacer(width=10), select_ep_type, ep_text_input, Spacer(width=20),
-                             ep_units_in, delete_ep_row_button),
+                             ep_units_in, delete_ep_row_button, Spacer(width=50), download_endpoints_button),
                          ep_data_table,
                          endpoint_table_title,
                          data_table_endpoints)
