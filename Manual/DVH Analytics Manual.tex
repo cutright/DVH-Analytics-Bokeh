@@ -1,0 +1,972 @@
+\documentclass[article, 10 pt]{report}
+\usepackage{graphicx}
+\usepackage{blindtext}
+\usepackage{float}
+\graphicspath{ {./figures/} }
+
+\usepackage{color}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    linktoc=all,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=blue
+}
+
+% -------------------------------------------------------------------------------------
+% BEGIN DOCUMENT
+% -------------------------------------------------------------------------------------
+\begin{document}
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.9\textwidth,keepaspectratio]{logo.jpg}
+\end{center}
+\end{figure}
+\title{DVH Analytics 0.4.3 User Manual \\(in progress)}
+\author{Dan Cutright\\ \\ \url{http://dvhanalytics.com}}
+\maketitle
+\pagestyle{empty}
+
+% -------------------------------------------------------------------------------------
+% TABLE OF CONTENTS
+% -------------------------------------------------------------------------------------
+\tableofcontents
+\newpage
+
+% -------------------------------------------------------------------------------------
+% INTRODUCTION
+% -------------------------------------------------------------------------------------
+\section{Introduction}
+DVH Analytics is a software application to help radiation oncology departments build an in-house database of treatment planning data for the purpose of historical comparisons and statistical analysis. 
+
+The application builds a SQL database of DVHs and various planning parameters from DICOM files (i.e., Plan, Structure, Dose). Since the data is extracted directly from DICOM files, we intend to accommodate an array of treatment planning system vendors.
+
+In addition to viewing DVH data, this software provides methods to download queried data, view plan contours, create time-series plots of various planning and dosimetric variables, calculate correlations,
+and generate multi-variable linear regressions.\\
+\\
+The code is built upon these core libraries:
+\begin{itemize}
+\item pydicom: \url{https://github.com/pydicom/pydicom} 
+\\Read, modify and write DICOM files with python code
+\item dicompyler-core: \url{https://github.com/dicompyler/dicompyler-core}
+\\Extensible radiation therapy research platform and viewer for DICOM and DICOM RT
+\item Bokeh: \url{https://bokeh.pydata.org/en/latest/}
+\\Interactive Web Plotting for Python \\
+\end{itemize}
+\newpage
+
+% -------------------------------------------------------------------------------------
+% INSTALLATION
+% -------------------------------------------------------------------------------------
+\section{Installation}
+There are multiple ways to install DVH Analytics, depending on the user's level of comfort with python and SQL.  Users familiar with python will find the most flexibility with a source installation, while users new to python or unfamiliar with setting up a postgres SQL database will likely have more success installing via Docker in Section \ref{sec:docker-install}.
+\subsection{Source Code}
+DVH Analytics currently requires python 2.7 (python 3 has not been tested).  Python is available for free here: \url{https://www.python.org/}.  Alternatively, python installations via Anaconda are also supported: \url{https://anaconda.org/}.  So not to turn this manual into a crash course for python, user's unfamiliar with installing python packages with pip are encouraged to use the Docker install.  DVH Analytics source good can be installed with the following command: \\
+\indent \$ pip install dvh-analytics\\
+Depending on your operating system and user settings, you may need to prepend the above command with sudo to act as the root user:\\
+\indent \$ sudo pip install dvh-analytics\\
+Alternatively, users may use Git or checkout with SVN using \url{https://github.com/cutright/DVH-Analytics.git} or download the source code as a zip at \url{https://github.com/cutright/DVH-Analytics/archive/master.zip}\\
+
+\noindent ---------------------------------------------------\\
+\\
+\noindent \textit{Note to Linux users} \\
+You may need FreeType (\url{https://www.freetype.org/}). For example:\\ \indent \$ sudo apt-get install libfreetype6-dev\\
+
+\noindent \textit{Note to Mac users} \\
+Make sure Xcode command line tools are installed prior to DVH Analytics installation. If the full Xcode package is installed (from the Mac App Store), enter the following into a terminal window:\\
+\indent \$ xcode-select --install\\
+
+\noindent \textit{Note to Windows users} \\
+The python package Shapely frequently has issues installing on Windows.  If your pip install dvh-analytics failed due to the Shapely package, consider installing Shapely from \url{https://www.lfd.uci.edu/~gohlke/pythonlibs/#shapely}.
+\newpage
+
+\subsection{Docker}
+\label{sec:docker-install}
+Using Docker greatly simplifies the installation process of DVH Analytics.  If you're famliar with Docker and prefer to work directly from the image, as opposed to using docker-compose below, it is hosted here: \url{https://hub.docker.com/r/cutright/dvh-analytics/}
+
+\begin{enumerate}
+\item Download our docker-compose.yml file to a location of your choosing.  \url{https://raw.githubusercontent.com/cutright/DVH-Analytics-Docker/master/docker-compose.yml}
+\item Create a folder in your home directory `DVH-Analytics' or replace any reference to `{\raise.17ex\hbox{$\scriptstyle\sim$}}/DVH-Analytics/' in 
+docker-compose.yml with any other folder you like. Be sure to keep directories to right of the colon the same.
+\item From a terminal or command prompt, navigate to the directory with your docker-compose.yml, type  
+`docker-compose up`.
+\item If you'd like to shutdown these services, simply press CTRL+C  with the terminal or command prompt window activated.
+\end{enumerate}
+
+\subsection{Postgres SQL}
+\label{sec:sql-install}
+DVH Analytics depends on psycopg2 (\url{http://initd.org/psycopg/}) to connect python to the SQL database, therefore a postgres SQL database is required.  If you already have login credentials for a postgres SQL database, you likely only need to update these settings as described in Section \ref{sec:view-settings}.  If you are running DVH Analytics with Docker as opposed to running from source code, you do not need to install postgres SQL.
+
+If you need postgres SQL, here are some options for Mac OS, Ubuntu, and Windows.  Installs of postgres SQL on other operating systems are also supported; any installation of postgres SQL should be sufficient with appropriate log in credentials.
+
+\subsubsection{Mac OS}
+The simplest choice is to download the postgres SQL app: \\
+\url{http://postgresapp.com/}
+\begin{enumerate}
+\item Open the postgres SQL app.
+\item Click Start.
+\item Double-click "postgres" with the cylindrical database icon.
+\item Type the following in the SQL terminal:
+\begin{itemize}
+\item create database dvh;
+\item \textbackslash q
+\end{itemize}
+\end{enumerate}
+
+\subsubsection{Ubuntu}
+You probably already have PostgreSQL installed, but if you don't, type the following in a terminal:\\
+\indent \$ sudo apt-get install postgresql postgresql-client postgresql-contrib \\
+\indent \$ sudo apt-get libpq-dev\\
+
+From here, it's best to create a new role with same name as your user name for your OS, then create a database; DVH Analytics assumes a database name of 'dvh' by default, but if you choose to use another name, just update your login credentials with the Settings view as described in Section \ref{sec:view-settings}.\\
+
+Alternatively, you can install a GUI for admin controls and follow the instructions below in Role and Database Initialization for pgAdmin3\\
+\indent \$ sudo apt-get install pgadmin3\\
+
+\subsubsection{Windows}
+Download the installer for BigSQL: \url{https://www.bigsql.org/postgresql/installers.jsp/}.  Be sure to include pgAdmin3 LTS.
+
+\subsubsection{Role and Database Initialization for pgAdmin3}
+\begin{enumerate}
+\item Launch pgAdmin3 LTS.
+\item Right-click localhost and then click connect.
+\item Right-click Login Roles and then click New Login Role.
+\item Fill in Role name (e.g., dvh), click OK.
+\item Right-click Databases then click New Database.
+\item Fill in Name (e.g., dvh), set owner to the Role name you just created.
+\item Click OK.
+\end{enumerate}
+
+\subsection{Web Browser Requirements}
+The preferred web browser is Google Chrome.  Mozilla Firefox should also work.  Microsoft Internet Explorer is currently incompatible with Bokeh, and Apple Safari intermittently loses connection to Bokeh.  These requirements are entirely dependent on Bokeh and possibly Tornado (a Bokeh dependency).
+
+% -------------------------------------------------------------------------------------
+% INITIALIZATION
+% -------------------------------------------------------------------------------------
+\section{Initialization}
+\label{sec:initialization}
+There a few things that need to be done before using DVH Analytics.  Depending on how it was installed, you may need to update the SQL connections settings.  DVH analytics also needs to know where to find incoming DICOM files and where to move them to after import.  And finally, there is some post-processing required regarding ROI names and PTV distance and overlap calculations.
+
+\subsection{Establishing a SQL Connection}
+If you're using Docker, the Settings web server is already running.  Otherwise, launch the Settings web server with one of the following commands:
+\begin{itemize}
+\item From pip install:\\ \$ dvh settings
+\item From source code:\\\$ bokeh serve dvh/settings.py -{}-port=5008
+\end{itemize}
+
+Launch the Settings view by navigating to http://localhost:5008.  It's important to note that the values shown in this view are from the perspective of the web servers, so if you're running DVH Analytics with Docker, the directories and ports are Docker side.  It is not recommended to edit the directories here if you're using Docker, instead edit the directories in the docker-compse.yml file as described in Section \ref{sec:docker-install}.  The purpose of these directories are as follows:
+\begin{itemize}
+\item \textbf{inbox} - Place your DICOM files to be processed in this folder.
+\item \textbf{imported} - After DICOM files have been processed, they will be moved to this folder and organized by MRN (or Patient ID).
+\item \textbf{review} - DICOM files to be used for the DVH review feature, as described in Section \ref{sec:main-dvhs},  should live here.
+\end{itemize}
+
+\subsection{Importing Data}
+
+If you're using Docker, the Admin web server is already running.  Otherwise, launch the Admin web server using one of the the following commands, as appropriate:
+\begin{itemize}
+\item From pip install:\\ \$ dvh admin
+\item From source code:\\ \$ bokeh serve dvh/admin.py -{}-port=5007
+\end{itemize}
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=0.9\textwidth,keepaspectratio]{import.png}
+\vspace{-5mm}
+\caption{\label{fig:import-inbox}A screen shot of the admin view used for importing data.}
+\end{center}
+\end{figure}
+\noindent Clicking ``Import all from inbox" will Process all DICOM files in the inbox directory specified in Section \ref{sec:initialization}.  Some important things to note:
+\begin{itemize}
+\item \textit{Complete File Set: Plan, Dose, Structure}\\A complete set of RT Dose, RT Structure, and RT Plan connected by the same study instance UID is required by default.  If Force Update is checked, importing without the RT Plan will be allowed. 
+\item \textit{Multiple File Sets}\\By default, only the latest DICOM file set will be parsed, based on the operating system's date modified timestamp on the file.  If the user would like to import multiple DICOM file sets with the same study instance UID, uncheck `Import Latest Only'.
+\item \textit{Other DICOM Files}\\All DICOM files connected with the same Study Instance UID will be catalogued, even if the file is not used. 
+\item \textit{Study Instance UID}\\If the Study Instance UID of a DICOM file set in the inbox already exists in the database, this file set will not be imported unless ``Force Update" is checked.  This functionality is not recommended as one of the underlying assumptions about the database is that there is one Study Instance UID per course of treatment and the dose grid is the complete composite dose for the course.
+\item \textit{CTV, GTV, PTV}\\Target volumes are best identified by labeling the ROI in the TPS prior to DICOM export.  ROIs are typically labeled as ORGAN by default in many planning systems.  DVH Analytics recognizes CTV, GTV, and PTV labels.  If multiple PTVs are included in one file set, DVH Analytics will automatically label them as PTV1, PTV2, etc. in ascending order of $D_{95\%}$.
+\item \textit{ITV}\\An ROI will be labeled as an ITV if the ROI name begins with ``ITV".  If your TPS supports the ITV label, it is not necessary to begin your ITV ROI name with ``ITV".
+\end{itemize}
+
+\noindent \textbf{WARNING}: Clicking Rebuild database will wipe all data from the SQL data base and reprocess all DICOM files in the ``imported" directory.  If your database has not been backed-up, this can not be undone.\\
+\\
+
+\noindent ---------------------------------------------------\\
+\noindent \textit{NOTE TO PINNACLE USERS}:\\If your treatment planning system is Pinnacle 9.10 and earlier (and perhaps later), prescription information is not stored in the exported DICOM files.  However, DVH Analytics does provide a Pinnacle script which will create dummy POIs containing the prescription information.  It is recommended that you run this script in Pinnacle for each patient prior to DICOM export.  This script can be found here:
+\url{https://github.com/cutright/DVH-Analytics/tree/master/Pinnacle%20Scripts}
+
+Both p3rtp files are needed, however, only the file DVH-Analytics\_Create-POIs.Script.p3rtp is executed from user in Pinnacle; this script will automatically call the DVH-Analytics\_Create-Rx-POI.Script.p3rtp script.\\
+
+Alternatively, you can manually create POIs with names in the following format:
+\begin{itemize}
+\item ``tx: $<$site$>$"\\
+will allow DVH-Analytics to add this site name to the database upon import.
+\item ``rx$\#$: $<$rx name$>$: $<$rx dose in cGy$>$ cGy x $<$fxs$>$ to $<$normalization \%$>$\%: $<$normalization method$>$: $<$normalization object$>$"\\
+where \# is rx number starting from 1, this will allow DVH-Analytics to retrieve rx information.
+\end{itemize}
+
+\subsection{Post-Processing of Data}
+\label{sec:post-processing}
+
+After some data has been imported, there is some additional mapping and processing needed.  A physician ROI map needs to be generated and applied.  The PTVs also need to be labeled as such for correct PTV distance and overlap calculations.
+
+\subsubsection{ROI Name Mapping}
+
+The ROI name mapping process requires the `ReferringPhysicianName'  or `PhysiciansOfRecord' DICOM tag to match the physician tag shown in the ROI Map tab of the Admin view.  Note that treatment planning systems may use different labels in their user interface (e.g., Attending Physician or Radiation Oncologist).  You might need to do some investigating for your particular TPS.  
+If the Physician is not set in the DICOM file, this can be easily edited in the Admin view (localhost:5007).  Performing a query with the Plans table, selecting import\_time\_stamp and physician (with CTRL or COMMAND clicks to select both), and leaving the condition text field empty will yield results similar to those in Figure \ref{fig:missing-physician}.
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=1.1\textwidth,keepaspectratio]{missing-physician.png}
+\vspace{-5mm}
+\caption{\label{fig:missing-physician}Example case with a missing physician label.}
+\end{center}
+\end{figure}
+
+In this example, we'd like to make sure the plan missing a physician is set to `BBM'.  This can be done in the Update Database section of the Admin view as shown in Figure \ref{fig:edit-physician}.  Note that you can double click a field in the table in Figure \ref{fig:missing-physician} to copy it's value to the clip board.  If this particular patient had multiple plans, each with a different physician, you could define the condition based on study\_instance\_uid instead.  Alternatively, the condition could be:\\
+\indent import\_time\_stamp $>$ `2018-04-01'\\
+causing all plans imported since April 1, 2018 to be updated.  Additional details about this functionality can be found in Section \ref{sec:database-editor}.
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=1\textwidth,keepaspectratio]{edit-physician.png}
+\vspace{-5mm}
+\caption{\label{fig:edit-physician}Example case to update physician.}
+\end{center}
+\end{figure}
+
+Now that we have ensured all of our plans have a physician assigned, navigate to the ROI Name Mapping tab, as shown in Figure \ref{fig:roi-name-manager}.  From here, select the correct physician and click ``Remap all ROIs for Physician" or simply ``Remap all ROIs in DB".  Additional details about the features in this tab are explained in Section \ref{sec:roi-name-manager}. Alternatively, you can add a new physician.  Note that the physician name will be automatically capitalized; the intent is to use initials here.
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=1\textwidth,keepaspectratio]{roi-name-manager.png}
+\vspace{-5mm}
+\caption{\label{fig:roi-name-manager}ROI Name Manager tab with in the Admin view.}
+\end{center}
+\end{figure}
+
+\subsubsection{PTV Distance and Overlap Calculations}
+Assuming that all imported plans have been assigned at least one PTV, the PTV distance and overlap calculations can be performed by clicking ``Calc PTV Distances", and upon completion, ``Calc PTV Overlap" (the order doesn't matter).  The total time to calculate both the distances and overlaps is approximately as long as the initial import time.
+
+If these values are not calculated for a given plan, then this plan will not be included in the data for the Correlations or Regressions tab since the statistical tests used require each category to have the same number of data points.
+\newpage
+
+% -------------------------------------------------------------------------------------
+% USER INTERFACES
+% -------------------------------------------------------------------------------------
+% Main View
+\section{Main View: http://localhost:5006}
+This is the main view for a user after data has been successfully imported and organized.  Data cannot be edited or added from this view.  There are two persistent text fields labeled Group 1 (Blue) Custom Title and Group 2 (Red) Custom Title.  The sole purpose is to let the user notate their own label for Group 1 and 2 that will be displayed on all tabs.  Automating this is difficult due to the potential complexity of the query.
+\subsection{Query}
+You can query by categorical or numerical data, using the categories in Table \ref{table:searchable_categories}.  Note that querying by mrn or study instance uid (UID) is typically not useful for the statistical modules.  Also, the Total Plan MU is total MU to be delivered to the patient per the plan (i.e., planned MU times number of fractions, summed across all prescriptions), all other categories are fairly self-explanatory.  
+
+\begin{table}[H]
+\caption{\label{table:searchable_categories}Searchable Categories}
+\begin{center}
+\begin{tabular}{@{}ll}
+\textbf{Categorical} & \textbf{Numerical} \\
+Baseline & Age (at study date)\\
+Beam Type & Beam Dose\\
+Collimator Rotation  & Beam Energy\\
+Couch Rotation & Beam MU\\
+Dose Grid Resolution & Birthdate\\
+Gantry Rotation & Collimator Angle\\
+Heterogeneity Correction & Couch Angle\\
+MRN & Distance to PTV\\
+Norm. Method & Fraction Dose\\
+Patient Orientation & Gantry Angle\\
+Patient Sex & Planned Fractions\\
+Physician & ROI Min/Mean/Max Dose\\
+ROI Institutional Category & ROI Volume\\
+ROI Physician Category & Rx Dose\\
+ROI Type & Rx Isodose\\
+Radiation Type & Scan Spots (Protons)\\
+Scan Mode (Protons) & Simulation Date\\
+Treatment Machine Name & SSD (Linac)\\
+Treatment Modality & Total Plan MU\\
+Treatment Site & Treatment time (Brachy)\\
+UID & \\
+\end{tabular}
+\end{center}
+\end{table}
+
+The dropdown list for Category 2 will populate based on data in your database.  Likewise, the titles of the Min and Max fields in the numerical data query definition will update based on your database, not necessarily correlating to the min and max values of the currently defined query.
+
+The download dropdown button in the top-right applies to the retrieved data once the Query button has returned back to its original green color.  From here you can download all data, all data sans DVHs, only DVHs, or anonymized DVHs; all as csv files.
+
+\subsection{DVHs}
+\label{sec:main-dvhs}
+DVH plots and selected metrics are shown in this tab.  The plot is interactive; you can hover over DVHs for information, you can zoom and pan, and toggle the median, mean, and IQR DVHs.  The `review' DVH is parsed and calculated on the fly from the DICOM files, which are selected by the mrn (PatientID DICOM tag).  By default, only the statistical DVHs are displayed (sans min and max).  To display retrieved DVHs, simply select them in the table below the plot; you may shift or CTRL click to highlight additional.
+The statistical DVHs are built dose bin-wise.  The IQR spread represents the middle 50\% of the retrieved data, as calculated with numpy.
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=0.9\textwidth,keepaspectratio]{view-dvhs-1.png}
+\vspace{-5mm}
+\caption{\label{fig:view-dvhs}An example query of brainstem and larynx DVHs with a `review' DVH of a brainstem plotted from the review directory (not from the database).}
+\end{center}
+\end{figure}
+
+Below the DVH table, you can define volumetric and dosimetric endpoints.  Note that only the first 10 endpoints are displayed, however, you may define as many as you'd like.  All endpoints can be evaluated in other modules and all endpoints will be included in the csv file retrieved when clicking `Download Endpoints'.
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=0.9\textwidth,keepaspectratio]{view-dvhs-2.png}
+\vspace{-5mm}
+\caption{\label{fig:view-dvhs-2}Endpoint calculations for the query from Figure \ref{fig:view-dvhs}.}
+\end{center}
+\end{figure}
+
+\subsection{Rad Bio}
+Equivalent uniform dose (EUD), tumor control probability (TCP), and normal tissue complication probability (NCTP) can be calculated in this module.  For convenience, a sample of parameters are provided based on Emami et. al. for 1.8 to 2.0 Gy fractions (Figure \ref{fig:view-radbio}); selecting a row from this table simply populates the fields below the table.  Calculated values are tabulated in the table shown in Figure \ref{fig:view-radbio-2}.  Note that you can manually select rows with shift or CTRL clicks so that you can apply the parameters to this row with the `Selected' radio button is depressed.  Although TCP and NTCP represent different phenomena, they are computed with the same equation when replacing $TD_{50}$ with $TCD_{50}$, or visa versa.  The equation used is based on formalism described by Niemierko.
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=1\textwidth,keepaspectratio]{view-radbio.png}
+\vspace{-5mm}
+\caption{\label{fig:view-radbio}Published EUD parameters provided for convenience.}
+\end{center}
+\end{figure}
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=1\textwidth,keepaspectratio]{view-radbio-2.png}
+\vspace{-5mm}
+\caption{\label{fig:view-radbio-2}Calculated radbio metrics for the query performed for Figure \ref{fig:view-dvhs}.}
+\end{center}
+\end{figure}
+
+\subsection{ROI Viewer}
+The purpose of the ROI Viewer module is to provide quick transverse visuals of ROIs stored in the SQL database.  There are no values calculated in this module.  An external or skin ROI will default to ROI 1 if found.  Currently, your web browser will still scroll when checking `Enable Slice Scrolling with Mouse Wheel'.  A custom version of Bokeh will need to be developed fix this.
+
+\subsection{Planning Data}
+This section is string tabulated data, which can be particular useful if suspcious data is noted from visual in other modules.  Clicking a row in any of these tables will call all rows with the same study instance UID, in all of the tables in this tab, to be highlighted.
+
+\subsection{Time-Series}
+Any of the quantitative data retrieved in the SQL query can be plotted vs simulation date.  Additionally, any defined DVH endpoints or calculated radbio parameters can be plotted.  Above the histogram plot in Figure \ref{fig:view-time-series-2}, a few p-values are displayed; these are calculated using the normaltest, ttest\_ind, and ranksums functions from scipy.stats.
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=1\textwidth,keepaspectratio]{view-time-series.png}
+\vspace{-5mm}
+\caption{\label{fig:view-time-series}ROI volume vs simulation date for the query performed for Figure \ref{fig:view-dvhs}.}
+\end{center}
+\end{figure}
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=1\textwidth,keepaspectratio]{view-time-series-2.png}
+\vspace{-5mm}
+\caption{\label{fig:view-time-series-2}Histograms for the data in Figure \ref{fig:view-time-series}.}
+\end{center}
+\end{figure}
+
+\subsection{Correlation}
+This module provides a visual method to explore Pearson R correlations between selected numerical data.  It is required that each variable for a given query group have the same number of data points, so be sure you've calculated PTV distances and overlaps from the admin view (see Section \ref{sec:post-processing}).  The top-right of this matrix refers to Group 1, the bottom-left referring to Group 2.  The radius and opacity of each dot is directly proportional to the magnitude of the Pearson-R value; negative correlations are displayed in green/puprle for blue/red groups (these colors can be changed in options.py).  Hovering over a dot reveals additional statistical details (p-value for the Pearson test and p-values for normal tests on each variable).
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=1\textwidth,keepaspectratio]{view-correlation.png}
+\vspace{-5mm}
+\caption{\label{fig:view-correlation}Correlation matrix for the query performed for Figure \ref{fig:view-dvhs}.}
+\end{center}
+\end{figure}
+
+\subsection{Regression}
+Multi-variable regression models can be performed using the python package statsmodels.  First, select a dependent variable, then increment through independent variables.  Results from a single variable linear regression are displayed for the currently selected dependent and independent variables.  Check off any independent variables you'd like to include in a multi-variable regression model, then scroll down and click ``Perform Multi-Variable Regression",  the results of this regression are tabulated just below this button.
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=1\textwidth,keepaspectratio]{view-regression.png}
+\vspace{-5mm}
+\caption{\label{fig:view-regression}Example plot of ROI Max Dose vs Min PTV Distance for the query performed for Figure \ref{fig:view-dvhs}.}
+\end{center}
+\end{figure}
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=1\textwidth,keepaspectratio]{view-regression-2.png}
+\vspace{-5mm}
+\caption{\label{fig:view-regression-2}Example multi-variable regression of max ROI dose with median and minimum PTV distances for the query performed for Figure \ref{fig:view-dvhs}.}
+\end{center}
+\end{figure}
+
+\subsection{MLC Analyzer}
+The MLC and jaw positions are displayed here.  You may select any mrn included in the query and subsequently the sim study date, study instance UID, and plan file (if there is more than one for a given mrn).  Selecting a row in table displayed in Figure \ref{fig:view-mlc} will update the aperture visualization.  A complexity score is calculated for each control point and the total beam complexity score is displayed above the table.  Future versions of DVH Analytics will incorporate these scores into the Correlation and Regression modules.  The complexity score is based on Younge et al. Penalization of aperture complexity in inversely planned volumetric modulated arc therapy.  
+Med Phys. 2012;39(11):7160-70.
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=1\textwidth,keepaspectratio]{view-mlc.png}
+\vspace{-5mm}
+\caption{\label{fig:view-mlc}Example view of MLC and Jaw positions of a plan.}
+\end{center}
+\end{figure}
+
+\newpage
+
+% Admin View
+\section{Admin View: http://localhost:5007}
+The admin view is used for managing the database.  Raw queries may be performed here, but there are no graphics or statistics modules.
+\subsection{Database Editor}
+\label{sec:database-editor}
+The primary function of the Database editor is to import new data into the SQL database.  Additionally, there methods provided to query, update/edit, reimport, and delete.\\
+\\
+\textit{Quick Tip}\\
+You can double-click any of the cells in the table at the bottom of the page, after a query, then copy that value to your OS clip board (great for copying a mrn or study instance uid).  Although this table is editable, manual changes to this table will not be reflected in the SQL database.
+\subsubsection{Query Database}
+This module allows you to directly query the SQL database, the results are populated in the table at the bottom of the page.  The SQL database is spit into 5 tables: DVHs, Plans, Rxs, Beams, and DICOM\_Files.  These tables are connected by the Patient\_ID DICOM tag (referred to as mrn here) and the study\_instance\_uid DICOM tag.  The condition needs to be formatted per postgres SQL syntax.  If the condition is blank, all data will be retrieved.
+\subsubsection{Update Database}
+There are some instances where the database needs to be edited directly.  Common examples are:
+\begin{enumerate}
+\item Ensuring proper PTV tags (roi\_type)
+\item Correcting physician name/intials (physician)
+\item Adding simulation date to anonymized data (sim\_study\_date)
+\end{enumerate} 
+Like querying described above, the condition should be formatted per postgres SQL syntax.  DVH Analytics will automatically add single quotes around the value if calling float(value) throws a ValueError in python.  Additionally, dates should be entered at YYYY-MM-DD::date; DVH Analytics will appropriately modify this for postgres syntax.
+\subsubsection{Reimport from DICOM}
+If data has been accidentally or incorrectly edited, you can reimport directly from DICOM here.  Entering a mrn will update the subsequent dropdown menus.
+\subsubsection{Delete all data with mrn or study\_instance\_uid}
+This module will delete all data for a specified mrn or study instance uid across all tables.
+\subsubsection{Change mrn or study\_instance\_uid in all tables}
+This module was implemented to accommodate studies that may want multiple plans for a single patient (e.g., photon vs proton comparision).  In this case, one could manually edit the study\_instance\_uid to `study\_name\_photon\_patient\_N'.  So to avoid having multiple plans for one study\_instance\_uid at any point, it would be recommended to import all photon plans, then edit all study\_instance\_uid fields; then import all proton plans and edit.
+\subsubsection{Post Import Calculations}
+There are two calculations that need to be performed after proper roi\_type assignment for PTVs: PTV distance and overlap volumes.  For both PTV calculations below, DVH Analytics will generate a combined PTV contour based on all PTVs in a plan.  Currently, uncategorized, external, and skin ROIs will not be included in the PTV distance calculations since very large contours could crash DVH Analytics due to memory issues.  Finally, recalculating ages was added for ease in the case of editing sim\_study\_date.\\
+
+\noindent \textit{PTV Distance}\\
+The cdist function in scipy.spatial.distance is used to calculate all point-to-point distances between the combined PTV and the OAR.  The minimum, median, mean, and maximum values are recorded into the SQL database.\\
+\\
+\noindent \textit{PTV Overlap}\\
+The python package, Shapely, is used to calculate the area of the intersection of the combined PTV and OAR, considering only slices involving the PTV.  These areas are then each multiplied by the distance between adjacent slices, while assuming the most superior slice thickness is equal the minimum slice thickness for this PTV-OAR pair.  This effectively, and albeit crudely, interpolates the delineated PTV, however, it's recommended that all intended slices are contoured or interpolated by your treatment planning system.
+
+\subsection{ROI Name Manager}
+\label{sec:roi-name-manager}
+To address the issue of varying contour/ROI names, a mapping system has been implemented in DVH Analytics with two ROI categories: Institutional and Physician.  This provides the flexibility for physicians to have their own list of ROIs, while still allowing for institutional-wide queries.  When adding a new physician to the map, the default list of institutional ROIs are automatically populated as a starting point, but may be edited or deleted.  Physicians ROIs that do not correspond to any particular ROI in the Institutional ROI list may be labeled as uncategorized.
+
+The example in Figure \ref{fig:roi-map} illustrates a large variation in possible labels in cervicothoracic esophagus.  As plans are imported, any ROI that is not recognized will be assigned the ROI type of uncategorized.  From ROI Name Manager, you may select an uncategorized ROI in the database for a given physician, and then choose to delete the ROI, label it as ignored (to keep it out of the uncategorized list so that it's not in your uncategorized list in a later review), or add this variation to the ROI map so that future instances will be caught.  Note that you must remap the the ROIs for the physician or database in order to apply the change of the ROI map; editing the ROI map does not apply any changes in the database until then.
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=0.9\textwidth,keepaspectratio]{roi-map.png}
+\vspace{-5mm}
+\caption{\label{fig:roi-map}An example ROI map for cervicothoracic esophagus.}
+\end{center}
+\end{figure}
+
+\subsection{Baseline Plans}
+The intent of this module is to allow the user to label plans as baseline or `good' plans.  Ideally, all plans will be pushed to this database, but perhaps only a subset of them may deemed helpful for statistical analysis.  It is left entirely to the user to decide how to use this label.  An alternative use could be to consider baseline line status as an approval after the imported data has been validated.
+\subsection{Backup \& Restore}
+The database backup feature in DVH Analytics is dependent on the pg\_dump command from the psql tools.  This may not be installed if you're using the posgres app for Mac and have not installed the command line tools.  Separately, user preferences, such as import settings, SQL connection settings, and ROI maps can be backed up.
+\newpage
+
+% Settings View
+\section{Settings View: http://localhost:5008}
+\label{sec:view-settings}
+This is the view to edit parameters required to be defined prior to processing data.  The purpose of this interface is to:
+\begin{itemize}
+\item Define directories for storing and accessing DICOM files
+\item Define login credentials for the SQL database
+\end{itemize}
+This view does not explicitly require a valid SQL connection and may be the only available view until valid credentials are saved within this view.  This page allows the user to test the SQL connection with an `echo' as well as delete or create tables in the database, however, launching the admin view with valid SQL credentials will automatically create the necessary tables if they don't already exist.
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=0.9\textwidth,keepaspectratio]{view-settings.png}
+\vspace{-5mm}
+\caption{\label{fig:view-settings2}Example settings.}
+\end{center}
+\end{figure}
+
+\newpage
+% -------------------------------------------------------------------------------------
+% DOCKER
+% -------------------------------------------------------------------------------------
+\section{Docker}
+The docker image is hosted on docker.com here:\\ \url{https://hub.docker.com/r/cutright/dvh-analytics/}\\
+
+\noindent The code for this docker image, along with the docker-compose file, is hosted on GitHub here:\\
+\url{http://docker.dvhanalytics.com}\\
+
+Docker essentially creates some isolated space on your computer to run a pre-made image; somewhat like a virtual machine.  In order for your local computer to interact with this container, you need to let Docker know how this information may flow.  Since DVH Analytics depends on multiple services, we can use docker-compose to spin-up multiple images as well as map ports and directories; this is accomplishedin the docker-compose.yml file.
+
+If you'd like to customize your environment, simply edit the left side of the colon under any of the port or volume sections in docker-compose.yml.  For example, if you are already running a different postgres service on port 5432 and you'd like to switch to port 5433, and separately you'd also like to map your postgres database to another location on your local drive, you can change the docker-compose.yml as inidcated with the bolded text below.  This process of editing items to left of the colon extends to the remaining services in docker-compose.yml.\\
+
+\indent db:\\
+\indent\indent image: postgres\\
+\indent\indent restart: always\\
+\indent\indent ports:\\
+\indent\indent\indent  - \textbf{5433}:5432\\
+\indent\indent volumes:\\
+\indent\indent\indent  - \textbf{/some-new-directory/}:/var/lib/postgresql/data\\
+
+
+\newpage
+% -------------------------------------------------------------------------------------
+% SECURITY
+% -------------------------------------------------------------------------------------
+\section{Security}
+Obviously, data intended for an application like this may be sensitive and require HIPPA compliance.  The end user is 
+entirely liable for setting up an appropriately secure environment.  Bokeh provides some help with regards to a reverse proxy, so that HTTPS may be implemented.\\
+\url{https://bokeh.pydata.org/en/latest/docs/user_guide/server.html}
+
+Your SQL DB password is stored as plain text in preferences/sql\_connection.cnf.  This is not ideal, but if OS
+user authentication is implemented, you don't need a password. Alternatively, you could change permissions on this file so only you or root can access it, just be sure to run your bokeh serve with sudo if needed.
+
+\subsection{Network/Web Access}
+
+By default, Bokeh servers restrict access to localhost.  However, users may choose to open up external access.  If you append `--allow-websocket-origin=<IP:port>' to the command launch the bokeh server, any user with access to this IP and port will have access to the bokeh server.  Depending on your environment (either from pip install or running from source directory), one of the following will open up access outside of localhost:\\
+
+\$ dvh run -{}-allow-websocket-origin=XX.XXX.X.X:PORT\\
+\indent \$ bokeh serve dvh -{}-allow-websocket-origin=XX.XXX.X.X:PORT\\
+
+Given the complexity and variation of hospital network setups, we can't really streamline this process for other users.  It's recommended that users work with their IT or IS team and start with this data flow diagram.
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=0.9\textwidth, keepaspectratio]{data-flow.png}
+\vspace{-5mm}
+\caption{\label{fig:data-flow}An example network setup of DVH Analytics for network access including LDAP authentication and HTTPS.  This implementation was running source code on a CentOS virtual server. Credit: Marc Broxton}
+\end{center}
+\end{figure}
+
+\subsection{HTTPS}
+
+If you wish to allow DVH Analytics to be accessible outside of the computer/server running the software, and you have not anonymized your patient data, it's very important to implement HTTPS so that network activity is encrypted between the web user and the DVH Analytics server.  DVH Analytics does not provide this service, but Bokeh does give some documentation of potential implementations.  We have successfully implemented DVH Analytics behind an Apache server with a reverse proxy as illustrated in Figure \ref{fig:data-flow}.
+
+
+\subsection{LDAP}
+
+DVH Analytics does provide a loose framework for authentication using LDAP. There is a parameter auth\_user\_req located in options.py; by default this is set to False.  If set to True, user name and password fields will be provided to the user when accessing any of the Bokeh servers in this app.  These credentials will be passed to the check\_credentials function in auth.py.  By default, this function simply returns True.  The end user must supply their own code for authentication.  An example code using python-ldap is provided in auth.py, but requires some editing for each end user's own implementation.  And please remember, you need to setup HTTPS on your own for this authentication to make any sense, otherwise user name and passwords will not be encrypted in between the web-user and the Bokeh server.
+
+\newpage
+
+% -------------------------------------------------------------------------------------
+% LICENSE
+% -------------------------------------------------------------------------------------
+\section{License}
+BSD 3-Clause License
+
+Copyright (c) 2017, Dan Cutright
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of the copyright holder nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+
+DVH Analytics uses the dicompyler-core library:
+
+Copyright (c) 2009-2017 Aditya Panchal and dicompyler-core contributors
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+    Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+
+    Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the
+    distribution.
+
+    The name of Aditya Panchal may not be used to endorse or promote
+    products derived from this software without specific prior written
+    permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
+OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+---------------------------------------------------------------------------------
+
+DVH Analytics uses the pydicom library:
+
+License file for pydicom, a pure-python DICOM library
+
+Copyright (c) 2008-2017 Darcy Mason and pydicom contributors
+
+Except for portions outlined below, pydicom is released under an MIT license:
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+Portions of pydicom (private dictionary file(s)) were generated from the
+private dictionary of the GDCM library, released under the following license:
+
+  Program: GDCM (Grassroots DICOM). A DICOM library
+  Module:  http://gdcm.sourceforge.net/Copyright.html
+
+Copyright (c) 2006-2010 Mathieu Malaterre
+Copyright (c) 1993-2005 CREATIS
+(CREATIS = Centre de Recherche et d'Applications en Traitement de l'Image)
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+ * Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+
+ * Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+ * Neither name of Mathieu Malaterre, or CREATIS, nor the names of any
+   contributors (CNRS, INSERM, UCB, Universite Lyon I), may be used to
+   endorse or promote products derived from this software without specific
+   prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+---------------------------------------------------------------------------------
+
+DVH Analytics uses the NumPy library:
+
+Copyright © 2005-2017, NumPy Developers.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice, this list
+of conditions and the following disclaimer.
+
+Redistributions in binary form must reproduce the above copyright notice, this
+list of conditions and the following disclaimer in the documentation and/or other
+materials provided with the distribution.
+
+Neither the name of the NumPy Developers nor the names of any contributors may be
+used to endorse or promote products derived from this software without specific
+prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ?AS IS? AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+OF THE POSSIBILITY OF SUCH DAMAGE.
+
+---------------------------------------------------------------------------------
+
+DVH Analytics uses the MATPLOTLIB library:
+
+LICENSE AGREEMENT FOR MATPLOTLIB 1.1.0
+--------------------------------------
+
+1. This LICENSE AGREEMENT is between John D. Hunter ("JDH"), and the
+Individual or Organization ("Licensee") accessing and otherwise using
+matplotlib software in source or binary form and its associated
+documentation.
+
+2. Subject to the terms and conditions of this License Agreement, JDH
+hereby grants Licensee a nonexclusive, royalty-free, world-wide license
+to reproduce, analyze, test, perform and/or display publicly, prepare
+derivative works, distribute, and otherwise use matplotlib 1.1.0
+alone or in any derivative version, provided, however, that JDH's
+License Agreement and JDH's notice of copyright, i.e., "Copyright (c)
+2002-2009 John D. Hunter; All Rights Reserved" are retained in
+matplotlib 1.1.0 alone or in any derivative version prepared by
+Licensee.
+
+3. In the event Licensee prepares a derivative work that is based on or
+incorporates matplotlib 1.1.0 or any part thereof, and wants to
+make the derivative work available to others as provided herein, then
+Licensee hereby agrees to include in any such work a brief summary of
+the changes made to matplotlib 1.1.0.
+
+4. JDH is making matplotlib 1.1.0 available to Licensee on an "AS
+IS" basis.  JDH MAKES NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR
+IMPLIED.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, JDH MAKES NO AND
+DISCLAIMS ANY REPRESENTATION OR WARRANTY OF MERCHANTABILITY OR FITNESS
+FOR ANY PARTICULAR PURPOSE OR THAT THE USE OF MATPLOTLIB 1.1.0
+WILL NOT INFRINGE ANY THIRD PARTY RIGHTS.
+
+5. JDH SHALL NOT BE LIABLE TO LICENSEE OR ANY OTHER USERS OF MATPLOTLIB
+1.1.0 FOR ANY INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES OR
+LOSS AS A RESULT OF MODIFYING, DISTRIBUTING, OR OTHERWISE USING
+MATPLOTLIB 1.1.0, OR ANY DERIVATIVE THEREOF, EVEN IF ADVISED OF
+THE POSSIBILITY THEREOF.
+
+6. This License Agreement will automatically terminate upon a material
+breach of its terms and conditions.
+
+7. Nothing in this License Agreement shall be deemed to create any
+relationship of agency, partnership, or joint venture between JDH and
+Licensee.  This License Agreement does not grant permission to use JDH
+trademarks or trade name in a trademark sense to endorse or promote
+products or services of Licensee, or any third party.
+
+8. By copying, installing or otherwise using matplotlib 1.1.0,
+Licensee agrees to be bound by the terms and conditions of this License
+Agreement.
+
+
+---------------------------------------------------------------------------------
+
+DVH Analytics uses the Six library:
+
+Copyright (c) 2010-2017 Benjamin Peterson
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---------------------------------------------------------------------------------
+
+DVH Analytics uses the Bokeh library:
+
+
+Copyright (c) 2012, Anaconda, Inc.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.
+
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+
+Neither the name of Anaconda nor the names of any contributors
+may be used to endorse or promote products derived from this software
+without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+THE POSSIBILITY OF SUCH DAMAGE.
+
+
+---------------------------------------------------------------------------------
+
+DVH Analytics uses the Statsmodels library:
+
+Copyright (C) 2006, Jonathan E. Taylor
+All rights reserved.
+
+Copyright (c) 2006-2008 Scipy Developers.
+All rights reserved.
+
+Copyright (c) 2009-2012 Statsmodels Developers.
+All rights reserved.
+
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+  a. Redistributions of source code must retain the above copyright notice,
+     this list of conditions and the following disclaimer.
+  b. Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in the
+     documentation and/or other materials provided with the distribution.
+  c. Neither the name of Statsmodels nor the names of its contributors
+     may be used to endorse or promote products derived from this software
+     without specific prior written permission.
+
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL STATSMODELS OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+DAMAGE.
+
+---------------------------------------------------------------------------------
+
+DVH Analytics uses the SciPy library:
+
+Copyright © 2001, 2002 Enthought, Inc.
+All rights reserved.
+
+Copyright © 2003-2013 SciPy Developers.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice, this list
+of conditions and the following disclaimer.
+
+Redistributions in binary form must reproduce the above copyright notice, this
+list of conditions and the following disclaimer in the documentation and/or other
+materials provided with the distribution.
+
+Neither the name of Enthought nor the names of the SciPy Developers may be used
+to endorse or promote products derived from this software without specific prior
+written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ?AS IS? AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+---------------------------------------------------------------------------------
+
+DVH Analytics uses the psycopgy2 library:
+
+psycopg2 and the LGPL
+psycopg2 is free software: you can redistribute it and/or modify it under the
+terms of the GNU Lesser General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later version.
+
+psycopg2 is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+
+In addition, as a special exception, the copyright holders give permission to link
+this program with the OpenSSL library (or with modified versions of OpenSSL that use
+the same license as OpenSSL), and distribute linked combinations including the two.
+
+You must obey the GNU Lesser General Public License in all respects for all of the
+code used other than OpenSSL. If you modify file(s) with this exception, you may
+extend this exception to your version of the file(s), but you are not obligated to
+do so. If you do not wish to do so, delete this exception statement from your
+version. If you delete this exception statement from all source files in the
+program, then also delete it here.
+
+You should have received a copy of the GNU Lesser General Public License along
+with psycopg2 (see the doc directory.) If not, see http://www.gnu.org/licenses/.
+
+---------------------------------------------------------------------------------
+
+DVH Analytics uses the python-future library:
+
+Copyright (c) 2013-2016 Python Charmers Pty Ltd, Australia
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+\newpage
+
+% -------------------------------------------------------------------------------------
+% ACKNOWLEDGEMENTS
+% -------------------------------------------------------------------------------------
+\section{Acknowledgements}
+DVH Analytics was largely developed at Northwestern Memorial Hospital by Dan Cutright (coding, design, and UI development) and Mahesh Gopalakrishnan (design). Software and programming guidance was provided by Adit Panchal (Northwestern Medicine Chicago Proton Center).  Statistical methods for plan quality assessments were provided by Arkajyoti Roy (Bowling Green State University).  This software is under continuing development at Brown University, Northwestern Memorial Hospital, and University of Texas, San Antonio.\\
+\\
+We would like to extend our sincere gratitude to:
+\begin{itemize}
+\item David Juliano for general coding and database consultation
+\item Marc Broxton from the Northwestern University IT team for designing and implementing a reliable and secure network environment for DVH Analytics
+\item Dr. Bharat B. Mittal for providing a large, consistent database of patients used for development as well as his clinical expertise and perspective
+\end{itemize}
+
+If you find this software useful as part of your research and you'd like to reference us, please refer to our manuscript in the Journal of Applied Clinical Medical Physics.\\
+\\ \url{https://doi.org/10.1002/acm2.12401}\\
+D. Cutright, M. Gopalakrishnan, A. Roy, A. Panchal, B.B. Mittal. ''DVH Analytics: A DVH database for clinicians and researchers.'' Journal of Applied Clinical Medical Physics (2018).
+\newpage
+
+% -------------------------------------------------------------------------------------
+% REFERENCES
+% -------------------------------------------------------------------------------------
+%\bibliography{}
+
+% -------------------------------------------------------------------------------------
+% END DOCUMENT
+% -------------------------------------------------------------------------------------
+\end{document}

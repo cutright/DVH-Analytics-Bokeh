@@ -1,0 +1,33 @@
+\BOOKMARK [1][-]{section.0.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.0.2}{Installation}{}% 2
+\BOOKMARK [2][-]{subsection.0.2.1}{Source Code}{section.0.2}% 3
+\BOOKMARK [2][-]{subsection.0.2.2}{Docker}{section.0.2}% 4
+\BOOKMARK [2][-]{subsection.0.2.3}{Postgres SQL}{section.0.2}% 5
+\BOOKMARK [2][-]{subsection.0.2.4}{Web Browser Requirements}{section.0.2}% 6
+\BOOKMARK [1][-]{section.0.3}{Initialization}{}% 7
+\BOOKMARK [2][-]{subsection.0.3.1}{Establishing a SQL Connection}{section.0.3}% 8
+\BOOKMARK [2][-]{subsection.0.3.2}{Importing Data}{section.0.3}% 9
+\BOOKMARK [2][-]{subsection.0.3.3}{Post-Processing of Data}{section.0.3}% 10
+\BOOKMARK [1][-]{section.0.4}{Main View: http://localhost:5006}{}% 11
+\BOOKMARK [2][-]{subsection.0.4.1}{Query}{section.0.4}% 12
+\BOOKMARK [2][-]{subsection.0.4.2}{DVHs}{section.0.4}% 13
+\BOOKMARK [2][-]{subsection.0.4.3}{Rad Bio}{section.0.4}% 14
+\BOOKMARK [2][-]{subsection.0.4.4}{ROI Viewer}{section.0.4}% 15
+\BOOKMARK [2][-]{subsection.0.4.5}{Planning Data}{section.0.4}% 16
+\BOOKMARK [2][-]{subsection.0.4.6}{Time-Series}{section.0.4}% 17
+\BOOKMARK [2][-]{subsection.0.4.7}{Correlation}{section.0.4}% 18
+\BOOKMARK [2][-]{subsection.0.4.8}{Regression}{section.0.4}% 19
+\BOOKMARK [2][-]{subsection.0.4.9}{MLC Analyzer}{section.0.4}% 20
+\BOOKMARK [1][-]{section.0.5}{Admin View: http://localhost:5007}{}% 21
+\BOOKMARK [2][-]{subsection.0.5.1}{Database Editor}{section.0.5}% 22
+\BOOKMARK [2][-]{subsection.0.5.2}{ROI Name Manager}{section.0.5}% 23
+\BOOKMARK [2][-]{subsection.0.5.3}{Baseline Plans}{section.0.5}% 24
+\BOOKMARK [2][-]{subsection.0.5.4}{Backup \046 Restore}{section.0.5}% 25
+\BOOKMARK [1][-]{section.0.6}{Settings View: http://localhost:5008}{}% 26
+\BOOKMARK [1][-]{section.0.7}{Docker}{}% 27
+\BOOKMARK [1][-]{section.0.8}{Security}{}% 28
+\BOOKMARK [2][-]{subsection.0.8.1}{Network/Web Access}{section.0.8}% 29
+\BOOKMARK [2][-]{subsection.0.8.2}{HTTPS}{section.0.8}% 30
+\BOOKMARK [2][-]{subsection.0.8.3}{LDAP}{section.0.8}% 31
+\BOOKMARK [1][-]{section.0.9}{License}{}% 32
+\BOOKMARK [1][-]{section.0.10}{Acknowledgements}{}% 33

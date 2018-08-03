@@ -1,0 +1,45 @@
+\contentsline {section}{\numberline {0.1}Introduction}{2}{section.0.1}
+\contentsline {section}{\numberline {0.2}Installation}{3}{section.0.2}
+\contentsline {subsection}{\numberline {0.2.1}Source Code}{3}{subsection.0.2.1}
+\contentsline {subsection}{\numberline {0.2.2}Docker}{4}{subsection.0.2.2}
+\contentsline {subsection}{\numberline {0.2.3}Postgres SQL}{4}{subsection.0.2.3}
+\contentsline {subsubsection}{Mac OS}{4}{section*.2}
+\contentsline {subsubsection}{Ubuntu}{5}{section*.3}
+\contentsline {subsubsection}{Windows}{5}{section*.4}
+\contentsline {subsubsection}{Role and Database Initialization for pgAdmin3}{5}{section*.5}
+\contentsline {subsection}{\numberline {0.2.4}Web Browser Requirements}{5}{subsection.0.2.4}
+\contentsline {section}{\numberline {0.3}Initialization}{6}{section.0.3}
+\contentsline {subsection}{\numberline {0.3.1}Establishing a SQL Connection}{6}{subsection.0.3.1}
+\contentsline {subsection}{\numberline {0.3.2}Importing Data}{6}{subsection.0.3.2}
+\contentsline {subsection}{\numberline {0.3.3}Post-Processing of Data}{8}{subsection.0.3.3}
+\contentsline {subsubsection}{ROI Name Mapping}{8}{section*.6}
+\contentsline {subsubsection}{PTV Distance and Overlap Calculations}{10}{section*.7}
+\contentsline {section}{\numberline {0.4}Main View: http://localhost:5006}{11}{section.0.4}
+\contentsline {subsection}{\numberline {0.4.1}Query}{11}{subsection.0.4.1}
+\contentsline {subsection}{\numberline {0.4.2}DVHs}{12}{subsection.0.4.2}
+\contentsline {subsection}{\numberline {0.4.3}Rad Bio}{13}{subsection.0.4.3}
+\contentsline {subsection}{\numberline {0.4.4}ROI Viewer}{15}{subsection.0.4.4}
+\contentsline {subsection}{\numberline {0.4.5}Planning Data}{15}{subsection.0.4.5}
+\contentsline {subsection}{\numberline {0.4.6}Time-Series}{15}{subsection.0.4.6}
+\contentsline {subsection}{\numberline {0.4.7}Correlation}{16}{subsection.0.4.7}
+\contentsline {subsection}{\numberline {0.4.8}Regression}{17}{subsection.0.4.8}
+\contentsline {subsection}{\numberline {0.4.9}MLC Analyzer}{19}{subsection.0.4.9}
+\contentsline {section}{\numberline {0.5}Admin View: http://localhost:5007}{21}{section.0.5}
+\contentsline {subsection}{\numberline {0.5.1}Database Editor}{21}{subsection.0.5.1}
+\contentsline {subsubsection}{Query Database}{21}{section*.8}
+\contentsline {subsubsection}{Update Database}{21}{section*.9}
+\contentsline {subsubsection}{Reimport from DICOM}{21}{section*.10}
+\contentsline {subsubsection}{Delete all data with mrn or study\_instance\_uid}{22}{section*.11}
+\contentsline {subsubsection}{Change mrn or study\_instance\_uid in all tables}{22}{section*.12}
+\contentsline {subsubsection}{Post Import Calculations}{22}{section*.13}
+\contentsline {subsection}{\numberline {0.5.2}ROI Name Manager}{22}{subsection.0.5.2}
+\contentsline {subsection}{\numberline {0.5.3}Baseline Plans}{23}{subsection.0.5.3}
+\contentsline {subsection}{\numberline {0.5.4}Backup \& Restore}{23}{subsection.0.5.4}
+\contentsline {section}{\numberline {0.6}Settings View: http://localhost:5008}{24}{section.0.6}
+\contentsline {section}{\numberline {0.7}Docker}{25}{section.0.7}
+\contentsline {section}{\numberline {0.8}Security}{26}{section.0.8}
+\contentsline {subsection}{\numberline {0.8.1}Network/Web Access}{26}{subsection.0.8.1}
+\contentsline {subsection}{\numberline {0.8.2}HTTPS}{27}{subsection.0.8.2}
+\contentsline {subsection}{\numberline {0.8.3}LDAP}{27}{subsection.0.8.3}
+\contentsline {section}{\numberline {0.9}License}{28}{section.0.9}
+\contentsline {section}{\numberline {0.10}Acknowledgements}{36}{section.0.10}
