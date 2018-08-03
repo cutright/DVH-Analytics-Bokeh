@@ -143,6 +143,8 @@ selector_categories = {'ROI Institutional Category': {'var_name': 'institutional
                        'ROI Physician Category': {'var_name': 'physician_roi', 'table': 'DVHs'},
                        'ROI Type': {'var_name': 'roi_type', 'table': 'DVHs'},
                        'Beam Type': {'var_name': 'beam_type', 'table': 'Beams'},
+                       'Collimator Rotation Direction': {'var_name': 'collimator_rot_dir', 'table': 'Beams'},
+                       'Couch Rotation Direction': {'var_name': 'couch_rot_dir', 'table': 'Beams'},
                        'Dose Grid Resolution': {'var_name': 'dose_grid_res', 'table': 'Plans'},
                        'Gantry Rotation Direction': {'var_name': 'gantry_rot_dir', 'table': 'Beams'},
                        'Radiation Type': {'var_name': 'radiation_type', 'table': 'Beams'},

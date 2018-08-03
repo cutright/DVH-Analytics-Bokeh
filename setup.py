@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 requires = [
+    'numpy <= 1.14.5',
     'scipy',
-    'numpy',
     'pydicom >= 0.9.9',
     'matplotlib',
     'six >= 1.5',

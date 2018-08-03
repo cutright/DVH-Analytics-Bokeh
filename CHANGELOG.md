@@ -1,5 +1,8 @@
 # Change log of DVH Analytics
 
+### 0.4.3 (TBD)
+* IMPORT_LATEST_ONLY removed from options.py in lieu of a simple checkbox in the admin view.
+
 ### 0.4.2 (2018.07.31)
 * Download button added for DVH endpoints.
 * LITE_VIEW added to options.py. If this is set to True, only Query and DVHs tabs are rendered.  The 

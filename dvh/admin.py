@@ -787,11 +787,15 @@ def import_inbox():
     else:
         import_inbox_button.button_type = 'warning'
         import_inbox_button.label = 'Importing...'
-        if import_inbox_force.active:
+        if 0 in import_inbox_force.active:
             force_update = True
         else:
             force_update = False
-        dicom_to_sql(force_update=force_update)
+        if 1 in import_inbox_force.active:
+            import_latest_only = True
+        else:
+            import_latest_only = False
+        dicom_to_sql(force_update=force_update, import_latest_only=import_latest_only)
     import_inbox_button.button_type = 'success'
     import_inbox_button.label = 'Import all from inbox'
 
@@ -1509,7 +1513,7 @@ roi_layout = layout([[select_institutional_roi],
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 import_inbox_button = Button(label='Import all from inbox', button_type='success', width=200)
 import_inbox_button.on_click(import_inbox)
-import_inbox_force = CheckboxGroup(labels=['Force Update'], active=[])
+import_inbox_force = CheckboxGroup(labels=['Force Update', 'Import Latest Only'], active=[1])
 rebuild_db_button = Button(label='Rebuild database', button_type='warning', width=200)
 rebuild_db_button.on_click(rebuild_db_button_click)
 
