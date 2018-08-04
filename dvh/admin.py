@@ -1650,7 +1650,7 @@ delete_backup_button_pref = Button(label='Delete', button_type='warning', width=
 restore_pref_button = Button(label='Restore', button_type='primary', width=100)
 backup_pref_button = Button(label='Backup', button_type='success', width=100)
 backup_options = ['Default', 'Root', 'Home', 'Custom']
-backup_location_select = Select(value=options[0], options=backup_options, title="Common Locations")
+backup_location_select = Select(value=backup_options[0], options=backup_options, title="Common Locations")
 backup_location = TextInput(value=options_map['Default'], title='Backup Directory:', width=500)
 warning_div = Div(text="<b>WARNING for Non-Docker Users:</b> Restore requires your OS user name to be both a"
                        " PostgreSQL super user and have ALL PRIVILEGES WITH GRANT OPTIONS.  Do NOT attempt otherwise."
