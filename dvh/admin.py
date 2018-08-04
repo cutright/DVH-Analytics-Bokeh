@@ -9,7 +9,7 @@ from __future__ import print_function
 from future.utils import listvalues
 from utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection, \
     recalculate_ages, update_min_distances_in_db, update_treatment_volume_overlap_in_db, update_volumes_in_db, \
-    update_surface_area_in_db
+    update_surface_area_in_db, load_options
 import os
 from os.path import dirname, join
 from datetime import datetime
@@ -24,16 +24,19 @@ from bokeh.io import curdoc
 from bokeh.models import ColumnDataSource, LabelSet, Range1d, Slider, CustomJS, Spacer
 import auth
 import time
-from options import *
+import options
 from get_settings import get_settings, parse_settings_file
 from shutil import copyfile
+
+
+options = load_options(options)
 
 
 # This depends on a user defined function in dvh/auth.py.  By default, this returns True
 # It is up to the user/installer to write their own function (e.g., using python-ldap)
 # Proper execution of this requires placing Bokeh behind a reverse proxy with SSL setup (HTTPS)
 # Please see Bokeh documentation for more information
-ACCESS_GRANTED = not AUTH_USER_REQ
+ACCESS_GRANTED = not options.AUTH_USER_REQ
 
 # Create empty Bokeh data sources
 query_source = ColumnDataSource(data=dict())
@@ -787,11 +790,15 @@ def import_inbox():
     else:
         import_inbox_button.button_type = 'warning'
         import_inbox_button.label = 'Importing...'
-        if import_inbox_force.active:
+        if 0 in import_inbox_force.active:
             force_update = True
         else:
             force_update = False
-        dicom_to_sql(force_update=force_update)
+        if 1 in import_inbox_force.active:
+            import_latest_only = True
+        else:
+            import_latest_only = False
+        dicom_to_sql(force_update=force_update, import_latest_only=import_latest_only)
     import_inbox_button.button_type = 'success'
     import_inbox_button.label = 'Import all from inbox'
 
@@ -1345,64 +1352,64 @@ layout_login = column(auth_div,
 div_warning = Div(text="<b>WARNING:</b> Buttons in orange cannot be easily undone.", width=600)
 
 # Selectors
-options = db.get_institutional_rois()
-select_institutional_roi = Select(value=options[0],
-                                  options=options,
+roi_options = db.get_institutional_rois()
+select_institutional_roi = Select(value=roi_options[0],
+                                  options=roi_options,
                                   width=300,
                                   title='All Institutional ROIs')
 
-options = db.get_physicians()
-if len(options) > 1:
-    value = options[1]
+physician_options = db.get_physicians()
+if len(physician_options) > 1:
+    value = physician_options[1]
 else:
-    value = options[0]
+    value = physician_options[0]
 select_physician = Select(value=value,
-                          options=options,
+                          options=physician_options,
                           width=300,
                           title='Physician')
 
-options = db.get_physician_rois(select_physician.value)
-select_physician_roi = Select(value=options[0],
-                              options=options,
+phys_roi_options = db.get_physician_rois(select_physician.value)
+select_physician_roi = Select(value=phys_roi_options[0],
+                              options=phys_roi_options,
                               width=300,
                               title='Physician ROIs')
 
-options = db.get_variations(select_physician.value, select_physician_roi.value)
-select_variation = Select(value=options[0],
-                          options=options,
+variations_options = db.get_variations(select_physician.value, select_physician_roi.value)
+select_variation = Select(value=variations_options[0],
+                          options=variations_options,
                           width=300,
                           title='Variations')
 
-options = db.get_unused_institutional_rois(select_physician.value)
+unused_roi_options = db.get_unused_institutional_rois(select_physician.value)
 value = db.get_institutional_roi(select_physician.value, select_physician_roi.value)
-if value not in options:
-    options.append(value)
-    options.sort()
+if value not in unused_roi_options:
+    unused_roi_options.append(value)
+    unused_roi_options.sort()
 select_unlinked_institutional_roi = Select(value=value,
-                                           options=options,
+                                           options=unused_roi_options,
                                            width=300,
                                            title='Linked Institutional ROI')
 uncategorized_variations = get_uncategorized_variations(select_physician.value)
 try:
-    options = list(uncategorized_variations)
+    uncat_var_options = list(uncategorized_variations)
 except:
-    options = ['']
-options.sort()
-select_uncategorized_variation = Select(value=options[0],
-                                        options=options,
+    uncat_var_options = ['']
+uncat_var_options.sort()
+select_uncategorized_variation = Select(value=uncat_var_options[0],
+                                        options=uncat_var_options,
                                         width=300,
                                         title='Uncategorized Variations')
 ignored_variations = get_ignored_variations(select_physician.value)
 try:
-    options = list(ignored_variations)
+    ignored_var_options = list(ignored_variations)
 except:
-    options = ['']
-if not options:
-    options = ['']
+    ignored_var_options = ['']
+if not ignored_var_options:
+    ignored_var_options = ['']
 else:
-    options.sort()
-select_ignored_variation = Select(value=options[0],
-                                  options=options,
+    ignored_var_options.sort()
+select_ignored_variation = Select(value=ignored_var_options[0],
+                                  options=ignored_var_options,
                                   width=300,
                                   title='Ignored Variations')
 
@@ -1509,7 +1516,7 @@ roi_layout = layout([[select_institutional_roi],
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 import_inbox_button = Button(label='Import all from inbox', button_type='success', width=200)
 import_inbox_button.on_click(import_inbox)
-import_inbox_force = CheckboxGroup(labels=['Force Update'], active=[])
+import_inbox_force = CheckboxGroup(labels=['Force Update', 'Import Latest Only'], active=[1])
 rebuild_db_button = Button(label='Rebuild database', button_type='warning', width=200)
 rebuild_db_button.on_click(rebuild_db_button_click)
 
@@ -1642,8 +1649,8 @@ backup_pref_select = Select(value='', options=[''], title="Available Preferences
 delete_backup_button_pref = Button(label='Delete', button_type='warning', width=100)
 restore_pref_button = Button(label='Restore', button_type='primary', width=100)
 backup_pref_button = Button(label='Backup', button_type='success', width=100)
-options = ['Default', 'Root', 'Home', 'Custom']
-backup_location_select = Select(value=options[0], options=options, title="Common Locations")
+backup_options = ['Default', 'Root', 'Home', 'Custom']
+backup_location_select = Select(value=backup_options[0], options=backup_options, title="Common Locations")
 backup_location = TextInput(value=options_map['Default'], title='Backup Directory:', width=500)
 warning_div = Div(text="<b>WARNING for Non-Docker Users:</b> Restore requires your OS user name to be both a"
                        " PostgreSQL super user and have ALL PRIVILEGES WITH GRANT OPTIONS.  Do NOT attempt otherwise."
@@ -1684,7 +1691,7 @@ db_tab = Panel(child=db_editor_layout, title='Database Editor')
 backup_tab = Panel(child=backup_layout, title='Backup & Restore')
 baseline_tab = Panel(child=baseline_layout, title='Baseline Plans')
 
-if DISABLE_BACKUP_TAB:
+if options.DISABLE_BACKUP_TAB:
     tabs = Tabs(tabs=[db_tab, roi_tab, baseline_tab])
 else:
     tabs = Tabs(tabs=[db_tab, roi_tab, baseline_tab, backup_tab])

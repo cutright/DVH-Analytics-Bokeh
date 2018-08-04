@@ -18,6 +18,7 @@ try:
 except:
     import dicom
 from get_settings import get_settings
+import pickle
 
 PREFERENCE_PATHS = {''}
 MIN_SLICE_THICKNESS = 2  # Update method to pull from DICOM
@@ -930,3 +931,43 @@ def is_uid_in_all_keys(uid, uids):
 
 def flatten_list_of_lists(some_list):
     return [item for sublist in some_list for item in sublist]
+
+
+def save_options(options):
+    script_dir = os.path.dirname(__file__)
+    rel_path = "preferences/options"
+    abs_file_path = os.path.join(script_dir, rel_path)
+
+    out_options = {}
+    for i in options.__dict__:
+        if not i.startswith('_'):
+            out_options[i] = getattr(options, i)
+
+    outfile = open(abs_file_path, 'wb')
+    pickle.dump(out_options, outfile)
+    outfile.close()
+
+
+class Object():
+    pass
+
+
+def load_options(options):
+    script_dir = os.path.dirname(__file__)
+    rel_path = "preferences/options"
+    abs_file_path = os.path.join(script_dir, rel_path)
+
+    if os.path.isfile(abs_file_path):
+
+        infile = open(abs_file_path, 'rb')
+        new_dict = pickle.load(infile)
+
+        new_options = Object()
+        for key, value in listitems(new_dict):
+            setattr(new_options, key, value)
+
+        infile.close()
+
+        return new_options
+    else:
+        return options

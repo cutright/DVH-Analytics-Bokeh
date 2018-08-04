@@ -10,7 +10,7 @@ Created on Sun Apr 21 2017
 from __future__ import print_function
 from future.utils import listitems
 from analysis_tools import DVH, calc_eud
-from utilities import Temp_DICOM_FileSet, get_planes_from_string, get_union,\
+from utilities import Temp_DICOM_FileSet, get_planes_from_string, get_union, load_options,\
     collapse_into_single_dates, moving_avg, calc_stats, get_study_instance_uids, moving_avg_by_calendar_day
 import auth
 from sql_connector import DVH_SQL
@@ -20,7 +20,7 @@ import itertools
 from datetime import datetime
 from os.path import dirname, join
 from bokeh.layouts import column, row
-from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider, Spacer, Range1d, Selection
+from bokeh.models import ColumnDataSource, Legend, CustomJS, HoverTool, Slider, Spacer, Range1d
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
@@ -33,17 +33,21 @@ from math import pi
 import statsmodels.api as sm
 import matplotlib.colors as plot_colors
 import time
-from options import *
+import options
 import mlc_analyzer
 import os
 from dateutil.parser import parse
 from get_settings import get_settings, parse_settings_file
 
+
+options = load_options(options)
+
+
 # This depends on a user defined function in dvh/auth.py.  By default, this returns True
 # It is up to the user/installer to write their own function (e.g., using python-ldap)
 # Proper execution of this requires placing Bokeh behind a reverse proxy with SSL setup (HTTPS)
 # Please see Bokeh documentation for more information
-ACCESS_GRANTED = not AUTH_USER_REQ
+ACCESS_GRANTED = not options.AUTH_USER_REQ
 
 SELECT_CATEGORY1_DEFAULT = 'ROI Institutional Category'
 SELECT_CATEGORY_DEFAULT = 'Rx Dose'
@@ -143,6 +147,8 @@ selector_categories = {'ROI Institutional Category': {'var_name': 'institutional
                        'ROI Physician Category': {'var_name': 'physician_roi', 'table': 'DVHs'},
                        'ROI Type': {'var_name': 'roi_type', 'table': 'DVHs'},
                        'Beam Type': {'var_name': 'beam_type', 'table': 'Beams'},
+                       'Collimator Rotation Direction': {'var_name': 'collimator_rot_dir', 'table': 'Beams'},
+                       'Couch Rotation Direction': {'var_name': 'couch_rot_dir', 'table': 'Beams'},
                        'Dose Grid Resolution': {'var_name': 'dose_grid_res', 'table': 'Plans'},
                        'Gantry Rotation Direction': {'var_name': 'gantry_rot_dir', 'table': 'Beams'},
                        'Radiation Type': {'var_name': 'radiation_type', 'table': 'Beams'},
@@ -792,12 +798,12 @@ def update_data():
     if current_dvh.count:
         print(str(datetime.now()), 'initializing source data ', current_dvh.query, sep=' ')
         current_dvh_group_1, current_dvh_group_2 = update_dvh_data(current_dvh)
-        if not LITE_VIEW:
+        if not options.LITE_VIEW:
             print(str(datetime.now()), 'updating correlation data')
             update_correlation()
             print(str(datetime.now()), 'correlation data updated')
         update_source_endpoint_calcs()
-        if not LITE_VIEW:
+        if not options.LITE_VIEW:
             calculate_review_dvh()
             initialize_rad_bio_source()
             control_chart_y.value = ''
@@ -1036,7 +1042,7 @@ def update_dvh_data(dvh):
     dvh.dist_to_ptv_median.insert(0, 'N/A')
     dvh.dist_to_ptv_max.insert(0, 'N/A')
     dvh.ptv_overlap.insert(0, 'N/A')
-    line_colors.insert(0, 'green')
+    line_colors.insert(0, options.REVIEW_DVH_COLOR)
     x_data.insert(0, [0])
     y_data.insert(0, [0])
 
@@ -1287,7 +1293,7 @@ def update_source_endpoint_calcs():
         source_endpoint_calcs.data = ep
         update_endpoint_view()
 
-    if not LITE_VIEW:
+    if not options.LITE_VIEW:
         update_time_series_options()
 
 
@@ -1297,16 +1303,16 @@ def update_endpoint_view():
         ep_view = {'mrn': source_endpoint_calcs.data['mrn'],
                    'group': source_endpoint_calcs.data['group'],
                    'roi_name': source_endpoint_calcs.data['roi_name']}
-        for i in range(1, ENDPOINT_COUNT+1):
+        for i in range(1, options.ENDPOINT_COUNT+1):
             ep_view["ep%s" % i] = [''] * rows  # filling table with empty strings
 
         for r in range(len(source_endpoint_defs.data['row'])):
-            if r < ENDPOINT_COUNT:  # limiting UI to ENDPOINT_COUNT columns since create a whole new table is very slow in Bokeh
+            if r < options.ENDPOINT_COUNT:  # limiting UI to ENDPOINT_COUNT columns since create a whole new table is very slow in Bokeh
                 key = source_endpoint_defs.data['label'][r]
                 ep_view["ep%s" % (r+1)] = source_endpoint_calcs.data[key]
 
         source_endpoint_view.data = ep_view
-        if not LITE_VIEW:
+        if not options.LITE_VIEW:
             update_endpoints_in_correlation()
 
 
@@ -1765,8 +1771,8 @@ def update_mlc_viewer():
     beam = fx_grp.beam[beam_number - 1]
     cp_index = int(mlc_analyzer_cp_select.value) - 1
 
-    x_min, x_max = -MAX_FIELD_SIZE_X / 2, MAX_FIELD_SIZE_X / 2
-    y_min, y_max = -MAX_FIELD_SIZE_Y / 2, MAX_FIELD_SIZE_Y / 2
+    x_min, x_max = -options.MAX_FIELD_SIZE_X / 2, options.MAX_FIELD_SIZE_X / 2
+    y_min, y_max = -options.MAX_FIELD_SIZE_Y / 2, options.MAX_FIELD_SIZE_Y / 2
 
     borders = {'top': [y_max, y_max, y_max, beam.jaws[cp_index]['y_min']],
                'bottom': [y_min, y_min, beam.jaws[cp_index]['y_max'], y_min],
@@ -1774,7 +1780,7 @@ def update_mlc_viewer():
                'right': [beam.jaws[cp_index]['x_min'], x_max, x_max, x_max]}
     for edge in list(borders):
         borders[edge].extend(beam.mlc_borders[cp_index][edge])
-    borders['color'] = [JAW_COLOR] * 4 + [MLC_COLOR] * len(beam.mlc_borders[cp_index]['top'])
+    borders['color'] = [options.JAW_COLOR] * 4 + [options.MLC_COLOR] * len(beam.mlc_borders[cp_index]['top'])
 
     source_mlc_viewer.data = borders
 
@@ -1799,7 +1805,7 @@ def mlc_viewer_play():
 
     for i in range(start, end):
         mlc_viewer_go_to_next_cp()
-        time.sleep(CP_TIME_SPACING)
+        time.sleep(options.CP_TIME_SPACING)
 
 
 def update_cp_on_selection(attr, old, new):
@@ -2207,11 +2213,11 @@ def update_correlation_matrix():
                         r, p_value = 0, 0
                     if r >= 0:
                         k = '1_pos'
-                        s[k]['color'].append(GROUP_1_COLOR)
+                        s[k]['color'].append(options.GROUP_1_COLOR)
                         s[k]['group'].append('Group 1')
                     else:
                         k = '1_neg'
-                        s[k]['color'].append(GROUP_1_COLOR_NEG_CORR)
+                        s[k]['color'].append(options.GROUP_1_COLOR_NEG_CORR)
                         s[k]['group'].append('Group 1')
                     data_to_enter = True
                 elif x < y and correlation_2[categories[0]]['uid']:
@@ -2223,11 +2229,11 @@ def update_correlation_matrix():
                         r, p_value = 0, 0
                     if r >= 0:
                         k = '2_pos'
-                        s[k]['color'].append(GROUP_2_COLOR)
+                        s[k]['color'].append(options.GROUP_2_COLOR)
                         s[k]['group'].append('Group 2')
                     else:
                         k = '2_neg'
-                        s[k]['color'].append(GROUP_2_COLOR_NEG_CORR)
+                        s[k]['color'].append(options.GROUP_2_COLOR_NEG_CORR)
                         s[k]['group'].append('Group 2')
                     data_to_enter = True
 
@@ -2489,7 +2495,7 @@ def update_control_chart():
                             if current_dvh_group_1.study_instance_uid[r1] == uid and \
                                             current_dvh_group_1.roi_name[r1] == roi:
                                 found['Group 1'] = True
-                                color = GROUP_1_COLOR
+                                color = options.GROUP_1_COLOR
                             r1 += 1
 
                     if current_dvh_group_2:
@@ -2499,24 +2505,24 @@ def update_control_chart():
                                             current_dvh_group_2.roi_name[r2] == roi:
                                 found['Group 2'] = True
                                 if found['Group 1']:
-                                    color = GROUP_1_and_2_COLOR
+                                    color = options.GROUP_1_and_2_COLOR
                                 else:
-                                    color = GROUP_2_COLOR
+                                    color = options.GROUP_2_COLOR
                             r2 += 1
 
                     colors.append(color)
                 else:
                     if current_dvh_group_1 and current_dvh_group_2:
                         if uid in current_dvh_group_1.study_instance_uid and uid in current_dvh_group_2.study_instance_uid:
-                            colors.append(GROUP_1_and_2_COLOR)
+                            colors.append(options.GROUP_1_and_2_COLOR)
                         elif uid in current_dvh_group_1.study_instance_uid:
-                            colors.append(GROUP_1_COLOR)
+                            colors.append(options.GROUP_1_COLOR)
                         else:
-                            colors.append(GROUP_2_COLOR)
+                            colors.append(options.GROUP_2_COLOR)
                     elif current_dvh_group_1:
-                        colors.append(GROUP_1_COLOR)
+                        colors.append(options.GROUP_1_COLOR)
                     else:
-                        colors.append(GROUP_2_COLOR)
+                        colors.append(options.GROUP_2_COLOR)
 
         y_values = []
         y_mrns = []
@@ -2538,12 +2544,12 @@ def update_control_chart():
         source_time_1_data = {'x': [], 'y': [], 'mrn': [], 'date_str': []}
         source_time_2_data = {'x': [], 'y': [], 'mrn': [], 'date_str': []}
         for i in range(len(x_values_sorted)):
-            if colors_sorted[i] in {GROUP_1_COLOR, GROUP_1_and_2_COLOR}:
+            if colors_sorted[i] in {options.GROUP_1_COLOR, options.GROUP_1_and_2_COLOR}:
                 source_time_1_data['x'].append(x_values_sorted[i])
                 source_time_1_data['y'].append(y_values_sorted[i])
                 source_time_1_data['mrn'].append(y_mrns_sorted[i])
                 source_time_1_data['date_str'].append(x_values_sorted[i].strftime("%Y-%m-%d"))
-            if colors_sorted[i] in {GROUP_2_COLOR, GROUP_1_and_2_COLOR}:
+            if colors_sorted[i] in {options.GROUP_2_COLOR, options.GROUP_1_and_2_COLOR}:
                 source_time_2_data['x'].append(x_values_sorted[i])
                 source_time_2_data['y'].append(y_values_sorted[i])
                 source_time_2_data['mrn'].append(y_mrns_sorted[i])
@@ -2856,7 +2862,7 @@ def update_dvh_review_rois(attr, old, new):
 
 
 def calculate_review_dvh():
-    global temp_dvh_info, dvh_review_rois, x, y
+    global temp_dvh_info, dvh_review_rois, x, y, current_dvh
 
     patches = {'x': [(0, [])],
                'y': [(0, [])],
@@ -3233,35 +3239,35 @@ dvh_plots.add_tools(HoverTool(show_arrow=False, line_policy='next',
                               tooltips=[('Label', '@mrn @roi_name'),
                                         ('Dose', '$x'),
                                         ('Volume', '$y')]))
-dvh_plots.xaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
-dvh_plots.yaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
-dvh_plots.xaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-dvh_plots.yaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+dvh_plots.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
+dvh_plots.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
+dvh_plots.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+dvh_plots.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
 dvh_plots.yaxis.axis_label_text_baseline = "bottom"
-dvh_plots.lod_factor = LOD_FACTOR  # level of detail during interactive plot events
+dvh_plots.lod_factor = options.LOD_FACTOR  # level of detail during interactive plot events
 
 # Add statistical plots to figure
 stats_median_1 = dvh_plots.line('x', 'median', source=source_stats_1,
-                                line_width=STATS_1_MEDIAN_LINE_WIDTH, color=GROUP_1_COLOR,
-                                line_dash=STATS_1_MEDIAN_LINE_DASH, alpha=STATS_1_MEDIAN_ALPHA)
+                                line_width=options.STATS_1_MEDIAN_LINE_WIDTH, color=options.GROUP_1_COLOR,
+                                line_dash=options.STATS_1_MEDIAN_LINE_DASH, alpha=options.STATS_1_MEDIAN_ALPHA)
 stats_mean_1 = dvh_plots.line('x', 'mean', source=source_stats_1,
-                              line_width=STATS_1_MEAN_LINE_WIDTH, color=GROUP_1_COLOR,
-                              line_dash=STATS_1_MEAN_LINE_DASH, alpha=STATS_1_MEAN_ALPHA)
+                              line_width=options.STATS_1_MEAN_LINE_WIDTH, color=options.GROUP_1_COLOR,
+                              line_dash=options.STATS_1_MEAN_LINE_DASH, alpha=options.STATS_1_MEAN_ALPHA)
 stats_median_2 = dvh_plots.line('x', 'median', source=source_stats_2,
-                                line_width=STATS_2_MEDIAN_LINE_WIDTH, color=GROUP_2_COLOR,
-                                line_dash=STATS_2_MEDIAN_LINE_DASH, alpha=STATS_2_MEDIAN_ALPHA)
+                                line_width=options.STATS_2_MEDIAN_LINE_WIDTH, color=options.GROUP_2_COLOR,
+                                line_dash=options.STATS_2_MEDIAN_LINE_DASH, alpha=options.STATS_2_MEDIAN_ALPHA)
 stats_mean_2 = dvh_plots.line('x', 'mean', source=source_stats_2,
-                              line_width=STATS_2_MEAN_LINE_WIDTH, color=GROUP_2_COLOR,
-                              line_dash=STATS_2_MEAN_LINE_DASH, alpha=STATS_2_MEAN_ALPHA)
+                              line_width=options.STATS_2_MEAN_LINE_WIDTH, color=options.GROUP_2_COLOR,
+                              line_dash=options.STATS_2_MEAN_LINE_DASH, alpha=options.STATS_2_MEAN_ALPHA)
 
 # Add all DVHs, but hide them until selected
 dvh_plots.multi_line('x', 'y', source=source,
-                     selection_color='color', line_width=DVH_LINE_WIDTH, alpha=0,
-                     nonselection_alpha=0, selection_alpha=1)
+                     selection_color='color', line_width=options.DVH_LINE_WIDTH, alpha=0,
+                     line_dash=options.DVH_LINE_DASH, nonselection_alpha=0, selection_alpha=1)
 
 # Shaded region between Q1 and Q3
-iqr_1 = dvh_plots.patch('x_patch', 'y_patch', source=source_patch_1, alpha=IQR_1_ALPHA, color=GROUP_1_COLOR)
-iqr_2 = dvh_plots.patch('x_patch', 'y_patch', source=source_patch_2, alpha=IQR_2_ALPHA, color=GROUP_2_COLOR)
+iqr_1 = dvh_plots.patch('x_patch', 'y_patch', source=source_patch_1, alpha=options.IQR_1_ALPHA, color=options.GROUP_1_COLOR)
+iqr_2 = dvh_plots.patch('x_patch', 'y_patch', source=source_patch_2, alpha=options.IQR_2_ALPHA, color=options.GROUP_2_COLOR)
 
 # Set x and y axis labels
 dvh_plots.xaxis.axis_label = "Dose (Gy)"
@@ -3302,7 +3308,7 @@ endpoint_table_title = Div(text="<b>DVH Endpoints</b>", width=1200)
 columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="group", title="Group", width=175),
            TableColumn(field="roi_name", title="ROI Name")]
-for i in range(ENDPOINT_COUNT):
+for i in range(options.ENDPOINT_COUNT):
     columns.append(TableColumn(field="ep%s" % (i+1),
                                title="ep%s" % (i+1),
                                width=80,
@@ -3409,32 +3415,32 @@ source_rxs.selected.on_change('indices', source_rxs_selected_ticker)
 tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
 control_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None,
                        active_drag="box_zoom", x_axis_type='datetime')
-control_chart.xaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
-control_chart.yaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
-control_chart.xaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-control_chart.yaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+control_chart.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
+control_chart.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
+control_chart.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+control_chart.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
 # control_chart.min_border_left = min_border
 control_chart.min_border_bottom = min_border
-control_chart_data_1 = control_chart.circle('x', 'y', size=TIME_SERIES_1_CIRCLE_SIZE, color=GROUP_1_COLOR,
-                                            alpha=TIME_SERIES_1_CIRCLE_ALPHA, source=source_time_1)
-control_chart_data_2 = control_chart.circle('x', 'y', size=TIME_SERIES_2_CIRCLE_SIZE, color=GROUP_2_COLOR,
-                                            alpha=TIME_SERIES_2_CIRCLE_ALPHA, source=source_time_2)
-control_chart_trend_1 = control_chart.line('x', 'y', color=GROUP_1_COLOR, source=source_time_trend_1,
-                                           line_width=TIME_SERIES_1_TREND_LINE_WIDTH,
-                                           line_dash=TIME_SERIES_1_TREND_LINE_DASH)
-control_chart_trend_2 = control_chart.line('x', 'y', color=GROUP_2_COLOR, source=source_time_trend_2,
-                                           line_width=TIME_SERIES_2_TREND_LINE_WIDTH,
-                                           line_dash=TIME_SERIES_2_TREND_LINE_DASH)
-control_chart_avg_1 = control_chart.line('x', 'avg', color=GROUP_1_COLOR, source=source_time_bound_1,
-                                         line_width=TIME_SERIES_1_AVG_LINE_WIDTH,
-                                         line_dash=TIME_SERIES_1_AVG_LINE_DASH)
-control_chart_avg_2 = control_chart.line('x', 'avg', color=GROUP_2_COLOR, source=source_time_bound_2,
-                                         line_width=TIME_SERIES_2_AVG_LINE_WIDTH,
-                                         line_dash=TIME_SERIES_2_AVG_LINE_DASH)
-control_chart_patch_1 = control_chart.patch('x', 'y', color=GROUP_1_COLOR, source=source_time_patch_1,
-                                            alpha=TIME_SERIES_1_PATCH_ALPHA)
-control_chart_patch_2 = control_chart.patch('x', 'y', color=GROUP_2_COLOR, source=source_time_patch_2,
-                                            alpha=TIME_SERIES_1_PATCH_ALPHA)
+control_chart_data_1 = control_chart.circle('x', 'y', size=options.TIME_SERIES_1_CIRCLE_SIZE, color=options.GROUP_1_COLOR,
+                                            alpha=options.TIME_SERIES_1_CIRCLE_ALPHA, source=source_time_1)
+control_chart_data_2 = control_chart.circle('x', 'y', size=options.TIME_SERIES_2_CIRCLE_SIZE, color=options.GROUP_2_COLOR,
+                                            alpha=options.TIME_SERIES_2_CIRCLE_ALPHA, source=source_time_2)
+control_chart_trend_1 = control_chart.line('x', 'y', color=options.GROUP_1_COLOR, source=source_time_trend_1,
+                                           line_width=options.TIME_SERIES_1_TREND_LINE_WIDTH,
+                                           line_dash=options.TIME_SERIES_1_TREND_LINE_DASH)
+control_chart_trend_2 = control_chart.line('x', 'y', color=options.GROUP_2_COLOR, source=source_time_trend_2,
+                                           line_width=options.TIME_SERIES_2_TREND_LINE_WIDTH,
+                                           line_dash=options.TIME_SERIES_2_TREND_LINE_DASH)
+control_chart_avg_1 = control_chart.line('x', 'avg', color=options.GROUP_1_COLOR, source=source_time_bound_1,
+                                         line_width=options.TIME_SERIES_1_AVG_LINE_WIDTH,
+                                         line_dash=options.TIME_SERIES_1_AVG_LINE_DASH)
+control_chart_avg_2 = control_chart.line('x', 'avg', color=options.GROUP_2_COLOR, source=source_time_bound_2,
+                                         line_width=options.TIME_SERIES_2_AVG_LINE_WIDTH,
+                                         line_dash=options.TIME_SERIES_2_AVG_LINE_DASH)
+control_chart_patch_1 = control_chart.patch('x', 'y', color=options.GROUP_1_COLOR, source=source_time_patch_1,
+                                            alpha=options.TIME_SERIES_1_PATCH_ALPHA)
+control_chart_patch_2 = control_chart.patch('x', 'y', color=options.GROUP_2_COLOR, source=source_time_patch_2,
+                                            alpha=options.TIME_SERIES_1_PATCH_ALPHA)
 control_chart.add_tools(HoverTool(show_arrow=True,
                                   tooltips=[('ID', '@mrn'),
                                             ('Date', '@x{%F}'),
@@ -3489,16 +3495,16 @@ div_horizontal_bar = Div(text="<hr>", width=1050)
 # histograms
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
 histograms = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
-histograms.xaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
-histograms.yaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
-histograms.xaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-histograms.yaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+histograms.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
+histograms.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
+histograms.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+histograms.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
 histograms.min_border_left = min_border
 histograms.min_border_bottom = min_border
 hist_1 = histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_1,
-                         color=GROUP_1_COLOR, alpha=HISTOGRAM_1_ALPHA)
+                         color=options.GROUP_1_COLOR, alpha=options.HISTOGRAM_1_ALPHA)
 hist_2 = histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_2,
-                         color=GROUP_2_COLOR, alpha=HISTOGRAM_2_ALPHA)
+                         color=options.GROUP_2_COLOR, alpha=options.HISTOGRAM_2_ALPHA)
 histograms.xaxis.axis_label = ""
 histograms.yaxis.axis_label = "Frequency"
 histogram_bin_slider = Slider(start=1, end=100, value=10, step=1, title="Number of Bins")
@@ -3531,10 +3537,10 @@ corr_fig = figure(plot_width=900, plot_height=700,
                   tools="pan, box_zoom, wheel_zoom, reset, save",
                   logo=None,
                   x_range=[''], y_range=[''])
-corr_fig.xaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
-corr_fig.yaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
-corr_fig.xaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-corr_fig.yaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+corr_fig.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
+corr_fig.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
+corr_fig.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+corr_fig.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
 corr_fig.min_border_left = 175
 corr_fig.min_border_top = 130
 corr_fig.xaxis.major_label_orientation = pi / 4
@@ -3580,9 +3586,9 @@ corr_fig_text = Div(text="<b>Sample Sizes</b>", width=100)
 corr_fig_text_1 = Div(text="Group 1:", width=110)
 corr_fig_text_2 = Div(text="Group 2:", width=110)
 
-corr_fig_include = CheckboxGroup(labels=correlation_names, active=CORRELATION_MATRIX_DEFAULTS_1)
+corr_fig_include = CheckboxGroup(labels=correlation_names, active=options.CORRELATION_MATRIX_DEFAULTS_1)
 corr_fig_include_2 = CheckboxGroup(labels=['DVH Endpoints', 'EUD', 'NTCP / TCP'],
-                                   active=CORRELATION_MATRIX_DEFAULTS_2)
+                                   active=options.CORRELATION_MATRIX_DEFAULTS_2)
 corr_fig_include.on_change('active', corr_fig_include_ticker)
 corr_fig_include_2.on_change('active', corr_fig_include_ticker)
 
@@ -3596,23 +3602,23 @@ download_corr_fig.callback = CustomJS(args=dict(source_1_neg=source_correlation_
 # Control Chart layout
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
 corr_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
-corr_chart.xaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
-corr_chart.yaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
-corr_chart.xaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-corr_chart.yaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+corr_chart.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
+corr_chart.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
+corr_chart.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+corr_chart.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
 corr_chart.min_border_left = min_border
 corr_chart.min_border_bottom = min_border
-corr_chart_data_1 = corr_chart.circle('x', 'y', size=CORRELATION_1_CIRCLE_SIZE, color=GROUP_1_COLOR,
-                                      alpha=CORRELATION_1_ALPHA, source=source_corr_chart_1)
-corr_chart_data_2 = corr_chart.circle('x', 'y', size=CORRELATION_2_CIRCLE_SIZE, color=GROUP_2_COLOR,
-                                      alpha=CORRELATION_2_ALPHA, source=source_corr_chart_2)
-corr_chart_trend_1 = corr_chart.line('x', 'y', color=GROUP_1_COLOR,
-                                     line_width=CORRELATION_1_LINE_WIDTH,
-                                     line_dash=CORRELATION_1_LINE_DASH,
+corr_chart_data_1 = corr_chart.circle('x', 'y', size=options.REGRESSION_1_CIRCLE_SIZE, color=options.GROUP_1_COLOR,
+                                      alpha=options.REGRESSION_1_ALPHA, source=source_corr_chart_1)
+corr_chart_data_2 = corr_chart.circle('x', 'y', size=options.REGRESSION_2_CIRCLE_SIZE, color=options.GROUP_2_COLOR,
+                                      alpha=options.REGRESSION_2_ALPHA, source=source_corr_chart_2)
+corr_chart_trend_1 = corr_chart.line('x', 'y', color=options.GROUP_1_COLOR,
+                                     line_width=options.REGRESSION_1_LINE_WIDTH,
+                                     line_dash=options.REGRESSION_1_LINE_DASH,
                                      source=source_corr_trend_1)
-corr_chart_trend_2 = corr_chart.line('x', 'y', color=GROUP_2_COLOR,
-                                     line_width=CORRELATION_2_LINE_WIDTH,
-                                     line_dash=CORRELATION_1_LINE_DASH,
+corr_chart_trend_2 = corr_chart.line('x', 'y', color=options.GROUP_2_COLOR,
+                                     line_width=options.REGRESSION_2_LINE_WIDTH,
+                                     line_dash=options.REGRESSION_1_LINE_DASH,
                                      source=source_corr_trend_2)
 corr_chart.add_tools(HoverTool(show_arrow=True,
                                tooltips=[('MRN', '@mrn'),
@@ -3700,8 +3706,8 @@ source_multi_var_include.selected.on_change('indices', multi_var_include_selecti
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Custom group titles
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-group_1_title = 'Group 1 (%s) Custom Title:' % GROUP_1_COLOR.capitalize()
-group_2_title = 'Group 2 (%s) Custom Title:' % GROUP_2_COLOR.capitalize()
+group_1_title = 'Group 1 (%s) Custom Title:' % options.GROUP_1_COLOR.capitalize()
+group_2_title = 'Group 2 (%s) Custom Title:' % options.GROUP_2_COLOR.capitalize()
 custom_title_query_blue = TextInput(value='', title=group_1_title, width=300)
 custom_title_query_red = TextInput(value='', title=group_2_title, width=300)
 custom_title_dvhs_blue = TextInput(value='', title=group_1_title, width=300)
@@ -3860,10 +3866,10 @@ roi_viewer_plot_tv_button.on_click(roi_viewer_plot_tv)
 
 roi_viewer = figure(plot_width=825, plot_height=600, logo=None, match_aspect=True,
                     tools="pan,wheel_zoom,reset,crosshair,save")
-roi_viewer.xaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
-roi_viewer.yaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
-roi_viewer.xaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-roi_viewer.yaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+roi_viewer.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
+roi_viewer.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
+roi_viewer.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+roi_viewer.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
 roi_viewer.min_border_left = min_border
 roi_viewer.min_border_bottom = min_border
 roi_viewer.y_range.flipped = True
@@ -3900,10 +3906,10 @@ mlc_analyzer_cp_select.on_change('value', mlc_analyzer_cp_ticker)
 
 mlc_viewer = figure(plot_width=500, plot_height=500, logo=None, match_aspect=True,
                     tools="crosshair,save")
-mlc_viewer.xaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
-mlc_viewer.yaxis.axis_label_text_font_size = PLOT_AXIS_LABEL_FONT_SIZE
-mlc_viewer.xaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-mlc_viewer.yaxis.major_label_text_font_size = PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+mlc_viewer.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
+mlc_viewer.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
+mlc_viewer.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+mlc_viewer.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
 mlc_viewer.min_border_left = min_border
 mlc_viewer.min_border_bottom = min_border
 mlc_viewer.xaxis.axis_label = "X-Axis (mm)"
@@ -3939,8 +3945,8 @@ mlc_viewer_next_cp.on_click(mlc_viewer_go_to_next_cp)
 mlc_viewer_play_button.on_click(mlc_viewer_play)
 source_mlc_summary.selected.on_change('indices', update_cp_on_selection)
 
-mlc_viewer.x_range = Range1d(-MAX_FIELD_SIZE_X/2, MAX_FIELD_SIZE_X/2)
-mlc_viewer.y_range = Range1d(-MAX_FIELD_SIZE_Y/2, MAX_FIELD_SIZE_Y/2)
+mlc_viewer.x_range = Range1d(-options.MAX_FIELD_SIZE_X/2, options.MAX_FIELD_SIZE_X/2)
+mlc_viewer.y_range = Range1d(-options.MAX_FIELD_SIZE_Y/2, options.MAX_FIELD_SIZE_Y/2)
 mlc_viewer.xgrid.grid_line_color = None
 mlc_viewer.ygrid.grid_line_color = None
 
@@ -3962,7 +3968,7 @@ layout_query = column(row(custom_title_query_blue, Spacer(width=50), custom_titl
                           delete_range_row_button, Spacer(width=10), range_not_operator_checkbox),
                       range_filter_data_table)
 
-if LITE_VIEW:
+if options.LITE_VIEW:
     layout_dvhs = column(row(radio_group_dose, radio_group_volume),
                          add_endpoint_row_button,
                          row(ep_row, Spacer(width=10), select_ep_type, ep_text_input, Spacer(width=20),
@@ -4069,11 +4075,11 @@ optional_tabs = [('ROI Viewer', Panel(child=layout_roi_viewer, title='ROI Viewer
                  ('Correlation', Panel(child=layout_correlation_matrix, title='Correlation')),
                  ('Regression', Panel(child=layout_regression, title='Regression')),
                  ('MLC Analyzer', Panel(child=layout_mlc_analyzer, title='MLC Analyzer'))]
-if LITE_VIEW:
+if options.LITE_VIEW:
     rendered_tabs = [query_tab, dvh_tab]
 else:
     rendered_tabs = [query_tab, dvh_tab, rad_bio_tab] + \
-                    [tab for (title, tab) in optional_tabs if OPTIONAL_TABS[title]]
+                    [tab for (title, tab) in optional_tabs if options.OPTIONAL_TABS[title]]
 
 tabs = Tabs(tabs=rendered_tabs)
 
