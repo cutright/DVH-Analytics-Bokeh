@@ -469,8 +469,7 @@ input_DISABLE_BACKUP_TAB = RadioButtonGroup(labels=["True", "False"], active=int
 input_DISABLE_BACKUP_TAB.on_change('active', update_DISABLE_BACKUP_TAB)
 
 div_OPTIONAL_TABS = Div(text="OPTIONAL_TABS")
-labels = list(options.OPTIONAL_TABS)
-labels.sort()
+labels = ['ROI Viewer', 'Planning Data', 'Time-Series', 'Correlation', 'Regression', 'MLC Analyzer']
 active = [l for l in range(0, len(labels)) if options.OPTIONAL_TABS[labels[l]]]
 input_OPTIONAL_TABS = CheckboxGroup(labels=labels, active=active)
 input_OPTIONAL_TABS.on_change('active', update_OPTIONAL_TABS)
