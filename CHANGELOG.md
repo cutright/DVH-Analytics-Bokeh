@@ -2,6 +2,9 @@
 
 ### 0.4.3 (TBD)
 * IMPORT_LATEST_ONLY removed from options.py in lieu of a simple checkbox in the admin view.
+* Settings view now has functionality to edit parameters in options.py. These edits are stored 
+in preferences/options via pickle.  If preferences/options does not exist, the default values in 
+options.py are used.
 
 ### 0.4.2 (2018.07.31)
 * Download button added for DVH endpoints.
