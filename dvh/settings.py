@@ -346,12 +346,12 @@ echo_button.on_click(echo)
 
 # Options.py editor
 def update_AUTH_USER_REQ(attr, old, new):
-    options.AUTH_USER_REQ = bool(new)
+    options.AUTH_USER_REQ = bool(1-new)
     save_options(options)
 
 
 def update_DISABLE_BACKUP_TAB(attr, old, new):
-    options.DISABLE_BACKUP_TAB = bool(new)
+    options.DISABLE_BACKUP_TAB = bool(1-new)
     save_options(options)
 
 
@@ -366,7 +366,7 @@ def update_OPTIONAL_TABS(attr, old, new):
 
 
 def update_LITE_VIEW(attr, old, new):
-    options.LITE_VIEW = bool(new)
+    options.LITE_VIEW = bool(1-new)
     save_options(options)
 
 
@@ -461,11 +461,11 @@ div_horizontal_bar_options = Div(text="<hr>", width=900)
 div_options = Div(text="<b>Options</b>")
 
 div_AUTH_USER_REQ = Div(text="AUTH_USER_REQ")
-input_AUTH_USER_REQ = RadioButtonGroup(labels=["True", "False"], active=int(options.AUTH_USER_REQ))
+input_AUTH_USER_REQ = RadioButtonGroup(labels=["True", "False"], active=1-int(options.AUTH_USER_REQ))
 input_AUTH_USER_REQ.on_change('active', update_AUTH_USER_REQ)
 
 div_DISABLE_BACKUP_TAB = Div(text="DISABLE_BACKUP_TAB")
-input_DISABLE_BACKUP_TAB = RadioButtonGroup(labels=["True", "False"], active=int(options.DISABLE_BACKUP_TAB))
+input_DISABLE_BACKUP_TAB = RadioButtonGroup(labels=["True", "False"], active=1-int(options.DISABLE_BACKUP_TAB))
 input_DISABLE_BACKUP_TAB.on_change('active', update_DISABLE_BACKUP_TAB)
 
 div_OPTIONAL_TABS = Div(text="OPTIONAL_TABS")
@@ -475,7 +475,7 @@ input_OPTIONAL_TABS = CheckboxGroup(labels=labels, active=active)
 input_OPTIONAL_TABS.on_change('active', update_OPTIONAL_TABS)
 
 div_LITE_VIEW = Div(text="LITE_VIEW")
-input_LITE_VIEW = RadioButtonGroup(labels=["True", "False"], active=int(options.LITE_VIEW))
+input_LITE_VIEW = RadioButtonGroup(labels=["True", "False"], active=1-int(options.LITE_VIEW))
 input_LITE_VIEW.on_change('active', update_LITE_VIEW)
 
 color_variables = [c for c in options.__dict__ if c.find('COLOR') > -1]
