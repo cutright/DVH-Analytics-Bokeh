@@ -420,7 +420,7 @@ def update_LINE_DASH_var(attr, old, new):
 
 
 def update_LINE_DASH_val(attr, old, new):
-    setattr(options, input_LINE_WIDTH_var.value, new)
+    setattr(options, input_LINE_DASH_var.value, new)
     save_options(options)
 
 
@@ -453,6 +453,16 @@ def update_RESAMPLED_DVH_BIN_COUNT(attr, old, new):
         bin_count = 10
     options.RESAMPLED_DVH_BIN_COUNT = bin_count
     save_options(options)
+
+
+def restore_default_options():
+    script_dir = os.path.dirname(__file__)
+    rel_path = "preferences/options"
+    abs_file_path = os.path.join(script_dir, rel_path)
+    if os.path.isfile(abs_file_path):
+        os.remove(abs_file_path)
+        default_options_button.button_type = 'danger'
+        default_options_button.label = 'Web server restart needed'
 
 
 div_horizontal_bar_options = Div(text="<hr>", width=900)
@@ -530,6 +540,10 @@ div_RESAMPLED_DVH_BIN_COUNT = Div(text="RESAMPLED_DVH_BIN_COUNT")
 input_RESAMPLED_DVH_BIN_COUNT = TextInput(value=str(options.RESAMPLED_DVH_BIN_COUNT))
 input_RESAMPLED_DVH_BIN_COUNT.on_change('value', update_RESAMPLED_DVH_BIN_COUNT)
 
+default_options_button = Button(label="Restore Default Options", button_type='warning')
+default_options_button.on_click(restore_default_options)
+div_default_options = Div(text="Must restart Settings server to take effect after click")
+
 settings_layout = layout([[div_import],
                           [div_import_note],
                           [input_inbox],
@@ -555,7 +569,8 @@ settings_layout = layout([[div_import],
                           [div_LINE_DASH, input_LINE_DASH_var, input_LINE_DASH_val],
                           [div_ALPHA, input_ALPHA_var, input_ALPHA_val],
                           [div_ENDPOINT_COUNT, input_ENDPOINT_COUNT],
-                          [div_RESAMPLED_DVH_BIN_COUNT, input_RESAMPLED_DVH_BIN_COUNT]])
+                          [div_RESAMPLED_DVH_BIN_COUNT, input_RESAMPLED_DVH_BIN_COUNT],
+                          [default_options_button, div_default_options]])
 
 # Create the document Bokeh server will use to generate the webpage
 # Create the document Bokeh server will use to generate the webpage

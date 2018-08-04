@@ -29,8 +29,9 @@ GROUP_1_and_2_COLOR = 'purple'  # only for data in time-series that fit both gro
 
 REVIEW_DVH_COLOR = 'green'
 
-# The line width of selected DVHs in the DVH plot
+# The line width and style of selected DVHs in the DVH plot
 DVH_LINE_WIDTH = 2
+DVH_LINE_DASH = 'solid'
 
 # Adjusts the opacity of the inner-quartile ranges
 IQR_1_ALPHA = 0.075
@@ -83,14 +84,14 @@ CORRELATION_MATRIX_DEFAULTS_1 = list(range(20, 28)) + [29, 30]
 CORRELATION_MATRIX_DEFAULTS_2 = list(range(0, 3))
 
 # Options for the plot in the Multi-Variable Regression tab
-CORRELATION_1_CIRCLE_SIZE = 10
-CORRELATION_1_ALPHA = 0.5
-CORRELATION_1_LINE_WIDTH = 2
-CORRELATION_1_LINE_DASH = 'dashed'
-CORRELATION_2_CIRCLE_SIZE = 10
-CORRELATION_2_ALPHA = 0.5
-CORRELATION_2_LINE_WIDTH = 2
-CORRELATION_2_LINE_DASH = 'dashed'
+REGRESSION_1_CIRCLE_SIZE = 10
+REGRESSION_1_ALPHA = 0.5
+REGRESSION_1_LINE_WIDTH = 2
+REGRESSION_1_LINE_DASH = 'dashed'
+REGRESSION_2_CIRCLE_SIZE = 10
+REGRESSION_2_ALPHA = 0.5
+REGRESSION_2_LINE_WIDTH = 2
+REGRESSION_2_LINE_DASH = 'dashed'
 
 # This is the number of bins up do 100% used when resampling a DVH to fractional dose
 RESAMPLED_DVH_BIN_COUNT = 5000

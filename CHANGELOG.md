@@ -1,10 +1,11 @@
 # Change log of DVH Analytics
 
-### 0.4.3 (TBD)
+### 0.4.3 (2018.08.04)
 * IMPORT_LATEST_ONLY removed from options.py in lieu of a simple checkbox in the admin view.
 * Settings view now has functionality to edit parameters in options.py. These edits are stored 
 in preferences/options via pickle.  If preferences/options does not exist, the default values in 
 options.py are used.
+* Draft of a user manual is now available.
 
 ### 0.4.2 (2018.07.31)
 * Download button added for DVH endpoints.

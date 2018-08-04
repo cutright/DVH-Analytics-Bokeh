@@ -3263,7 +3263,7 @@ stats_mean_2 = dvh_plots.line('x', 'mean', source=source_stats_2,
 # Add all DVHs, but hide them until selected
 dvh_plots.multi_line('x', 'y', source=source,
                      selection_color='color', line_width=options.DVH_LINE_WIDTH, alpha=0,
-                     nonselection_alpha=0, selection_alpha=1)
+                     line_dash=options.DVH_LINE_DASH, nonselection_alpha=0, selection_alpha=1)
 
 # Shaded region between Q1 and Q3
 iqr_1 = dvh_plots.patch('x_patch', 'y_patch', source=source_patch_1, alpha=options.IQR_1_ALPHA, color=options.GROUP_1_COLOR)
@@ -3608,17 +3608,17 @@ corr_chart.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT
 corr_chart.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
 corr_chart.min_border_left = min_border
 corr_chart.min_border_bottom = min_border
-corr_chart_data_1 = corr_chart.circle('x', 'y', size=options.CORRELATION_1_CIRCLE_SIZE, color=options.GROUP_1_COLOR,
-                                      alpha=options.CORRELATION_1_ALPHA, source=source_corr_chart_1)
-corr_chart_data_2 = corr_chart.circle('x', 'y', size=options.CORRELATION_2_CIRCLE_SIZE, color=options.GROUP_2_COLOR,
-                                      alpha=options.CORRELATION_2_ALPHA, source=source_corr_chart_2)
+corr_chart_data_1 = corr_chart.circle('x', 'y', size=options.REGRESSION_1_CIRCLE_SIZE, color=options.GROUP_1_COLOR,
+                                      alpha=options.REGRESSION_1_ALPHA, source=source_corr_chart_1)
+corr_chart_data_2 = corr_chart.circle('x', 'y', size=options.REGRESSION_2_CIRCLE_SIZE, color=options.GROUP_2_COLOR,
+                                      alpha=options.REGRESSION_2_ALPHA, source=source_corr_chart_2)
 corr_chart_trend_1 = corr_chart.line('x', 'y', color=options.GROUP_1_COLOR,
-                                     line_width=options.CORRELATION_1_LINE_WIDTH,
-                                     line_dash=options.CORRELATION_1_LINE_DASH,
+                                     line_width=options.REGRESSION_1_LINE_WIDTH,
+                                     line_dash=options.REGRESSION_1_LINE_DASH,
                                      source=source_corr_trend_1)
 corr_chart_trend_2 = corr_chart.line('x', 'y', color=options.GROUP_2_COLOR,
-                                     line_width=options.CORRELATION_2_LINE_WIDTH,
-                                     line_dash=options.CORRELATION_1_LINE_DASH,
+                                     line_width=options.REGRESSION_2_LINE_WIDTH,
+                                     line_dash=options.REGRESSION_1_LINE_DASH,
                                      source=source_corr_trend_2)
 corr_chart.add_tools(HoverTool(show_arrow=True,
                                tooltips=[('MRN', '@mrn'),
