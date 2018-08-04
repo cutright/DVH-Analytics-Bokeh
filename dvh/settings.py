@@ -371,8 +371,7 @@ def update_LITE_VIEW(attr, old, new):
 
 
 def update_input_COLORS_var(attr, old, new):
-    input_COLORS_var.value = getattr(options, new)
-    save_options(options)
+    input_COLORS_val.value = getattr(options, new)
 
 
 def update_input_COLORS_val(attr, old, new):
