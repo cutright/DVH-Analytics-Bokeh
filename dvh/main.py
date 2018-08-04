@@ -1042,7 +1042,7 @@ def update_dvh_data(dvh):
     dvh.dist_to_ptv_median.insert(0, 'N/A')
     dvh.dist_to_ptv_max.insert(0, 'N/A')
     dvh.ptv_overlap.insert(0, 'N/A')
-    line_colors.insert(0, 'green')
+    line_colors.insert(0, options.REVIEW_DVH_COLOR)
     x_data.insert(0, [0])
     y_data.insert(0, [0])
 

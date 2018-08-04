@@ -27,6 +27,8 @@ GROUP_2_COLOR = 'red'
 GROUP_2_COLOR_NEG_CORR = 'purple'
 GROUP_1_and_2_COLOR = 'purple'  # only for data in time-series that fit both groups
 
+REVIEW_DVH_COLOR = 'green'
+
 # The line width of selected DVHs in the DVH plot
 DVH_LINE_WIDTH = 2
 
