@@ -56,6 +56,8 @@ class DVH:
                 self.bin_count = current_size
         self.dvh = np.zeros([self.bin_count, self.count])
 
+        self.dth = []
+
         # Get needed values not in DVHs table
         for i in range(self.count):
             # Get Rx Doses
@@ -71,6 +73,12 @@ class DVH:
                 current_dvh = np.divide(current_dvh, current_dvh_max)
             zero_fill = np.zeros(self.bin_count - len(current_dvh))
             self.dvh[:, i] = np.concatenate((current_dvh, zero_fill))
+
+            # Process dth_string to numpy array
+            try:
+                self.dth.append(np.array(self.dth_string[i].split(','), dtype='|S4').astype(np.float))
+            except:
+                self.dth.append(np.array([0]))
 
     def get_percentile_dvh(self, percentile):
         """

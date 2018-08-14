@@ -1,5 +1,20 @@
 # Change log of DVH Analytics
 
+### 0.4.4 (TBD)
+* Shapely speedups enabled, if available
+    * Shapely has calcs available in C, as opposed to C++
+* centroid, dist_to_ptv_centroids, dth (distance to target histogram), spread_x, spread_y, spread_z, cross_section_max, 
+cross_section_median, columns added to DVHs
+    * These columns can be added by clicking Create Tables from Settings view, if running from source
+    * Running from Docker or pip install shouldn't need to do this manually
+* dist_to_ptv_centroids and dth must be calculated from Admin view after proper ROI name mapping
+* dth_string calculated with Calc PTV Dist in Admin view
+    * the string stored is csv representing a histogram with 0.1mm bins
+* centroid, spread, and cross-sections also calculated at time of import
+    * calc in Admin view only required for data imported prior to 0.4.4 install
+* Admin view now specifies Post-Import calculations via dropdown
+    * Added choice "Default Post-Import" to run through all calcs not done at time of DICOM import
+
 ### 0.4.3 (2018.08.04)
 * IMPORT_LATEST_ONLY removed from options.py in lieu of a simple checkbox in the admin view.
 * Settings view now has functionality to edit parameters in options.py. These edits are stored 
