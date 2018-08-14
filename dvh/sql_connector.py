@@ -133,9 +133,9 @@ class DVH_SQL:
                       str(round(dvh_table.surface_area[x], 2)),
                       '(NULL)',
                       dvh_table.centroid[x],
-                      dvh_table.spread_x[x],
-                      dvh_table.spread_y[x],
-                      dvh_table.spread_z[x],
+                      str(round(dvh_table.spread_x[x], 3)),
+                      str(round(dvh_table.spread_y[x], 3)),
+                      str(round(dvh_table.spread_z[x], 3)),
                       str(round(dvh_table.cross_section_max[x], 3)),
                       str(round(dvh_table.cross_section_median[x], 3)),
                       'NOW()']

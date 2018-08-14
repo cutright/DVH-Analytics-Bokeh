@@ -14,6 +14,7 @@ cross_section_median, columns added to DVHs
     * calc in Admin view only required for data imported prior to 0.4.4 install
 * Admin view now specifies Post-Import calculations via dropdown
     * Added choice "Default Post-Import" to run through all calcs not done at time of DICOM import
+* typo in keyword for parameter in dicom_to_sql (import_latest_plan_only changes to import_latest_only)
 
 ### 0.4.3 (2018.08.04)
 * IMPORT_LATEST_ONLY removed from options.py in lieu of a simple checkbox in the admin view.
