@@ -37,7 +37,8 @@ class DVH_SQL:
     def execute_file(self, sql_file_name):
 
         for line in open(sql_file_name):
-            self.cursor.execute(line)
+            if not line.startswith('--'):  # ignore commented lines
+                self.cursor.execute(line)
         self.cnx.commit()
 
     def check_table_exists(self, table_name):
@@ -92,10 +93,17 @@ class DVH_SQL:
         return bool(results)
 
     def insert_dvhs(self, dvh_table):
+        print('Inserting dvh_table')
         file_path = 'insert_values_DVHs.sql'
 
         if os.path.isfile(file_path):
             os.remove(file_path)
+
+        col_names = ['mrn', 'study_instance_uid', 'institutional_roi', 'physician_roi', 'roi_name', 'roi_type',
+                     'volume', 'min_dose', 'mean_dose', 'max_dose', 'dvh_string', 'roi_coord_string',
+                     'dist_to_ptv_min', 'dist_to_ptv_mean', 'dist_to_ptv_median', 'dist_to_ptv_max', 'surface_area',
+                     'ptv_overlap', 'centroid', 'spread_x', 'spread_y', 'spread_z', 'cross_section_max',
+                     'cross_section_median', 'import_time_stamp']
 
         # Import each ROI from ROI_PyTable, append to output text file
         if max(dvh_table.ptv_number) > 1:
@@ -105,33 +113,38 @@ class DVH_SQL:
         for x in range(dvh_table.count):
             if multi_ptv and dvh_table.ptv_number[x] > 0:
                 dvh_table.roi_type[x] = 'PTV' + str(dvh_table.ptv_number[x])
-            sql_input = [str(dvh_table.mrn[x]),
-                         str(dvh_table.study_instance_uid[x]),
-                         dvh_table.institutional_roi[x],
-                         dvh_table.physician_roi[x],
-                         dvh_table.roi_name[x].replace("'", "`"),
-                         dvh_table.roi_type[x],
-                         str(round(dvh_table.volume[x], 3)),
-                         str(round(dvh_table.min_dose[x], 2)),
-                         str(round(dvh_table.mean_dose[x], 2)),
-                         str(round(dvh_table.max_dose[x], 2)),
-                         dvh_table.dvh_str[x],
-                         dvh_table.roi_coord[x],
-                         '(NULL)',
-                         '(NULL)',
-                         '(NULL)',
-                         '(NULL)',
-                         str(round(dvh_table.surface_area[x], 2)),
-                         '(NULL)',
-                         'NOW()']
-            sql_input = '\',\''.join(sql_input)
-            sql_input += '\');'
-            sql_input = sql_input.replace("'(NULL)'", "(NULL)")
-            prepend = 'INSERT INTO DVHs VALUES (\''
-            sql_input = prepend + str(sql_input)
-            sql_input += '\n'
+
+            values = [str(dvh_table.mrn[x]),
+                      str(dvh_table.study_instance_uid[x]),
+                      dvh_table.institutional_roi[x],
+                      dvh_table.physician_roi[x],
+                      dvh_table.roi_name[x].replace("'", "`"),
+                      dvh_table.roi_type[x],
+                      str(round(dvh_table.volume[x], 3)),
+                      str(round(dvh_table.min_dose[x], 2)),
+                      str(round(dvh_table.mean_dose[x], 2)),
+                      str(round(dvh_table.max_dose[x], 2)),
+                      dvh_table.dvh_str[x],
+                      dvh_table.roi_coord[x],
+                      '(NULL)',
+                      '(NULL)',
+                      '(NULL)',
+                      '(NULL)',
+                      str(round(dvh_table.surface_area[x], 2)),
+                      '(NULL)',
+                      dvh_table.centroid[x],
+                      str(round(dvh_table.spread_x[x], 3)),
+                      str(round(dvh_table.spread_y[x], 3)),
+                      str(round(dvh_table.spread_z[x], 3)),
+                      str(round(dvh_table.cross_section_max[x], 3)),
+                      str(round(dvh_table.cross_section_median[x], 3)),
+                      'NOW()']
+
+            cmd = "INSERT INTO DVHs (%s) VALUES ('%s');\n" % \
+                  (','.join(col_names), "','".join(values).replace("'(NULL)'", "(NULL)"))
+
             with open(file_path, "a") as text_file:
-                text_file.write(sql_input)
+                text_file.write(cmd)
 
         self.execute_file(file_path)
         os.remove(file_path)
@@ -146,38 +159,41 @@ class DVH_SQL:
             os.remove(file_path)
 
         # Import each ROI from ROI_PyTable, append to output text file
-        sql_input = [str(plan.mrn),
-                     plan.study_instance_uid,
-                     str(plan.birth_date),
-                     str(plan.age),
-                     plan.patient_sex,
-                     str(plan.sim_study_date),
-                     plan.physician,
-                     plan.tx_site,
-                     str(plan.rx_dose),
-                     str(plan.fxs),
-                     plan.patient_orientation,
-                     str(plan.plan_time_stamp),
-                     str(plan.struct_time_stamp),
-                     str(plan.dose_time_stamp),
-                     plan.tps_manufacturer,
-                     plan.tps_software_name,
-                     str(plan.tps_software_version),
-                     plan.tx_modality,
-                     str(plan.tx_time),
-                     str(plan.total_mu),
-                     plan.dose_grid_resolution,
-                     plan.heterogeneity_correction,
-                     'false',
-                     'NOW()']
-        sql_input = '\',\''.join(sql_input)
-        sql_input += '\');'
-        sql_input = sql_input.replace("'(NULL)'", "(NULL)")
-        prepend = 'INSERT INTO Plans VALUES (\''
-        sql_input = prepend + str(sql_input)
-        sql_input += '\n'
+        col_names = ['mrn', 'study_instance_uid', 'birth_date', 'age', 'patient_sex', 'sim_study_date', 'physician',
+                     'tx_site', 'rx_dose', 'fxs', 'patient_orientation', 'plan_time_stamp', 'struct_time_stamp',
+                     'dose_time_stamp', 'tps_manufacturer', 'tps_software_name', 'tps_software_version', 'tx_modality',
+                     'tx_time', 'total_mu', 'dose_grid_res', 'heterogeneity_correction', 'baseline',
+                     'import_time_stamp']
+        values = [str(plan.mrn),
+                  plan.study_instance_uid,
+                  str(plan.birth_date),
+                  str(plan.age),
+                  plan.patient_sex,
+                  str(plan.sim_study_date),
+                  plan.physician,
+                  plan.tx_site,
+                  str(plan.rx_dose),
+                  str(plan.fxs),
+                  plan.patient_orientation,
+                  str(plan.plan_time_stamp),
+                  str(plan.struct_time_stamp),
+                  str(plan.dose_time_stamp),
+                  plan.tps_manufacturer,
+                  plan.tps_software_name,
+                  str(plan.tps_software_version),
+                  plan.tx_modality,
+                  str(plan.tx_time),
+                  str(plan.total_mu),
+                  plan.dose_grid_resolution,
+                  plan.heterogeneity_correction,
+                  'false',
+                  'NOW()']
+
+        cmd = "INSERT INTO Plans (%s) VALUES ('%s');\n" % \
+              (','.join(col_names), "','".join(values).replace("'(NULL)'", "(NULL)"))
+
         with open(file_path, "a") as text_file:
-            text_file.write(sql_input)
+            text_file.write(cmd)
 
         self.execute_file(file_path)
         os.remove(file_path)
@@ -192,57 +208,62 @@ class DVH_SQL:
         if os.path.isfile(file_path):
             os.remove(file_path)
 
+        col_names = ['mrn', 'study_instance_uid', 'beam_number', 'beam_name', 'fx_grp_number', 'fx_count',
+                     'fx_grp_beam_count', 'beam_dose', 'beam_mu', 'radiation_type', 'beam_energy_min',
+                     'beam_energy_max', 'beam_type', 'control_point_count', 'gantry_start', 'gantry_end',
+                     'gantry_rot_dir', 'gantry_range', 'gantry_min', 'gantry_max', 'collimator_start', 'collimator_end',
+                     'collimator_rot_dir', 'collimator_range', 'collimator_min', 'collimator_max', 'couch_start',
+                     'couch_end', 'couch_rot_dir', 'couch_range', 'couch_min', 'couch_max', 'beam_dose_pt', 'isocenter',
+                     'ssd', 'treatment_machine', 'scan_mode', 'scan_spot_count', 'beam_mu_per_deg', 'beam_mu_per_cp',
+                     'import_time_stamp']
+
         # Import each ROI from ROI_PyTable, append to output text file
         for x in range(beams.count):
 
             if beams.beam_mu[x] > 0:
-                sql_input = [str(beams.mrn[x]),
-                             str(beams.study_instance_uid[x]),
-                             str(beams.beam_number[x]),
-                             beams.beam_name[x].replace("'", "`"),
-                             str(beams.fx_group[x]),
-                             str(beams.fxs[x]),
-                             str(beams.fx_grp_beam_count[x]),
-                             str(round(beams.beam_dose[x], 3)),
-                             str(beams.beam_mu[x]),
-                             beams.radiation_type[x],
-                             str(round(beams.beam_energy_min[x], 2)),
-                             str(round(beams.beam_energy_max[x], 2)),
-                             beams.beam_type[x],
-                             str(beams.control_point_count[x]),
-                             str(beams.gantry_start[x]),
-                             str(beams.gantry_end[x]),
-                             beams.gantry_rot_dir[x],
-                             str(beams.gantry_range[x]),
-                             str(beams.gantry_min[x]),
-                             str(beams.gantry_max[x]),
-                             str(beams.collimator_start[x]),
-                             str(beams.collimator_end[x]),
-                             beams.collimator_rot_dir[x],
-                             str(beams.collimator_range[x]),
-                             str(beams.collimator_min[x]),
-                             str(beams.collimator_max[x]),
-                             str(beams.couch_start[x]),
-                             str(beams.couch_end[x]),
-                             beams.couch_rot_dir[x],
-                             str(beams.couch_range[x]),
-                             str(beams.couch_min[x]),
-                             str(beams.couch_max[x]),
-                             beams.beam_dose_pt[x],
-                             beams.isocenter[x],
-                             str(beams.ssd[x]),
-                             beams.treatment_machine[x],
-                             beams.scan_mode[x],
-                             str(beams.scan_spot_count[x]),
-                             str(beams.beam_mu_per_deg[x]),
-                             str(beams.beam_mu_per_cp[x]),
-                             'NOW()']
-                sql_input = '\',\''.join(sql_input)
-                sql_input += '\');'
-                sql_input = sql_input.replace("'(NULL)'", "(NULL)")
-                prepend = 'INSERT INTO Beams VALUES (\''
-                sql_input = prepend + str(sql_input)
-                sql_input += '\n'
+                values = [str(beams.mrn[x]),
+                          str(beams.study_instance_uid[x]),
+                          str(beams.beam_number[x]),
+                          beams.beam_name[x].replace("'", "`"),
+                          str(beams.fx_group[x]),
+                          str(beams.fxs[x]),
+                          str(beams.fx_grp_beam_count[x]),
+                          str(round(beams.beam_dose[x], 3)),
+                          str(beams.beam_mu[x]),
+                          beams.radiation_type[x],
+                          str(round(beams.beam_energy_min[x], 2)),
+                          str(round(beams.beam_energy_max[x], 2)),
+                          beams.beam_type[x],
+                          str(beams.control_point_count[x]),
+                          str(beams.gantry_start[x]),
+                          str(beams.gantry_end[x]),
+                          beams.gantry_rot_dir[x],
+                          str(beams.gantry_range[x]),
+                          str(beams.gantry_min[x]),
+                          str(beams.gantry_max[x]),
+                          str(beams.collimator_start[x]),
+                          str(beams.collimator_end[x]),
+                          beams.collimator_rot_dir[x],
+                          str(beams.collimator_range[x]),
+                          str(beams.collimator_min[x]),
+                          str(beams.collimator_max[x]),
+                          str(beams.couch_start[x]),
+                          str(beams.couch_end[x]),
+                          beams.couch_rot_dir[x],
+                          str(beams.couch_range[x]),
+                          str(beams.couch_min[x]),
+                          str(beams.couch_max[x]),
+                          beams.beam_dose_pt[x],
+                          beams.isocenter[x],
+                          str(beams.ssd[x]),
+                          beams.treatment_machine[x],
+                          beams.scan_mode[x],
+                          str(beams.scan_spot_count[x]),
+                          str(beams.beam_mu_per_deg[x]),
+                          str(beams.beam_mu_per_cp[x]),
+                          'NOW()']
+                sql_input = "INSERT INTO Beams (%s) VALUES ('%s');\n" % \
+                            (','.join(col_names), "','".join(values).replace("'(NULL)'", "(NULL)"))
                 with open(file_path, "a") as text_file:
                     text_file.write(sql_input)
 
@@ -259,25 +280,25 @@ class DVH_SQL:
         if os.path.isfile(file_path):
             os.remove(file_path)
 
+        col_names = ['mrn', 'study_instance_uid', 'plan_name', 'fx_grp_name', 'fx_grp_number', 'fx_grp_count',
+                     'fx_dose', 'fxs', 'rx_dose', 'rx_percent', 'normalization_method', 'normalization_object',
+                     'import_time_stamp']
+
         for x in range(rx_table.count):
-            sql_input = [str(rx_table.mrn[x]),
-                         str(rx_table.study_instance_uid[x]),
-                         str(rx_table.plan_name[x]).replace("'", "`"),
-                         str(rx_table.fx_grp_name[x]),
-                         str(rx_table.fx_grp_number[x]),
-                         str(rx_table.fx_grp_count[x]),
-                         str(round(rx_table.fx_dose[x], 2)),
-                         str(rx_table.fxs[x]),
-                         str(round(rx_table.rx_dose[x], 2)),
-                         str(round(rx_table.rx_percent[x], 1)),
-                         str(rx_table.normalization_method[x]),
-                         str(rx_table.normalization_object[x]).replace("'", "`"),
-                         'NOW()']
-            sql_input = '\',\''.join(sql_input)
-            sql_input += '\');'
-            prepend = 'INSERT INTO Rxs VALUES (\''
-            sql_input = prepend + str(sql_input)
-            sql_input += '\n'
+            values = [str(rx_table.mrn[x]),
+                      str(rx_table.study_instance_uid[x]),
+                      str(rx_table.plan_name[x]).replace("'", "`"),
+                      str(rx_table.fx_grp_name[x]),
+                      str(rx_table.fx_grp_number[x]),
+                      str(rx_table.fx_grp_count[x]),
+                      str(round(rx_table.fx_dose[x], 2)),
+                      str(rx_table.fxs[x]),
+                      str(round(rx_table.rx_dose[x], 2)),
+                      str(round(rx_table.rx_percent[x], 1)),
+                      str(rx_table.normalization_method[x]),
+                      str(rx_table.normalization_object[x]).replace("'", "`"),
+                      'NOW()']
+            sql_input = "INSERT INTO Rxs (%s) VALUES ('%s');\n" % (','.join(col_names), "','".join(values))
             with open(file_path, "a") as text_file:
                 text_file.write(sql_input)
 
@@ -289,9 +310,11 @@ class DVH_SQL:
 
     def insert_dicom_file_row(self, mrn, uid, dir_name, plan_file, struct_file, dose_file):
 
-        sql_cmd = "INSERT INTO DICOM_Files VALUES ('%s', '%s', '%s', '%s', '%s', '%s', NOW());\n" % \
-                  (mrn, uid, dir_name, plan_file, struct_file, dose_file)
-        sql_cmd.replace("'(NULL)'", "(NULL)")
+        col_names = ['mrn', 'study_instance_uid', 'folder_path', 'plan_file', 'structure_file', 'dose_file',
+                     'import_time_stamp']
+        values = [mrn, uid, dir_name, plan_file, struct_file, dose_file]
+        sql_cmd = "INSERT INTO DICOM_Files (%s) VALUES ('%s', NOW());\n" % \
+                  (','.join(col_names), "','".join(values).replace("'(NULL)'", "(NULL)"))
         self.cursor.execute(sql_cmd)
         self.cnx.commit()
 
@@ -393,6 +416,9 @@ class DVH_SQL:
             condition = dvh_condition + condition
 
         return len(self.query('DVHs', 'mrn', condition))
+
+    def update_sql_tables(self):
+        self.get_column_names('DVHs')
 
 
 def write_import_errors(obj):

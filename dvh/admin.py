@@ -9,7 +9,8 @@ from __future__ import print_function
 from future.utils import listvalues
 from utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection, \
     recalculate_ages, update_min_distances_in_db, update_treatment_volume_overlap_in_db, update_volumes_in_db, \
-    update_surface_area_in_db, load_options
+    update_surface_area_in_db, load_options, update_centroid_in_db, update_spread_in_db, update_cross_section_in_db,\
+    update_dist_to_ptv_centroids_in_db
 import os
 from os.path import dirname, join
 from datetime import datetime
@@ -682,6 +683,7 @@ def update_query_columns():
     if query_table.value.lower() == 'dvhs':
         new_options.pop(new_options.index('dvh_string'))
         new_options.pop(new_options.index('roi_coord_string'))
+        new_options.pop(new_options.index('dth_string'))
     options_tuples = []
     for option in new_options:
         options_tuples.append(tuple([option, option]))
@@ -979,74 +981,6 @@ def restore_preferences():
     restore_pref_button.button_type = 'primary'
 
 
-def calculate_ptv_distances():
-    start_time = datetime.now()
-    print(str(start_time), 'Beginning PTV distance calculations', sep=' ')
-    calculate_ptv_dist_button.label = 'Calculating...'
-    calculate_ptv_dist_button.button_type = 'warning'
-    if calculate_condition.value:
-        update_all_min_distances_in_db(calculate_condition.value)
-    else:
-        update_all_min_distances_in_db()
-    update_query_source()
-    calculate_ptv_dist_button.label = 'Calc PTV Distances'
-    calculate_ptv_dist_button.button_type = 'primary'
-
-    end_time = datetime.now()
-    print(str(end_time), 'Calculations complete', sep=' ')
-
-    total_time = end_time - start_time
-    seconds = total_time.seconds
-    m, s = divmod(seconds, 60)
-    h, m = divmod(m, 60)
-    if h:
-        print("These calculations took %dhrs %02dmin %02dsec to complete" % (h, m, s))
-    elif m:
-        print("These calculations took %02dmin %02dsec to complete" % (m, s))
-    else:
-        print("These calculations took %02dsec to complete" % s)
-
-
-def calculate_ptv_overlap():
-    start_time = datetime.now()
-    print(str(start_time), 'Beginning PTV overlap calculations', sep=' ')
-    calculate_tv_overlap_button.label = 'Calculating...'
-    calculate_tv_overlap_button.button_type = 'warning'
-    if calculate_condition.value:
-        update_all_tv_overlaps_in_db(calculate_condition.value)
-    else:
-        update_all_tv_overlaps_in_db()
-    update_query_source()
-    calculate_tv_overlap_button.label = 'Calc PTV Overlap'
-    calculate_tv_overlap_button.button_type = 'primary'
-
-    end_time = datetime.now()
-    print(str(end_time), 'Calculations complete', sep=' ')
-
-    total_time = end_time - start_time
-    seconds = total_time.seconds
-    m, s = divmod(seconds, 60)
-    h, m = divmod(m, 60)
-    if h:
-        print("These calculations took %dhrs %02dmin %02dsec to complete" % (h, m, s))
-    elif m:
-        print("These calculations took %02dmin %02dsec to complete" % (m, s))
-    else:
-        print("These calculations took %02dsec to complete" % s)
-
-
-def calculate_ages_click():
-    calculate_ages_button.label = 'Calculating...'
-    calculate_ages_button.button_type = 'warning'
-    if calculate_condition.value:
-        recalculate_ages(calculate_condition.value)
-    else:
-        recalculate_ages()
-    update_query_source()
-    calculate_ages_button.label = 'Calc Patient Ages'
-    calculate_ages_button.button_type = 'primary'
-
-
 def update_baseline_source():
     baseline_layout.children.pop()
     columns = ['mrn', 'sim_study_date', 'physician', 'rx_dose', 'fxs', 'tx_modality', 'tx_site',
@@ -1188,7 +1122,7 @@ def update_all_min_distances_in_db(*condition):
     counter = 0.
     total_rois = float(len(rois))
     for roi in rois:
-        calculate_ptv_dist_button.label = str(int((counter / total_rois) * 100)) + '%'
+        calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
         counter += 1.
         if roi[1].lower() not in {'external', 'skin'} and \
                         roi[2].lower() not in {'uncategorized', 'ignored', 'external', 'skin'}:
@@ -1196,7 +1130,6 @@ def update_all_min_distances_in_db(*condition):
             update_min_distances_in_db(roi[0], roi[1])
         else:
             print('skipping dist to ptv:', roi[1], sep=' ')
-    calculate_ptv_dist_button.label = 'Calc PTV Distances'
 
 
 def update_all_tv_overlaps_in_db(*condition):
@@ -1207,11 +1140,83 @@ def update_all_tv_overlaps_in_db(*condition):
     counter = 0.
     total_rois = float(len(rois))
     for roi in rois:
-        calculate_tv_overlap_button.label = str(int((counter / total_rois) * 100)) + '%'
+        calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
         counter += 1.
         print('updating ptv_overlap:', roi[1], sep=' ')
         update_treatment_volume_overlap_in_db(roi[0], roi[1])
-    calculate_tv_overlap_button.label = 'Calc PTV Overlap'
+
+
+def update_all_centroids_in_db(*condition):
+    if condition:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
+    else:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
+    counter = 0.
+    total_rois = float(len(rois))
+    for roi in rois:
+        calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
+        counter += 1.
+        print('updating centroid:', roi[1], sep=' ')
+        update_centroid_in_db(roi[0], roi[1])
+
+
+def update_all_spreads_in_db(*condition):
+    if condition:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
+    else:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
+    counter = 0.
+    total_rois = float(len(rois))
+    for roi in rois:
+        calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
+        counter += 1.
+        print('updating spread:', roi[1], sep=' ')
+        update_spread_in_db(roi[0], roi[1])
+
+
+def update_all_cross_sections_in_db(*condition):
+    if condition:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
+    else:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
+    counter = 0.
+    total_rois = float(len(rois))
+    for roi in rois:
+        calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
+        counter += 1.
+        print('updating cross-section:', roi[1], sep=' ')
+        update_cross_section_in_db(roi[0], roi[1])
+
+
+def update_all_dist_to_ptv_centoids_in_db(*condition):
+
+    if condition:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
+    else:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
+    counter = 0.
+    total_rois = float(len(rois))
+    for roi in rois:
+        calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
+        counter += 1.
+        print('updating min_dist_to_ptv_centroid:', roi[1], sep=' ')
+        update_dist_to_ptv_centroids_in_db(roi[0], roi[1])
+
+
+def update_all_except_age_in_db():
+
+    for f in calculate_select.options:
+        if f not in {'Patient Ages', 'Default Post-Import'}:
+            calculate_select.value = f
+            calculate_exec()
+
+
+def update_default_post_import():
+
+    for f in ['PTV Distances', 'PTV Overlap', 'OAR-PTV Centroid Dist']:
+        calculate_select.value = f
+        calculate_exec()
+    calculate_select.value = 'Default Post-Import'
 
 
 # Calculates volumes using Shapely, not dicompyler
@@ -1328,6 +1333,55 @@ def backup_location_ticker(attr, old, new):
     if new not in listvalues(options_map):
         backup_location_select.value = 'Custom'
     update_backup_select(new)
+
+
+def calculate_exec():
+    calc_map = {'PTV Distances': update_all_min_distances_in_db,
+                'PTV Overlap': update_all_tv_overlaps_in_db,
+                'Patient Ages': recalculate_ages,
+                'ROI Centroid': update_all_centroids_in_db,
+                'ROI Spread': update_all_spreads_in_db,
+                'ROI Cross-Section': update_all_cross_sections_in_db,
+                'OAR-PTV Centroid Dist': update_all_dist_to_ptv_centoids_in_db,
+                'All (except age)': update_all_except_age_in_db,
+                'Default Post-Import': update_default_post_import}
+
+    if calculate_select.value not in {'All (except age)', 'Default Post-Import'}:
+
+        start_time = datetime.now()
+        print(str(start_time), 'Beginning %s calculations' % calculate_condition.value, sep=' ')
+
+        calculate_exec_button.label = 'Calculating...'
+        calculate_exec_button.button_type = 'warning'
+
+        if calculate_condition.value:
+            calc_map[calculate_select.value](calculate_condition.value)
+        else:
+            calc_map[calculate_select.value]()
+
+        update_query_source()
+
+        calculate_exec_button.label = 'Perform Calc'
+        calculate_exec_button.button_type = 'primary'
+
+        end_time = datetime.now()
+        print(str(end_time), 'Calculations complete', sep=' ')
+
+        total_time = end_time - start_time
+        seconds = total_time.seconds
+        m, s = divmod(seconds, 60)
+        h, m = divmod(m, 60)
+        if h:
+            print("These calculations took %dhrs %02dmin %02dsec to complete" % (h, m, s))
+        elif m:
+            print("These calculations took %02dmin %02dsec to complete" % (m, s))
+        else:
+            print("These calculations took %02dsec to complete" % s)
+    else:
+        if calculate_condition.value:
+            calc_map[calculate_select.value](calculate_condition.value)
+        else:
+            calc_map[calculate_select.value]()
 
 
 ######################################################
@@ -1576,12 +1630,11 @@ change_mrn_uid_button.on_click(change_mrn_uid)
 
 calculations_title = Div(text="<b>Post Import Calculations</b>", width=1000)
 calculate_condition = TextInput(value='', title="Condition", width=300)
-calculate_ptv_dist_button = Button(label='Calc PTV Distances', button_type='primary', width=150)
-calculate_ptv_dist_button.on_click(calculate_ptv_distances)
-calculate_tv_overlap_button = Button(label='Calc PTV Overlap', button_type='primary', width=150)
-calculate_tv_overlap_button.on_click(calculate_ptv_overlap)
-calculate_ages_button = Button(label='Calc Patient Ages', button_type='primary', width=150)
-calculate_ages_button.on_click(calculate_ages_click)
+calculate_options = ['Default Post-Import', 'PTV Distances', 'PTV Overlap', 'ROI Centroid',
+                     'ROI Spread', 'ROI Cross-Section', 'OAR-PTV Centroid Dist', 'All (except age)', 'Patient Ages']
+calculate_select = Select(value=calculate_options[0], options=calculate_options, title='Calculate:')
+calculate_exec_button = Button(label='Perform Calc', button_type='primary', width=150)
+calculate_exec_button.on_click(calculate_exec)
 
 download = Button(label="Download Table", button_type="default", width=150)
 download.callback = CustomJS(args=dict(source=query_source),
@@ -1603,8 +1656,8 @@ db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [change_mrn_uid_column, change_mrn_uid_old_value,
                             change_mrn_uid_new_value, change_mrn_uid_button],
                            [calculations_title],
-                           [calculate_condition, calculate_ptv_dist_button, calculate_tv_overlap_button,
-                            calculate_ages_button, download],
+                           [calculate_condition, calculate_select, calculate_exec_button],
+                           [download],
                            [query_data_table]])
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

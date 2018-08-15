@@ -9,7 +9,7 @@ Created on Sun Apr 21 2017
 
 from __future__ import print_function
 from future.utils import listitems
-from analysis_tools import DVH, calc_eud
+from analysis_tools import DVH, calc_eud, dose_to_volume, volume_of_dose
 from utilities import Temp_DICOM_FileSet, get_planes_from_string, get_union, load_options,\
     collapse_into_single_dates, moving_avg, calc_stats, get_study_instance_uids, moving_avg_by_calendar_day
 import auth
@@ -198,14 +198,20 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
                     'ROI Max Dose': {'var_name': 'max_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
                     'ROI Volume': {'var_name': 'volume', 'table': 'DVHs', 'units': 'cc', 'source': source},
                     'ROI Surface Area': {'var_name': 'surface_area', 'table': 'DVHs', 'units': 'cm^2', 'source': source},
+                    'ROI Spread X': {'var_name': 'spread_x', 'table': 'DVHs', 'units': 'cm', 'source': source},
+                    'ROI Spread Y': {'var_name': 'spread_y', 'table': 'DVHs', 'units': 'cm', 'source': source},
+                    'ROI Spread Z': {'var_name': 'spread_z', 'table': 'DVHs', 'units': 'cm', 'source': source},
                     'PTV Distance (Min)': {'var_name': 'dist_to_ptv_min', 'table': 'DVHs', 'units': 'cm', 'source': source},
                     'PTV Distance (Mean)': {'var_name': 'dist_to_ptv_mean', 'table': 'DVHs', 'units': 'cm', 'source': source},
                     'PTV Distance (Median)': {'var_name': 'dist_to_ptv_median', 'table': 'DVHs', 'units': 'cm', 'source': source},
                     'PTV Distance (Max)': {'var_name': 'dist_to_ptv_max', 'table': 'DVHs', 'units': 'cm', 'source': source},
+                    'PTV Distance (Centroids)': {'var_name': 'dist_to_ptv_centroids', 'table': 'DVHs', 'units': 'cm', 'source': source},
                     'PTV Overlap': {'var_name': 'ptv_overlap', 'table': 'DVHs', 'units': 'cc', 'source': source},
                     'Scan Spots': {'var_name': 'scan_spot_count', 'table': 'Beams', 'units': '', 'source': source_beams},
                     'Beam MU per deg': {'var_name': 'beam_mu_per_deg', 'table': 'Beams', 'units': '', 'source': source_beams},
-                    'Beam MU per control point': {'var_name': 'beam_mu_per_cp', 'table': 'Beams', 'units': '', 'source': source_beams}}
+                    'Beam MU per control point': {'var_name': 'beam_mu_per_cp', 'table': 'Beams', 'units': '', 'source': source_beams},
+                    'ROI Cross-Section Max': {'var_name': 'cross_section_max', 'table': 'DVHs', 'units': 'cm^2', 'source': source},
+                    'ROI Cross-Section Median': {'var_name': 'cross_section_median', 'table': 'DVHs', 'units': 'cm^2', 'source': source}}
 
 # correlation variable names
 correlation_variables, correlation_names = [], []
@@ -1008,7 +1014,13 @@ def update_dvh_data(dvh):
         dvh.dist_to_ptv_median.extend(calc_stats(dvh_group_1.dist_to_ptv_median))
         dvh.dist_to_ptv_mean.extend(calc_stats(dvh_group_1.dist_to_ptv_mean))
         dvh.dist_to_ptv_max.extend(calc_stats(dvh_group_1.dist_to_ptv_max))
+        dvh.dist_to_ptv_centroids.extend(calc_stats(dvh_group_1.dist_to_ptv_centroids))
         dvh.ptv_overlap.extend(calc_stats(dvh_group_1.ptv_overlap))
+        dvh.cross_section_max.extend(calc_stats(dvh_group_1.cross_section_max))
+        dvh.cross_section_median.extend(calc_stats(dvh_group_1.cross_section_median))
+        dvh.spread_x.extend(calc_stats(dvh_group_1.spread_x))
+        dvh.spread_y.extend(calc_stats(dvh_group_1.spread_y))
+        dvh.spread_z.extend(calc_stats(dvh_group_1.spread_z))
     if group_2_constraint_count > 0:
         dvh.rx_dose.extend(calc_stats(dvh_group_2.rx_dose))
         dvh.volume.extend(calc_stats(dvh_group_2.volume))
@@ -1020,7 +1032,13 @@ def update_dvh_data(dvh):
         dvh.dist_to_ptv_median.extend(calc_stats(dvh_group_2.dist_to_ptv_median))
         dvh.dist_to_ptv_mean.extend(calc_stats(dvh_group_2.dist_to_ptv_mean))
         dvh.dist_to_ptv_max.extend(calc_stats(dvh_group_2.dist_to_ptv_max))
+        dvh.dist_to_ptv_centroids.extend(calc_stats(dvh_group_2.dist_to_ptv_centroids))
         dvh.ptv_overlap.extend(calc_stats(dvh_group_2.ptv_overlap))
+        dvh.cross_section_max.extend(calc_stats(dvh_group_2.cross_section_max))
+        dvh.cross_section_median.extend(calc_stats(dvh_group_2.cross_section_median))
+        dvh.spread_x.extend(calc_stats(dvh_group_2.spread_x))
+        dvh.spread_y.extend(calc_stats(dvh_group_2.spread_y))
+        dvh.spread_z.extend(calc_stats(dvh_group_2.spread_z))
 
     # Adjust dvh object for review dvh
     dvh.dvh = np.insert(dvh.dvh, 0, 0, 1)
@@ -1041,7 +1059,13 @@ def update_dvh_data(dvh):
     dvh.dist_to_ptv_mean.insert(0, 'N/A')
     dvh.dist_to_ptv_median.insert(0, 'N/A')
     dvh.dist_to_ptv_max.insert(0, 'N/A')
+    dvh.dist_to_ptv_centroids.insert(0, 'N/A')
     dvh.ptv_overlap.insert(0, 'N/A')
+    dvh.cross_section_max.insert(0, 'N/A')
+    dvh.cross_section_median.insert(0, 'N/A')
+    dvh.spread_x.insert(0, 'N/A')
+    dvh.spread_y.insert(0, 'N/A')
+    dvh.spread_z.insert(0, 'N/A')
     line_colors.insert(0, options.REVIEW_DVH_COLOR)
     x_data.insert(0, [0])
     y_data.insert(0, [0])
@@ -1069,7 +1093,13 @@ def update_dvh_data(dvh):
                    'dist_to_ptv_mean': dvh.dist_to_ptv_mean,
                    'dist_to_ptv_median': dvh.dist_to_ptv_median,
                    'dist_to_ptv_max': dvh.dist_to_ptv_max,
+                   'dist_to_ptv_centroids': dvh.dist_to_ptv_centroids,
                    'ptv_overlap': dvh.ptv_overlap,
+                   'cross_section_max': dvh.cross_section_max,
+                   'cross_section_median': dvh.cross_section_median,
+                   'spread_x': dvh.spread_x,
+                   'spread_y': dvh.spread_y,
+                   'spread_z': dvh.spread_z,
                    'x': x_data,
                    'y': y_data,
                    'color': line_colors,
@@ -1291,6 +1321,49 @@ def update_source_endpoint_calcs():
                 ep[ep_name].extend(calc_stats(ep[ep_name]))
 
         source_endpoint_calcs.data = ep
+
+        # Update endpoint calc from review_dvh, if available
+        if source.data['y'][0] != []:
+            review_ep = {}
+            rx = float(source.data['rx_dose'][0])
+            volume = float(source.data['volume'][0])
+            data = source_endpoint_defs.data
+            for r in range(len(data['row'])):
+                ep_name = str(data['label'][r])
+                x = data['input_value'][r]
+
+                if '%' in data['units_in'][r]:
+                    endpoint_input = 'relative'
+                    x /= 100.
+                else:
+                    endpoint_input = 'absolute'
+
+                if '%' in data['units_out'][r]:
+                    endpoint_output = 'relative'
+                else:
+                    endpoint_output = 'absolute'
+
+                if 'Dose' in data['output_type'][r]:
+                    if endpoint_input == 'relative':
+                        current_ep = dose_to_volume(y, x)
+                    else:
+                        current_ep = dose_to_volume(y, x / volume)
+                    if endpoint_output == 'relative' and rx != 0:
+                        current_ep = current_ep / rx
+
+                else:
+                    if endpoint_input == 'relative':
+                        current_ep = volume_of_dose(y, x * rx)
+                    else:
+                        current_ep = volume_of_dose(y, x)
+                    if endpoint_output == 'absolute' and volume != 0:
+                        current_ep = current_ep * volume
+
+                review_ep[ep_name] = [(0, current_ep)]
+
+            review_ep['mrn'] =  [(0, select_reviewed_mrn.value)]
+            source_endpoint_calcs.patch(review_ep)
+
         update_endpoint_view()
 
     if not options.LITE_VIEW:
@@ -2936,6 +3009,8 @@ def calculate_review_dvh():
         pass
 
     source.patch(patches)
+
+    update_source_endpoint_calcs()
 
 
 def select_reviewed_dvh_ticker(attr, old, new):

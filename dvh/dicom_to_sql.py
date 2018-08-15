@@ -24,7 +24,7 @@ SCRIPT_DIR = os.path.dirname(__file__)
 
 
 def dicom_to_sql(start_path=None, force_update=False, move_files=True,
-                 update_dicom_catalogue_table=True, import_latest_plan_only=True):
+                 update_dicom_catalogue_table=True, import_latest_only=True):
 
     start_time = datetime.now()
     print(str(start_time), 'Beginning import', sep=' ')
@@ -65,7 +65,7 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
         plan_file = file_paths[uid]['rtplan']['latest_file']
         struct_file = file_paths[uid]['rtstruct']['latest_file']
         dose_file = file_paths[uid]['rtdose']['latest_file']
-        if import_latest_plan_only:
+        if import_latest_only:
             print("plan file: %s" % plan_file)
         else:
             for f in file_paths[uid]['rtplan']['file_path']:
@@ -88,7 +88,7 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
             continue
 
         if plan_file and struct_file and dose_file:
-            if import_latest_plan_only:
+            if import_latest_only:
                 plan = PlanRow(plan_file, struct_file, dose_file)
                 sqlcnx.insert_plan(plan)
             else:
@@ -104,7 +104,7 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
 
         if plan_file:
             if not hasattr(dicom.read_file(plan_file), 'BrachyTreatmentType'):
-                if import_latest_plan_only:
+                if import_latest_only:
                     beams = BeamTable(plan_file)
                     sqlcnx.insert_beams(beams)
                 else:
@@ -115,7 +115,7 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
             setattr(dvhs, 'ptv_number', rank_ptvs_by_D95(dvhs))
             sqlcnx.insert_dvhs(dvhs)
         if plan_file and struct_file:
-            if import_latest_plan_only:
+            if import_latest_only:
                 rxs = RxTable(plan_file, struct_file)
                 sqlcnx.insert_rxs(rxs)
             else:
@@ -153,7 +153,7 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
             dose_file = os.path.basename(dose_file)
 
         if update_dicom_catalogue_table:
-            if not import_latest_plan_only:
+            if not import_latest_only:
                 plan_file = ', '.join([os.path.basename(fp) for fp in file_paths[uid]['rtplan']['file_path']])
             update_dicom_catalogue(mrn, uid, new_folder, plan_file, struct_file, dose_file)
 

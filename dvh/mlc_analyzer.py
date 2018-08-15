@@ -11,6 +11,12 @@ import numpy as np
 from shapely.geometry import Polygon
 from utilities import flatten_list_of_lists as flatten
 from options import MAX_FIELD_SIZE_X, MAX_FIELD_SIZE_Y, COMPLEXITY_SCORE_X_WEIGHT, COMPLEXITY_SCORE_Y_WEIGHT
+from shapely import speedups
+
+
+# Enable shapely calculations using C, as opposed to the C++ default
+if speedups.available:
+    speedups.enable()
 
 
 class Plan:

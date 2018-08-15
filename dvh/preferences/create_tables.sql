@@ -3,3 +3,12 @@ CREATE TABLE IF NOT EXISTS DVHs (mrn text, study_instance_uid text, institutiona
 CREATE TABLE IF NOT EXISTS Beams (mrn text, study_instance_uid text, beam_number int, beam_name varchar(30), fx_grp_number smallint, fx_count int, fx_grp_beam_count smallint, beam_dose real, beam_mu real, radiation_type varchar(30), beam_energy_min real, beam_energy_max real, beam_type varchar(30), control_point_count int, gantry_start real, gantry_end real, gantry_rot_dir varchar(5), gantry_range real, gantry_min real, gantry_max real, collimator_start real, collimator_end real, collimator_rot_dir varchar(5), collimator_range real, collimator_min real, collimator_max real, couch_start real, couch_end real, couch_rot_dir varchar(5), couch_range real, couch_min real, couch_max real, beam_dose_pt varchar(35), isocenter varchar(35), ssd real, treatment_machine varchar(30), scan_mode varchar(30), scan_spot_count real, beam_mu_per_deg real, beam_mu_per_cp real, import_time_stamp timestamp);
 CREATE TABLE IF NOT EXISTS Rxs (mrn text, study_instance_uid text, plan_name varchar(50), fx_grp_name varchar(30), fx_grp_number smallint, fx_grp_count smallint, fx_dose real, fxs smallint, rx_dose real, rx_percent real, normalization_method varchar(30), normalization_object varchar(30), import_time_stamp timestamp);
 CREATE TABLE IF NOT EXISTS DICOM_Files (mrn text, study_instance_uid text, folder_path text, plan_file text, structure_file text, dose_file text, import_time_stamp timestamp);
+-- The following columns have been added as of DVH Analytics 0.4.4
+ALTER TABLE DVHs ADD COLUMN IF NOT EXISTS centroid varchar(35);
+ALTER TABLE DVHs ADD COLUMN IF NOT EXISTS dist_to_ptv_centroids real;
+ALTER TABLE DVHs ADD COLUMN IF NOT EXISTS dth_string text;
+ALTER TABLE DVHs ADD COLUMN IF NOT EXISTS spread_x real;
+ALTER TABLE DVHs ADD COLUMN IF NOT EXISTS spread_y real;
+ALTER TABLE DVHs ADD COLUMN IF NOT EXISTS spread_z real;
+ALTER TABLE DVHs ADD COLUMN IF NOT EXISTS cross_section_max real;
+ALTER TABLE DVHs ADD COLUMN IF NOT EXISTS cross_section_median real;

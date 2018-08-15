@@ -13,7 +13,7 @@ from dicompylercore import dicomparser, dvhcalc
 from dateutil.relativedelta import relativedelta  # python-dateutil
 from roi_name_manager import DatabaseROIs, clean_name
 from utilities import datetime_str_to_obj, dicompyler_roi_coord_to_db_string, change_angle_origin,\
-    surface_area_of_roi, date_str_to_obj
+    surface_area_of_roi, date_str_to_obj, calc_centroid, get_planes_from_string, calc_spread, calc_cross_section
 import numpy as np
 try:
     import pydicom as dicom  # for pydicom >= 1.0
@@ -22,8 +22,9 @@ except:
 
 
 class DVHRow:
-    def __init__(self, mrn, study_instance_uid, institutional_roi, physician_roi,
-                 roi_name, roi_type, volume, min_dose, mean_dose, max_dose, dvh_str, roi_coord, surface_area):
+    def __init__(self, mrn, study_instance_uid, institutional_roi, physician_roi, roi_name, roi_type, volume,
+                 min_dose, mean_dose, max_dose, dvh_str, roi_coord, surface_area, centroid, spread_x, spread_y,
+                 spread_z, cross_section_max, cross_section_median):
 
         for key, value in listitems(locals()):
             if key != 'self':
@@ -352,7 +353,11 @@ class DVHTable:
                     except:
                         print("Surface area calculation failed for key, name: %s, %s" % (key, current_dvh_calc.name))
                         surface_area = '(NULL)'
-                    # volume = calc_volume(get_planes_from_string(roi_coord_str))
+
+                    planes = get_planes_from_string(roi_coord_str)
+                    centroid = calc_centroid(planes)
+                    spread = calc_spread(planes)
+                    cross_sections = calc_cross_section(planes)
 
                     current_dvh_row = DVHRow(mrn,
                                              study_instance_uid,
@@ -366,7 +371,13 @@ class DVHTable:
                                              current_dvh_calc.max,
                                              ','.join(['%.2f' % num for num in current_dvh_calc.counts]),
                                              roi_coord_str,
-                                             surface_area)
+                                             surface_area,
+                                             ','.join(['%.3f' % num for num in centroid]),
+                                             spread[0],
+                                             spread[1],
+                                             spread[2],
+                                             cross_sections['max'],
+                                             cross_sections['median'])
                     values[row_counter] = current_dvh_row
                     row_counter += 1
 
