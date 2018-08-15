@@ -9,7 +9,7 @@ Created on Sun Apr 21 2017
 
 from __future__ import print_function
 from future.utils import listitems
-from analysis_tools import DVH, calc_eud
+from analysis_tools import DVH, calc_eud, dose_to_volume, volume_of_dose
 from utilities import Temp_DICOM_FileSet, get_planes_from_string, get_union, load_options,\
     collapse_into_single_dates, moving_avg, calc_stats, get_study_instance_uids, moving_avg_by_calendar_day
 import auth
@@ -1321,6 +1321,49 @@ def update_source_endpoint_calcs():
                 ep[ep_name].extend(calc_stats(ep[ep_name]))
 
         source_endpoint_calcs.data = ep
+
+        # Update endpoint calc from review_dvh, if available
+        if source.data['y'][0] != []:
+            review_ep = {}
+            rx = float(source.data['rx_dose'][0])
+            volume = float(source.data['volume'][0])
+            data = source_endpoint_defs.data
+            for r in range(len(data['row'])):
+                ep_name = str(data['label'][r])
+                x = data['input_value'][r]
+
+                if '%' in data['units_in'][r]:
+                    endpoint_input = 'relative'
+                    x /= 100.
+                else:
+                    endpoint_input = 'absolute'
+
+                if '%' in data['units_out'][r]:
+                    endpoint_output = 'relative'
+                else:
+                    endpoint_output = 'absolute'
+
+                if 'Dose' in data['output_type'][r]:
+                    if endpoint_input == 'relative':
+                        current_ep = dose_to_volume(y, x)
+                    else:
+                        current_ep = dose_to_volume(y, x / volume)
+                    if endpoint_output == 'relative' and rx != 0:
+                        current_ep = current_ep / rx
+
+                else:
+                    if endpoint_input == 'relative':
+                        current_ep = volume_of_dose(y, x * rx)
+                    else:
+                        current_ep = volume_of_dose(y, x)
+                    if endpoint_output == 'absolute' and volume != 0:
+                        current_ep = current_ep * volume
+
+                review_ep[ep_name] = [(0, current_ep)]
+
+            review_ep['mrn'] =  [(0, select_reviewed_mrn.value)]
+            source_endpoint_calcs.patch(review_ep)
+
         update_endpoint_view()
 
     if not options.LITE_VIEW:
@@ -2966,6 +3009,8 @@ def calculate_review_dvh():
         pass
 
     source.patch(patches)
+
+    update_source_endpoint_calcs()
 
 
 def select_reviewed_dvh_ticker(attr, old, new):
