@@ -20,7 +20,7 @@ class QuerySQL:
 
             for row in column_cursor:
                 column = str(row).strip()
-                if column not in {'roi_coord_string, distances_to_ptv'}:
+                if column not in {'roi_coord_string, distances_to_ptv, dth_string'}:
                     self.cursor = self.cnx.query(self.table_name,
                                                  column,
                                                  self.condition_str)

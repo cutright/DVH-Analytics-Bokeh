@@ -18,6 +18,14 @@ try:
 except:
     import dicom
 from get_settings import get_settings
+import pickle
+from math import ceil
+from shapely import speedups
+
+
+# Enable shapely calculations using C, as opposed to the C++ default
+if speedups.available:
+    speedups.enable()
 
 PREFERENCE_PATHS = {''}
 MIN_SLICE_THICKNESS = 2  # Update method to pull from DICOM
@@ -485,8 +493,8 @@ def points_to_shapely_polygon(sets_of_points):
 def calc_roi_overlap(oar, tv):
     """
     :param oar: dict representing organ-at-risk, follows format of "sets of points" in dicompyler_roi_to_sets_of_points
-    :param tv: dict representing tumor volume
-    :return: volume of overlap between ROIs
+    :param tv: dict representing treatment volume
+    :return: volume (cm^3) of overlap between ROIs
     :rtype: float
     """
 
@@ -598,6 +606,193 @@ def calc_volume(roi):
     return round(volume / 1000., 2)
 
 
+def calc_centroid(roi):
+    """
+    :param roi: a "sets of points" formatted list
+    :return: centroid dicom coordinate in mm
+    :rtype: list
+    """
+    centroids = {'x': [], 'y': [], 'z': [], 'area': []}
+
+    for z in list(roi):
+        shapely_roi = points_to_shapely_polygon(roi[z])
+        if shapely_roi and shapely_roi.area > 0:
+            slice_centroid = shapely_roi.centroid
+            polygon_count = len(slice_centroid.xy[0])
+            for i in range(polygon_count):
+                centroids['x'].append(slice_centroid.xy[0][i])
+                centroids['y'].append(slice_centroid.xy[1][i])
+                centroids['z'].append(float(z))
+                if polygon_count > 1:
+                    centroids['area'].append(shapely_roi[i].area)
+                else:
+                    centroids['area'].append(shapely_roi.area)
+
+    x = np.array(centroids['x'])
+    y = np.array(centroids['y'])
+    z = np.array(centroids['z'])
+    w = np.array(centroids['area'])
+    w_sum = np.sum(w)
+
+    centroid = [float(np.sum(x * w) / w_sum),
+                float(np.sum(y * w) / w_sum),
+                float(np.sum(z * w) / w_sum)]
+
+    return centroid
+
+
+def update_centroid_in_db(study_instance_uid, roi_name):
+    """
+    This function will recalculate the centoid of an roi based on data in the SQL DB.
+    :param study_instance_uid: uid as specified in SQL DB
+    :param roi_name: roi_name as specified in SQL DB
+    """
+
+    coordinates_string = DVH_SQL().query('dvhs',
+                                         'roi_coord_string',
+                                         "study_instance_uid = '%s' and roi_name = '%s'"
+                                         % (study_instance_uid, roi_name))
+
+    roi = get_planes_from_string(coordinates_string[0][0])
+    centroid = calc_centroid(roi)
+
+    centroid = [str(round(v, 3)) for v in centroid]
+
+    DVH_SQL().update('dvhs',
+                     'centroid',
+                     ','.join(centroid),
+                     "study_instance_uid = '%s' and roi_name = '%s'"
+                     % (study_instance_uid, roi_name))
+
+
+def calc_cross_section(roi):
+    """
+    :param roi: a "sets of points" formatted list
+    :return: max and median cross-sectional area of all slices in cm^2
+    :rtype: list
+    """
+    areas = []
+
+    for z in list(roi):
+        shapely_roi = points_to_shapely_polygon(roi[z])
+        if shapely_roi and shapely_roi.area > 0:
+            slice_centroid = shapely_roi.centroid
+            polygon_count = len(slice_centroid.xy[0])
+            for i in range(polygon_count):
+                if polygon_count > 1:
+                    areas.append(shapely_roi[i].area)
+                else:
+                    areas.append(shapely_roi.area)
+
+    areas = np.array(areas)
+
+    area = {'max': float(np.max(areas) / 100.),
+            'median': float(np.median(areas) / 100.)}
+
+    return area
+
+
+def update_cross_section_in_db(study_instance_uid, roi_name):
+    """
+    This function will recalculate the centoid of an roi based on data in the SQL DB.
+    :param study_instance_uid: uid as specified in SQL DB
+    :param roi_name: roi_name as specified in SQL DB
+    """
+
+    coordinates_string = DVH_SQL().query('dvhs',
+                                         'roi_coord_string',
+                                         "study_instance_uid = '%s' and roi_name = '%s'"
+                                         % (study_instance_uid, roi_name))
+
+    roi = get_planes_from_string(coordinates_string[0][0])
+    area = calc_cross_section(roi)
+
+    DVH_SQL().update('dvhs',
+                     'cross_section_max',
+                     area['max'],
+                     "study_instance_uid = '%s' and roi_name = '%s'"
+                     % (study_instance_uid, roi_name))
+
+    DVH_SQL().update('dvhs',
+                     'cross_section_median',
+                     area['median'],
+                     "study_instance_uid = '%s' and roi_name = '%s'"
+                     % (study_instance_uid, roi_name))
+
+
+def calc_spread(roi):
+    """
+    :param roi: a "sets of points" formatted list
+    :return: x, y, z dimensions of a rectangular prism encompassing roi
+    :rtype: list
+    """
+    all_points = {'x': [], 'y': [], 'z': []}
+
+    for z in list(roi):
+        for polygon in roi[z]:
+            for point in polygon:
+                all_points['x'].append(point[0])
+                all_points['y'].append(point[1])
+                all_points['z'].append(point[2])
+
+    all_points = {'x': np.array(all_points['x']),
+                  'y': np.array(all_points['y']),
+                  'z': np.array(all_points['z'])}
+
+    if len(all_points['x'] > 1):
+        spread = [abs(float(np.max(all_points[dim]) - np.min(all_points[dim]))) for dim in ['x', 'y', 'z']]
+    else:
+        spread = [0, 0, 0]
+
+    return spread
+
+
+def update_spread_in_db(study_instance_uid, roi_name):
+    """
+    This function will recalculate the spread of an roi based on data in the SQL DB.
+    :param study_instance_uid: uid as specified in SQL DB
+    :param roi_name: roi_name as specified in SQL DB
+    """
+
+    coordinates_string = DVH_SQL().query('dvhs',
+                                         'roi_coord_string',
+                                         "study_instance_uid = '%s' and roi_name = '%s'"
+                                         % (study_instance_uid, roi_name))
+
+    roi = get_planes_from_string(coordinates_string[0][0])
+    spread = calc_spread(roi)
+
+    spread = [str(round(v/10., 3)) for v in spread]
+
+    DVH_SQL().update('dvhs',
+                     'spread_x',
+                     spread[0],
+                     "study_instance_uid = '%s' and roi_name = '%s'"
+                     % (study_instance_uid, roi_name))
+    DVH_SQL().update('dvhs',
+                     'spread_y',
+                     spread[1],
+                     "study_instance_uid = '%s' and roi_name = '%s'"
+                     % (study_instance_uid, roi_name))
+    DVH_SQL().update('dvhs',
+                     'spread_z',
+                     spread[2],
+                     "study_instance_uid = '%s' and roi_name = '%s'"
+                     % (study_instance_uid, roi_name))
+
+
+def calc_dth(min_distances):
+    """
+    :param min_distances:
+    :return: histogram of distances in 0.1mm bin widths
+    """
+
+    bin_count = int(ceil(np.max(min_distances) * 10.))
+    dst, bins = np.histogram(min_distances, bins=bin_count)
+
+    return dst
+
+
 def get_roi_coordinates_from_string(roi_coord_string):
     """
     :param roi_coord_string: the string reprentation of an roi in the SQL database
@@ -703,6 +898,8 @@ def update_min_distances_in_db(study_instance_uid, roi_name):
 
         try:
             min_distances = get_min_distances_to_target(oar_coordinates, tv_coordinates)
+            dth = calc_dth(min_distances)
+            dth_string = ','.join(['%.3f' % num for num in dth])
 
             DVH_SQL().update('dvhs',
                              'dist_to_ptv_min',
@@ -725,6 +922,12 @@ def update_min_distances_in_db(study_instance_uid, roi_name):
             DVH_SQL().update('dvhs',
                              'dist_to_ptv_max',
                              round(float(np.max(min_distances)), 2),
+                             "study_instance_uid = '%s' and roi_name = '%s'"
+                             % (study_instance_uid, roi_name))
+
+            DVH_SQL().update('dvhs',
+                             'dth_string',
+                             dth_string,
                              "study_instance_uid = '%s' and roi_name = '%s'"
                              % (study_instance_uid, roi_name))
         except:
@@ -759,6 +962,39 @@ def update_treatment_volume_overlap_in_db(study_instance_uid, roi_name):
         DVH_SQL().update('dvhs',
                          'ptv_overlap',
                          round(float(overlap), 2),
+                         "study_instance_uid = '%s' and roi_name = '%s'"
+                         % (study_instance_uid, roi_name))
+
+
+def update_dist_to_ptv_centroids_in_db(study_instance_uid, roi_name):
+    """
+    This function will recalculate the OARtoPTV centroid distance based on data in the SQL DB.
+    :param study_instance_uid: uid as specified in SQL DB
+    :param roi_name: roi_name as specified in SQL DB
+    """
+
+    oar_centroid_string = DVH_SQL().query('dvhs',
+                                          'centroid',
+                                          "study_instance_uid = '%s' and roi_name = '%s'"
+                                          % (study_instance_uid, roi_name))
+    oar_centroid = np.array([float(i) for i in oar_centroid_string[0][0].split(',')])
+
+    ptv_coordinates_strings = DVH_SQL().query('dvhs',
+                                              'roi_coord_string',
+                                              "study_instance_uid = '%s' and roi_type like 'PTV%%'"
+                                              % study_instance_uid)
+
+    if ptv_coordinates_strings:
+
+        ptvs = [get_planes_from_string(ptv[0]) for ptv in ptv_coordinates_strings]
+        tv = get_union(ptvs)
+        ptv_centroid = np.array(calc_centroid(tv))
+
+        dist_to_ptv_centroids = float(np.linalg.norm(ptv_centroid - oar_centroid)) / 10.
+
+        DVH_SQL().update('dvhs',
+                         'dist_to_ptv_centroids',
+                         round(dist_to_ptv_centroids, 3),
                          "study_instance_uid = '%s' and roi_name = '%s'"
                          % (study_instance_uid, roi_name))
 
@@ -930,3 +1166,43 @@ def is_uid_in_all_keys(uid, uids):
 
 def flatten_list_of_lists(some_list):
     return [item for sublist in some_list for item in sublist]
+
+
+def save_options(options):
+    script_dir = os.path.dirname(__file__)
+    rel_path = "preferences/options"
+    abs_file_path = os.path.join(script_dir, rel_path)
+
+    out_options = {}
+    for i in options.__dict__:
+        if not i.startswith('_'):
+            out_options[i] = getattr(options, i)
+
+    outfile = open(abs_file_path, 'wb')
+    pickle.dump(out_options, outfile)
+    outfile.close()
+
+
+class Object():
+    pass
+
+
+def load_options(options):
+    script_dir = os.path.dirname(__file__)
+    rel_path = "preferences/options"
+    abs_file_path = os.path.join(script_dir, rel_path)
+
+    if os.path.isfile(abs_file_path):
+
+        infile = open(abs_file_path, 'rb')
+        new_dict = pickle.load(infile)
+
+        new_options = Object()
+        for key, value in listitems(new_dict):
+            setattr(new_options, key, value)
+
+        infile.close()
+
+        return new_options
+    else:
+        return options
