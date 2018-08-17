@@ -9,7 +9,8 @@ from __future__ import print_function
 from future.utils import listvalues
 from utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection, \
     recalculate_ages, update_min_distances_in_db, update_treatment_volume_overlap_in_db, update_volumes_in_db, \
-    update_surface_area_in_db
+    update_surface_area_in_db, load_options, update_centroid_in_db, update_spread_in_db, update_cross_section_in_db,\
+    update_dist_to_ptv_centroids_in_db
 import os
 from os.path import dirname, join
 from datetime import datetime
@@ -24,16 +25,19 @@ from bokeh.io import curdoc
 from bokeh.models import ColumnDataSource, LabelSet, Range1d, Slider, CustomJS, Spacer
 import auth
 import time
-from options import *
+import options
 from get_settings import get_settings, parse_settings_file
 from shutil import copyfile
+
+
+options = load_options(options)
 
 
 # This depends on a user defined function in dvh/auth.py.  By default, this returns True
 # It is up to the user/installer to write their own function (e.g., using python-ldap)
 # Proper execution of this requires placing Bokeh behind a reverse proxy with SSL setup (HTTPS)
 # Please see Bokeh documentation for more information
-ACCESS_GRANTED = not AUTH_USER_REQ
+ACCESS_GRANTED = not options.AUTH_USER_REQ
 
 # Create empty Bokeh data sources
 query_source = ColumnDataSource(data=dict())
@@ -679,6 +683,7 @@ def update_query_columns():
     if query_table.value.lower() == 'dvhs':
         new_options.pop(new_options.index('dvh_string'))
         new_options.pop(new_options.index('roi_coord_string'))
+        new_options.pop(new_options.index('dth_string'))
     options_tuples = []
     for option in new_options:
         options_tuples.append(tuple([option, option]))
@@ -787,11 +792,15 @@ def import_inbox():
     else:
         import_inbox_button.button_type = 'warning'
         import_inbox_button.label = 'Importing...'
-        if import_inbox_force.active:
+        if 0 in import_inbox_force.active:
             force_update = True
         else:
             force_update = False
-        dicom_to_sql(force_update=force_update)
+        if 1 in import_inbox_force.active:
+            import_latest_only = True
+        else:
+            import_latest_only = False
+        dicom_to_sql(force_update=force_update, import_latest_only=import_latest_only)
     import_inbox_button.button_type = 'success'
     import_inbox_button.label = 'Import all from inbox'
 
@@ -972,74 +981,6 @@ def restore_preferences():
     restore_pref_button.button_type = 'primary'
 
 
-def calculate_ptv_distances():
-    start_time = datetime.now()
-    print(str(start_time), 'Beginning PTV distance calculations', sep=' ')
-    calculate_ptv_dist_button.label = 'Calculating...'
-    calculate_ptv_dist_button.button_type = 'warning'
-    if calculate_condition.value:
-        update_all_min_distances_in_db(calculate_condition.value)
-    else:
-        update_all_min_distances_in_db()
-    update_query_source()
-    calculate_ptv_dist_button.label = 'Calc PTV Distances'
-    calculate_ptv_dist_button.button_type = 'primary'
-
-    end_time = datetime.now()
-    print(str(end_time), 'Calculations complete', sep=' ')
-
-    total_time = end_time - start_time
-    seconds = total_time.seconds
-    m, s = divmod(seconds, 60)
-    h, m = divmod(m, 60)
-    if h:
-        print("These calculations took %dhrs %02dmin %02dsec to complete" % (h, m, s))
-    elif m:
-        print("These calculations took %02dmin %02dsec to complete" % (m, s))
-    else:
-        print("These calculations took %02dsec to complete" % s)
-
-
-def calculate_ptv_overlap():
-    start_time = datetime.now()
-    print(str(start_time), 'Beginning PTV overlap calculations', sep=' ')
-    calculate_tv_overlap_button.label = 'Calculating...'
-    calculate_tv_overlap_button.button_type = 'warning'
-    if calculate_condition.value:
-        update_all_tv_overlaps_in_db(calculate_condition.value)
-    else:
-        update_all_tv_overlaps_in_db()
-    update_query_source()
-    calculate_tv_overlap_button.label = 'Calc PTV Overlap'
-    calculate_tv_overlap_button.button_type = 'primary'
-
-    end_time = datetime.now()
-    print(str(end_time), 'Calculations complete', sep=' ')
-
-    total_time = end_time - start_time
-    seconds = total_time.seconds
-    m, s = divmod(seconds, 60)
-    h, m = divmod(m, 60)
-    if h:
-        print("These calculations took %dhrs %02dmin %02dsec to complete" % (h, m, s))
-    elif m:
-        print("These calculations took %02dmin %02dsec to complete" % (m, s))
-    else:
-        print("These calculations took %02dsec to complete" % s)
-
-
-def calculate_ages_click():
-    calculate_ages_button.label = 'Calculating...'
-    calculate_ages_button.button_type = 'warning'
-    if calculate_condition.value:
-        recalculate_ages(calculate_condition.value)
-    else:
-        recalculate_ages()
-    update_query_source()
-    calculate_ages_button.label = 'Calc Patient Ages'
-    calculate_ages_button.button_type = 'primary'
-
-
 def update_baseline_source():
     baseline_layout.children.pop()
     columns = ['mrn', 'sim_study_date', 'physician', 'rx_dose', 'fxs', 'tx_modality', 'tx_site',
@@ -1181,7 +1122,7 @@ def update_all_min_distances_in_db(*condition):
     counter = 0.
     total_rois = float(len(rois))
     for roi in rois:
-        calculate_ptv_dist_button.label = str(int((counter / total_rois) * 100)) + '%'
+        calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
         counter += 1.
         if roi[1].lower() not in {'external', 'skin'} and \
                         roi[2].lower() not in {'uncategorized', 'ignored', 'external', 'skin'}:
@@ -1189,7 +1130,6 @@ def update_all_min_distances_in_db(*condition):
             update_min_distances_in_db(roi[0], roi[1])
         else:
             print('skipping dist to ptv:', roi[1], sep=' ')
-    calculate_ptv_dist_button.label = 'Calc PTV Distances'
 
 
 def update_all_tv_overlaps_in_db(*condition):
@@ -1200,11 +1140,83 @@ def update_all_tv_overlaps_in_db(*condition):
     counter = 0.
     total_rois = float(len(rois))
     for roi in rois:
-        calculate_tv_overlap_button.label = str(int((counter / total_rois) * 100)) + '%'
+        calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
         counter += 1.
         print('updating ptv_overlap:', roi[1], sep=' ')
         update_treatment_volume_overlap_in_db(roi[0], roi[1])
-    calculate_tv_overlap_button.label = 'Calc PTV Overlap'
+
+
+def update_all_centroids_in_db(*condition):
+    if condition:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
+    else:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
+    counter = 0.
+    total_rois = float(len(rois))
+    for roi in rois:
+        calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
+        counter += 1.
+        print('updating centroid:', roi[1], sep=' ')
+        update_centroid_in_db(roi[0], roi[1])
+
+
+def update_all_spreads_in_db(*condition):
+    if condition:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
+    else:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
+    counter = 0.
+    total_rois = float(len(rois))
+    for roi in rois:
+        calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
+        counter += 1.
+        print('updating spread:', roi[1], sep=' ')
+        update_spread_in_db(roi[0], roi[1])
+
+
+def update_all_cross_sections_in_db(*condition):
+    if condition:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
+    else:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
+    counter = 0.
+    total_rois = float(len(rois))
+    for roi in rois:
+        calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
+        counter += 1.
+        print('updating cross-section:', roi[1], sep=' ')
+        update_cross_section_in_db(roi[0], roi[1])
+
+
+def update_all_dist_to_ptv_centoids_in_db(*condition):
+
+    if condition:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
+    else:
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
+    counter = 0.
+    total_rois = float(len(rois))
+    for roi in rois:
+        calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
+        counter += 1.
+        print('updating min_dist_to_ptv_centroid:', roi[1], sep=' ')
+        update_dist_to_ptv_centroids_in_db(roi[0], roi[1])
+
+
+def update_all_except_age_in_db():
+
+    for f in calculate_select.options:
+        if f not in {'Patient Ages', 'Default Post-Import'}:
+            calculate_select.value = f
+            calculate_exec()
+
+
+def update_default_post_import():
+
+    for f in ['PTV Distances', 'PTV Overlap', 'OAR-PTV Centroid Dist']:
+        calculate_select.value = f
+        calculate_exec()
+    calculate_select.value = 'Default Post-Import'
 
 
 # Calculates volumes using Shapely, not dicompyler
@@ -1323,6 +1335,55 @@ def backup_location_ticker(attr, old, new):
     update_backup_select(new)
 
 
+def calculate_exec():
+    calc_map = {'PTV Distances': update_all_min_distances_in_db,
+                'PTV Overlap': update_all_tv_overlaps_in_db,
+                'Patient Ages': recalculate_ages,
+                'ROI Centroid': update_all_centroids_in_db,
+                'ROI Spread': update_all_spreads_in_db,
+                'ROI Cross-Section': update_all_cross_sections_in_db,
+                'OAR-PTV Centroid Dist': update_all_dist_to_ptv_centoids_in_db,
+                'All (except age)': update_all_except_age_in_db,
+                'Default Post-Import': update_default_post_import}
+
+    if calculate_select.value not in {'All (except age)', 'Default Post-Import'}:
+
+        start_time = datetime.now()
+        print(str(start_time), 'Beginning %s calculations' % calculate_condition.value, sep=' ')
+
+        calculate_exec_button.label = 'Calculating...'
+        calculate_exec_button.button_type = 'warning'
+
+        if calculate_condition.value:
+            calc_map[calculate_select.value](calculate_condition.value)
+        else:
+            calc_map[calculate_select.value]()
+
+        update_query_source()
+
+        calculate_exec_button.label = 'Perform Calc'
+        calculate_exec_button.button_type = 'primary'
+
+        end_time = datetime.now()
+        print(str(end_time), 'Calculations complete', sep=' ')
+
+        total_time = end_time - start_time
+        seconds = total_time.seconds
+        m, s = divmod(seconds, 60)
+        h, m = divmod(m, 60)
+        if h:
+            print("These calculations took %dhrs %02dmin %02dsec to complete" % (h, m, s))
+        elif m:
+            print("These calculations took %02dmin %02dsec to complete" % (m, s))
+        else:
+            print("These calculations took %02dsec to complete" % s)
+    else:
+        if calculate_condition.value:
+            calc_map[calculate_select.value](calculate_condition.value)
+        else:
+            calc_map[calculate_select.value]()
+
+
 ######################################################
 # Layout objects
 ######################################################
@@ -1345,64 +1406,64 @@ layout_login = column(auth_div,
 div_warning = Div(text="<b>WARNING:</b> Buttons in orange cannot be easily undone.", width=600)
 
 # Selectors
-options = db.get_institutional_rois()
-select_institutional_roi = Select(value=options[0],
-                                  options=options,
+roi_options = db.get_institutional_rois()
+select_institutional_roi = Select(value=roi_options[0],
+                                  options=roi_options,
                                   width=300,
                                   title='All Institutional ROIs')
 
-options = db.get_physicians()
-if len(options) > 1:
-    value = options[1]
+physician_options = db.get_physicians()
+if len(physician_options) > 1:
+    value = physician_options[1]
 else:
-    value = options[0]
+    value = physician_options[0]
 select_physician = Select(value=value,
-                          options=options,
+                          options=physician_options,
                           width=300,
                           title='Physician')
 
-options = db.get_physician_rois(select_physician.value)
-select_physician_roi = Select(value=options[0],
-                              options=options,
+phys_roi_options = db.get_physician_rois(select_physician.value)
+select_physician_roi = Select(value=phys_roi_options[0],
+                              options=phys_roi_options,
                               width=300,
                               title='Physician ROIs')
 
-options = db.get_variations(select_physician.value, select_physician_roi.value)
-select_variation = Select(value=options[0],
-                          options=options,
+variations_options = db.get_variations(select_physician.value, select_physician_roi.value)
+select_variation = Select(value=variations_options[0],
+                          options=variations_options,
                           width=300,
                           title='Variations')
 
-options = db.get_unused_institutional_rois(select_physician.value)
+unused_roi_options = db.get_unused_institutional_rois(select_physician.value)
 value = db.get_institutional_roi(select_physician.value, select_physician_roi.value)
-if value not in options:
-    options.append(value)
-    options.sort()
+if value not in unused_roi_options:
+    unused_roi_options.append(value)
+    unused_roi_options.sort()
 select_unlinked_institutional_roi = Select(value=value,
-                                           options=options,
+                                           options=unused_roi_options,
                                            width=300,
                                            title='Linked Institutional ROI')
 uncategorized_variations = get_uncategorized_variations(select_physician.value)
 try:
-    options = list(uncategorized_variations)
+    uncat_var_options = list(uncategorized_variations)
 except:
-    options = ['']
-options.sort()
-select_uncategorized_variation = Select(value=options[0],
-                                        options=options,
+    uncat_var_options = ['']
+uncat_var_options.sort()
+select_uncategorized_variation = Select(value=uncat_var_options[0],
+                                        options=uncat_var_options,
                                         width=300,
                                         title='Uncategorized Variations')
 ignored_variations = get_ignored_variations(select_physician.value)
 try:
-    options = list(ignored_variations)
+    ignored_var_options = list(ignored_variations)
 except:
-    options = ['']
-if not options:
-    options = ['']
+    ignored_var_options = ['']
+if not ignored_var_options:
+    ignored_var_options = ['']
 else:
-    options.sort()
-select_ignored_variation = Select(value=options[0],
-                                  options=options,
+    ignored_var_options.sort()
+select_ignored_variation = Select(value=ignored_var_options[0],
+                                  options=ignored_var_options,
                                   width=300,
                                   title='Ignored Variations')
 
@@ -1509,7 +1570,7 @@ roi_layout = layout([[select_institutional_roi],
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 import_inbox_button = Button(label='Import all from inbox', button_type='success', width=200)
 import_inbox_button.on_click(import_inbox)
-import_inbox_force = CheckboxGroup(labels=['Force Update'], active=[])
+import_inbox_force = CheckboxGroup(labels=['Force Update', 'Import Latest Only'], active=[1])
 rebuild_db_button = Button(label='Rebuild database', button_type='warning', width=200)
 rebuild_db_button.on_click(rebuild_db_button_click)
 
@@ -1569,12 +1630,11 @@ change_mrn_uid_button.on_click(change_mrn_uid)
 
 calculations_title = Div(text="<b>Post Import Calculations</b>", width=1000)
 calculate_condition = TextInput(value='', title="Condition", width=300)
-calculate_ptv_dist_button = Button(label='Calc PTV Distances', button_type='primary', width=150)
-calculate_ptv_dist_button.on_click(calculate_ptv_distances)
-calculate_tv_overlap_button = Button(label='Calc PTV Overlap', button_type='primary', width=150)
-calculate_tv_overlap_button.on_click(calculate_ptv_overlap)
-calculate_ages_button = Button(label='Calc Patient Ages', button_type='primary', width=150)
-calculate_ages_button.on_click(calculate_ages_click)
+calculate_options = ['Default Post-Import', 'PTV Distances', 'PTV Overlap', 'ROI Centroid',
+                     'ROI Spread', 'ROI Cross-Section', 'OAR-PTV Centroid Dist', 'All (except age)', 'Patient Ages']
+calculate_select = Select(value=calculate_options[0], options=calculate_options, title='Calculate:')
+calculate_exec_button = Button(label='Perform Calc', button_type='primary', width=150)
+calculate_exec_button.on_click(calculate_exec)
 
 download = Button(label="Download Table", button_type="default", width=150)
 download.callback = CustomJS(args=dict(source=query_source),
@@ -1596,8 +1656,8 @@ db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [change_mrn_uid_column, change_mrn_uid_old_value,
                             change_mrn_uid_new_value, change_mrn_uid_button],
                            [calculations_title],
-                           [calculate_condition, calculate_ptv_dist_button, calculate_tv_overlap_button,
-                            calculate_ages_button, download],
+                           [calculate_condition, calculate_select, calculate_exec_button],
+                           [download],
                            [query_data_table]])
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1642,8 +1702,8 @@ backup_pref_select = Select(value='', options=[''], title="Available Preferences
 delete_backup_button_pref = Button(label='Delete', button_type='warning', width=100)
 restore_pref_button = Button(label='Restore', button_type='primary', width=100)
 backup_pref_button = Button(label='Backup', button_type='success', width=100)
-options = ['Default', 'Root', 'Home', 'Custom']
-backup_location_select = Select(value=options[0], options=options, title="Common Locations")
+backup_options = ['Default', 'Root', 'Home', 'Custom']
+backup_location_select = Select(value=backup_options[0], options=backup_options, title="Common Locations")
 backup_location = TextInput(value=options_map['Default'], title='Backup Directory:', width=500)
 warning_div = Div(text="<b>WARNING for Non-Docker Users:</b> Restore requires your OS user name to be both a"
                        " PostgreSQL super user and have ALL PRIVILEGES WITH GRANT OPTIONS.  Do NOT attempt otherwise."
@@ -1684,7 +1744,7 @@ db_tab = Panel(child=db_editor_layout, title='Database Editor')
 backup_tab = Panel(child=backup_layout, title='Backup & Restore')
 baseline_tab = Panel(child=baseline_layout, title='Baseline Plans')
 
-if DISABLE_BACKUP_TAB:
+if options.DISABLE_BACKUP_TAB:
     tabs = Tabs(tabs=[db_tab, roi_tab, baseline_tab])
 else:
     tabs = Tabs(tabs=[db_tab, roi_tab, baseline_tab, backup_tab])

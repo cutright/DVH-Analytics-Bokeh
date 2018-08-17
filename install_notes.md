@@ -184,7 +184,7 @@ $ python get-pip.py
 
 ### Security Concerns
 Obviously, data intended for an application like this may be sensitive and require HIPPA compliance.  The end user is 
-entirely liable for settings up an appropriately secure environment.  Bokeh provides some help 
+entirely liable for setting up an appropriately secure environment.  Bokeh provides some help 
 [here](https://bokeh.pydata.org/en/latest/docs/user_guide/server.html#basic-reverse-proxy-setup)
 with regards to a reverse proxy, so that HTTPS may be implemented.
 
