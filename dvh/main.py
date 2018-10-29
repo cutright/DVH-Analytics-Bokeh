@@ -140,6 +140,8 @@ source_multi_var_model_results_2 = ColumnDataSource(data=dict(model_p=[], model_
                                                               r_sq=[], r_sq_str=[], y_var=[]))
 source_mlc_viewer = ColumnDataSource(data=dict(top=[], bottom=[], left=[], right=[], color=[]))
 source_mlc_summary = ColumnDataSource(data=dict())
+source_residual_chart_1 = ColumnDataSource(data=dict(x=[], y=[], mrn=[], db_value=[]))
+source_residual_chart_2 = ColumnDataSource(data=dict(x=[], y=[], mrn=[], db_value=[]))
 
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
@@ -2369,14 +2371,22 @@ def update_corr_chart():
         mrn_1, mrn_2 = correlation_1[corr_chart_x.value]['mrn'], correlation_2[corr_chart_x.value]['mrn']
         if x_units:
             if corr_chart_x.value.startswith('DVH Endpoint'):
-                corr_chart.xaxis.axis_label = "%s" % x_units
+                label = corr_chart_x.value[14:]
+                label = {'D': 'Dose to ', 'V': 'Volume of '}[label[0]] + corr_chart_x.value.split('_')[1]
+                if '%' in label:
+                    label = label + {'D': ' ROI Volume', 'V': ' Rx Dose'}[label[0]]
+                corr_chart.xaxis.axis_label = "%s (%s)" % (label, x_units)
             else:
                 corr_chart.xaxis.axis_label = "%s (%s)" % (corr_chart_x.value, x_units)
         else:
             corr_chart.xaxis.axis_label = corr_chart_x.value.replace('/', ' or ')
         if y_units:
             if corr_chart_y.value.startswith('DVH Endpoint'):
-                corr_chart.yaxis.axis_label = "%s" % y_units
+                label = corr_chart_y.value[14:]
+                label = {'D': 'Dose to ', 'V': 'Volume of '}[label[0]] + corr_chart_y.value.split('_')[1]
+                if '%' in label:
+                    label = label + {'D': ' ROI Volume', 'V': ' Rx Dose'}[label[0]]
+                corr_chart.yaxis.axis_label = "%s (%s)" % (label, y_units)
             else:
                 corr_chart.yaxis.axis_label = "%s (%s)" % (corr_chart_y.value, y_units)
         else:
@@ -2459,7 +2469,9 @@ def corr_chart_x_include_ticker(attr, old, new):
     if new and not multi_var_reg_vars[corr_chart_x.value]:
         multi_var_reg_vars[corr_chart_x.value] = True
     if not new and multi_var_reg_vars[corr_chart_x.value]:
+        clear_source_selection(source_multi_var_include)
         multi_var_reg_vars[corr_chart_x.value] = False
+
     included_vars = [key for key, value in listitems(multi_var_reg_vars) if value]
     included_vars.sort()
     source_multi_var_include.data = {'var_name': included_vars}
@@ -2845,17 +2857,25 @@ def multi_var_linear_regression():
         r_sq_str = ["%0.3f" % r_sq]
         model_p_str = ["%0.3f" % model_p]
 
+        residual_chart.yaxis.axis_label = "Residual (%s)" % correlation_1[corr_chart_y.value]['units']
+
         source_multi_var_coeff_results_1.data = {'var_name': ['Constant'] + included_vars,
-                                                 'coeff': coeff, 'coeff_str': coeff_str,
-                                                 'p': coeff_p, 'p_str': coeff_p_str}
+                                                 'coeff': coeff.tolist(), 'coeff_str': coeff_str,
+                                                 'p': coeff_p.tolist(), 'p_str': coeff_p_str}
         source_multi_var_model_results_1.data = {'model_p': [model_p], 'model_p_str': model_p_str,
                                                  'r_sq': [r_sq], 'r_sq_str': r_sq_str,
                                                  'y_var': [corr_chart_y.value]}
+        source_residual_chart_1.data = {'x': range(1, x_count + 1),
+                                        'y': fit.resid.tolist(),
+                                        'mrn': correlation_1[corr_chart_y.value]['mrn'],
+                                        'db_value': correlation_1[corr_chart_y.value]['data']}
+
     else:
         source_multi_var_coeff_results_1.data = {'var_name': [], 'coeff': [],
                                                  'coeff_str': [], 'p': [], 'p_str': []}
         source_multi_var_model_results_1.data = {'model_p': [], 'model_p_str': [],
                                                  'r_sq': [], 'r_sq_str': [], 'y_var': []}
+        source_residual_chart_1.data = {'x': [], 'y': [], 'mrn': [], 'db_value': []}
 
     # Red Group
     if current_dvh_group_2:
@@ -2881,16 +2901,22 @@ def multi_var_linear_regression():
         r_sq_str = ["%0.3f" % r_sq]
         model_p_str = ["%0.3f" % model_p]
 
-        source_multi_var_coeff_results_2.data = {'var_name': ['Constant'] + included_vars, 'coeff': coeff, 'coeff_str': coeff_str,
-                                                 'p': coeff_p, 'p_str': coeff_p_str}
+        source_multi_var_coeff_results_2.data = {'var_name': ['Constant'] + included_vars, 'coeff': coeff.tolist(),
+                                                 'coeff_str': coeff_str,
+                                                 'p': coeff_p.tolist(), 'p_str': coeff_p_str}
         source_multi_var_model_results_2.data = {'model_p': [model_p], 'model_p_str': model_p_str,
                                                  'r_sq': [r_sq], 'r_sq_str': r_sq_str,
                                                  'y_var': [corr_chart_y.value]}
+        source_residual_chart_2.data = {'x': range(1, x_count + 1),
+                                        'y': fit.resid.tolist(),
+                                        'mrn': correlation_2[corr_chart_y.value]['mrn'],
+                                        'db_value': correlation_2[corr_chart_y.value]['data']}
     else:
         source_multi_var_coeff_results_2.data = {'var_name': [], 'coeff': [],
                                                  'coeff_str': [], 'p': [], 'p_str': []}
         source_multi_var_model_results_2.data = {'model_p': [], 'model_p_str': [],
                                                  'r_sq': [], 'r_sq_str': [], 'y_var': []}
+        source_residual_chart_2.data = {'x': [], 'y': [], 'mrn': [], 'db_value': []}
 
 
 def multi_var_include_selection(attr, old, new):
@@ -3486,7 +3512,7 @@ data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1300, edita
 data_table_rxs.index_position = None
 source_rxs.selected.on_change('indices', source_rxs_selected_ticker)
 
-# Control Chart layout
+# Control Chart layout (Time-Series)
 tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
 control_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None,
                        active_drag="box_zoom", x_axis_type='datetime')
@@ -4013,6 +4039,7 @@ columns = [TableColumn(field="cp", title="CP"),
            TableColumn(field="cmp_score", title="Score", formatter=NumberFormatter(format="0.000"))]
 mlc_viewer_data_table = DataTable(source=source_mlc_summary, columns=columns,
                                   editable=False, width=700, height=425)
+
 mlc_viewer_data_table.index_position = None
 
 mlc_viewer_previous_cp.on_click(mlc_viewer_go_to_previous_cp)
@@ -4024,6 +4051,36 @@ mlc_viewer.x_range = Range1d(-options.MAX_FIELD_SIZE_X/2, options.MAX_FIELD_SIZE
 mlc_viewer.y_range = Range1d(-options.MAX_FIELD_SIZE_Y/2, options.MAX_FIELD_SIZE_Y/2)
 mlc_viewer.xgrid.grid_line_color = None
 mlc_viewer.ygrid.grid_line_color = None
+
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Control Chart (for real)
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
+residual_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None,
+                        active_drag="box_zoom")
+residual_chart.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
+residual_chart.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
+residual_chart.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+residual_chart.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+# residual_chart.min_border_left = min_border
+residual_chart.min_border_bottom = min_border
+residual_chart.xaxis.axis_label = 'Patient #'
+residual_chart_data_1 = residual_chart.circle('x', 'y', size=options.REGRESSION_1_CIRCLE_SIZE,
+                                              color=options.GROUP_1_COLOR, alpha=options.REGRESSION_1_ALPHA,
+                                              source=source_residual_chart_1)
+residual_chart_data_2 = residual_chart.circle('x', 'y', size=options.REGRESSION_2_CIRCLE_SIZE,
+                                              color=options.GROUP_2_COLOR, alpha=options.REGRESSION_2_ALPHA,
+                                              source=source_residual_chart_2)
+residual_chart.add_tools(HoverTool(show_arrow=True,
+                                   tooltips=[('ID', '@mrn'),
+                                             ('Residual', '@y'),
+                                             ('Actual', '@db_value')]))
+legend_residual_chart = Legend(items=[("Group 1", [residual_chart_data_1]),
+                                      ("Group 2", [residual_chart_data_2])],
+                               location=(25, 0))
+residual_chart.add_layout(legend_residual_chart, 'right')
+residual_chart.legend.click_policy = "hide"
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Layout objects
@@ -4124,6 +4181,7 @@ layout_regression = column(row(custom_title_regression_blue, Spacer(width=50), c
                            corr_chart,
                            div_horizontal_bar_2,
                            corr_chart_do_reg_button,
+                           residual_chart,
                            multi_var_text_1,
                            data_table_multi_var_coeff_1,
                            data_table_multi_var_model_1,
@@ -4141,6 +4199,7 @@ layout_mlc_analyzer = column(row(custom_title_mlc_analyzer_blue, Spacer(width=50
                                  Spacer(width=10), mlc_viewer_play_button, Spacer(width=10), mlc_viewer_beam_score),
                              row(mlc_viewer, mlc_viewer_data_table))
 
+
 query_tab = Panel(child=layout_query, title='Query')
 dvh_tab = Panel(child=layout_dvhs, title='DVHs')
 rad_bio_tab = Panel(child=layout_rad_bio, title='Rad Bio')
@@ -4150,6 +4209,7 @@ optional_tabs = [('ROI Viewer', Panel(child=layout_roi_viewer, title='ROI Viewer
                  ('Correlation', Panel(child=layout_correlation_matrix, title='Correlation')),
                  ('Regression', Panel(child=layout_regression, title='Regression')),
                  ('MLC Analyzer', Panel(child=layout_mlc_analyzer, title='MLC Analyzer'))]
+
 if options.LITE_VIEW:
     rendered_tabs = [query_tab, dvh_tab]
 else:
