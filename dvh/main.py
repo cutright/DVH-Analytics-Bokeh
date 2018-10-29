@@ -74,75 +74,68 @@ else:
     dvh_review_rois = ['']
 
 
-roi_viewer_data, roi2_viewer_data, roi3_viewer_data, roi4_viewer_data, roi5_viewer_data = {}, {}, {}, {}, {}
+roi1_viewer_data, roi2_viewer_data, roi3_viewer_data, roi4_viewer_data, roi5_viewer_data = {}, {}, {}, {}, {}
 tv_data = {}
 
 
 # Bokeh column data sources
-source = ColumnDataSource(data=dict(color=[], x=[], y=[], mrn=[]))
-source_selectors = ColumnDataSource(data=dict(row=[1], category1=[''], category2=[''],
-                                              group=[''], group_label=[''], not_status=['']))
-source_ranges = ColumnDataSource(data=dict(row=[], category=[], min=[], max=[], min_display=[], max_display=[],
-                                           group=[], group_label=[], not_status=[]))
-source_endpoint_defs = ColumnDataSource(data=dict(row=[], output_type=[], input_type=[], input_value=[],
-                                                  label=[], units_in=[], units_out=[]))
-source_endpoint_calcs = ColumnDataSource(data=dict())
-source_endpoint_view = ColumnDataSource(data=dict(mrn=[], group=[], roi_name=[], ep1=[], ep2=[], ep3=[], ep4=[], ep5=[],
-                                                  ep6=[], ep7=[], ep8=[], ep9=[], ep10=[]))
-source_beams = ColumnDataSource(data=dict())
-source_plans = ColumnDataSource(data=dict())
-source_rxs = ColumnDataSource(data=dict())
-source_patch_1 = ColumnDataSource(data=dict(x_patch=[], y_patch=[]))
-source_patch_2 = ColumnDataSource(data=dict(x_patch=[], y_patch=[]))
-source_stats_1 = ColumnDataSource(data=dict(x=[], min=[], q1=[], mean=[], median=[], q3=[], max=[]))
-source_stats_2 = ColumnDataSource(data=dict(x=[], min=[], q1=[], mean=[], median=[], q3=[], max=[]))
-source_roi_viewer = ColumnDataSource(data=dict(x=[], y=[]))
-source_roi2_viewer = ColumnDataSource(data=dict(x=[], y=[]))
-source_roi3_viewer = ColumnDataSource(data=dict(x=[], y=[]))
-source_roi4_viewer = ColumnDataSource(data=dict(x=[], y=[]))
-source_roi5_viewer = ColumnDataSource(data=dict(x=[], y=[]))
-source_tv = ColumnDataSource(data=dict(x=[], y=[]))
-source_rad_bio = ColumnDataSource(data=dict(mrn=[], uid=[], roi_name=[], ptv_overlap=[], roi_type=[], rx_dose=[],
-                                            fxs=[], fx_dose=[], eud_a=[], gamma_50=[], td_tcp=[], eud=[], ntcp_tcp=[]))
-source_time_1 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
-source_time_2 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
-source_time_trend_1 = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
-source_time_trend_2 = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
-source_time_collapsed = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
-source_time_bound_1 = ColumnDataSource(data=dict(x=[], upper=[], avg=[], lower=[], mrn=[]))
-source_time_bound_2 = ColumnDataSource(data=dict(x=[], upper=[], avg=[], lower=[], mrn=[]))
-source_time_patch_1 = ColumnDataSource(data=dict(x=[], y=[]))
-source_time_patch_2 = ColumnDataSource(data=dict(x=[], y=[]))
-source_histogram_1 = ColumnDataSource(data=dict(x=[], top=[], width=[]))
-source_histogram_2 = ColumnDataSource(data=dict(x=[], top=[], width=[]))
-source_corr_matrix_line = ColumnDataSource(data=dict(x=[], y=[]))
-source_correlation_1_pos = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[], color=[], alpha=[], r=[], p=[],
-                                                      group=[], size=[], x_normality=[], y_normality=[]))
-source_correlation_1_neg = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[], color=[], alpha=[], r=[], p=[],
-                                                      group=[], size=[], x_normality=[], y_normality=[]))
-source_correlation_2_pos = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[], color=[], alpha=[], r=[], p=[],
-                                                      group=[], size=[], x_normality=[], y_normality=[]))
-source_correlation_2_neg = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[], color=[], alpha=[], r=[], p=[],
-                                                      group=[], size=[], x_normality=[], y_normality=[]))
-source_corr_chart_1 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
-source_corr_chart_2 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
-source_corr_trend_1 = ColumnDataSource(data=dict(x=[], y=[]))
-source_corr_trend_2 = ColumnDataSource(data=dict(x=[], y=[]))
-corr_chart_stats_row_names = ['slope', 'y-intercept', 'R-squared', 'p-value', 'std. err.', 'sample size']
-source_corr_chart_stats = ColumnDataSource(data=dict(stat=corr_chart_stats_row_names,
-                                                     group_1=[''] * 6, group_2=[''] * 6))
-source_multi_var_include = ColumnDataSource(data=dict(var_name=[]))
-source_multi_var_coeff_results_1 = ColumnDataSource(data=dict(var_name=[], coeff=[], coeff_str=[], p=[], p_str=[]))
-source_multi_var_model_results_1 = ColumnDataSource(data=dict(model_p=[], model_p_str=[],
-                                                              r_sq=[], r_sq_str=[], y_var=[]))
-source_multi_var_coeff_results_2 = ColumnDataSource(data=dict(var_name=[], coeff=[], coeff_str=[], p=[], p_str=[]))
-source_multi_var_model_results_2 = ColumnDataSource(data=dict(model_p=[], model_p_str=[],
-                                                              r_sq=[], r_sq_str=[], y_var=[]))
-source_mlc_viewer = ColumnDataSource(data=dict(top=[], bottom=[], left=[], right=[], color=[]))
-source_mlc_summary = ColumnDataSource(data=dict())
-source_residual_chart_1 = ColumnDataSource(data=dict(x=[], y=[], mrn=[], db_value=[]))
-source_residual_chart_2 = ColumnDataSource(data=dict(x=[], y=[], mrn=[], db_value=[]))
+CORR_CHART_STATS_ROW_NAMES = ['slope', 'y-intercept', 'R-squared', 'p-value', 'std. err.', 'sample size']
 
+source = {'dvh': ColumnDataSource(data=dict(color=[], x=[], y=[], mrn=[])),
+          'selectors': ColumnDataSource(data=dict(row=[1], category1=[''], category2=[''],
+                                                  group=[''], group_label=[''], not_status=[''])),
+          'ranges': ColumnDataSource(data=dict(row=[], category=[], min=[], max=[], min_display=[], max_display=[],
+                                               group=[], group_label=[], not_status=[])),
+          'endpoint_defs': ColumnDataSource(data=dict(row=[], output_type=[], input_type=[], input_value=[],
+                                                      label=[], units_in=[], units_out=[])),
+          'endpoint_view': ColumnDataSource(data=dict(mrn=[], group=[], roi_name=[], ep1=[], ep2=[], ep3=[], ep4=[],
+                                                      ep5=[], ep6=[], ep7=[], ep8=[], ep9=[], ep10=[])),
+          'patch_1': ColumnDataSource(data=dict(x_patch=[], y_patch=[])),
+          'patch_2': ColumnDataSource(data=dict(x_patch=[], y_patch=[])),
+          'stats_1': ColumnDataSource(data=dict(x=[], min=[], q1=[], mean=[], median=[], q3=[], max=[])),
+          'stats_2': ColumnDataSource(data=dict(x=[], min=[], q1=[], mean=[], median=[], q3=[], max=[])),
+          'tv': ColumnDataSource(data=dict(x=[], y=[])),
+          'rad_bio': ColumnDataSource(data=dict(mrn=[], uid=[], roi_name=[], ptv_overlap=[], roi_type=[], rx_dose=[],
+                                                fxs=[], fx_dose=[], eud_a=[], gamma_50=[], td_tcp=[], eud=[],
+                                                ntcp_tcp=[])),
+          'time_1': ColumnDataSource(data=dict(x=[], y=[], mrn=[])),
+          'time_2': ColumnDataSource(data=dict(x=[], y=[], mrn=[])),
+          'time_trend_1': ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[])),
+          'time_trend_2': ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[])),
+          'time_collapsed': ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[])),
+          'time_bound_1': ColumnDataSource(data=dict(x=[], upper=[], avg=[], lower=[], mrn=[])),
+          'time_bound_2': ColumnDataSource(data=dict(x=[], upper=[], avg=[], lower=[], mrn=[])),
+          'time_patch_1': ColumnDataSource(data=dict(x=[], y=[])),
+          'time_patch_2': ColumnDataSource(data=dict(x=[], y=[])),
+          'histogram_1': ColumnDataSource(data=dict(x=[], top=[], width=[])),
+          'histogram_2': ColumnDataSource(data=dict(x=[], top=[], width=[])),
+          'corr_matrix_line': ColumnDataSource(data=dict(x=[], y=[])),
+          'corr_chart_1': ColumnDataSource(data=dict(x=[], y=[], mrn=[])),
+          'corr_chart_2': ColumnDataSource(data=dict(x=[], y=[], mrn=[])),
+          'corr_trend_1': ColumnDataSource(data=dict(x=[], y=[])),
+          'corr_trend_2': ColumnDataSource(data=dict(x=[], y=[])),
+          'corr_chart_stats': ColumnDataSource(data=dict(stat=CORR_CHART_STATS_ROW_NAMES,
+                                                         group_1=[''] * 6, group_2=[''] * 6)),
+          'multi_var_include': ColumnDataSource(data=dict(var_name=[])),
+          'multi_var_coeff_results_1': ColumnDataSource(data=dict(var_name=[], coeff=[], coeff_str=[], p=[], p_str=[])),
+          'multi_var_model_results_1': ColumnDataSource(data=dict(model_p=[], model_p_str=[],
+                                                                  r_sq=[], r_sq_str=[], y_var=[])),
+          'multi_var_coeff_results_2': ColumnDataSource(data=dict(var_name=[], coeff=[], coeff_str=[], p=[], p_str=[])),
+          'multi_var_model_results_2': ColumnDataSource(data=dict(model_p=[], model_p_str=[],
+                                                                  r_sq=[], r_sq_str=[], y_var=[])),
+          'mlc_viewer': ColumnDataSource(data=dict(top=[], bottom=[], left=[], right=[], color=[])),
+          'residual_chart_1': ColumnDataSource(data=dict(x=[], y=[], mrn=[], db_value=[])),
+          'residual_chart_2': ColumnDataSource(data=dict(x=[], y=[], mrn=[], db_value=[]))}
+
+for key in ['endpoint_calcs', 'beams', 'plans', 'rxs', 'mlc_summary']:
+    source[key] = ColumnDataSource(data=dict())
+
+for i in range(1, 6):
+    source["roi%s_viewer" % i] = ColumnDataSource(data=dict(x=[], y=[]))
+
+for key in ['correlation_1_pos', 'correlation_1_neg', 'correlation_2_pos', 'correlation_2_neg']:
+    source[key] = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[], color=[], alpha=[], r=[], p=[],
+                                             group=[], size=[], x_normality=[], y_normality=[]))
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
 selector_categories = {'ROI Institutional Category': {'var_name': 'institutional_roi', 'table': 'DVHs'},
@@ -166,54 +159,54 @@ selector_categories = {'ROI Institutional Category': {'var_name': 'institutional
                        'MRN': {'var_name': 'mrn', 'table': 'Plans'},
                        'UID': {'var_name': 'study_instance_uid', 'table': 'Plans'},
                        'Baseline': {'var_name': 'baseline', 'table': 'Plans'}}
-range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 'source': source_plans},
-                    'Beam Energy Min': {'var_name': 'beam_energy_min', 'table': 'Beams', 'units': '', 'source': source_beams},
-                    'Beam Energy Max': {'var_name': 'beam_energy_max', 'table': 'Beams', 'units': '', 'source': source_beams},
-                    'Birth Date': {'var_name': 'birth_date', 'table': 'Plans', 'units': '', 'source': source_plans},
-                    'Planned Fractions': {'var_name': 'fxs', 'table': 'Plans', 'units': '', 'source': source_plans},
-                    'Rx Dose': {'var_name': 'rx_dose', 'table': 'Plans', 'units': 'Gy', 'source': source_plans},
-                    'Rx Isodose': {'var_name': 'rx_percent', 'table': 'Rxs', 'units': '%', 'source': source_rxs},
-                    'Simulation Date': {'var_name': 'sim_study_date', 'table': 'Plans', 'units': '', 'source': source_plans},
-                    'Total Plan MU': {'var_name': 'total_mu', 'table': 'Plans', 'units': 'MU', 'source': source_plans},
-                    'Fraction Dose': {'var_name': 'fx_dose', 'table': 'Rxs', 'units': 'Gy', 'source': source_rxs},
-                    'Beam Dose': {'var_name': 'beam_dose', 'table': 'Beams', 'units': 'Gy', 'source': source_beams},
-                    'Beam MU': {'var_name': 'beam_mu', 'table': 'Beams', 'units': '', 'source': source_beams},
-                    'Control Point Count': {'var_name': 'control_point_count', 'table': 'Beams', 'units': '', 'source': source_beams},
-                    'Collimator Start Angle': {'var_name': 'collimator_start', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'Collimator End Angle': {'var_name': 'collimator_end', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'Collimator Min Angle': {'var_name': 'collimator_min', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'Collimator Max Angle': {'var_name': 'collimator_max', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'Collimator Range': {'var_name': 'collimator_range', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'Couch Start Angle': {'var_name': 'couch_start', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'Couch End Angle': {'var_name': 'couch_end', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'Couch Min Angle': {'var_name': 'couch_min', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'Couch Max Angle': {'var_name': 'couch_max', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'Couch Range': {'var_name': 'couch_range', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'Gantry Start Angle': {'var_name': 'gantry_start', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'Gantry End Angle': {'var_name': 'gantry_end', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'Gantry Min Angle': {'var_name': 'gantry_min', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'Gantry Max Angle': {'var_name': 'gantry_max', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'Gantry Range': {'var_name': 'gantry_range', 'table': 'Beams', 'units': 'deg', 'source': source_beams},
-                    'SSD': {'var_name': 'ssd', 'table': 'Beams', 'units': 'cm', 'source': source_beams},
-                    'ROI Min Dose': {'var_name': 'min_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
-                    'ROI Mean Dose': {'var_name': 'mean_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
-                    'ROI Max Dose': {'var_name': 'max_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source},
-                    'ROI Volume': {'var_name': 'volume', 'table': 'DVHs', 'units': 'cc', 'source': source},
-                    'ROI Surface Area': {'var_name': 'surface_area', 'table': 'DVHs', 'units': 'cm^2', 'source': source},
-                    'ROI Spread X': {'var_name': 'spread_x', 'table': 'DVHs', 'units': 'cm', 'source': source},
-                    'ROI Spread Y': {'var_name': 'spread_y', 'table': 'DVHs', 'units': 'cm', 'source': source},
-                    'ROI Spread Z': {'var_name': 'spread_z', 'table': 'DVHs', 'units': 'cm', 'source': source},
-                    'PTV Distance (Min)': {'var_name': 'dist_to_ptv_min', 'table': 'DVHs', 'units': 'cm', 'source': source},
-                    'PTV Distance (Mean)': {'var_name': 'dist_to_ptv_mean', 'table': 'DVHs', 'units': 'cm', 'source': source},
-                    'PTV Distance (Median)': {'var_name': 'dist_to_ptv_median', 'table': 'DVHs', 'units': 'cm', 'source': source},
-                    'PTV Distance (Max)': {'var_name': 'dist_to_ptv_max', 'table': 'DVHs', 'units': 'cm', 'source': source},
-                    'PTV Distance (Centroids)': {'var_name': 'dist_to_ptv_centroids', 'table': 'DVHs', 'units': 'cm', 'source': source},
-                    'PTV Overlap': {'var_name': 'ptv_overlap', 'table': 'DVHs', 'units': 'cc', 'source': source},
-                    'Scan Spots': {'var_name': 'scan_spot_count', 'table': 'Beams', 'units': '', 'source': source_beams},
-                    'Beam MU per deg': {'var_name': 'beam_mu_per_deg', 'table': 'Beams', 'units': '', 'source': source_beams},
-                    'Beam MU per control point': {'var_name': 'beam_mu_per_cp', 'table': 'Beams', 'units': '', 'source': source_beams},
-                    'ROI Cross-Section Max': {'var_name': 'cross_section_max', 'table': 'DVHs', 'units': 'cm^2', 'source': source},
-                    'ROI Cross-Section Median': {'var_name': 'cross_section_median', 'table': 'DVHs', 'units': 'cm^2', 'source': source}}
+range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 'source': source['plans']},
+                    'Beam Energy Min': {'var_name': 'beam_energy_min', 'table': 'Beams', 'units': '', 'source': source['beams']},
+                    'Beam Energy Max': {'var_name': 'beam_energy_max', 'table': 'Beams', 'units': '', 'source': source['beams']},
+                    'Birth Date': {'var_name': 'birth_date', 'table': 'Plans', 'units': '', 'source': source['plans']},
+                    'Planned Fractions': {'var_name': 'fxs', 'table': 'Plans', 'units': '', 'source': source['plans']},
+                    'Rx Dose': {'var_name': 'rx_dose', 'table': 'Plans', 'units': 'Gy', 'source': source['plans']},
+                    'Rx Isodose': {'var_name': 'rx_percent', 'table': 'Rxs', 'units': '%', 'source': source['rxs']},
+                    'Simulation Date': {'var_name': 'sim_study_date', 'table': 'Plans', 'units': '', 'source': source['plans']},
+                    'Total Plan MU': {'var_name': 'total_mu', 'table': 'Plans', 'units': 'MU', 'source': source['plans']},
+                    'Fraction Dose': {'var_name': 'fx_dose', 'table': 'Rxs', 'units': 'Gy', 'source': source['rxs']},
+                    'Beam Dose': {'var_name': 'beam_dose', 'table': 'Beams', 'units': 'Gy', 'source': source['beams']},
+                    'Beam MU': {'var_name': 'beam_mu', 'table': 'Beams', 'units': '', 'source': source['beams']},
+                    'Control Point Count': {'var_name': 'control_point_count', 'table': 'Beams', 'units': '', 'source': source['beams']},
+                    'Collimator Start Angle': {'var_name': 'collimator_start', 'table': 'Beams', 'units': 'deg', 'source': source['beams']},
+                    'Collimator End Angle': {'var_name': 'collimator_end', 'table': 'Beams', 'units': 'deg', 'source': source['beams']},
+                    'Collimator Min Angle': {'var_name': 'collimator_min', 'table': 'Beams', 'units': 'deg', 'source': source['beams']},
+                    'Collimator Max Angle': {'var_name': 'collimator_max', 'table': 'Beams', 'units': 'deg', 'source': source['beams']},
+                    'Collimator Range': {'var_name': 'collimator_range', 'table': 'Beams', 'units': 'deg', 'source': source['beams']},
+                    'Couch Start Angle': {'var_name': 'couch_start', 'table': 'Beams', 'units': 'deg', 'source': source['beams']},
+                    'Couch End Angle': {'var_name': 'couch_end', 'table': 'Beams', 'units': 'deg', 'source': source['beams']},
+                    'Couch Min Angle': {'var_name': 'couch_min', 'table': 'Beams', 'units': 'deg', 'source': source['beams']},
+                    'Couch Max Angle': {'var_name': 'couch_max', 'table': 'Beams', 'units': 'deg', 'source': source['beams']},
+                    'Couch Range': {'var_name': 'couch_range', 'table': 'Beams', 'units': 'deg', 'source': source['beams']},
+                    'Gantry Start Angle': {'var_name': 'gantry_start', 'table': 'Beams', 'units': 'deg', 'source': source['beams']},
+                    'Gantry End Angle': {'var_name': 'gantry_end', 'table': 'Beams', 'units': 'deg', 'source': source['beams']},
+                    'Gantry Min Angle': {'var_name': 'gantry_min', 'table': 'Beams', 'units': 'deg', 'source': source['beams']},
+                    'Gantry Max Angle': {'var_name': 'gantry_max', 'table': 'Beams', 'units': 'deg', 'source': source['beams']},
+                    'Gantry Range': {'var_name': 'gantry_range', 'table': 'Beams', 'units': 'deg', 'source': source['beams']},
+                    'SSD': {'var_name': 'ssd', 'table': 'Beams', 'units': 'cm', 'source': source['beams']},
+                    'ROI Min Dose': {'var_name': 'min_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source['dvh']},
+                    'ROI Mean Dose': {'var_name': 'mean_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source['dvh']},
+                    'ROI Max Dose': {'var_name': 'max_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source['dvh']},
+                    'ROI Volume': {'var_name': 'volume', 'table': 'DVHs', 'units': 'cc', 'source': source['dvh']},
+                    'ROI Surface Area': {'var_name': 'surface_area', 'table': 'DVHs', 'units': 'cm^2', 'source': source['dvh']},
+                    'ROI Spread X': {'var_name': 'spread_x', 'table': 'DVHs', 'units': 'cm', 'source': source['dvh']},
+                    'ROI Spread Y': {'var_name': 'spread_y', 'table': 'DVHs', 'units': 'cm', 'source': source['dvh']},
+                    'ROI Spread Z': {'var_name': 'spread_z', 'table': 'DVHs', 'units': 'cm', 'source': source['dvh']},
+                    'PTV Distance (Min)': {'var_name': 'dist_to_ptv_min', 'table': 'DVHs', 'units': 'cm', 'source': source['dvh']},
+                    'PTV Distance (Mean)': {'var_name': 'dist_to_ptv_mean', 'table': 'DVHs', 'units': 'cm', 'source': source['dvh']},
+                    'PTV Distance (Median)': {'var_name': 'dist_to_ptv_median', 'table': 'DVHs', 'units': 'cm', 'source': source['dvh']},
+                    'PTV Distance (Max)': {'var_name': 'dist_to_ptv_max', 'table': 'DVHs', 'units': 'cm', 'source': source['dvh']},
+                    'PTV Distance (Centroids)': {'var_name': 'dist_to_ptv_centroids', 'table': 'DVHs', 'units': 'cm', 'source': source['dvh']},
+                    'PTV Overlap': {'var_name': 'ptv_overlap', 'table': 'DVHs', 'units': 'cc', 'source': source['dvh']},
+                    'Scan Spots': {'var_name': 'scan_spot_count', 'table': 'Beams', 'units': '', 'source': source['beams']},
+                    'Beam MU per deg': {'var_name': 'beam_mu_per_deg', 'table': 'Beams', 'units': '', 'source': source['beams']},
+                    'Beam MU per control point': {'var_name': 'beam_mu_per_cp', 'table': 'Beams', 'units': '', 'source': source['beams']},
+                    'ROI Cross-Section Max': {'var_name': 'cross_section_max', 'table': 'DVHs', 'units': 'cm^2', 'source': source['dvh']},
+                    'ROI Cross-Section Median': {'var_name': 'cross_section_median', 'table': 'DVHs', 'units': 'cm^2', 'source': source['dvh']}}
 
 # correlation variable names
 correlation_variables, correlation_names = [], []
@@ -261,18 +254,18 @@ def update_selector_source():
 
         patch = {'category1': [(r, select_category1.value)], 'category2': [(r, select_category2.value)],
                  'group': [(r, group)], 'group_label': [(r, group_label)], 'not_status': [(r, not_status)]}
-        source_selectors.patch(patch)
+        source['selectors'].patch(patch)
 
 
 def add_selector_row():
-    if source_selectors.data['row']:
-        temp = source_selectors.data
+    if source['selectors'].data['row']:
+        temp = source['selectors'].data
 
         for key in list(temp):
             temp[key].append('')
         temp['row'][-1] = len(temp['row'])
 
-        source_selectors.data = temp
+        source['selectors'].data = temp
         new_options = [str(x+1) for x in range(len(temp['row']))]
         selector_row.options = new_options
         selector_row.value = new_options[-1]
@@ -282,11 +275,11 @@ def add_selector_row():
     else:
         selector_row.options = ['1']
         selector_row.value = '1'
-        source_selectors.data = dict(row=[1], category1=[''], category2=[''],
+        source['selectors'].data = dict(row=[1], category1=[''], category2=[''],
                                      group=[], group_label=[''], not_status=[''])
     update_selector_source()
 
-    clear_source_selection(source_selectors)
+    clear_source_selection('selectors')
 
 
 def select_category1_ticker(attr, old, new):
@@ -303,12 +296,12 @@ def selector_not_operator_ticker(attr, old, new):
 
 
 def selector_row_ticker(attr, old, new):
-    if source_selectors.data['category1'] and source_selectors.data['category1'][-1]:
+    if source['selectors'].data['category1'] and source['selectors'].data['category1'][-1]:
         r = int(selector_row.value) - 1
-        category1 = source_selectors.data['category1'][r]
-        category2 = source_selectors.data['category2'][r]
-        group = source_selectors.data['group'][r]
-        not_status = source_selectors.data['not_status'][r]
+        category1 = source['selectors'].data['category1'][r]
+        category2 = source['selectors'].data['category2'][r]
+        group = source['selectors'].data['group'][r]
+        not_status = source['selectors'].data['not_status'][r]
 
         select_category1.value = category1
         select_category2.value = category2
@@ -326,12 +319,12 @@ def update_selector_row_on_selection(attr, old, new):
 
 def delete_selector_row():
     if selector_row.value:
-        new_selectors_source = source_selectors.data
+        new_selectors_source = source['selectors'].data
         index_to_delete = int(selector_row.value) - 1
-        new_source_length = len(source_selectors.data['category1']) - 1
+        new_source_length = len(source['selectors'].data['category1']) - 1
 
         if new_source_length == 0:
-            source_selectors.data = dict(row=[], category1=[], category2=[], group=[], group_label=[], not_status=[])
+            source['selectors'].data = dict(row=[], category1=[], category2=[], group=[], group_label=[], not_status=[])
             selector_row.options = ['']
             selector_row.value = ''
             group_selector.active = [0]
@@ -348,22 +341,22 @@ def delete_selector_row():
             selector_row.options = [str(x+1) for x in range(new_source_length)]
             if selector_row.value not in selector_row.options:
                 selector_row.value = selector_row.options[-1]
-            source_selectors.data = new_selectors_source
+            source['selectors'].data = new_selectors_source
 
-        clear_source_selection(source_selectors)
+        clear_source_selection('selectors')
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Functions for Querying by numerical data
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 def add_range_row():
-    if source_ranges.data['row']:
-        temp = source_ranges.data
+    if source['ranges'].data['row']:
+        temp = source['ranges'].data
 
         for key in list(temp):
             temp[key].append('')
         temp['row'][-1] = len(temp['row'])
-        source_ranges.data = temp
+        source['ranges'].data = temp
         new_options = [str(x+1) for x in range(len(temp['row']))]
         range_row.options = new_options
         range_row.value = new_options[-1]
@@ -373,13 +366,13 @@ def add_range_row():
     else:
         range_row.options = ['1']
         range_row.value = '1'
-        source_ranges.data = dict(row=['1'], category=[''], min=[''], max=[''], min_display=[''], max_display=[''],
+        source['ranges'].data = dict(row=['1'], category=[''], min=[''], max=[''], min_display=[''], max_display=[''],
                                   group=[''], group_label=[''], not_status=[''])
 
     update_range_titles(reset_values=True)
     update_range_source()
 
-    clear_source_selection(source_ranges)
+    clear_source_selection('ranges')
 
 
 def update_range_source():
@@ -430,7 +423,7 @@ def update_range_source():
         patch = {'category': [(r, select_category.value)], 'min': [(r, min_value)], 'max': [(r, max_value)],
                  'min_display': [(r, min_display)], 'max_display': [(r, max_display)],
                  'group': [(r, group)], 'group_label': [(r, group_label)], 'not_status': [(r, not_status)]}
-        source_ranges.patch(patch)
+        source['ranges'].patch(patch)
 
         group_range.active = [[0], [1], [0, 1]][group - 1]
         text_min.value = str(min_value)
@@ -452,13 +445,13 @@ def update_range_titles(reset_values=False):
 
 def range_row_ticker(attr, old, new):
     global ALLOW_SOURCE_UPDATE
-    if source_ranges.data['category'] and source_ranges.data['category'][-1]:
+    if source['ranges'].data['category'] and source['ranges'].data['category'][-1]:
         r = int(new) - 1
-        category = source_ranges.data['category'][r]
-        min_new = source_ranges.data['min'][r]
-        max_new = source_ranges.data['max'][r]
-        group = source_ranges.data['group'][r]
-        not_status = source_ranges.data['not_status'][r]
+        category = source['ranges'].data['category'][r]
+        min_new = source['ranges'].data['min'][r]
+        max_new = source['ranges'].data['max'][r]
+        group = source['ranges'].data['group'][r]
+        not_status = source['ranges'].data['not_status'][r]
 
         ALLOW_SOURCE_UPDATE = False
         select_category.value = category
@@ -496,12 +489,12 @@ def range_not_operator_ticker(attr, old, new):
 
 def delete_range_row():
     if range_row.value:
-        new_range_source = source_ranges.data
+        new_range_source = source['ranges'].data
         index_to_delete = int(range_row.value) - 1
-        new_source_length = len(source_ranges.data['category']) - 1
+        new_source_length = len(source['ranges'].data['category']) - 1
 
         if new_source_length == 0:
-            source_ranges.data = dict(row=[], category=[], min=[], max=[], min_display=[], max_display=[],
+            source['ranges'].data = dict(row=[], category=[], min=[], max=[], min_display=[], max_display=[],
                                       group=[], group_label=[''], not_status=[])
             range_row.options = ['']
             range_row.value = ''
@@ -520,9 +513,9 @@ def delete_range_row():
             range_row.options = [str(x+1) for x in range(new_source_length)]
             if range_row.value not in range_row.options:
                 range_row.value = range_row.options[-1]
-            source_ranges.data = new_range_source
+            source['ranges'].data = new_range_source
 
-        clear_source_selection(source_ranges)
+        clear_source_selection('ranges')
 
 
 def ensure_range_group_is_assigned(attrname, old, new):
@@ -536,8 +529,8 @@ def update_range_row_on_selection(attr, old, new):
         range_row.value = range_row.options[min(new)]
 
 
-def clear_source_selection(src):
-    src.selected.indices = []
+def clear_source_selection(key):
+    source[key].selected.indices = []
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -545,27 +538,27 @@ def clear_source_selection(src):
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 def add_endpoint():
-    if source_endpoint_defs.data['row']:
-        temp = source_endpoint_defs.data
+    if source['endpoint_defs'].data['row']:
+        temp = source['endpoint_defs'].data
 
         for key in list(temp):
             temp[key].append('')
         temp['row'][-1] = len(temp['row'])
-        source_endpoint_defs.data = temp
+        source['endpoint_defs'].data = temp
         new_options = [str(x+1) for x in range(len(temp['row']))]
         ep_row.options = new_options
         ep_row.value = new_options[-1]
     else:
         ep_row.options = ['1']
         ep_row.value = '1'
-        source_endpoint_defs.data = dict(row=['1'], output_type=[''], input_type=[''], input_value=[''],
+        source['endpoint_defs'].data = dict(row=['1'], output_type=[''], input_type=[''], input_value=[''],
                                          label=[''], units_in=[''], units_out=[''])
         if not ep_text_input.value:
             ep_text_input.value = '1'
 
     update_ep_source()
 
-    clear_source_selection(source_endpoint_defs)
+    clear_source_selection('endpoint_defs')
 
 
 def update_ep_source():
@@ -598,7 +591,7 @@ def update_ep_source():
         patch = {'output_type': [(r, output_type)], 'input_type': [(r, input_type)],
                  'input_value': [(r, input_value)], 'label': [(r, label)],
                  'units_in': [(r, units_in)], 'units_out': [(r, units_out)]}
-        source_endpoint_defs.patch(patch)
+        source['endpoint_defs'].patch(patch)
         update_source_endpoint_calcs()
 
 
@@ -633,12 +626,12 @@ def ep_text_input_ticker(attr, old, new):
 
 def delete_ep_row():
     if ep_row.value:
-        new_ep_source = source_endpoint_defs.data
+        new_ep_source = source['endpoint_defs'].data
         index_to_delete = int(ep_row.value) - 1
-        new_source_length = len(source_endpoint_defs.data['output_type']) - 1
+        new_source_length = len(source['endpoint_defs'].data['output_type']) - 1
 
         if new_source_length == 0:
-            source_endpoint_defs.data = dict(row=[], output_type=[], input_type=[], input_value=[],
+            source['endpoint_defs'].data = dict(row=[], output_type=[], input_type=[], input_value=[],
                                              label=[], units_in=[], units_out=[])
             ep_row.options = ['']
             ep_row.value = ''
@@ -652,10 +645,10 @@ def delete_ep_row():
             ep_row.options = [str(x+1) for x in range(new_source_length)]
             if ep_row.value not in ep_row.options:
                 ep_row.value = ep_row.options[-1]
-            source_endpoint_defs.data = new_ep_source
+            source['endpoint_defs'].data = new_ep_source
 
         update_source_endpoint_calcs()  # not efficient, but still relatively quick
-        clear_source_selection(source_endpoint_defs)
+        clear_source_selection('endpoint_defs')
 
 
 def update_ep_row_on_selection(attr, old, new):
@@ -663,7 +656,7 @@ def update_ep_row_on_selection(attr, old, new):
     ALLOW_SOURCE_UPDATE = False
 
     if new:
-        data = source_endpoint_defs.data
+        data = source['endpoint_defs'].data
         r = min(new)
 
         # update row
@@ -722,7 +715,7 @@ def get_query(group=None):
     for active_group in active_groups:
 
         # Accumulate categorical query strings
-        data = source_selectors.data
+        data = source['selectors'].data
         for r in data['row']:
             r = int(r)
             if data['group'][r-1] in {active_group, 3}:
@@ -742,7 +735,7 @@ def get_query(group=None):
                 queries_by_sql_column[table][var_name].append(query_str)
 
         # Accumulate numerical query strings
-        data = source_ranges.data
+        data = source['ranges'].data
         for r in data['row']:
             r = int(r)
             if data['group'][r-1] in {active_group, 3}:
@@ -865,9 +858,9 @@ def update_dvh_data(dvh):
 
     if group_1_constraint_count == 0:
         uids_1 = []
-        source_patch_1.data = {'x_patch': [],
+        source['patch_1'].data = {'x_patch': [],
                                'y_patch': []}
-        source_stats_1.data = {'x': [],
+        source['stats_1'].data = {'x': [],
                                'min': [],
                                'q1': [],
                                'mean': [],
@@ -886,9 +879,9 @@ def update_dvh_data(dvh):
         else:
             x_axis_1 = np.add(np.linspace(0, dvh_group_1.bin_count, dvh_group_1.bin_count) / 100., 0.005)
 
-        source_patch_1.data = {'x_patch': np.append(x_axis_1, x_axis_1[::-1]).tolist(),
+        source['patch_1'].data = {'x_patch': np.append(x_axis_1, x_axis_1[::-1]).tolist(),
                                'y_patch': np.append(stat_dvhs_1['q3'], stat_dvhs_1['q1'][::-1]).tolist()}
-        source_stats_1.data = {'x': x_axis_1.tolist(),
+        source['stats_1'].data = {'x': x_axis_1.tolist(),
                                'min': stat_dvhs_1['min'].tolist(),
                                'q1': stat_dvhs_1['q1'].tolist(),
                                'mean': stat_dvhs_1['mean'].tolist(),
@@ -897,9 +890,9 @@ def update_dvh_data(dvh):
                                'max': stat_dvhs_1['max'].tolist()}
     if group_2_constraint_count == 0:
         uids_2 = []
-        source_patch_2.data = {'x_patch': [],
+        source['patch_2'].data = {'x_patch': [],
                                'y_patch': []}
-        source_stats_2.data = {'x': [],
+        source['stats_2'].data = {'x': [],
                                'min': [],
                                'q1': [],
                                'mean': [],
@@ -918,9 +911,9 @@ def update_dvh_data(dvh):
         else:
             x_axis_2 = np.add(np.linspace(0, dvh_group_2.bin_count, dvh_group_2.bin_count) / 100., 0.005)
 
-        source_patch_2.data = {'x_patch': np.append(x_axis_2, x_axis_2[::-1]).tolist(),
+        source['patch_2'].data = {'x_patch': np.append(x_axis_2, x_axis_2[::-1]).tolist(),
                                'y_patch': np.append(stat_dvhs_2['q3'], stat_dvhs_2['q1'][::-1]).tolist()}
-        source_stats_2.data = {'x': x_axis_2.tolist(),
+        source['stats_2'].data = {'x': x_axis_2.tolist(),
                                'min': stat_dvhs_2['min'].tolist(),
                                'q1': stat_dvhs_2['q1'].tolist(),
                                'mean': stat_dvhs_2['mean'].tolist(),
@@ -1076,37 +1069,37 @@ def update_dvh_data(dvh):
     anon_id_map = {mrn: i for i, mrn in enumerate(list(set(dvh.mrn)))}
     anon_id = [anon_id_map[dvh.mrn[i]] for i in range(len(dvh.mrn))]
 
-    print(str(datetime.now()), 'writing source.data', sep=' ')
-    source.data = {'mrn': dvh.mrn,
-                   'anon_id': anon_id,
-                   'group': dvh_groups,
-                   'uid': dvh.study_instance_uid,
-                   'roi_institutional': dvh.institutional_roi,
-                   'roi_physician': dvh.physician_roi,
-                   'roi_name': dvh.roi_name,
-                   'roi_type': dvh.roi_type,
-                   'rx_dose': dvh.rx_dose,
-                   'volume': dvh.volume,
-                   'surface_area': dvh.surface_area,
-                   'min_dose': dvh.min_dose,
-                   'mean_dose': dvh.mean_dose,
-                   'max_dose': dvh.max_dose,
-                   'dist_to_ptv_min': dvh.dist_to_ptv_min,
-                   'dist_to_ptv_mean': dvh.dist_to_ptv_mean,
-                   'dist_to_ptv_median': dvh.dist_to_ptv_median,
-                   'dist_to_ptv_max': dvh.dist_to_ptv_max,
-                   'dist_to_ptv_centroids': dvh.dist_to_ptv_centroids,
-                   'ptv_overlap': dvh.ptv_overlap,
-                   'cross_section_max': dvh.cross_section_max,
-                   'cross_section_median': dvh.cross_section_median,
-                   'spread_x': dvh.spread_x,
-                   'spread_y': dvh.spread_y,
-                   'spread_z': dvh.spread_z,
-                   'x': x_data,
-                   'y': y_data,
-                   'color': line_colors,
-                   'x_scale': x_scale,
-                   'y_scale': y_scale}
+    print(str(datetime.now()), "writing source['dvh'].data", sep=' ')
+    source['dvh'].data = {'mrn': dvh.mrn,
+                          'anon_id': anon_id,
+                          'group': dvh_groups,
+                          'uid': dvh.study_instance_uid,
+                          'roi_institutional': dvh.institutional_roi,
+                          'roi_physician': dvh.physician_roi,
+                          'roi_name': dvh.roi_name,
+                          'roi_type': dvh.roi_type,
+                          'rx_dose': dvh.rx_dose,
+                          'volume': dvh.volume,
+                          'surface_area': dvh.surface_area,
+                          'min_dose': dvh.min_dose,
+                          'mean_dose': dvh.mean_dose,
+                          'max_dose': dvh.max_dose,
+                          'dist_to_ptv_min': dvh.dist_to_ptv_min,
+                          'dist_to_ptv_mean': dvh.dist_to_ptv_mean,
+                          'dist_to_ptv_median': dvh.dist_to_ptv_median,
+                          'dist_to_ptv_max': dvh.dist_to_ptv_max,
+                          'dist_to_ptv_centroids': dvh.dist_to_ptv_centroids,
+                          'ptv_overlap': dvh.ptv_overlap,
+                          'cross_section_max': dvh.cross_section_max,
+                          'cross_section_median': dvh.cross_section_median,
+                          'spread_x': dvh.spread_x,
+                          'spread_y': dvh.spread_y,
+                          'spread_z': dvh.spread_z,
+                          'x': x_data,
+                          'y': y_data,
+                          'color': line_colors,
+                          'x_scale': x_scale,
+                          'y_scale': y_scale}
 
     print(str(datetime.now()), 'begin updating beam, plan, rx data sources', sep=' ')
     update_beam_data(dvh.study_instance_uid)
@@ -1127,7 +1120,7 @@ def update_beam_data(uids):
 
     anon_id = [anon_id_map[beam_data.mrn[i]] for i in range(len(beam_data.mrn))]
 
-    source_beams.data = {'mrn': beam_data.mrn,
+    source['beams'].data = {'mrn': beam_data.mrn,
                          'anon_id': anon_id,
                          'group': groups,
                          'uid': beam_data.study_instance_uid,
@@ -1180,7 +1173,7 @@ def update_plan_data(uids):
 
     anon_id = [anon_id_map[plan_data.mrn[i]] for i in range(len(plan_data.mrn))]
 
-    source_plans.data = {'mrn': plan_data.mrn,
+    source['plans'].data = {'mrn': plan_data.mrn,
                          'anon_id': anon_id,
                          'uid': plan_data.study_instance_uid,
                          'group': groups,
@@ -1210,7 +1203,7 @@ def update_rx_data(uids):
 
     anon_id = [anon_id_map[rx_data.mrn[i]] for i in range(len(rx_data.mrn))]
 
-    source_rxs.data = {'mrn': rx_data.mrn,
+    source['rxs'].data = {'mrn': rx_data.mrn,
                        'anon_id': anon_id,
                        'uid': rx_data.study_instance_uid,
                        'group': groups,
@@ -1242,11 +1235,11 @@ def get_group_list(uids):
 
 
 def group_constraint_count():
-    data = source_selectors.data
+    data = source['selectors'].data
     g1a = len([r for r in data['row'] if data['group'][int(r)-1] in {1, 3}])
     g2a = len([r for r in data['row'] if data['group'][int(r)-1] in {2, 3}])
 
-    data = source_ranges.data
+    data = source['ranges'].data
     g1b = len([r for r in data['row'] if data['group'][int(r)-1] in {1, 3}])
     g2b = len([r for r in data['row'] if data['group'][int(r)-1] in {2, 3}])
 
@@ -1265,14 +1258,14 @@ def update_source_endpoint_calcs():
 
         ep['mrn'] = current_dvh.mrn
         ep['uid'] = current_dvh.study_instance_uid
-        ep['group'] = source.data['group']
-        ep['roi_name'] = source.data['roi_name']
+        ep['group'] = source['dvh'].data['group']
+        ep['roi_name'] = source['dvh'].data['roi_name']
 
         table_columns.append(TableColumn(field='mrn', title='MRN'))
         table_columns.append(TableColumn(field='group', title='Group'))
         table_columns.append(TableColumn(field='roi_name', title='ROI Name'))
 
-        data = source_endpoint_defs.data
+        data = source['endpoint_defs'].data
         for r in range(len(data['row'])):
             ep_name = str(data['label'][r])
             table_columns.append(TableColumn(field=ep_name, title=ep_name, formatter=NumberFormatter(format="0.00")))
@@ -1321,15 +1314,14 @@ def update_source_endpoint_calcs():
                 ep[ep_name].extend(stats)
             else:
                 ep[ep_name].extend(calc_stats(ep[ep_name]))
-
-        source_endpoint_calcs.data = ep
+        source['endpoint_calcs'].data = ep
 
         # Update endpoint calc from review_dvh, if available
-        if source.data['y'][0] != []:
+        if source['dvh'].data['y'][0] != []:
             review_ep = {}
-            rx = float(source.data['rx_dose'][0])
-            volume = float(source.data['volume'][0])
-            data = source_endpoint_defs.data
+            rx = float(source['dvh'].data['rx_dose'][0])
+            volume = float(source['dvh'].data['volume'][0])
+            data = source['endpoint_defs'].data
             for r in range(len(data['row'])):
                 ep_name = str(data['label'][r])
                 x = data['input_value'][r]
@@ -1363,8 +1355,8 @@ def update_source_endpoint_calcs():
 
                 review_ep[ep_name] = [(0, current_ep)]
 
-            review_ep['mrn'] =  [(0, select_reviewed_mrn.value)]
-            source_endpoint_calcs.patch(review_ep)
+            review_ep['mrn'] = [(0, select_reviewed_mrn.value)]
+            source['endpoint_calcs'].patch(review_ep)
 
         update_endpoint_view()
 
@@ -1374,19 +1366,19 @@ def update_source_endpoint_calcs():
 
 def update_endpoint_view():
     if current_dvh:
-        rows = len(source_endpoint_calcs.data['mrn'])
-        ep_view = {'mrn': source_endpoint_calcs.data['mrn'],
-                   'group': source_endpoint_calcs.data['group'],
-                   'roi_name': source_endpoint_calcs.data['roi_name']}
+        rows = len(source['endpoint_calcs'].data['mrn'])
+        ep_view = {'mrn': source['endpoint_calcs'].data['mrn'],
+                   'group': source['endpoint_calcs'].data['group'],
+                   'roi_name': source['endpoint_calcs'].data['roi_name']}
         for i in range(1, options.ENDPOINT_COUNT+1):
             ep_view["ep%s" % i] = [''] * rows  # filling table with empty strings
 
-        for r in range(len(source_endpoint_defs.data['row'])):
+        for r in range(len(source['endpoint_defs'].data['row'])):
             if r < options.ENDPOINT_COUNT:  # limiting UI to ENDPOINT_COUNT columns since create a whole new table is very slow in Bokeh
-                key = source_endpoint_defs.data['label'][r]
-                ep_view["ep%s" % (r+1)] = source_endpoint_calcs.data[key]
+                key = source['endpoint_defs'].data['label'][r]
+                ep_view["ep%s" % (r+1)] = source['endpoint_calcs'].data[key]
 
-        source_endpoint_view.data = ep_view
+        source['endpoint_view'].data = ep_view
         if not options.LITE_VIEW:
             update_endpoints_in_correlation()
 
@@ -1395,7 +1387,7 @@ def update_time_series_options():
     new_options = list(range_categories)
     new_options.extend(['EUD', 'NTCP/TCP'])
 
-    for ep in source_endpoint_calcs.data:
+    for ep in source['endpoint_calcs'].data:
         if ep.startswith('V_') or ep.startswith('D_'):
             new_options.append("DVH Endpoint: %s" % ep)
 
@@ -1407,7 +1399,7 @@ def update_time_series_options():
 
 
 def update_roi_viewer_mrn():
-    options = [mrn for mrn in source_plans.data['mrn']]
+    options = [mrn for mrn in source['plans'].data['mrn']]
     if options:
         options.sort()
         roi_viewer_mrn_select.options = options
@@ -1443,9 +1435,9 @@ def roi_viewer_mrn_ticker(attr, old, new):
         roi_viewer_roi5_select.value = ''
 
         options = []
-        for i in range(len(source_plans.data['mrn'])):
-            if source_plans.data['mrn'][i] == new:
-                options.append(source_plans.data['sim_study_date'][i])
+        for i in range(len(source['plans'].data['mrn'])):
+            if source['plans'].data['mrn'][i] == new:
+                options.append(source['plans'].data['sim_study_date'][i])
         options.sort()
         old_sim_date = roi_viewer_study_date_select.value
         roi_viewer_study_date_select.options = options
@@ -1461,10 +1453,10 @@ def roi_viewer_study_date_ticker(attr, old, new):
 def update_roi_viewer_uid():
     if roi_viewer_mrn_select.value != '':
         options = []
-        for i in range(len(source_plans.data['mrn'])):
-            if source_plans.data['mrn'][i] == roi_viewer_mrn_select.value and \
-                            source_plans.data['sim_study_date'][i] == roi_viewer_study_date_select.value:
-                options.append(source_plans.data['uid'][i])
+        for i in range(len(source['plans'].data['mrn'])):
+            if source['plans'].data['mrn'][i] == roi_viewer_mrn_select.value and \
+                            source['plans'].data['sim_study_date'][i] == roi_viewer_study_date_select.value:
+                options.append(source['plans'].data['uid'][i])
         roi_viewer_uid_select.options = options
         roi_viewer_uid_select.value = options[0]
 
@@ -1474,8 +1466,8 @@ def roi_viewer_uid_ticker(attr, old, new):
 
 
 def roi_viewer_roi_ticker(attr, old, new):
-    global roi_viewer_data
-    roi_viewer_data = update_roi_viewer_data(roi_viewer_roi_select.value)
+    global roi1_viewer_data
+    roi1_viewer_data = update_roi_viewer_data(roi_viewer_roi_select.value)
     update_roi_viewer_slice()
 
 
@@ -1529,16 +1521,16 @@ def roi_viewer_roi5_color_ticker(attr, old, new):
 
 
 def roi_viewer_slice_ticker(attr, old, new):
-    update_roi_viewer()
+    update_roi1_viewer()
     update_roi2_viewer()
     update_roi3_viewer()
     update_roi4_viewer()
     update_roi5_viewer()
-    source_tv.data = {'x': [], 'y': [], 'z': []}
+    source['tv'].data = {'x': [], 'y': [], 'z': []}
 
 
 def update_roi_viewer_slice():
-    options = list(roi_viewer_data)
+    options = list(roi1_viewer_data)
     options.sort()
     roi_viewer_slice_select.options = options
     roi_viewer_slice_select.value = options[len(options) / 2]  # default to the middle slice
@@ -1652,41 +1644,41 @@ def update_tv_data():
                                 'z': z}
 
 
-def update_roi_viewer():
+def update_roi1_viewer():
     z = roi_viewer_slice_select.value
-    source_roi_viewer.data = roi_viewer_data[z]
+    source['roi1_viewer'].data = roi1_viewer_data[z]
 
 
 def update_roi2_viewer():
     z = roi_viewer_slice_select.value
     if z in list(roi2_viewer_data):
-        source_roi2_viewer.data = roi2_viewer_data[z]
+        source['roi2_viewer'].data = roi2_viewer_data[z]
     else:
-        source_roi2_viewer.data = {'x': [], 'y': [], 'z': []}
+        source['roi2_viewer'].data = {'x': [], 'y': [], 'z': []}
 
 
 def update_roi3_viewer():
     z = roi_viewer_slice_select.value
     if z in list(roi3_viewer_data):
-        source_roi3_viewer.data = roi3_viewer_data[z]
+        source['roi3_viewer'].data = roi3_viewer_data[z]
     else:
-        source_roi3_viewer.data = {'x': [], 'y': [], 'z': []}
+        source['roi3_viewer'].data = {'x': [], 'y': [], 'z': []}
 
 
 def update_roi4_viewer():
     z = roi_viewer_slice_select.value
     if z in list(roi4_viewer_data):
-        source_roi4_viewer.data = roi4_viewer_data[z]
+        source['roi4_viewer'].data = roi4_viewer_data[z]
     else:
-        source_roi4_viewer.data = {'x': [], 'y': [], 'z': []}
+        source['roi4_viewer'].data = {'x': [], 'y': [], 'z': []}
 
 
 def update_roi5_viewer():
     z = roi_viewer_slice_select.value
     if z in list(roi5_viewer_data):
-        source_roi5_viewer.data = roi5_viewer_data[z]
+        source['roi5_viewer'].data = roi5_viewer_data[z]
     else:
-        source_roi5_viewer.data = {'x': [], 'y': [], 'z': []}
+        source['roi5_viewer'].data = {'x': [], 'y': [], 'z': []}
 
 
 def roi_viewer_flip_y_axis():
@@ -1706,10 +1698,10 @@ def roi_viewer_flip_x_axis():
 def roi_viewer_plot_tv():
     update_tv_data()
     z = roi_viewer_slice_select.value
-    if z in list(tv_data) and not source_tv.data['x']:
-        source_tv.data = tv_data[z]
+    if z in list(tv_data) and not source['tv'].data['x']:
+        source['tv'].data = tv_data[z]
     else:
-        source_tv.data = {'x': [], 'y': [], 'z': []}
+        source['tv'].data = {'x': [], 'y': [], 'z': []}
 
 
 def roi_viewer_wheel_event(event):
@@ -1721,7 +1713,7 @@ def roi_viewer_wheel_event(event):
 
 
 def update_mlc_analyzer_mrn():
-    options = [mrn for mrn in source_plans.data['mrn']]
+    options = [mrn for mrn in source['plans'].data['mrn']]
     if options:
         options.sort()
         mlc_analyzer_mrn_select.options = options
@@ -1742,9 +1734,9 @@ def mlc_analyzer_mrn_ticker(attr, old, new):
     else:
 
         options = []
-        for i in range(len(source_plans.data['mrn'])):
-            if source_plans.data['mrn'][i] == new:
-                options.append(source_plans.data['sim_study_date'][i])
+        for i in range(len(source['plans'].data['mrn'])):
+            if source['plans'].data['mrn'][i] == new:
+                options.append(source['plans'].data['sim_study_date'][i])
         options.sort()
         old_sim_date = mlc_analyzer_study_date_select.value
         mlc_analyzer_study_date_select.options = options
@@ -1760,10 +1752,10 @@ def mlc_analyzer_study_date_ticker(attr, old, new):
 def update_mlc_analyzer_uid():
     if mlc_analyzer_mrn_select.value != '':
         options = []
-        for i in range(len(source_plans.data['mrn'])):
-            if source_plans.data['mrn'][i] == mlc_analyzer_mrn_select.value and \
-                            source_plans.data['sim_study_date'][i] == mlc_analyzer_study_date_select.value:
-                options.append(source_plans.data['uid'][i])
+        for i in range(len(source['plans'].data['mrn'])):
+            if source['plans'].data['mrn'][i] == mlc_analyzer_mrn_select.value and \
+                            source['plans'].data['sim_study_date'][i] == mlc_analyzer_study_date_select.value:
+                options.append(source['plans'].data['uid'][i])
         mlc_analyzer_uid_select.options = options
         mlc_analyzer_uid_select.value = options[0]
 
@@ -1815,8 +1807,8 @@ def mlc_analyzer_beam_ticker(attr, old, new):
 
 
 def update_beam_score():
-    scores = source_mlc_summary.data['cmp_score']
-    mu = source_mlc_summary.data['cum_mu'][-1]
+    scores = source['mlc_summary'].data['cmp_score']
+    mu = source['mlc_summary'].data['cum_mu'][-1]
     score = np.sum(scores) / float(mu)
     mlc_viewer_beam_score.text = "<b>Beam Complexity Score: </b>%s" % round(score, 3)
 
@@ -1832,12 +1824,12 @@ def update_mlc_analyzer_beam():
         update_mlc_viewer()
     else:
         mlc_analyzer_cp_select.value = cp_numbers[0]
-    source_mlc_summary.data = beam.summary
+    source['mlc_summary'].data = beam.summary
 
 
 def mlc_analyzer_cp_ticker(attr, old, new):
     update_mlc_viewer()
-    source_mlc_summary.selected.indices = [int(new)-1]
+    source['mlc_summary'].selected.indices = [int(new)-1]
 
 
 def update_mlc_viewer():
@@ -1857,7 +1849,7 @@ def update_mlc_viewer():
         borders[edge].extend(beam.mlc_borders[cp_index][edge])
     borders['color'] = [options.JAW_COLOR] * 4 + [options.MLC_COLOR] * len(beam.mlc_borders[cp_index]['top'])
 
-    source_mlc_viewer.data = borders
+    source['mlc_viewer'].data = borders
 
 
 def mlc_viewer_go_to_previous_cp():
@@ -1897,7 +1889,7 @@ def get_include_map():
         extra_rows = 6
     else:
         extra_rows = 0
-    include = [True] * (len(source.data['uid']) - extra_rows)
+    include = [True] * (len(source['dvh'].data['uid']) - extra_rows)
     include[0] = False
     include.extend([False] * extra_rows)
 
@@ -1908,56 +1900,56 @@ def initialize_rad_bio_source():
     include = get_include_map()
 
     # Get data from DVH Table
-    mrn = [j for i, j in enumerate(source.data['mrn']) if include[i]]
-    uid = [j for i, j in enumerate(source.data['uid']) if include[i]]
-    group = [j for i, j in enumerate(source.data['group']) if include[i]]
-    roi_name = [j for i, j in enumerate(source.data['roi_name']) if include[i]]
-    ptv_overlap = [j for i, j in enumerate(source.data['ptv_overlap']) if include[i]]
-    roi_type = [j for i, j in enumerate(source.data['roi_type']) if include[i]]
-    rx_dose = [j for i, j in enumerate(source.data['rx_dose']) if include[i]]
+    mrn = [j for i, j in enumerate(source['dvh'].data['mrn']) if include[i]]
+    uid = [j for i, j in enumerate(source['dvh'].data['uid']) if include[i]]
+    group = [j for i, j in enumerate(source['dvh'].data['group']) if include[i]]
+    roi_name = [j for i, j in enumerate(source['dvh'].data['roi_name']) if include[i]]
+    ptv_overlap = [j for i, j in enumerate(source['dvh'].data['ptv_overlap']) if include[i]]
+    roi_type = [j for i, j in enumerate(source['dvh'].data['roi_type']) if include[i]]
+    rx_dose = [j for i, j in enumerate(source['dvh'].data['rx_dose']) if include[i]]
 
     # Get data from beam table
     fxs, fx_dose = [], []
     for eud_uid in uid:
-        plan_index = source_plans.data['uid'].index(eud_uid)
-        fxs.append(source_plans.data['fxs'][plan_index])
+        plan_index = source['plans'].data['uid'].index(eud_uid)
+        fxs.append(source['plans'].data['fxs'][plan_index])
 
-        rx_uids, rx_fxs = source_rxs.data['uid'], source_rxs.data['fxs']
+        rx_uids, rx_fxs = source['rxs'].data['uid'], source['rxs'].data['fxs']
         rx_indices = [i for i, rx_uid in enumerate(rx_uids) if rx_uid == eud_uid]
-        max_rx_fxs = max([source_rxs.data['fxs'][i] for i in rx_indices])
+        max_rx_fxs = max([source['rxs'].data['fxs'][i] for i in rx_indices])
         rx_index = [i for i, rx_uid in enumerate(rx_uids) if rx_uid == eud_uid and rx_fxs[i] == max_rx_fxs][0]
-        fx_dose.append(source_rxs.data['fx_dose'][rx_index])
+        fx_dose.append(source['rxs'].data['fx_dose'][rx_index])
 
-    source_rad_bio.data = {'mrn': mrn,
-                           'uid': uid,
-                           'group': group,
-                           'roi_name': roi_name,
-                           'ptv_overlap': ptv_overlap,
-                           'roi_type': roi_type,
-                           'rx_dose': rx_dose,
-                           'fxs': fxs,
-                           'fx_dose': fx_dose,
-                           'eud_a': [0] * len(uid),
-                           'gamma_50': [0] * len(uid),
-                           'td_tcd': [0] * len(uid),
-                           'eud': [0] * len(uid),
-                           'ntcp_tcp': [0] * len(uid)}
+    source['rad_bio'].data = {'mrn': mrn,
+                              'uid': uid,
+                              'group': group,
+                              'roi_name': roi_name,
+                              'ptv_overlap': ptv_overlap,
+                              'roi_type': roi_type,
+                              'rx_dose': rx_dose,
+                              'fxs': fxs,
+                              'fx_dose': fx_dose,
+                              'eud_a': [0] * len(uid),
+                              'gamma_50': [0] * len(uid),
+                              'td_tcd': [0] * len(uid),
+                              'eud': [0] * len(uid),
+                              'ntcp_tcp': [0] * len(uid)}
 
 
 def rad_bio_apply():
-    row_count = len(source_rad_bio.data['uid'])
+    row_count = len(source['rad_bio'].data['uid'])
 
     if rad_bio_apply_filter.active == [0, 1]:
         include = [i for i in range(row_count)]
     elif 0 in rad_bio_apply_filter.active:
-        include = [i for i in range(row_count) if source_rad_bio.data['group'][i] in {'Group 1', 'Group 1 & 2'}]
+        include = [i for i in range(row_count) if source['rad_bio'].data['group'][i] in {'Group 1', 'Group 1 & 2'}]
     elif 1 in rad_bio_apply_filter.active:
-        include = [i for i in range(row_count) if source_rad_bio.data['group'][i] in {'Group 2', 'Group 1 & 2'}]
+        include = [i for i in range(row_count) if source['rad_bio'].data['group'][i] in {'Group 2', 'Group 1 & 2'}]
     else:
         include = []
 
     if 2 in rad_bio_apply_filter.active:
-        include.extend([i for i in range(row_count) if i in source_rad_bio.selected.indices])
+        include.extend([i for i in range(row_count) if i in source['rad_bio'].selected.indices])
 
     try:
         new_eud_a = float(rad_bio_eud_a_input.value)
@@ -1976,33 +1968,33 @@ def rad_bio_apply():
              'gamma_50': [(i, new_gamma_50) for i in range(row_count) if i in include],
              'td_tcd': [(i, new_td_tcd) for i in range(row_count) if i in include]}
 
-    source_rad_bio.patch(patch)
+    source['rad_bio'].patch(patch)
 
     update_eud()
 
 
 def update_eud():
-    uid_roi_list = ["%s_%s" % (uid, source.data['roi_name'][i]) for i, uid in enumerate(source.data['uid'])]
+    uid_roi_list = ["%s_%s" % (uid, source['dvh'].data['roi_name'][i]) for i, uid in enumerate(source['dvh'].data['uid'])]
 
     eud, ntcp_tcp = [], []
-    for i, uid in enumerate(source_rad_bio.data['uid']):
-        uid_roi = "%s_%s" % (uid, source_rad_bio.data['roi_name'][i])
+    for i, uid in enumerate(source['rad_bio'].data['uid']):
+        uid_roi = "%s_%s" % (uid, source['rad_bio'].data['roi_name'][i])
         source_index = uid_roi_list.index(uid_roi)
-        dvh = source.data['y'][source_index]
-        a = source_rad_bio.data['eud_a'][i]
+        dvh = source['dvh'].data['y'][source_index]
+        a = source['rad_bio'].data['eud_a'][i]
         try:
             eud.append(round(calc_eud(dvh, a), 2))
         except:
             eud.append(0)
-        td_tcd = source_rad_bio.data['td_tcd'][i]
-        gamma_50 = source_rad_bio.data['gamma_50'][i]
+        td_tcd = source['rad_bio'].data['td_tcd'][i]
+        gamma_50 = source['rad_bio'].data['gamma_50'][i]
         if eud[-1] > 0:
             ntcp_tcp.append(1 / (1 + (td_tcd / eud[-1]) ** (4. * gamma_50)))
         else:
             ntcp_tcp.append(0)
 
-    source_rad_bio.patch({'eud': [(i, j) for i, j in enumerate(eud)],
-                          'ntcp_tcp': [(i, j) for i, j in enumerate(ntcp_tcp)]})
+    source['rad_bio'].patch({'eud': [(i, j) for i, j in enumerate(eud)],
+                             'ntcp_tcp': [(i, j) for i, j in enumerate(ntcp_tcp)]})
 
     update_eud_in_correlation()
     if control_chart_y.value in {'EUD', 'NTCP/TCP'}:
@@ -2012,9 +2004,9 @@ def update_eud():
 def emami_selection(attr, old, new):
     if new:
         row_index = min(new)
-        rad_bio_eud_a_input.value = str(source_emami.data['eud_a'][row_index])
-        rad_bio_gamma_50_input.value = str(source_emami.data['gamma_50'][row_index])
-        rad_bio_td_tcd_input.value = str(source_emami.data['td_tcd'][row_index])
+        rad_bio_eud_a_input.value = str(source['emami'].data['eud_a'][row_index])
+        rad_bio_gamma_50_input.value = str(source['emami'].data['gamma_50'][row_index])
+        rad_bio_td_tcd_input.value = str(source['emami'].data['td_tcd'][row_index])
 
 
 def update_correlation():
@@ -2150,10 +2142,10 @@ def update_endpoints_in_correlation():
             if key.startswith('ep'):
                 correlation_2.pop(key, None)
 
-    src = source_endpoint_calcs
-    for j in range(len(source_endpoint_defs.data['label'])):
-        key = source_endpoint_defs.data['label'][j]
-        units = source_endpoint_defs.data['units_out'][j]
+    src = source['endpoint_calcs']
+    for j in range(len(source['endpoint_defs'].data['label'])):
+        key = source['endpoint_defs'].data['label'][j]
+        units = source['endpoint_defs'].data['units_out'][j]
         ep = "DVH Endpoint: %s" % key
 
         uids_ep_1, mrns_ep_1, data_ep_1, uids_ep_2, mrns_ep_2, data_ep_2 = [], [], [], [], [], []
@@ -2193,23 +2185,23 @@ def update_eud_in_correlation():
     global correlation_1, correlation_2, multi_var_reg_vars
 
     # Get data from EUD data
-    uid_roi_list = ["%s_%s" % (uid, source.data['roi_name'][i]) for i, uid in enumerate(source.data['uid'])]
+    uid_roi_list = ["%s_%s" % (uid, source['dvh'].data['roi_name'][i]) for i, uid in enumerate(source['dvh'].data['uid'])]
     eud_1, eud_2, ntcp_tcp_1, ntcp_tcp_2 = [], [], [], []
     uids_rad_bio_1, mrns_rad_bio_1, uids_rad_bio_2, mrns_rad_bio_2 = [], [], [], []
-    for i, uid in enumerate(source_rad_bio.data['uid']):
-        uid_roi = "%s_%s" % (uid, source_rad_bio.data['roi_name'][i])
+    for i, uid in enumerate(source['rad_bio'].data['uid']):
+        uid_roi = "%s_%s" % (uid, source['rad_bio'].data['roi_name'][i])
         source_index = uid_roi_list.index(uid_roi)
-        group = source.data['group'][source_index]
+        group = source['dvh'].data['group'][source_index]
         if group in {'Group 1', 'Group 1 & 2'}:
-            eud_1.append(source_rad_bio.data['eud'][i])
-            ntcp_tcp_1.append(source_rad_bio.data['ntcp_tcp'][i])
+            eud_1.append(source['rad_bio'].data['eud'][i])
+            ntcp_tcp_1.append(source['rad_bio'].data['ntcp_tcp'][i])
             uids_rad_bio_1.append(uid)
-            mrns_rad_bio_1.append(source.data['mrn'][source_index])
+            mrns_rad_bio_1.append(source['dvh'].data['mrn'][source_index])
         if group in {'Group 2', 'Group 1 & 2'}:
-            eud_2.append(source_rad_bio.data['eud'][i])
-            ntcp_tcp_2.append(source_rad_bio.data['ntcp_tcp'][i])
+            eud_2.append(source['rad_bio'].data['eud'][i])
+            ntcp_tcp_2.append(source['rad_bio'].data['ntcp_tcp'][i])
             uids_rad_bio_2.append(uid)
-            mrns_rad_bio_2.append(source.data['mrn'][source_index])
+            mrns_rad_bio_2.append(source['dvh'].data['mrn'][source_index])
     correlation_1['EUD'] = {'uid': uids_rad_bio_1, 'mrn': mrns_rad_bio_1, 'data': eud_1, 'units': 'Gy'}
     correlation_1['NTCP/TCP'] = {'uid': uids_rad_bio_1, 'mrn': mrns_rad_bio_1, 'data': ntcp_tcp_1, 'units': []}
     correlation_2['EUD'] = {'uid': uids_rad_bio_2, 'mrn': mrns_rad_bio_2, 'data': eud_2, 'units': 'Gy'}
@@ -2263,7 +2255,7 @@ def update_correlation_matrix():
     corr_fig.x_range.factors = categories_for_label
     corr_fig.y_range.factors = categories_for_label[::-1]
     # 0.5 offset due to Bokeh 0.12.9 bug
-    source_corr_matrix_line.data = {'x': [0.5, len(categories) - 0.5], 'y': [len(categories)-0.5, 0.5]}
+    source['corr_matrix_line'].data = {'x': [0.5, len(categories) - 0.5], 'y': [len(categories)-0.5, 0.5]}
 
     s = {'1_pos': {'x': [], 'y': [], 'x_name': [], 'y_name': [], 'color': [],
                    'alpha': [], 'r': [], 'p': [], 'group': [], 'size': [], 'x_normality': [], 'y_normality': []},
@@ -2330,10 +2322,8 @@ def update_correlation_matrix():
                     s[k]['x_normality'].append(x_p)
                     s[k]['y_normality'].append(y_p)
 
-    source_correlation_1_pos.data = s['1_pos']
-    source_correlation_1_neg.data = s['1_neg']
-    source_correlation_2_pos.data = s['2_pos']
-    source_correlation_2_neg.data = s['2_neg']
+    for k in ['1_pos', '1_neg', '2_pos', '2_neg']:
+        source['correlation_%s' % k].data = s[k]
 
     group_1_count, group_2_count = 0, 0
     if correlation_1:
@@ -2391,8 +2381,8 @@ def update_corr_chart():
                 corr_chart.yaxis.axis_label = "%s (%s)" % (corr_chart_y.value, y_units)
         else:
             corr_chart.yaxis.axis_label = corr_chart_y.value.replace('/', ' or ')
-        source_corr_chart_1.data = {'x': x_1, 'y': y_1, 'mrn': mrn_1}
-        source_corr_chart_2.data = {'x': x_2, 'y': y_2, 'mrn': mrn_2}
+        source['corr_chart_1'].data = {'x': x_1, 'y': y_1, 'mrn': mrn_1}
+        source['corr_chart_2'].data = {'x': x_2, 'y': y_2, 'mrn': mrn_2}
 
         if x_1:
             slope, intercept, r_value, p_value, std_err = linregress(x_1, y_1)
@@ -2404,10 +2394,10 @@ def update_corr_chart():
                              len(x_1)]
             x_trend = [min(x_1), max(x_1)]
             y_trend = np.add(np.multiply(x_trend, slope), intercept)
-            source_corr_trend_1.data = {'x': x_trend, 'y': y_trend}
+            source['corr_trend_1'].data = {'x': x_trend, 'y': y_trend}
         else:
             group_1_stats = [''] * 6
-            source_corr_trend_1.data = {'x': [], 'y': []}
+            source['corr_trend_1'].data = {'x': [], 'y': []}
 
         if x_2:
             slope, intercept, r_value, p_value, std_err = linregress(x_2, y_2)
@@ -2419,22 +2409,22 @@ def update_corr_chart():
                              len(x_2)]
             x_trend = [min(x_2), max(x_2)]
             y_trend = np.add(np.multiply(x_trend, slope), intercept)
-            source_corr_trend_2.data = {'x': x_trend, 'y': y_trend}
+            source['corr_trend_2'].data = {'x': x_trend, 'y': y_trend}
         else:
             group_2_stats = [''] * 6
-            source_corr_trend_2.data = {'x': [], 'y': []}
+            source['corr_trend_2'].data = {'x': [], 'y': []}
 
-        source_corr_chart_stats.data = {'stat': corr_chart_stats_row_names,
-                                        'group_1': group_1_stats,
-                                        'group_2': group_2_stats}
+        source['corr_chart_stats'].data = {'stat': CORR_CHART_STATS_ROW_NAMES,
+                                           'group_1': group_1_stats,
+                                           'group_2': group_2_stats}
     else:
-        source_corr_chart_stats.data = {'stat': corr_chart_stats_row_names,
-                                        'group_1': [''] * 6,
-                                        'group_2': [''] * 6}
-        source_corr_chart_1.data = {'x': [], 'y': [], 'mrn': []}
-        source_corr_chart_2.data = {'x': [], 'y': [], 'mrn': []}
-        source_corr_trend_1.data = {'x': [], 'y': []}
-        source_corr_trend_2.data = {'x': [], 'y': []}
+        source['corr_chart_stats'].data = {'stat': CORR_CHART_STATS_ROW_NAMES,
+                                           'group_1': [''] * 6,
+                                           'group_2': [''] * 6}
+        source['corr_chart_1'].data = {'x': [], 'y': [], 'mrn': []}
+        source['corr_chart_2'].data = {'x': [], 'y': [], 'mrn': []}
+        source['corr_trend_1'].data = {'x': [], 'y': []}
+        source['corr_trend_2'].data = {'x': [], 'y': []}
 
 
 def corr_chart_x_prev_ticker():
@@ -2469,12 +2459,12 @@ def corr_chart_x_include_ticker(attr, old, new):
     if new and not multi_var_reg_vars[corr_chart_x.value]:
         multi_var_reg_vars[corr_chart_x.value] = True
     if not new and multi_var_reg_vars[corr_chart_x.value]:
-        clear_source_selection(source_multi_var_include)
+        clear_source_selection('multi_var_include')
         multi_var_reg_vars[corr_chart_x.value] = False
 
     included_vars = [key for key, value in listitems(multi_var_reg_vars) if value]
     included_vars.sort()
-    source_multi_var_include.data = {'var_name': included_vars}
+    source['multi_var_include'].data = {'var_name': included_vars}
 
 
 def update_control_chart_ticker(attr, old, new):
@@ -2516,22 +2506,22 @@ def update_control_chart_y_axis_label():
 def update_control_chart():
     new = str(control_chart_y.value)
     if new:
-        clear_source_selection(source_time_1)
-        clear_source_selection(source_time_2)
+        clear_source_selection('time_1')
+        clear_source_selection('time_2')
 
         if new.startswith('DVH Endpoint: '):
             y_var_name = new.split(': ')[1]
-            y_source_values = source_endpoint_calcs.data[y_var_name]
-            y_source_uids = source_endpoint_calcs.data['uid']
-            y_source_mrns = source_endpoint_calcs.data['mrn']
+            y_source_values = source['endpoint_calcs'].data[y_var_name]
+            y_source_uids = source['endpoint_calcs'].data['uid']
+            y_source_mrns = source['endpoint_calcs'].data['mrn']
         elif new == 'EUD':
-            y_source_values = source_rad_bio.data['eud']
-            y_source_uids = source_rad_bio.data['uid']
-            y_source_mrns = source_rad_bio.data['mrn']
+            y_source_values = source['rad_bio'].data['eud']
+            y_source_uids = source['rad_bio'].data['uid']
+            y_source_mrns = source['rad_bio'].data['mrn']
         elif new == 'NTCP/TCP':
-            y_source_values = source_rad_bio.data['ntcp_tcp']
-            y_source_uids = source_rad_bio.data['uid']
-            y_source_mrns = source_rad_bio.data['mrn']
+            y_source_values = source['rad_bio'].data['ntcp_tcp']
+            y_source_uids = source['rad_bio'].data['uid']
+            y_source_mrns = source['rad_bio'].data['mrn']
         else:
             y_source = range_categories[new]['source']
             y_var_name = range_categories[new]['var_name']
@@ -2541,8 +2531,8 @@ def update_control_chart():
 
         update_control_chart_y_axis_label()
 
-        sim_study_dates = source_plans.data['sim_study_date']
-        sim_study_dates_uids = source_plans.data['uid']
+        sim_study_dates = source['plans'].data['sim_study_date']
+        sim_study_dates_uids = source['plans'].data['uid']
 
         x_values = []
         skipped = []
@@ -2568,9 +2558,9 @@ def update_control_chart():
                 if new.startswith('DVH Endpoint') or new in {'EUD', 'NTCP/TCP'} \
                         or range_categories[new]['source'] == source:
                     if new in {'EUD', 'NTCP/TCP'}:
-                        roi = source_rad_bio.data['roi_name'][v]
+                        roi = source['rad_bio'].data['roi_name'][v]
                     else:
-                        roi = source.data['roi_name'][v]
+                        roi = source['dvh'].data['roi_name'][v]
 
                     found = {'Group 1': False, 'Group 2': False}
 
@@ -2640,35 +2630,35 @@ def update_control_chart():
                 source_time_2_data['mrn'].append(y_mrns_sorted[i])
                 source_time_2_data['date_str'].append(x_values_sorted[i].strftime("%Y-%m-%d"))
 
-        source_time_1.data = source_time_1_data
-        source_time_2.data = source_time_2_data
+        source['time_1'].data = source_time_1_data
+        source['time_2'].data = source_time_2_data
     else:
-        source_time_1.data = {'x': [], 'y': [], 'mrn': [], 'date_str': []}
-        source_time_2.data = {'x': [], 'y': [], 'mrn': [], 'date_str': []}
+        source['time_1'].data = {'x': [], 'y': [], 'mrn': [], 'date_str': []}
+        source['time_2'].data = {'x': [], 'y': [], 'mrn': [], 'date_str': []}
 
     control_chart_update_trend()
 
 
 def control_chart_update_trend():
     if control_chart_y.value:
-        selected_indices_1 = source_time_1.selected.indices
-        selected_indices_2 = source_time_2.selected.indices
+        selected_indices_1 = source['time_1'].selected.indices
+        selected_indices_2 = source['time_2'].selected.indices
 
         if not selected_indices_1:
-            selected_indices_1 = range(len(source_time_1.data['x']))
+            selected_indices_1 = range(len(source['time_1'].data['x']))
         if not selected_indices_2:
-            selected_indices_2 = range(len(source_time_2.data['x']))
+            selected_indices_2 = range(len(source['time_2'].data['x']))
 
         group_1 = {'x': [], 'y': []}
         group_2 = {'x': [], 'y': []}
-        for i in range(len(source_time_1.data['x'])):
+        for i in range(len(source['time_1'].data['x'])):
             if i in selected_indices_1:
-                group_1['x'].append(source_time_1.data['x'][i])
-                group_1['y'].append(source_time_1.data['y'][i])
-        for i in range(len(source_time_2.data['x'])):
+                group_1['x'].append(source['time_1'].data['x'][i])
+                group_1['y'].append(source['time_1'].data['y'][i])
+        for i in range(len(source['time_2'].data['x'])):
             if i in selected_indices_2:
-                group_2['x'].append(source_time_2.data['x'][i])
-                group_2['y'].append(source_time_2.data['y'][i])
+                group_2['x'].append(source['time_2'].data['x'][i])
+                group_2['y'].append(source['time_2'].data['y'][i])
 
         try:
             avg_len = int(control_chart_text_lookback_distance.value)
@@ -2692,20 +2682,20 @@ def control_chart_update_trend():
             upper_bound_1 = float(np.percentile(y_np_1, 50. + percentile / 2.))
             average_1 = float(np.percentile(y_np_1, 50))
             lower_bound_1 = float(np.percentile(y_np_1, 50. - percentile / 2.))
-            source_time_trend_1.data = {'x': x_trend_1,
-                                        'y': moving_avgs_1,
-                                        'mrn': ['Avg'] * len(x_trend_1)}
-            source_time_bound_1.data = {'x': group_1['x'],
-                                        'mrn': ['Bound'] * len(group_1['x']),
-                                        'upper': [upper_bound_1] * len(group_1['x']),
-                                        'avg': [average_1] * len(group_1['x']),
-                                        'lower': [lower_bound_1] * len(group_1['x'])}
-            source_time_patch_1.data = {'x': [group_1['x'][0], group_1['x'][-1], group_1['x'][-1], group_1['x'][0]],
-                                        'y': [upper_bound_1, upper_bound_1, lower_bound_1, lower_bound_1]}
+            source['time_trend_1'].data = {'x': x_trend_1,
+                                           'y': moving_avgs_1,
+                                           'mrn': ['Avg'] * len(x_trend_1)}
+            source['time_bound_1'].data = {'x': group_1['x'],
+                                           'mrn': ['Bound'] * len(group_1['x']),
+                                           'upper': [upper_bound_1] * len(group_1['x']),
+                                           'avg': [average_1] * len(group_1['x']),
+                                           'lower': [lower_bound_1] * len(group_1['x'])}
+            source['time_patch_1'].data = {'x': [group_1['x'][0], group_1['x'][-1], group_1['x'][-1], group_1['x'][0]],
+                                           'y': [upper_bound_1, upper_bound_1, lower_bound_1, lower_bound_1]}
         else:
-            source_time_trend_1.data = {'x': [], 'y': [], 'mrn': []}
-            source_time_bound_1.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
-            source_time_patch_1.data = {'x': [], 'y': []}
+            source['time_trend_1'].data = {'x': [], 'y': [], 'mrn': []}
+            source['time_bound_1'].data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+            source['time_patch_1'].data = {'x': [], 'y': []}
         if group_2['x']:
             group_2_collapsed = collapse_into_single_dates(group_2['x'], group_2['y'])
             if control_chart_lookback_units.value == "Dates with a Sim":
@@ -2717,21 +2707,21 @@ def control_chart_update_trend():
             upper_bound_2 = float(np.percentile(y_np_2, 50. + percentile / 2.))
             average_2 = float(np.percentile(y_np_2, 50))
             lower_bound_2 = float(np.percentile(y_np_2, 50. - percentile / 2.))
-            source_time_trend_2.data = {'x': x_trend_2,
-                                        'y': moving_avgs_2,
-                                        'mrn': ['Avg'] * len(x_trend_2)}
-            source_time_bound_2.data = {'x': group_2['x'],
-                                        'mrn': ['Bound'] * len(group_2['x']),
-                                        'upper': [upper_bound_2] * len(group_2['x']),
-                                        'avg': [average_2] * len(group_2['x']),
-                                        'lower': [lower_bound_2] * len(group_2['x'])}
-            source_time_patch_2.data = {'x': [group_2['x'][0], group_2['x'][-1],
-                                              group_2['x'][-1], group_2['x'][0]],
-                                        'y': [upper_bound_2,  upper_bound_2, lower_bound_2, lower_bound_2]}
+            source['time_trend_2'].data = {'x': x_trend_2,
+                                           'y': moving_avgs_2,
+                                           'mrn': ['Avg'] * len(x_trend_2)}
+            source['time_bound_2'].data = {'x': group_2['x'],
+                                           'mrn': ['Bound'] * len(group_2['x']),
+                                           'upper': [upper_bound_2] * len(group_2['x']),
+                                           'avg': [average_2] * len(group_2['x']),
+                                           'lower': [lower_bound_2] * len(group_2['x'])}
+            source['time_patch_2'].data = {'x': [group_2['x'][0], group_2['x'][-1],
+                                                 group_2['x'][-1], group_2['x'][0]],
+                                           'y': [upper_bound_2,  upper_bound_2, lower_bound_2, lower_bound_2]}
         else:
-            source_time_trend_2.data = {'x': [], 'y': [], 'mrn': []}
-            source_time_bound_2.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
-            source_time_patch_2.data = {'x': [], 'y': []}
+            source['time_trend_2'].data = {'x': [], 'y': [], 'mrn': []}
+            source['time_bound_2'].data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+            source['time_patch_2'].data = {'x': [], 'y': []}
 
         x_var = str(control_chart_y.value)
         if x_var.startswith('DVH Endpoint'):
@@ -2775,13 +2765,13 @@ def control_chart_update_trend():
         histogram_ranksums_text.text = "Wilcoxon rank-sum (Group 1 vs 2) p-value = %s" % pr
 
     else:
-        source_time_trend_1.data = {'x': [], 'y': [], 'mrn': []}
-        source_time_bound_1.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
-        source_time_patch_1.data = {'x': [], 'y': []}
+        source['time_trend_1'].data = {'x': [], 'y': [], 'mrn': []}
+        source['time_bound_1'].data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+        source['time_patch_1'].data = {'x': [], 'y': []}
 
-        source_time_trend_2.data = {'x': [], 'y': [], 'mrn': []}
-        source_time_bound_2.data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
-        source_time_patch_2.data = {'x': [], 'y': []}
+        source['time_trend_2'].data = {'x': [], 'y': [], 'mrn': []}
+        source['time_bound_2'].data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
+        source['time_patch_2'].data = {'x': [], 'y': []}
 
         histogram_normaltest_1_text.text = "Group 1 Normal Test p-value = "
         histogram_normaltest_2_text.text = "Group 2 Normal Test p-value = "
@@ -2798,7 +2788,7 @@ def update_histograms():
         bin_size = int(histogram_bin_slider.value)
         width_fraction = 0.9
 
-        hist, bins = np.histogram(source_time_1.data['y'], bins=bin_size)
+        hist, bins = np.histogram(source['time_1'].data['y'], bins=bin_size)
         if histogram_radio_group.active == 1:
             hist = np.divide(hist, np.float(np.max(hist)))
             histograms.yaxis.axis_label = "Relative Frequency"
@@ -2806,21 +2796,21 @@ def update_histograms():
             histograms.yaxis.axis_label = "Frequency"
         width = [width_fraction * (bins[1] - bins[0])] * bin_size
         center = (bins[:-1] + bins[1:]) / 2.
-        source_histogram_1.data = {'x': center,
+        source['histogram_1'].data = {'x': center,
                                    'top': hist,
                                    'width': width}
 
-        hist, bins = np.histogram(source_time_2.data['y'], bins=bin_size)
+        hist, bins = np.histogram(source['time_2'].data['y'], bins=bin_size)
         if histogram_radio_group.active == 1:
             hist = np.divide(hist, np.float(np.max(hist)))
         width = [width_fraction * (bins[1] - bins[0])] * bin_size
         center = (bins[:-1] + bins[1:]) / 2.
-        source_histogram_2.data = {'x': center,
+        source['histogram_2'].data = {'x': center,
                                    'top': hist,
                                    'width': width}
     else:
-        source_histogram_1.data = {'x': [], 'top': [], 'width': []}
-        source_histogram_2.data = {'x': [], 'top': [], 'width': []}
+        source['histogram_1'].data = {'x': [], 'top': [], 'width': []}
+        source['histogram_2'].data = {'x': [], 'top': [], 'width': []}
 
 
 def histograms_ticker(attr, old, new):
@@ -2859,23 +2849,23 @@ def multi_var_linear_regression():
 
         residual_chart.yaxis.axis_label = "Residual (%s)" % correlation_1[corr_chart_y.value]['units']
 
-        source_multi_var_coeff_results_1.data = {'var_name': ['Constant'] + included_vars,
-                                                 'coeff': coeff.tolist(), 'coeff_str': coeff_str,
-                                                 'p': coeff_p.tolist(), 'p_str': coeff_p_str}
-        source_multi_var_model_results_1.data = {'model_p': [model_p], 'model_p_str': model_p_str,
-                                                 'r_sq': [r_sq], 'r_sq_str': r_sq_str,
-                                                 'y_var': [corr_chart_y.value]}
-        source_residual_chart_1.data = {'x': range(1, x_count + 1),
-                                        'y': fit.resid.tolist(),
-                                        'mrn': correlation_1[corr_chart_y.value]['mrn'],
-                                        'db_value': correlation_1[corr_chart_y.value]['data']}
+        source['multi_var_coeff_results_1'].data = {'var_name': ['Constant'] + included_vars,
+                                                    'coeff': coeff.tolist(), 'coeff_str': coeff_str,
+                                                    'p': coeff_p.tolist(), 'p_str': coeff_p_str}
+        source['multi_var_model_results_1'].data = {'model_p': [model_p], 'model_p_str': model_p_str,
+                                                    'r_sq': [r_sq], 'r_sq_str': r_sq_str,
+                                                    'y_var': [corr_chart_y.value]}
+        source['residual_chart_1'].data = {'x': range(1, x_count + 1),
+                                           'y': fit.resid.tolist(),
+                                           'mrn': correlation_1[corr_chart_y.value]['mrn'],
+                                           'db_value': correlation_1[corr_chart_y.value]['data']}
 
     else:
-        source_multi_var_coeff_results_1.data = {'var_name': [], 'coeff': [],
-                                                 'coeff_str': [], 'p': [], 'p_str': []}
-        source_multi_var_model_results_1.data = {'model_p': [], 'model_p_str': [],
-                                                 'r_sq': [], 'r_sq_str': [], 'y_var': []}
-        source_residual_chart_1.data = {'x': [], 'y': [], 'mrn': [], 'db_value': []}
+        source['multi_var_coeff_results_1'].data = {'var_name': [], 'coeff': [],
+                                                    'coeff_str': [], 'p': [], 'p_str': []}
+        source['multi_var_model_results_1'].data = {'model_p': [], 'model_p_str': [],
+                                                    'r_sq': [], 'r_sq_str': [], 'y_var': []}
+        source['residual_chart_1'].data = {'x': [], 'y': [], 'mrn': [], 'db_value': []}
 
     # Red Group
     if current_dvh_group_2:
@@ -2901,37 +2891,37 @@ def multi_var_linear_regression():
         r_sq_str = ["%0.3f" % r_sq]
         model_p_str = ["%0.3f" % model_p]
 
-        source_multi_var_coeff_results_2.data = {'var_name': ['Constant'] + included_vars, 'coeff': coeff.tolist(),
-                                                 'coeff_str': coeff_str,
-                                                 'p': coeff_p.tolist(), 'p_str': coeff_p_str}
-        source_multi_var_model_results_2.data = {'model_p': [model_p], 'model_p_str': model_p_str,
-                                                 'r_sq': [r_sq], 'r_sq_str': r_sq_str,
-                                                 'y_var': [corr_chart_y.value]}
-        source_residual_chart_2.data = {'x': range(1, x_count + 1),
-                                        'y': fit.resid.tolist(),
-                                        'mrn': correlation_2[corr_chart_y.value]['mrn'],
-                                        'db_value': correlation_2[corr_chart_y.value]['data']}
+        source['multi_var_coeff_results_2'].data = {'var_name': ['Constant'] + included_vars, 'coeff': coeff.tolist(),
+                                                    'coeff_str': coeff_str,
+                                                    'p': coeff_p.tolist(), 'p_str': coeff_p_str}
+        source['multi_var_model_results_2'].data = {'model_p': [model_p], 'model_p_str': model_p_str,
+                                                    'r_sq': [r_sq], 'r_sq_str': r_sq_str,
+                                                   'y_var': [corr_chart_y.value]}
+        source['residual_chart_2'].data = {'x': range(1, x_count + 1),
+                                           'y': fit.resid.tolist(),
+                                           'mrn': correlation_2[corr_chart_y.value]['mrn'],
+                                           'db_value': correlation_2[corr_chart_y.value]['data']}
     else:
-        source_multi_var_coeff_results_2.data = {'var_name': [], 'coeff': [],
-                                                 'coeff_str': [], 'p': [], 'p_str': []}
-        source_multi_var_model_results_2.data = {'model_p': [], 'model_p_str': [],
-                                                 'r_sq': [], 'r_sq_str': [], 'y_var': []}
-        source_residual_chart_2.data = {'x': [], 'y': [], 'mrn': [], 'db_value': []}
+        source['multi_var_coeff_results_2'].data = {'var_name': [], 'coeff': [],
+                                                    'coeff_str': [], 'p': [], 'p_str': []}
+        source['multi_var_model_results_2'].data = {'model_p': [], 'model_p_str': [],
+                                                    'r_sq': [], 'r_sq_str': [], 'y_var': []}
+        source['residual_chart_2'].data = {'x': [], 'y': [], 'mrn': [], 'db_value': []}
 
 
 def multi_var_include_selection(attr, old, new):
-    row_index = source_multi_var_include.selected.indices[0]
-    corr_chart_x.value = source_multi_var_include.data['var_name'][row_index]
+    row_index = source['multi_var_include'].selected.indices[0]
+    corr_chart_x.value = source['multi_var_include'].data['var_name'][row_index]
 
 
 def update_source_endpoint_view_selection(attr, old, new):
     if new:
-        source_endpoint_view.selected.indices = new
+        source['endpoint_view'].selected.indices = new
 
 
 def update_dvh_table_selection(attr, old, new):
     if new:
-        source.selected.indices = new
+        source['dvh'].selected.indices = new
 
 
 def update_dvh_review_rois(attr, old, new):
@@ -2957,7 +2947,7 @@ def update_dvh_review_rois(attr, old, new):
                    'max_dose': [(0, '')],
                    'mrn': [(0, '')],
                    'rx_dose': [(0, '')]}
-        source.patch(patches)
+        source['dvh'].patch(patches)
 
 
 def calculate_review_dvh():
@@ -2974,7 +2964,7 @@ def calculate_review_dvh():
                'rx_dose': [(0, 1)]}
 
     try:
-        if not source.data['x']:
+        if not source['dvh'].data['x']:
             update_data()
 
         else:
@@ -3034,7 +3024,7 @@ def calculate_review_dvh():
     except:
         pass
 
-    source.patch(patches)
+    source['dvh'].patch(patches)
 
     update_source_endpoint_calcs()
 
@@ -3045,7 +3035,7 @@ def select_reviewed_dvh_ticker(attr, old, new):
 
 def review_rx_ticker(attr, old, new):
     if radio_group_dose.active == 0:
-        source.patch({'rx_dose': [(0, round(float(review_rx.value), 2))]})
+        source['dvh'].patch({'rx_dose': [(0, round(float(review_rx.value), 2))]})
     else:
         calculate_review_dvh()
 
@@ -3053,7 +3043,7 @@ def review_rx_ticker(attr, old, new):
 # Ticker function for abs/rel dose radio buttons
 # any change will call update_data, if any source data has been retrieved from SQL
 def radio_group_dose_ticker(attr, old, new):
-    if source.data['x'] != '':
+    if source['dvh'].data['x'] != '':
         update_data()
         calculate_review_dvh()
 
@@ -3061,7 +3051,7 @@ def radio_group_dose_ticker(attr, old, new):
 # Ticker function for abs/rel volume radio buttons
 # any change will call update_data, if any source data has been retrieved from SQL
 def radio_group_volume_ticker(attr, old, new):
-    if source.data['x'] != '':
+    if source['dvh'].data['x'] != '':
         update_data()
         calculate_review_dvh()
 
@@ -3141,28 +3131,28 @@ def update_planning_data_selections(uids):
 
     ALLOW_SOURCE_UPDATE = False
 
-    source_rxs.selected.indices = [i for i, j in enumerate(source_rxs.data['uid']) if j in uids]
-    source_plans.selected.indices = [i for i, j in enumerate(source_plans.data['uid']) if j in uids]
-    source_beams.selected.indices = [i for i, j in enumerate(source_beams.data['uid']) if j in uids]
+    source['rxs'].selected.indices = [i for i, j in enumerate(source['rxs'].data['uid']) if j in uids]
+    source['plans'].selected.indices = [i for i, j in enumerate(source['plans'].data['uid']) if j in uids]
+    source['beams'].selected.indices = [i for i, j in enumerate(source['beams'].data['uid']) if j in uids]
 
     ALLOW_SOURCE_UPDATE = True
 
 
 def source_rxs_selected_ticker(attr, old, new):
     if ALLOW_SOURCE_UPDATE:
-        uids = list(set([source_rxs.data['uid'][i] for i in new]))
+        uids = list(set([source['rxs'].data['uid'][i] for i in new]))
         update_planning_data_selections(uids)
 
 
 def source_plans_selected_ticker(attr, old, new):
     if ALLOW_SOURCE_UPDATE:
-        uids = list(set([source_plans.data['uid'][i] for i in new]))
+        uids = list(set([source['plans'].data['uid'][i] for i in new]))
         update_planning_data_selections(uids)
 
 
 def source_beams_selected_ticker(attr, old, new):
     if ALLOW_SOURCE_UPDATE:
-        uids = list(set([source_beams.data['uid'][i] for i in new]))
+        uids = list(set([source['beams'].data['uid'][i] for i in new]))
         update_planning_data_selections(uids)
 
 
@@ -3208,10 +3198,10 @@ columns = [TableColumn(field="row", title="Row", width=60),
            TableColumn(field="category2", title="Selection Category 2", width=280),
            TableColumn(field="group_label", title="Group", width=170),
            TableColumn(field="not_status", title="Apply Not Operator", width=150)]
-selection_filter_data_table = DataTable(source=source_selectors,
+selection_filter_data_table = DataTable(source=source['selectors'],
                                         columns=columns, width=1000, height=150)
 selection_filter_data_table.index_position = None
-source_selectors.selected.on_change('indices', update_selector_row_on_selection)
+source['selectors'].selected.on_change('indices', update_selector_row_on_selection)
 update_selector_source()
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3255,10 +3245,10 @@ columns = [TableColumn(field="row", title="Row", width=60),
            TableColumn(field="max_display", title="Max", width=170),
            TableColumn(field="group_label", title="Group", width=180),
            TableColumn(field="not_status", title="Apply Not Operator", width=150)]
-range_filter_data_table = DataTable(source=source_ranges,
+range_filter_data_table = DataTable(source=source['ranges'],
                                     columns=columns, width=1000, height=150)
 range_filter_data_table.index_position = None
-source_ranges.selected.on_change('indices', update_range_row_on_selection)
+source['ranges'].selected.on_change('indices', update_range_row_on_selection)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # DVH Endpoint Filter UI objects
@@ -3285,9 +3275,9 @@ div_endpoint_start = Div(text="<hr>", width=1050)
 columns = [TableColumn(field="row", title="Row", width=60),
            TableColumn(field="label", title="Endpoint", width=180),
            TableColumn(field="units_out", title="Units", width=60)]
-ep_data_table = DataTable(source=source_endpoint_defs, columns=columns, width=300, height=150)
+ep_data_table = DataTable(source=source['endpoint_defs'], columns=columns, width=300, height=150)
 
-source_endpoint_defs.selected.on_change('indices', update_ep_row_on_selection)
+source['endpoint_defs'].selected.on_change('indices', update_ep_row_on_selection)
 
 query_button = Button(label="Query", button_type="success", width=100)
 query_button.on_click(update_data)
@@ -3295,10 +3285,10 @@ query_button.on_click(update_data)
 # define Download button and call download.js on click
 menu = [("All Data", "all"), ("Lite", "lite"), ("Only DVHs", "dvhs"), ("Anonymized DVHs", "anon_dvhs")]
 download_dropdown = Dropdown(label="Download", button_type="default", menu=menu, width=100)
-download_dropdown.callback = CustomJS(args=dict(source=source,
-                                                source_rxs=source_rxs,
-                                                source_plans=source_plans,
-                                                source_beams=source_beams),
+download_dropdown.callback = CustomJS(args=dict(source=source['dvh'],
+                                                source_rxs=source['rxs'],
+                                                source_plans=source['plans'],
+                                                source_beams=source['beams']),
                                       code=open(join(dirname(__file__), "download.js")).read())
 
 
@@ -3348,27 +3338,27 @@ dvh_plots.yaxis.axis_label_text_baseline = "bottom"
 dvh_plots.lod_factor = options.LOD_FACTOR  # level of detail during interactive plot events
 
 # Add statistical plots to figure
-stats_median_1 = dvh_plots.line('x', 'median', source=source_stats_1,
+stats_median_1 = dvh_plots.line('x', 'median', source=source['stats_1'],
                                 line_width=options.STATS_1_MEDIAN_LINE_WIDTH, color=options.GROUP_1_COLOR,
                                 line_dash=options.STATS_1_MEDIAN_LINE_DASH, alpha=options.STATS_1_MEDIAN_ALPHA)
-stats_mean_1 = dvh_plots.line('x', 'mean', source=source_stats_1,
+stats_mean_1 = dvh_plots.line('x', 'mean', source=source['stats_1'],
                               line_width=options.STATS_1_MEAN_LINE_WIDTH, color=options.GROUP_1_COLOR,
                               line_dash=options.STATS_1_MEAN_LINE_DASH, alpha=options.STATS_1_MEAN_ALPHA)
-stats_median_2 = dvh_plots.line('x', 'median', source=source_stats_2,
+stats_median_2 = dvh_plots.line('x', 'median', source=source['stats_2'],
                                 line_width=options.STATS_2_MEDIAN_LINE_WIDTH, color=options.GROUP_2_COLOR,
                                 line_dash=options.STATS_2_MEDIAN_LINE_DASH, alpha=options.STATS_2_MEDIAN_ALPHA)
-stats_mean_2 = dvh_plots.line('x', 'mean', source=source_stats_2,
+stats_mean_2 = dvh_plots.line('x', 'mean', source=source['stats_2'],
                               line_width=options.STATS_2_MEAN_LINE_WIDTH, color=options.GROUP_2_COLOR,
                               line_dash=options.STATS_2_MEAN_LINE_DASH, alpha=options.STATS_2_MEAN_ALPHA)
 
 # Add all DVHs, but hide them until selected
-dvh_plots.multi_line('x', 'y', source=source,
+dvh_plots.multi_line('x', 'y', source=source['dvh'],
                      selection_color='color', line_width=options.DVH_LINE_WIDTH, alpha=0,
                      line_dash=options.DVH_LINE_DASH, nonselection_alpha=0, selection_alpha=1)
 
 # Shaded region between Q1 and Q3
-iqr_1 = dvh_plots.patch('x_patch', 'y_patch', source=source_patch_1, alpha=options.IQR_1_ALPHA, color=options.GROUP_1_COLOR)
-iqr_2 = dvh_plots.patch('x_patch', 'y_patch', source=source_patch_2, alpha=options.IQR_2_ALPHA, color=options.GROUP_2_COLOR)
+iqr_1 = dvh_plots.patch('x_patch', 'y_patch', source=source['patch_1'], alpha=options.IQR_1_ALPHA, color=options.GROUP_1_COLOR)
+iqr_2 = dvh_plots.patch('x_patch', 'y_patch', source=source['patch_2'], alpha=options.IQR_2_ALPHA, color=options.GROUP_2_COLOR)
 
 # Set x and y axis labels
 dvh_plots.xaxis.axis_label = "Dose (Gy)"
@@ -3400,8 +3390,8 @@ columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="max_dose", title="Max Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="dist_to_ptv_min", title="Dist to PTV", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="ptv_overlap", title="PTV Overlap", width=80, formatter=NumberFormatter(format="0.0"))]
-data_table = DataTable(source=source, columns=columns, width=1200, editable=True)
-source.selected.on_change('indices', update_source_endpoint_view_selection)
+data_table = DataTable(source=source['dvh'], columns=columns, width=1200, editable=True)
+source['dvh'].selected.on_change('indices', update_source_endpoint_view_selection)
 data_table.index_position = None
 
 # Set up EndPoint DataTable
@@ -3414,13 +3404,13 @@ for i in range(options.ENDPOINT_COUNT):
                                title="ep%s" % (i+1),
                                width=80,
                                formatter=NumberFormatter(format="0.00")))
-data_table_endpoints = DataTable(source=source_endpoint_view, columns=columns, width=1200, editable=True)
+data_table_endpoints = DataTable(source=source['endpoint_view'], columns=columns, width=1200, editable=True)
 data_table_endpoints.index_position = None
 download_endpoints_button = Button(label="Download Endpoints", button_type="default", width=150)
-download_endpoints_button.callback = CustomJS(args=dict(source=source_endpoint_calcs),
+download_endpoints_button.callback = CustomJS(args=dict(source=source['endpoint_calcs']),
                                               code=open(join(dirname(__file__), "download_endpoints.js")).read())
 
-source_endpoint_view.selected.on_change('indices', update_dvh_table_selection)
+source['endpoint_view'].selected.on_change('indices', update_dvh_table_selection)
 
 # Set up Beams DataTable
 beam_table_title = Div(text="<b>Beams</b>", width=1500)
@@ -3444,7 +3434,7 @@ columns = [TableColumn(field="mrn", title="MRN", width=105),
            TableColumn(field="radiation_type", title="Rad. Type", width=80),
            TableColumn(field="ssd", title="SSD", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="treatment_machine", title="Tx Machine", width=80)]
-data_table_beams = DataTable(source=source_beams, columns=columns, width=1300, editable=True)
+data_table_beams = DataTable(source=source['beams'], columns=columns, width=1300, editable=True)
 data_table_beams.index_position = None
 beam_table_title2 = Div(text="<b>Beams Continued</b>", width=1500)
 columns = [TableColumn(field="mrn", title="MRN", width=105),
@@ -3468,9 +3458,9 @@ columns = [TableColumn(field="mrn", title="MRN", width=105),
            TableColumn(field="couch_range", title="Range", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="couch_min", title="Min", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="couch_max", title="Max", width=80, formatter=NumberFormatter(format="0.0"))]
-data_table_beams2 = DataTable(source=source_beams, columns=columns, width=1300, editable=True)
+data_table_beams2 = DataTable(source=source['beams'], columns=columns, width=1300, editable=True)
 data_table_beams2.index_position = None
-source_beams.selected.on_change('indices', source_beams_selected_ticker)
+source['beams'].selected.on_change('indices', source_beams_selected_ticker)
 
 # Set up Plans DataTable
 plans_table_title = Div(text="<b>Plans</b>", width=1200)
@@ -3490,9 +3480,9 @@ columns = [TableColumn(field="mrn", title="MRN", width=420),
            TableColumn(field="tx_modality", title="Tx Modality"),
            TableColumn(field="tx_site", title="Tx Site"),
            TableColumn(field="baseline", title="Baseline")]
-data_table_plans = DataTable(source=source_plans, columns=columns, width=1300, editable=True)
+data_table_plans = DataTable(source=source['plans'], columns=columns, width=1300, editable=True)
 data_table_plans.index_position = None
-source_plans.selected.on_change('indices', source_plans_selected_ticker)
+source['plans'].selected.on_change('indices', source_plans_selected_ticker)
 
 # Set up Rxs DataTable
 rxs_table_title = Div(text="<b>Rxs</b>", width=1000)
@@ -3508,9 +3498,9 @@ columns = [TableColumn(field="mrn", title="MRN"),
            TableColumn(field="fx_grp_name", title="Fx Grp Name"),
            TableColumn(field="normalization_method", title="Norm Method"),
            TableColumn(field="normalization_object", title="Norm Object")]
-data_table_rxs = DataTable(source=source_rxs, columns=columns, width=1300, editable=True)
+data_table_rxs = DataTable(source=source['rxs'], columns=columns, width=1300, editable=True)
 data_table_rxs.index_position = None
-source_rxs.selected.on_change('indices', source_rxs_selected_ticker)
+source['rxs'].selected.on_change('indices', source_rxs_selected_ticker)
 
 # Control Chart layout (Time-Series)
 tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
@@ -3523,24 +3513,24 @@ control_chart.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_F
 # control_chart.min_border_left = min_border
 control_chart.min_border_bottom = min_border
 control_chart_data_1 = control_chart.circle('x', 'y', size=options.TIME_SERIES_1_CIRCLE_SIZE, color=options.GROUP_1_COLOR,
-                                            alpha=options.TIME_SERIES_1_CIRCLE_ALPHA, source=source_time_1)
+                                            alpha=options.TIME_SERIES_1_CIRCLE_ALPHA, source=source['time_1'])
 control_chart_data_2 = control_chart.circle('x', 'y', size=options.TIME_SERIES_2_CIRCLE_SIZE, color=options.GROUP_2_COLOR,
-                                            alpha=options.TIME_SERIES_2_CIRCLE_ALPHA, source=source_time_2)
-control_chart_trend_1 = control_chart.line('x', 'y', color=options.GROUP_1_COLOR, source=source_time_trend_1,
+                                            alpha=options.TIME_SERIES_2_CIRCLE_ALPHA, source=source['time_2'])
+control_chart_trend_1 = control_chart.line('x', 'y', color=options.GROUP_1_COLOR, source=source['time_trend_1'],
                                            line_width=options.TIME_SERIES_1_TREND_LINE_WIDTH,
                                            line_dash=options.TIME_SERIES_1_TREND_LINE_DASH)
-control_chart_trend_2 = control_chart.line('x', 'y', color=options.GROUP_2_COLOR, source=source_time_trend_2,
+control_chart_trend_2 = control_chart.line('x', 'y', color=options.GROUP_2_COLOR, source=source['time_trend_2'],
                                            line_width=options.TIME_SERIES_2_TREND_LINE_WIDTH,
                                            line_dash=options.TIME_SERIES_2_TREND_LINE_DASH)
-control_chart_avg_1 = control_chart.line('x', 'avg', color=options.GROUP_1_COLOR, source=source_time_bound_1,
+control_chart_avg_1 = control_chart.line('x', 'avg', color=options.GROUP_1_COLOR, source=source['time_bound_1'],
                                          line_width=options.TIME_SERIES_1_AVG_LINE_WIDTH,
                                          line_dash=options.TIME_SERIES_1_AVG_LINE_DASH)
-control_chart_avg_2 = control_chart.line('x', 'avg', color=options.GROUP_2_COLOR, source=source_time_bound_2,
+control_chart_avg_2 = control_chart.line('x', 'avg', color=options.GROUP_2_COLOR, source=source['time_bound_2'],
                                          line_width=options.TIME_SERIES_2_AVG_LINE_WIDTH,
                                          line_dash=options.TIME_SERIES_2_AVG_LINE_DASH)
-control_chart_patch_1 = control_chart.patch('x', 'y', color=options.GROUP_1_COLOR, source=source_time_patch_1,
+control_chart_patch_1 = control_chart.patch('x', 'y', color=options.GROUP_1_COLOR, source=source['time_patch_1'],
                                             alpha=options.TIME_SERIES_1_PATCH_ALPHA)
-control_chart_patch_2 = control_chart.patch('x', 'y', color=options.GROUP_2_COLOR, source=source_time_patch_2,
+control_chart_patch_2 = control_chart.patch('x', 'y', color=options.GROUP_2_COLOR, source=source['time_patch_2'],
                                             alpha=options.TIME_SERIES_1_PATCH_ALPHA)
 control_chart.add_tools(HoverTool(show_arrow=True,
                                   tooltips=[('ID', '@mrn'),
@@ -3587,8 +3577,8 @@ trend_update_button = Button(label="Update Trend", button_type="primary", width=
 trend_update_button.on_click(control_chart_update_trend)
 
 download_time_plot = Button(label="Download Plot Data", button_type="default", width=150)
-download_time_plot.callback = CustomJS(args=dict(source_1=source_time_1,
-                                                 source_2=source_time_2),
+download_time_plot.callback = CustomJS(args=dict(source_1=source['time_1'],
+                                                 source_2=source['time_2']),
                                        code=open(join(dirname(__file__), "download_time_plot.js")).read())
 
 div_horizontal_bar = Div(text="<hr>", width=1050)
@@ -3602,9 +3592,9 @@ histograms.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT
 histograms.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
 histograms.min_border_left = min_border
 histograms.min_border_bottom = min_border
-hist_1 = histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_1,
+hist_1 = histograms.vbar(x='x', width='width', bottom=0, top='top', source=source['histogram_1'],
                          color=options.GROUP_1_COLOR, alpha=options.HISTOGRAM_1_ALPHA)
-hist_2 = histograms.vbar(x='x', width='width', bottom=0, top='top', source=source_histogram_2,
+hist_2 = histograms.vbar(x='x', width='width', bottom=0, top='top', source=source['histogram_2'],
                          color=options.GROUP_2_COLOR, alpha=options.HISTOGRAM_2_ALPHA)
 histograms.xaxis.axis_label = ""
 histograms.yaxis.axis_label = "Frequency"
@@ -3657,10 +3647,10 @@ corr_fig.yaxis.axis_line_color = None
 corr_fig.yaxis.major_tick_line_color = None
 corr_fig.yaxis.minor_tick_line_color = None
 corr_fig.outline_line_color = None
-corr_1_pos = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=source_correlation_1_pos)
-corr_1_neg = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=source_correlation_1_neg)
-corr_2_pos = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=source_correlation_2_pos)
-corr_2_neg = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=source_correlation_2_neg)
+corr_1_pos = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=source['correlation_1_pos'])
+corr_1_neg = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=source['correlation_1_neg'])
+corr_2_pos = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=source['correlation_2_pos'])
+corr_2_neg = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=source['correlation_2_neg'])
 corr_fig.add_tools(HoverTool(show_arrow=True,
                              line_policy='next',
                              tooltips=[('Group', '@group'),
@@ -3670,7 +3660,7 @@ corr_fig.add_tools(HoverTool(show_arrow=True,
                                        ('p', '@p'),
                                        ('Norm p-value x', '@x_normality{0.4f}'),
                                        ('Norm p-value y', '@y_normality{0.4f}')],))
-corr_fig.line(x='x', y='y', source=source_corr_matrix_line,
+corr_fig.line(x='x', y='y', source=source['corr_matrix_line'],
               line_width=3, line_dash='dotted', color='black', alpha=0.8)
 # Set the legend
 legend_corr = Legend(items=[("+r Group 1", [corr_1_pos]),
@@ -3694,10 +3684,10 @@ corr_fig_include.on_change('active', corr_fig_include_ticker)
 corr_fig_include_2.on_change('active', corr_fig_include_ticker)
 
 download_corr_fig = Button(label="Download Correlation Figure Data", button_type="default", width=150)
-download_corr_fig.callback = CustomJS(args=dict(source_1_neg=source_correlation_1_neg,
-                                                source_1_pos=source_correlation_1_pos,
-                                                source_2_neg=source_correlation_2_neg,
-                                                source_2_pos=source_correlation_2_pos),
+download_corr_fig.callback = CustomJS(args=dict(source_1_neg=source['correlation_1_neg'],
+                                                source_1_pos=source['correlation_1_pos'],
+                                                source_2_neg=source['correlation_2_neg'],
+                                                source_2_pos=source['correlation_2_pos']),
                                       code=open(join(dirname(__file__), "download_correlation_matrix.js")).read())
 
 # Control Chart layout
@@ -3710,17 +3700,17 @@ corr_chart.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT
 corr_chart.min_border_left = min_border
 corr_chart.min_border_bottom = min_border
 corr_chart_data_1 = corr_chart.circle('x', 'y', size=options.REGRESSION_1_CIRCLE_SIZE, color=options.GROUP_1_COLOR,
-                                      alpha=options.REGRESSION_1_ALPHA, source=source_corr_chart_1)
+                                      alpha=options.REGRESSION_1_ALPHA, source=source['corr_chart_1'])
 corr_chart_data_2 = corr_chart.circle('x', 'y', size=options.REGRESSION_2_CIRCLE_SIZE, color=options.GROUP_2_COLOR,
-                                      alpha=options.REGRESSION_2_ALPHA, source=source_corr_chart_2)
+                                      alpha=options.REGRESSION_2_ALPHA, source=source['corr_chart_2'])
 corr_chart_trend_1 = corr_chart.line('x', 'y', color=options.GROUP_1_COLOR,
                                      line_width=options.REGRESSION_1_LINE_WIDTH,
                                      line_dash=options.REGRESSION_1_LINE_DASH,
-                                     source=source_corr_trend_1)
+                                     source=source['corr_trend_1'])
 corr_chart_trend_2 = corr_chart.line('x', 'y', color=options.GROUP_2_COLOR,
                                      line_width=options.REGRESSION_2_LINE_WIDTH,
                                      line_dash=options.REGRESSION_1_LINE_DASH,
-                                     source=source_corr_trend_2)
+                                     source=source['corr_trend_2'])
 corr_chart.add_tools(HoverTool(show_arrow=True,
                                tooltips=[('MRN', '@mrn'),
                                          ('x', '@x{0.2f}'),
@@ -3765,12 +3755,12 @@ corr_chart_text_2 = Div(text="<b>Group 2</b>:", width=1050)
 columns = [TableColumn(field="stat", title="Single-Var Regression", width=100),
            TableColumn(field="group_1", title="Group 1", width=60),
            TableColumn(field="group_2", title="Group 2", width=60)]
-data_table_corr_chart = DataTable(source=source_corr_chart_stats, columns=columns, editable=True,
+data_table_corr_chart = DataTable(source=source['corr_chart_stats'], columns=columns, editable=True,
                                   height=180, width=300)
 data_table_corr_chart.index_position = None
 
 columns = [TableColumn(field="var_name", title="Variables for Multi-Var Regression", width=100)]
-data_table_multi_var_include = DataTable(source=source_multi_var_include, columns=columns,
+data_table_multi_var_include = DataTable(source=source['multi_var_include'], columns=columns,
                                          height=175, width=275)
 data_table_multi_var_include.index_position = None
 
@@ -3780,13 +3770,13 @@ multi_var_text_1 = Div(text="<b>Group 1</b>", width=500)
 columns = [TableColumn(field="var_name", title="Independent Variable", width=300),
            TableColumn(field="coeff_str", title="coefficient",  width=150),
            TableColumn(field="p_str", title="p-value", width=150)]
-data_table_multi_var_model_1 = DataTable(source=source_multi_var_coeff_results_1, columns=columns, editable=True,
+data_table_multi_var_model_1 = DataTable(source=source['multi_var_coeff_results_1'], columns=columns, editable=True,
                                          height=200)
 data_table_multi_var_model_1.index_position = None
 columns = [TableColumn(field="y_var", title="Dependent Variable", width=150),
            TableColumn(field="r_sq_str", title="R-squared", width=150),
            TableColumn(field="model_p_str", title="Prob for F-statistic", width=150)]
-data_table_multi_var_coeff_1 = DataTable(source=source_multi_var_model_results_1, columns=columns, editable=True,
+data_table_multi_var_coeff_1 = DataTable(source=source['multi_var_model_results_1'], columns=columns, editable=True,
                                          height=60)
 data_table_multi_var_coeff_1.index_position = None
 
@@ -3794,15 +3784,15 @@ multi_var_text_2 = Div(text="<b>Group 2</b>", width=500)
 columns = [TableColumn(field="var_name", title="Independent Variable", width=300),
            TableColumn(field="coeff_str", title="coefficient",  width=150),
            TableColumn(field="p_str", title="p-value", width=150)]
-data_table_multi_var_model_2 = DataTable(source=source_multi_var_coeff_results_2, columns=columns, editable=True,
+data_table_multi_var_model_2 = DataTable(source=source['multi_var_coeff_results_2'], columns=columns, editable=True,
                                          height=200)
 columns = [TableColumn(field="y_var", title="Dependent Variable", width=150),
            TableColumn(field="r_sq_str", title="R-squared", width=150),
            TableColumn(field="model_p_str", title="Prob for F-statistic", width=150)]
-data_table_multi_var_coeff_2 = DataTable(source=source_multi_var_model_results_2, columns=columns, editable=True,
+data_table_multi_var_coeff_2 = DataTable(source=source['multi_var_model_results_2'], columns=columns, editable=True,
                                          height=60)
 
-source_multi_var_include.selected.on_change('indices', multi_var_include_selection)
+source['multi_var_include'].selected.on_change('indices', multi_var_include_selection)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Custom group titles
@@ -3893,25 +3883,25 @@ columns = [TableColumn(field="mrn", title="MRN", width=150),
            TableColumn(field="td_tcd", title="TD or TCD", width=150),
            TableColumn(field="eud", title="EUD", width=75, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="ntcp_tcp", title="NTCP or TCP", width=150, formatter=NumberFormatter(format="0.000"))]
-data_table_rad_bio = DataTable(source=source_rad_bio, columns=columns, editable=False, width=1100)
+data_table_rad_bio = DataTable(source=source['rad_bio'], columns=columns, editable=False, width=1100)
 
-source_emami = ColumnDataSource(data=dict(roi=['Brain', 'Brainstem', 'Optic Chiasm', 'Colon', 'Ear (mid/ext)',
-                                               'Ear (mid/ext)', 'Esophagus', 'Heart', 'Kidney', 'Lens', 'Liver',
-                                               'Lung', 'Optic Nerve', 'Retina'],
-                                          ep=['Necrosis', 'Necrosis', 'Blindness', 'Obstruction/Perforation',
-                                              'Acute serous otitus', 'Chronic serous otitus', 'Peforation',
-                                              'Pericarditus', 'Nephritis', 'Cataract', 'Liver Failure',
-                                              'Pneumonitis', 'Blindness', 'Blindness'],
-                                          eud_a=[5, 7, 25, 6, 31, 31, 19, 3, 1, 3, 3, 1, 25, 15],
-                                          gamma_50=[3, 3, 3, 4, 3, 4, 4, 3, 3, 1, 3, 2, 3, 2],
-                                          td_tcd=[60, 65, 65, 55, 40, 65, 68, 50, 28, 18, 40, 24.5, 65, 65]))
+source['emami'] = ColumnDataSource(data=dict(roi=['Brain', 'Brainstem', 'Optic Chiasm', 'Colon', 'Ear (mid/ext)',
+                                                  'Ear (mid/ext)', 'Esophagus', 'Heart', 'Kidney', 'Lens', 'Liver',
+                                                  'Lung', 'Optic Nerve', 'Retina'],
+                                             ep=['Necrosis', 'Necrosis', 'Blindness', 'Obstruction/Perforation',
+                                                 'Acute serous otitus', 'Chronic serous otitus', 'Peforation',
+                                                 'Pericarditus', 'Nephritis', 'Cataract', 'Liver Failure',
+                                                 'Pneumonitis', 'Blindness', 'Blindness'],
+                                             eud_a=[5, 7, 25, 6, 31, 31, 19, 3, 1, 3, 3, 1, 25, 15],
+                                             gamma_50=[3, 3, 3, 4, 3, 4, 4, 3, 3, 1, 3, 2, 3, 2],
+                                             td_tcd=[60, 65, 65, 55, 40, 65, 68, 50, 28, 18, 40, 24.5, 65, 65]))
 columns = [TableColumn(field="roi", title="Structure", width=150),
            TableColumn(field="ep", title="Endpoint", width=250),
            TableColumn(field="eud_a", title="a", width=75),
            TableColumn(field="gamma_50", title=u"\u03b3_50", width=75),
            TableColumn(field="td_tcd", title="TD_50", width=150)]
-data_table_emami = DataTable(source=source_emami, columns=columns, editable=False, width=1100)
-source_emami.selected.on_change('indices', emami_selection)
+data_table_emami = DataTable(source=source['emami'], columns=columns, editable=False, width=1100)
+source['emami'].selected.on_change('indices', emami_selection)
 emami_text = Div(text="<b>Published EUD Parameters from Emami et. al. for 1.8-2.0Gy fractions</b> (Click to apply)",
                  width=600)
 rad_bio_custom_text = Div(text="<b>Applied Parameters:</b>", width=150)
@@ -3922,7 +3912,7 @@ data_table_rad_bio_text = Div(text="<b>EUD Calculations for Query</b>", width=50
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 roi_colors = plot_colors.cnames.keys()
 roi_colors.sort()
-roi_viewer_options = [''] + source.data['mrn']
+roi_viewer_options = [''] + source['dvh'].data['mrn']
 roi_viewer_mrn_select = Select(value='', options=roi_viewer_options, width=200, title='MRN')
 roi_viewer_study_date_select = Select(value='', options=[''], width=200, title='Sim Study Date')
 roi_viewer_uid_select = Select(value='', options=[''], width=400, title='Study Instance UID')
@@ -3974,12 +3964,12 @@ roi_viewer.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT
 roi_viewer.min_border_left = min_border
 roi_viewer.min_border_bottom = min_border
 roi_viewer.y_range.flipped = True
-roi_viewer_patch1 = roi_viewer.patch('x', 'y', source=source_roi_viewer, color='blue', alpha=0.5)
-roi_viewer_patch2 = roi_viewer.patch('x', 'y', source=source_roi2_viewer, color='green', alpha=0.5)
-roi_viewer_patch3 = roi_viewer.patch('x', 'y', source=source_roi3_viewer, color='red', alpha=0.5)
-roi_viewer_patch4 = roi_viewer.patch('x', 'y', source=source_roi4_viewer, color='orange', alpha=0.5)
-roi_viewer_patch5 = roi_viewer.patch('x', 'y', source=source_roi5_viewer, color='lightgreen', alpha=0.5)
-roi_viewer.patch('x', 'y', source=source_tv, color='black', alpha=0.5)
+roi_viewer_patch1 = roi_viewer.patch('x', 'y', source=source['roi1_viewer'], color='blue', alpha=0.5)
+roi_viewer_patch2 = roi_viewer.patch('x', 'y', source=source['roi2_viewer'], color='green', alpha=0.5)
+roi_viewer_patch3 = roi_viewer.patch('x', 'y', source=source['roi3_viewer'], color='red', alpha=0.5)
+roi_viewer_patch4 = roi_viewer.patch('x', 'y', source=source['roi4_viewer'], color='orange', alpha=0.5)
+roi_viewer_patch5 = roi_viewer.patch('x', 'y', source=source['roi5_viewer'], color='lightgreen', alpha=0.5)
+roi_viewer.patch('x', 'y', source=source['tv'], color='black', alpha=0.5)
 roi_viewer.xaxis.axis_label = "Lateral DICOM Coordinate (mm)"
 roi_viewer.yaxis.axis_label = "Anterior/Posterior DICOM Coordinate (mm)"
 roi_viewer.on_event(events.MouseWheel, roi_viewer_wheel_event)
@@ -3988,7 +3978,7 @@ roi_viewer_scrolling = CheckboxGroup(labels=["Enable Slice Scrolling with Mouse 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # MLC Analyzer
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-mlc_analyzer_options = [''] + source.data['mrn']
+mlc_analyzer_options = [''] + source['dvh'].data['mrn']
 mlc_analyzer_mrn_select = Select(value='', options=mlc_analyzer_options, width=200, title='MRN')
 mlc_analyzer_study_date_select = Select(value='', options=[''], width=200, title='Sim Study Date')
 mlc_analyzer_uid_select = Select(value='', options=[''], width=400, title='Study Instance UID')
@@ -4016,7 +4006,7 @@ mlc_viewer.min_border_bottom = min_border
 mlc_viewer.xaxis.axis_label = "X-Axis (mm)"
 mlc_viewer.yaxis.axis_label = "Y-Axis (mm)"
 mlc_viewer.quad(top='top', bottom='bottom', left='left', right='right',
-                source=source_mlc_viewer, alpha=0.25, color='color')
+                source=source['mlc_viewer'], alpha=0.25, color='color')
 mlc_viewer_previous_cp = Button(label="<", button_type="primary", width=50)
 mlc_viewer_next_cp = Button(label=">", button_type="primary", width=50)
 mlc_viewer_play_button = Button(label="Play", button_type="success", width=100)
@@ -4037,7 +4027,7 @@ columns = [TableColumn(field="cp", title="CP"),
            TableColumn(field="x_perim", title="X Path", formatter=NumberFormatter(format="0.00")),
            TableColumn(field="y_perim", title="Y Path", formatter=NumberFormatter(format="0.00")),
            TableColumn(field="cmp_score", title="Score", formatter=NumberFormatter(format="0.000"))]
-mlc_viewer_data_table = DataTable(source=source_mlc_summary, columns=columns,
+mlc_viewer_data_table = DataTable(source=source['mlc_summary'], columns=columns,
                                   editable=False, width=700, height=425)
 
 mlc_viewer_data_table.index_position = None
@@ -4045,7 +4035,7 @@ mlc_viewer_data_table.index_position = None
 mlc_viewer_previous_cp.on_click(mlc_viewer_go_to_previous_cp)
 mlc_viewer_next_cp.on_click(mlc_viewer_go_to_next_cp)
 mlc_viewer_play_button.on_click(mlc_viewer_play)
-source_mlc_summary.selected.on_change('indices', update_cp_on_selection)
+source['mlc_summary'].selected.on_change('indices', update_cp_on_selection)
 
 mlc_viewer.x_range = Range1d(-options.MAX_FIELD_SIZE_X/2, options.MAX_FIELD_SIZE_X/2)
 mlc_viewer.y_range = Range1d(-options.MAX_FIELD_SIZE_Y/2, options.MAX_FIELD_SIZE_Y/2)
@@ -4068,10 +4058,10 @@ residual_chart.min_border_bottom = min_border
 residual_chart.xaxis.axis_label = 'Patient #'
 residual_chart_data_1 = residual_chart.circle('x', 'y', size=options.REGRESSION_1_CIRCLE_SIZE,
                                               color=options.GROUP_1_COLOR, alpha=options.REGRESSION_1_ALPHA,
-                                              source=source_residual_chart_1)
+                                              source=source['residual_chart_1'])
 residual_chart_data_2 = residual_chart.circle('x', 'y', size=options.REGRESSION_2_CIRCLE_SIZE,
                                               color=options.GROUP_2_COLOR, alpha=options.REGRESSION_2_ALPHA,
-                                              source=source_residual_chart_2)
+                                              source=source['residual_chart_2'])
 residual_chart.add_tools(HoverTool(show_arrow=True,
                                    tooltips=[('ID', '@mrn'),
                                              ('Residual', '@y'),
