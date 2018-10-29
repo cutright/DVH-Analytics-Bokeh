@@ -2439,9 +2439,8 @@ def control_chart_update_trend():
                                                           group[n]['x'][-1], group[n]['x'][0]],
                                                     'y': [upper_bound, upper_bound, lower_bound, lower_bound]}
             else:
-                for m in N:
-                    for v in ['trend', 'bound', 'patch']:
-                        clear_source_data('time_%s_%s' % (v, m))
+                for v in ['trend', 'bound', 'patch']:
+                    clear_source_data('time_%s_%s' % (v, n))
 
         x_var = str(control_chart_y.value)
         if x_var.startswith('DVH Endpoint'):
