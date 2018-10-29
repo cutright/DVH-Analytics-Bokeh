@@ -858,15 +858,8 @@ def update_dvh_data(dvh):
 
     if group_1_constraint_count == 0:
         uids_1 = []
-        source['patch_1'].data = {'x_patch': [],
-                               'y_patch': []}
-        source['stats_1'].data = {'x': [],
-                               'min': [],
-                               'q1': [],
-                               'mean': [],
-                               'median': [],
-                               'q3': [],
-                               'max': []}
+        clear_source_data('patch_1')
+        clear_source_data('stats_1')
     else:
         print(str(datetime.now()), 'Constructing Group 1 query', sep=' ')
         uids_1, dvh_query_str = get_query(group=1)
@@ -880,25 +873,19 @@ def update_dvh_data(dvh):
             x_axis_1 = np.add(np.linspace(0, dvh_group_1.bin_count, dvh_group_1.bin_count) / 100., 0.005)
 
         source['patch_1'].data = {'x_patch': np.append(x_axis_1, x_axis_1[::-1]).tolist(),
-                               'y_patch': np.append(stat_dvhs_1['q3'], stat_dvhs_1['q1'][::-1]).tolist()}
+                                  'y_patch': np.append(stat_dvhs_1['q3'], stat_dvhs_1['q1'][::-1]).tolist()}
         source['stats_1'].data = {'x': x_axis_1.tolist(),
-                               'min': stat_dvhs_1['min'].tolist(),
-                               'q1': stat_dvhs_1['q1'].tolist(),
-                               'mean': stat_dvhs_1['mean'].tolist(),
-                               'median': stat_dvhs_1['median'].tolist(),
-                               'q3': stat_dvhs_1['q3'].tolist(),
-                               'max': stat_dvhs_1['max'].tolist()}
+                                  'min': stat_dvhs_1['min'].tolist(),
+                                  'q1': stat_dvhs_1['q1'].tolist(),
+                                  'mean': stat_dvhs_1['mean'].tolist(),
+                                  'median': stat_dvhs_1['median'].tolist(),
+                                  'q3': stat_dvhs_1['q3'].tolist(),
+                                  'max': stat_dvhs_1['max'].tolist()}
     if group_2_constraint_count == 0:
         uids_2 = []
-        source['patch_2'].data = {'x_patch': [],
-                               'y_patch': []}
-        source['stats_2'].data = {'x': [],
-                               'min': [],
-                               'q1': [],
-                               'mean': [],
-                               'median': [],
-                               'q3': [],
-                               'max': []}
+        clear_source_data('patch_2')
+        clear_source_data('stats_2')
+
     else:
         print(str(datetime.now()), 'Constructing Group 2 query', sep=' ')
         uids_2, dvh_query_str = get_query(group=2)
@@ -912,14 +899,14 @@ def update_dvh_data(dvh):
             x_axis_2 = np.add(np.linspace(0, dvh_group_2.bin_count, dvh_group_2.bin_count) / 100., 0.005)
 
         source['patch_2'].data = {'x_patch': np.append(x_axis_2, x_axis_2[::-1]).tolist(),
-                               'y_patch': np.append(stat_dvhs_2['q3'], stat_dvhs_2['q1'][::-1]).tolist()}
+                                  'y_patch': np.append(stat_dvhs_2['q3'], stat_dvhs_2['q1'][::-1]).tolist()}
         source['stats_2'].data = {'x': x_axis_2.tolist(),
-                               'min': stat_dvhs_2['min'].tolist(),
-                               'q1': stat_dvhs_2['q1'].tolist(),
-                               'mean': stat_dvhs_2['mean'].tolist(),
-                               'median': stat_dvhs_2['median'].tolist(),
-                               'q3': stat_dvhs_2['q3'].tolist(),
-                               'max': stat_dvhs_2['max'].tolist()}
+                                  'min': stat_dvhs_2['min'].tolist(),
+                                  'q1': stat_dvhs_2['q1'].tolist(),
+                                  'mean': stat_dvhs_2['mean'].tolist(),
+                                  'median': stat_dvhs_2['median'].tolist(),
+                                  'q3': stat_dvhs_2['q3'].tolist(),
+                                  'max': stat_dvhs_2['max'].tolist()}
 
     print(str(datetime.now()), 'patches calculated', sep=' ')
 
@@ -1121,45 +1108,45 @@ def update_beam_data(uids):
     anon_id = [anon_id_map[beam_data.mrn[i]] for i in range(len(beam_data.mrn))]
 
     source['beams'].data = {'mrn': beam_data.mrn,
-                         'anon_id': anon_id,
-                         'group': groups,
-                         'uid': beam_data.study_instance_uid,
-                         'beam_dose': beam_data.beam_dose,
-                         'beam_energy_min': beam_data.beam_energy_min,
-                         'beam_energy_max': beam_data.beam_energy_max,
-                         'beam_mu': beam_data.beam_mu,
-                         'beam_mu_per_deg': beam_data.beam_mu_per_deg,
-                         'beam_mu_per_cp': beam_data.beam_mu_per_cp,
-                         'beam_name': beam_data.beam_name,
-                         'beam_number': beam_data.beam_number,
-                         'beam_type': beam_data.beam_type,
-                         'scan_mode': beam_data.scan_mode,
-                         'scan_spot_count': beam_data.scan_spot_count,
-                         'control_point_count': beam_data.control_point_count,
-                         'fx_count': beam_data.fx_count,
-                         'fx_grp_beam_count': beam_data.fx_grp_beam_count,
-                         'fx_grp_number': beam_data.fx_grp_number,
-                         'gantry_start': beam_data.gantry_start,
-                         'gantry_end': beam_data.gantry_end,
-                         'gantry_rot_dir': beam_data.gantry_rot_dir,
-                         'gantry_range': beam_data.gantry_range,
-                         'gantry_min': beam_data.gantry_min,
-                         'gantry_max': beam_data.gantry_max,
-                         'collimator_start': beam_data.collimator_start,
-                         'collimator_end': beam_data.collimator_end,
-                         'collimator_rot_dir': beam_data.collimator_rot_dir,
-                         'collimator_range': beam_data.collimator_range,
-                         'collimator_min': beam_data.collimator_min,
-                         'collimator_max': beam_data.collimator_max,
-                         'couch_start': beam_data.couch_start,
-                         'couch_end': beam_data.couch_end,
-                         'couch_rot_dir': beam_data.couch_rot_dir,
-                         'couch_range': beam_data.couch_range,
-                         'couch_min': beam_data.couch_min,
-                         'couch_max': beam_data.couch_max,
-                         'radiation_type': beam_data.radiation_type,
-                         'ssd': beam_data.ssd,
-                         'treatment_machine': beam_data.treatment_machine}
+                            'anon_id': anon_id,
+                            'group': groups,
+                            'uid': beam_data.study_instance_uid,
+                            'beam_dose': beam_data.beam_dose,
+                            'beam_energy_min': beam_data.beam_energy_min,
+                            'beam_energy_max': beam_data.beam_energy_max,
+                            'beam_mu': beam_data.beam_mu,
+                            'beam_mu_per_deg': beam_data.beam_mu_per_deg,
+                            'beam_mu_per_cp': beam_data.beam_mu_per_cp,
+                            'beam_name': beam_data.beam_name,
+                            'beam_number': beam_data.beam_number,
+                            'beam_type': beam_data.beam_type,
+                            'scan_mode': beam_data.scan_mode,
+                            'scan_spot_count': beam_data.scan_spot_count,
+                            'control_point_count': beam_data.control_point_count,
+                            'fx_count': beam_data.fx_count,
+                            'fx_grp_beam_count': beam_data.fx_grp_beam_count,
+                            'fx_grp_number': beam_data.fx_grp_number,
+                            'gantry_start': beam_data.gantry_start,
+                            'gantry_end': beam_data.gantry_end,
+                            'gantry_rot_dir': beam_data.gantry_rot_dir,
+                            'gantry_range': beam_data.gantry_range,
+                            'gantry_min': beam_data.gantry_min,
+                            'gantry_max': beam_data.gantry_max,
+                            'collimator_start': beam_data.collimator_start,
+                            'collimator_end': beam_data.collimator_end,
+                            'collimator_rot_dir': beam_data.collimator_rot_dir,
+                            'collimator_range': beam_data.collimator_range,
+                            'collimator_min': beam_data.collimator_min,
+                            'collimator_max': beam_data.collimator_max,
+                            'couch_start': beam_data.couch_start,
+                            'couch_end': beam_data.couch_end,
+                            'couch_rot_dir': beam_data.couch_rot_dir,
+                            'couch_range': beam_data.couch_range,
+                            'couch_min': beam_data.couch_min,
+                            'couch_max': beam_data.couch_max,
+                            'radiation_type': beam_data.radiation_type,
+                            'ssd': beam_data.ssd,
+                            'treatment_machine': beam_data.treatment_machine}
 
 
 # updates plan ColumnSourceData for a given list of uids
@@ -1174,23 +1161,23 @@ def update_plan_data(uids):
     anon_id = [anon_id_map[plan_data.mrn[i]] for i in range(len(plan_data.mrn))]
 
     source['plans'].data = {'mrn': plan_data.mrn,
-                         'anon_id': anon_id,
-                         'uid': plan_data.study_instance_uid,
-                         'group': groups,
-                         'age': plan_data.age,
-                         'birth_date': plan_data.birth_date,
-                         'dose_grid_res': plan_data.dose_grid_res,
-                         'fxs': plan_data.fxs,
-                         'patient_orientation': plan_data.patient_orientation,
-                         'patient_sex': plan_data.patient_sex,
-                         'physician': plan_data.physician,
-                         'rx_dose': plan_data.rx_dose,
-                         'sim_study_date': plan_data.sim_study_date,
-                         'total_mu': plan_data.total_mu,
-                         'tx_modality': plan_data.tx_modality,
-                         'tx_site': plan_data.tx_site,
-                         'heterogeneity_correction': plan_data.heterogeneity_correction,
-                         'baseline': plan_data.baseline}
+                            'anon_id': anon_id,
+                            'uid': plan_data.study_instance_uid,
+                            'group': groups,
+                            'age': plan_data.age,
+                            'birth_date': plan_data.birth_date,
+                            'dose_grid_res': plan_data.dose_grid_res,
+                            'fxs': plan_data.fxs,
+                            'patient_orientation': plan_data.patient_orientation,
+                            'patient_sex': plan_data.patient_sex,
+                            'physician': plan_data.physician,
+                            'rx_dose': plan_data.rx_dose,
+                            'sim_study_date': plan_data.sim_study_date,
+                            'total_mu': plan_data.total_mu,
+                            'tx_modality': plan_data.tx_modality,
+                            'tx_site': plan_data.tx_site,
+                            'heterogeneity_correction': plan_data.heterogeneity_correction,
+                            'baseline': plan_data.baseline}
 
 
 # updates rx ColumnSourceData for a given list of uids
@@ -1204,19 +1191,19 @@ def update_rx_data(uids):
     anon_id = [anon_id_map[rx_data.mrn[i]] for i in range(len(rx_data.mrn))]
 
     source['rxs'].data = {'mrn': rx_data.mrn,
-                       'anon_id': anon_id,
-                       'uid': rx_data.study_instance_uid,
-                       'group': groups,
-                       'plan_name': rx_data.plan_name,
-                       'fx_dose': rx_data.fx_dose,
-                       'rx_percent': rx_data.rx_percent,
-                       'fxs': rx_data.fxs,
-                       'rx_dose': rx_data.rx_dose,
-                       'fx_grp_count': rx_data.fx_grp_count,
-                       'fx_grp_name': rx_data.fx_grp_name,
-                       'fx_grp_number': rx_data.fx_grp_number,
-                       'normalization_method': rx_data.normalization_method,
-                       'normalization_object': rx_data.normalization_object}
+                          'anon_id': anon_id,
+                          'uid': rx_data.study_instance_uid,
+                          'group': groups,
+                          'plan_name': rx_data.plan_name,
+                          'fx_dose': rx_data.fx_dose,
+                          'rx_percent': rx_data.rx_percent,
+                          'fxs': rx_data.fxs,
+                          'rx_dose': rx_data.rx_dose,
+                          'fx_grp_count': rx_data.fx_grp_count,
+                          'fx_grp_name': rx_data.fx_grp_name,
+                          'fx_grp_number': rx_data.fx_grp_number,
+                          'normalization_method': rx_data.normalization_method,
+                          'normalization_object': rx_data.normalization_object}
 
 
 def get_group_list(uids):
@@ -1526,7 +1513,7 @@ def roi_viewer_slice_ticker(attr, old, new):
     update_roi3_viewer()
     update_roi4_viewer()
     update_roi5_viewer()
-    source['tv'].data = {'x': [], 'y': [], 'z': []}
+    clear_source_data('tv')
 
 
 def update_roi_viewer_slice():
@@ -1654,7 +1641,7 @@ def update_roi2_viewer():
     if z in list(roi2_viewer_data):
         source['roi2_viewer'].data = roi2_viewer_data[z]
     else:
-        source['roi2_viewer'].data = {'x': [], 'y': [], 'z': []}
+        clear_source_data('roi2_viewer')
 
 
 def update_roi3_viewer():
@@ -1662,7 +1649,7 @@ def update_roi3_viewer():
     if z in list(roi3_viewer_data):
         source['roi3_viewer'].data = roi3_viewer_data[z]
     else:
-        source['roi3_viewer'].data = {'x': [], 'y': [], 'z': []}
+        clear_source_data('roi3_viewer')
 
 
 def update_roi4_viewer():
@@ -1670,7 +1657,7 @@ def update_roi4_viewer():
     if z in list(roi4_viewer_data):
         source['roi4_viewer'].data = roi4_viewer_data[z]
     else:
-        source['roi4_viewer'].data = {'x': [], 'y': [], 'z': []}
+        clear_source_data('roi4_viewer')
 
 
 def update_roi5_viewer():
@@ -1678,7 +1665,7 @@ def update_roi5_viewer():
     if z in list(roi5_viewer_data):
         source['roi5_viewer'].data = roi5_viewer_data[z]
     else:
-        source['roi5_viewer'].data = {'x': [], 'y': [], 'z': []}
+        clear_source_data('roi5_viewer')
 
 
 def roi_viewer_flip_y_axis():
@@ -1701,7 +1688,7 @@ def roi_viewer_plot_tv():
     if z in list(tv_data) and not source['tv'].data['x']:
         source['tv'].data = tv_data[z]
     else:
-        source['tv'].data = {'x': [], 'y': [], 'z': []}
+        clear_source_data('tv')
 
 
 def roi_viewer_wheel_event(event):
@@ -2257,14 +2244,8 @@ def update_correlation_matrix():
     # 0.5 offset due to Bokeh 0.12.9 bug
     source['corr_matrix_line'].data = {'x': [0.5, len(categories) - 0.5], 'y': [len(categories)-0.5, 0.5]}
 
-    s = {'1_pos': {'x': [], 'y': [], 'x_name': [], 'y_name': [], 'color': [],
-                   'alpha': [], 'r': [], 'p': [], 'group': [], 'size': [], 'x_normality': [], 'y_normality': []},
-         '1_neg': {'x': [], 'y': [], 'x_name': [], 'y_name': [], 'color': [],
-                   'alpha': [], 'r': [], 'p': [], 'group': [], 'size': [], 'x_normality': [], 'y_normality': []},
-         '2_pos': {'x': [], 'y': [], 'x_name': [], 'y_name': [], 'color': [],
-                   'alpha': [], 'r': [], 'p': [], 'group': [], 'size': [], 'x_normality': [], 'y_normality': []},
-         '2_neg': {'x': [], 'y': [], 'x_name': [], 'y_name': [], 'color': [],
-                   'alpha': [], 'r': [], 'p': [], 'group': [], 'size': [], 'x_normality': [], 'y_normality': []}}
+    s_keys = ['x', 'y', 'x_name', 'y_name', 'color', 'alpha', 'r', 'p', 'group', 'size', 'x_normality', 'y_normality']
+    s = {k: {sk: [] for sk in s_keys} for k in ['1_pos', '1_neg', '2_pos', '2_neg']}
 
     max_size = 45
     for x in range(categories_count):
@@ -2397,7 +2378,7 @@ def update_corr_chart():
             source['corr_trend_1'].data = {'x': x_trend, 'y': y_trend}
         else:
             group_1_stats = [''] * 6
-            source['corr_trend_1'].data = {'x': [], 'y': []}
+            clear_source_data('corr_trend_1')
 
         if x_2:
             slope, intercept, r_value, p_value, std_err = linregress(x_2, y_2)
@@ -2412,7 +2393,7 @@ def update_corr_chart():
             source['corr_trend_2'].data = {'x': x_trend, 'y': y_trend}
         else:
             group_2_stats = [''] * 6
-            source['corr_trend_2'].data = {'x': [], 'y': []}
+            clear_source_data('corr_trend_2')
 
         source['corr_chart_stats'].data = {'stat': CORR_CHART_STATS_ROW_NAMES,
                                            'group_1': group_1_stats,
@@ -2421,10 +2402,8 @@ def update_corr_chart():
         source['corr_chart_stats'].data = {'stat': CORR_CHART_STATS_ROW_NAMES,
                                            'group_1': [''] * 6,
                                            'group_2': [''] * 6}
-        source['corr_chart_1'].data = {'x': [], 'y': [], 'mrn': []}
-        source['corr_chart_2'].data = {'x': [], 'y': [], 'mrn': []}
-        source['corr_trend_1'].data = {'x': [], 'y': []}
-        source['corr_trend_2'].data = {'x': [], 'y': []}
+        for k in ['corr_chart_1', 'corr_chart_2', 'corr_trend_1', 'corr_trend_2']:
+            clear_source_data(k)
 
 
 def corr_chart_x_prev_ticker():
@@ -2633,8 +2612,8 @@ def update_control_chart():
         source['time_1'].data = source_time_1_data
         source['time_2'].data = source_time_2_data
     else:
-        source['time_1'].data = {'x': [], 'y': [], 'mrn': [], 'date_str': []}
-        source['time_2'].data = {'x': [], 'y': [], 'mrn': [], 'date_str': []}
+        clear_source_data('time_1')
+        clear_source_data('time_2')
 
     control_chart_update_trend()
 
@@ -2693,9 +2672,10 @@ def control_chart_update_trend():
             source['time_patch_1'].data = {'x': [group_1['x'][0], group_1['x'][-1], group_1['x'][-1], group_1['x'][0]],
                                            'y': [upper_bound_1, upper_bound_1, lower_bound_1, lower_bound_1]}
         else:
-            source['time_trend_1'].data = {'x': [], 'y': [], 'mrn': []}
-            source['time_bound_1'].data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
-            source['time_patch_1'].data = {'x': [], 'y': []}
+            clear_source_data('time_trend_1')
+            clear_source_data('time_bound_1')
+            clear_source_data('time_patch_1')
+
         if group_2['x']:
             group_2_collapsed = collapse_into_single_dates(group_2['x'], group_2['y'])
             if control_chart_lookback_units.value == "Dates with a Sim":
@@ -2719,9 +2699,9 @@ def control_chart_update_trend():
                                                  group_2['x'][-1], group_2['x'][0]],
                                            'y': [upper_bound_2,  upper_bound_2, lower_bound_2, lower_bound_2]}
         else:
-            source['time_trend_2'].data = {'x': [], 'y': [], 'mrn': []}
-            source['time_bound_2'].data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
-            source['time_patch_2'].data = {'x': [], 'y': []}
+            clear_source_data('time_trend_2')
+            clear_source_data('time_bound_2')
+            clear_source_data('time_patch_2')
 
         x_var = str(control_chart_y.value)
         if x_var.startswith('DVH Endpoint'):
@@ -2765,13 +2745,9 @@ def control_chart_update_trend():
         histogram_ranksums_text.text = "Wilcoxon rank-sum (Group 1 vs 2) p-value = %s" % pr
 
     else:
-        source['time_trend_1'].data = {'x': [], 'y': [], 'mrn': []}
-        source['time_bound_1'].data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
-        source['time_patch_1'].data = {'x': [], 'y': []}
-
-        source['time_trend_2'].data = {'x': [], 'y': [], 'mrn': []}
-        source['time_bound_2'].data = {'x': [], 'mrn': [], 'upper': [], 'avg': [], 'lower': []}
-        source['time_patch_2'].data = {'x': [], 'y': []}
+        for i in [1, 2]:
+            for k in ['trend', 'bound', 'patch']:
+                clear_source_data("time_%s_%s" % (k, i))
 
         histogram_normaltest_1_text.text = "Group 1 Normal Test p-value = "
         histogram_normaltest_2_text.text = "Group 2 Normal Test p-value = "
@@ -2797,8 +2773,8 @@ def update_histograms():
         width = [width_fraction * (bins[1] - bins[0])] * bin_size
         center = (bins[:-1] + bins[1:]) / 2.
         source['histogram_1'].data = {'x': center,
-                                   'top': hist,
-                                   'width': width}
+                                      'top': hist,
+                                      'width': width}
 
         hist, bins = np.histogram(source['time_2'].data['y'], bins=bin_size)
         if histogram_radio_group.active == 1:
@@ -2806,11 +2782,11 @@ def update_histograms():
         width = [width_fraction * (bins[1] - bins[0])] * bin_size
         center = (bins[:-1] + bins[1:]) / 2.
         source['histogram_2'].data = {'x': center,
-                                   'top': hist,
-                                   'width': width}
+                                      'top': hist,
+                                      'width': width}
     else:
-        source['histogram_1'].data = {'x': [], 'top': [], 'width': []}
-        source['histogram_2'].data = {'x': [], 'top': [], 'width': []}
+        clear_source_data('histogram_1')
+        clear_source_data('histogram_2')
 
 
 def histograms_ticker(attr, old, new):
@@ -2861,11 +2837,8 @@ def multi_var_linear_regression():
                                            'db_value': correlation_1[corr_chart_y.value]['data']}
 
     else:
-        source['multi_var_coeff_results_1'].data = {'var_name': [], 'coeff': [],
-                                                    'coeff_str': [], 'p': [], 'p_str': []}
-        source['multi_var_model_results_1'].data = {'model_p': [], 'model_p_str': [],
-                                                    'r_sq': [], 'r_sq_str': [], 'y_var': []}
-        source['residual_chart_1'].data = {'x': [], 'y': [], 'mrn': [], 'db_value': []}
+        for k in ['multi_var_coeff_results_1', 'multi_var_model_results_1', 'residual_chart_1']:
+            clear_source_data(k)
 
     # Red Group
     if current_dvh_group_2:
@@ -2902,11 +2875,8 @@ def multi_var_linear_regression():
                                            'mrn': correlation_2[corr_chart_y.value]['mrn'],
                                            'db_value': correlation_2[corr_chart_y.value]['data']}
     else:
-        source['multi_var_coeff_results_2'].data = {'var_name': [], 'coeff': [],
-                                                    'coeff_str': [], 'p': [], 'p_str': []}
-        source['multi_var_model_results_2'].data = {'model_p': [], 'model_p_str': [],
-                                                    'r_sq': [], 'r_sq_str': [], 'y_var': []}
-        source['residual_chart_2'].data = {'x': [], 'y': [], 'mrn': [], 'db_value': []}
+        for k in ['multi_var_coeff_results_2', 'multi_var_model_results_2', 'residual_chart_2']:
+            clear_source_data(k)
 
 
 def multi_var_include_selection(attr, old, new):
@@ -3154,6 +3124,10 @@ def source_beams_selected_ticker(attr, old, new):
     if ALLOW_SOURCE_UPDATE:
         uids = list(set([source['beams'].data['uid'][i] for i in new]))
         update_planning_data_selections(uids)
+
+
+def clear_source_data(source_key):
+    source[source_key].data = {k: [] for k in list(source[source_key].data)}
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
