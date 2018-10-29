@@ -643,7 +643,7 @@ def calc_centroid(roi):
 
 def update_centroid_in_db(study_instance_uid, roi_name):
     """
-    This function will recalculate the centoid of an roi based on data in the SQL DB.
+    This function will recalculate the centroid of an roi based on data in the SQL DB.
     :param study_instance_uid: uid as specified in SQL DB
     :param roi_name: roi_name as specified in SQL DB
     """

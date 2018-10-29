@@ -7,7 +7,7 @@
 # end-user is entirely liable for proper security implementation.
 
 from __future__ import print_function
-# import ldap  # This is from pip install python-ldap.  Not necessary, just what we used for our implementaiton.
+# import ldap  # This is from pip install python-ldap.  Not necessary, just what we used for our implementation.
 
 
 # Place holder function.  Edit this to implement.
