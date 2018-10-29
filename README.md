@@ -44,14 +44,6 @@ DOI: [https://doi.org/10.1002/acm2.12401](https://doi.org/10.1002/acm2.12401)
 “DVH Analytics: A DVH Database for Clinicians and Researchers,” J. App. Clin. Med. Phys. - JACMP-2018-01083
 
 
-### New MLC Analyzer Module added
-MLC Analyzer module added to DVH Analytics. Still in development, current complexity score based on:
-Younge et al. Penalization of aperture complexity in inversely planned volumetric modulated arc therapy.  
-Med Phys. 2012;39(11):7160–70.
-<h3 align="left">
-<img src='https://user-images.githubusercontent.com/4778878/37878772-09faa32a-303c-11e8-8732-39346f516ec8.png' width='600' alt="DVH Analytics screenshot">  
-</h3>
-
 ## Dependencies
 * [Python](https://www.python.org) 2.7  
     * Python 3 not currently supported
