@@ -57,7 +57,8 @@ ALLOW_SOURCE_UPDATE = True
 
 # Declare variables
 colors = itertools.cycle(palette)
-current_dvh, current_dvh_group_1, current_dvh_group_2 = [], [], []
+current_dvh = []
+current_dvh_group = {'1': [], '2': []}
 anon_id_map = {}
 x, y = [], []
 uids_1, uids_2 = [], []
@@ -81,7 +82,7 @@ tv_data = {}
 # Bokeh column data sources
 CORR_CHART_STATS_ROW_NAMES = ['slope', 'y-intercept', 'R-squared', 'p-value', 'std. err.', 'sample size']
 
-source = {'dvh': ColumnDataSource(data=dict(color=[], x=[], y=[], mrn=[])),
+source = {'dvhs': ColumnDataSource(data=dict(color=[], x=[], y=[], mrn=[])),
           'selectors': ColumnDataSource(data=dict(row=[1], category1=[''], category2=[''],
                                                   group=[''], group_label=[''], not_status=[''])),
           'ranges': ColumnDataSource(data=dict(row=[], category=[], min=[], max=[], min_display=[], max_display=[],
@@ -188,25 +189,25 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
                     'Gantry Max Angle': {'var_name': 'gantry_max', 'table': 'Beams', 'units': 'deg', 'source': source['beams']},
                     'Gantry Range': {'var_name': 'gantry_range', 'table': 'Beams', 'units': 'deg', 'source': source['beams']},
                     'SSD': {'var_name': 'ssd', 'table': 'Beams', 'units': 'cm', 'source': source['beams']},
-                    'ROI Min Dose': {'var_name': 'min_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source['dvh']},
-                    'ROI Mean Dose': {'var_name': 'mean_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source['dvh']},
-                    'ROI Max Dose': {'var_name': 'max_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source['dvh']},
-                    'ROI Volume': {'var_name': 'volume', 'table': 'DVHs', 'units': 'cc', 'source': source['dvh']},
-                    'ROI Surface Area': {'var_name': 'surface_area', 'table': 'DVHs', 'units': 'cm^2', 'source': source['dvh']},
-                    'ROI Spread X': {'var_name': 'spread_x', 'table': 'DVHs', 'units': 'cm', 'source': source['dvh']},
-                    'ROI Spread Y': {'var_name': 'spread_y', 'table': 'DVHs', 'units': 'cm', 'source': source['dvh']},
-                    'ROI Spread Z': {'var_name': 'spread_z', 'table': 'DVHs', 'units': 'cm', 'source': source['dvh']},
-                    'PTV Distance (Min)': {'var_name': 'dist_to_ptv_min', 'table': 'DVHs', 'units': 'cm', 'source': source['dvh']},
-                    'PTV Distance (Mean)': {'var_name': 'dist_to_ptv_mean', 'table': 'DVHs', 'units': 'cm', 'source': source['dvh']},
-                    'PTV Distance (Median)': {'var_name': 'dist_to_ptv_median', 'table': 'DVHs', 'units': 'cm', 'source': source['dvh']},
-                    'PTV Distance (Max)': {'var_name': 'dist_to_ptv_max', 'table': 'DVHs', 'units': 'cm', 'source': source['dvh']},
-                    'PTV Distance (Centroids)': {'var_name': 'dist_to_ptv_centroids', 'table': 'DVHs', 'units': 'cm', 'source': source['dvh']},
-                    'PTV Overlap': {'var_name': 'ptv_overlap', 'table': 'DVHs', 'units': 'cc', 'source': source['dvh']},
+                    'ROI Min Dose': {'var_name': 'min_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source['dvhs']},
+                    'ROI Mean Dose': {'var_name': 'mean_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source['dvhs']},
+                    'ROI Max Dose': {'var_name': 'max_dose', 'table': 'DVHs', 'units': 'Gy', 'source': source['dvhs']},
+                    'ROI Volume': {'var_name': 'volume', 'table': 'DVHs', 'units': 'cc', 'source': source['dvhs']},
+                    'ROI Surface Area': {'var_name': 'surface_area', 'table': 'DVHs', 'units': 'cm^2', 'source': source['dvhs']},
+                    'ROI Spread X': {'var_name': 'spread_x', 'table': 'DVHs', 'units': 'cm', 'source': source['dvhs']},
+                    'ROI Spread Y': {'var_name': 'spread_y', 'table': 'DVHs', 'units': 'cm', 'source': source['dvhs']},
+                    'ROI Spread Z': {'var_name': 'spread_z', 'table': 'DVHs', 'units': 'cm', 'source': source['dvhs']},
+                    'PTV Distance (Min)': {'var_name': 'dist_to_ptv_min', 'table': 'DVHs', 'units': 'cm', 'source': source['dvhs']},
+                    'PTV Distance (Mean)': {'var_name': 'dist_to_ptv_mean', 'table': 'DVHs', 'units': 'cm', 'source': source['dvhs']},
+                    'PTV Distance (Median)': {'var_name': 'dist_to_ptv_median', 'table': 'DVHs', 'units': 'cm', 'source': source['dvhs']},
+                    'PTV Distance (Max)': {'var_name': 'dist_to_ptv_max', 'table': 'DVHs', 'units': 'cm', 'source': source['dvhs']},
+                    'PTV Distance (Centroids)': {'var_name': 'dist_to_ptv_centroids', 'table': 'DVHs', 'units': 'cm', 'source': source['dvhs']},
+                    'PTV Overlap': {'var_name': 'ptv_overlap', 'table': 'DVHs', 'units': 'cc', 'source': source['dvhs']},
                     'Scan Spots': {'var_name': 'scan_spot_count', 'table': 'Beams', 'units': '', 'source': source['beams']},
                     'Beam MU per deg': {'var_name': 'beam_mu_per_deg', 'table': 'Beams', 'units': '', 'source': source['beams']},
                     'Beam MU per control point': {'var_name': 'beam_mu_per_cp', 'table': 'Beams', 'units': '', 'source': source['beams']},
-                    'ROI Cross-Section Max': {'var_name': 'cross_section_max', 'table': 'DVHs', 'units': 'cm^2', 'source': source['dvh']},
-                    'ROI Cross-Section Median': {'var_name': 'cross_section_median', 'table': 'DVHs', 'units': 'cm^2', 'source': source['dvh']}}
+                    'ROI Cross-Section Max': {'var_name': 'cross_section_max', 'table': 'DVHs', 'units': 'cm^2', 'source': source['dvhs']},
+                    'ROI Cross-Section Median': {'var_name': 'cross_section_median', 'table': 'DVHs', 'units': 'cm^2', 'source': source['dvhs']}}
 
 # correlation variable names
 correlation_variables, correlation_names = [], []
@@ -276,7 +277,7 @@ def add_selector_row():
         selector_row.options = ['1']
         selector_row.value = '1'
         source['selectors'].data = dict(row=[1], category1=[''], category2=[''],
-                                     group=[], group_label=[''], not_status=[''])
+                                        group=[], group_label=[''], not_status=[''])
     update_selector_source()
 
     clear_source_selection('selectors')
@@ -324,7 +325,7 @@ def delete_selector_row():
         new_source_length = len(source['selectors'].data['category1']) - 1
 
         if new_source_length == 0:
-            source['selectors'].data = dict(row=[], category1=[], category2=[], group=[], group_label=[], not_status=[])
+            clear_source_data('selector')
             selector_row.options = ['']
             selector_row.value = ''
             group_selector.active = [0]
@@ -367,7 +368,7 @@ def add_range_row():
         range_row.options = ['1']
         range_row.value = '1'
         source['ranges'].data = dict(row=['1'], category=[''], min=[''], max=[''], min_display=[''], max_display=[''],
-                                  group=[''], group_label=[''], not_status=[''])
+                                     group=[''], group_label=[''], not_status=[''])
 
     update_range_titles(reset_values=True)
     update_range_source()
@@ -494,8 +495,7 @@ def delete_range_row():
         new_source_length = len(source['ranges'].data['category']) - 1
 
         if new_source_length == 0:
-            source['ranges'].data = dict(row=[], category=[], min=[], max=[], min_display=[], max_display=[],
-                                      group=[], group_label=[''], not_status=[])
+            clear_source_data('ranges')
             range_row.options = ['']
             range_row.value = ''
             group_range.active = [0]
@@ -552,7 +552,7 @@ def add_endpoint():
         ep_row.options = ['1']
         ep_row.value = '1'
         source['endpoint_defs'].data = dict(row=['1'], output_type=[''], input_type=[''], input_value=[''],
-                                         label=[''], units_in=[''], units_out=[''])
+                                            label=[''], units_in=[''], units_out=[''])
         if not ep_text_input.value:
             ep_text_input.value = '1'
 
@@ -631,8 +631,7 @@ def delete_ep_row():
         new_source_length = len(source['endpoint_defs'].data['output_type']) - 1
 
         if new_source_length == 0:
-            source['endpoint_defs'].data = dict(row=[], output_type=[], input_type=[], input_value=[],
-                                             label=[], units_in=[], units_out=[])
+            clear_source_data('endpoint_defs')
             ep_row.options = ['']
             ep_row.value = ''
         else:
@@ -786,7 +785,7 @@ def get_query(group=None):
 
 # main update function
 def update_data():
-    global current_dvh, current_dvh_group_1, current_dvh_group_2, bad_uid
+    global current_dvh, current_dvh_group, bad_uid
     bad_uid = []
     old_update_button_label = query_button.label
     old_update_button_type = query_button.button_type
@@ -798,7 +797,7 @@ def update_data():
     current_dvh = DVH(uid=uids, dvh_condition=dvh_query_str)
     if current_dvh.count:
         print(str(datetime.now()), 'initializing source data ', current_dvh.query, sep=' ')
-        current_dvh_group_1, current_dvh_group_2 = update_dvh_data(current_dvh)
+        current_dvh_group['1'], current_dvh_group['2'] = update_dvh_data(current_dvh)
         if not options.LITE_VIEW:
             print(str(datetime.now()), 'updating correlation data')
             update_correlation()
@@ -980,47 +979,21 @@ def update_dvh_data(dvh):
             dvh_groups.append('Group 2')
 
     # Adjust dvh object to include stats data
+    attributes = ['rx_dose', 'volume', 'surface_area', 'min_dose', 'mean_dose', 'max_dose', 'dist_to_ptv_min',
+                  'dist_to_ptv_median', 'dist_to_ptv_mean', 'dist_to_ptv_max', 'dist_to_ptv_centroids',
+                  'ptv_overlap', 'cross_section_max', 'cross_section_median', 'spread_x', 'spread_y', 'spread_z']
     if extra_rows > 0:
         dvh.study_instance_uid.extend(['N/A'] * extra_rows)
         dvh.institutional_roi.extend(['N/A'] * extra_rows)
         dvh.physician_roi.extend(['N/A'] * extra_rows)
         dvh.roi_type.extend(['Stat'] * extra_rows)
     if group_1_constraint_count > 0:
-        dvh.rx_dose.extend(calc_stats(dvh_group_1.rx_dose))
-        dvh.volume.extend(calc_stats(dvh_group_1.volume))
-        dvh.surface_area.extend(calc_stats(dvh_group_1.surface_area))
-        dvh.min_dose.extend(calc_stats(dvh_group_1.min_dose))
-        dvh.mean_dose.extend(calc_stats(dvh_group_1.mean_dose))
-        dvh.max_dose.extend(calc_stats(dvh_group_1.max_dose))
-        dvh.dist_to_ptv_min.extend(calc_stats(dvh_group_1.dist_to_ptv_min))
-        dvh.dist_to_ptv_median.extend(calc_stats(dvh_group_1.dist_to_ptv_median))
-        dvh.dist_to_ptv_mean.extend(calc_stats(dvh_group_1.dist_to_ptv_mean))
-        dvh.dist_to_ptv_max.extend(calc_stats(dvh_group_1.dist_to_ptv_max))
-        dvh.dist_to_ptv_centroids.extend(calc_stats(dvh_group_1.dist_to_ptv_centroids))
-        dvh.ptv_overlap.extend(calc_stats(dvh_group_1.ptv_overlap))
-        dvh.cross_section_max.extend(calc_stats(dvh_group_1.cross_section_max))
-        dvh.cross_section_median.extend(calc_stats(dvh_group_1.cross_section_median))
-        dvh.spread_x.extend(calc_stats(dvh_group_1.spread_x))
-        dvh.spread_y.extend(calc_stats(dvh_group_1.spread_y))
-        dvh.spread_z.extend(calc_stats(dvh_group_1.spread_z))
+        for attr in attributes:
+            getattr(dvh, attr).extend(calc_stats(getattr(dvh_group_1, attr)))
+
     if group_2_constraint_count > 0:
-        dvh.rx_dose.extend(calc_stats(dvh_group_2.rx_dose))
-        dvh.volume.extend(calc_stats(dvh_group_2.volume))
-        dvh.surface_area.extend(calc_stats(dvh_group_2.surface_area))
-        dvh.min_dose.extend(calc_stats(dvh_group_2.min_dose))
-        dvh.mean_dose.extend(calc_stats(dvh_group_2.mean_dose))
-        dvh.max_dose.extend(calc_stats(dvh_group_2.max_dose))
-        dvh.dist_to_ptv_min.extend(calc_stats(dvh_group_2.dist_to_ptv_min))
-        dvh.dist_to_ptv_median.extend(calc_stats(dvh_group_2.dist_to_ptv_median))
-        dvh.dist_to_ptv_mean.extend(calc_stats(dvh_group_2.dist_to_ptv_mean))
-        dvh.dist_to_ptv_max.extend(calc_stats(dvh_group_2.dist_to_ptv_max))
-        dvh.dist_to_ptv_centroids.extend(calc_stats(dvh_group_2.dist_to_ptv_centroids))
-        dvh.ptv_overlap.extend(calc_stats(dvh_group_2.ptv_overlap))
-        dvh.cross_section_max.extend(calc_stats(dvh_group_2.cross_section_max))
-        dvh.cross_section_median.extend(calc_stats(dvh_group_2.cross_section_median))
-        dvh.spread_x.extend(calc_stats(dvh_group_2.spread_x))
-        dvh.spread_y.extend(calc_stats(dvh_group_2.spread_y))
-        dvh.spread_z.extend(calc_stats(dvh_group_2.spread_z))
+        for attr in attributes:
+            getattr(dvh, attr).extend(calc_stats(getattr(dvh_group_2, attr)))
 
     # Adjust dvh object for review dvh
     dvh.dvh = np.insert(dvh.dvh, 0, 0, 1)
@@ -1056,37 +1029,37 @@ def update_dvh_data(dvh):
     anon_id_map = {mrn: i for i, mrn in enumerate(list(set(dvh.mrn)))}
     anon_id = [anon_id_map[dvh.mrn[i]] for i in range(len(dvh.mrn))]
 
-    print(str(datetime.now()), "writing source['dvh'].data", sep=' ')
-    source['dvh'].data = {'mrn': dvh.mrn,
-                          'anon_id': anon_id,
-                          'group': dvh_groups,
-                          'uid': dvh.study_instance_uid,
-                          'roi_institutional': dvh.institutional_roi,
-                          'roi_physician': dvh.physician_roi,
-                          'roi_name': dvh.roi_name,
-                          'roi_type': dvh.roi_type,
-                          'rx_dose': dvh.rx_dose,
-                          'volume': dvh.volume,
-                          'surface_area': dvh.surface_area,
-                          'min_dose': dvh.min_dose,
-                          'mean_dose': dvh.mean_dose,
-                          'max_dose': dvh.max_dose,
-                          'dist_to_ptv_min': dvh.dist_to_ptv_min,
-                          'dist_to_ptv_mean': dvh.dist_to_ptv_mean,
-                          'dist_to_ptv_median': dvh.dist_to_ptv_median,
-                          'dist_to_ptv_max': dvh.dist_to_ptv_max,
-                          'dist_to_ptv_centroids': dvh.dist_to_ptv_centroids,
-                          'ptv_overlap': dvh.ptv_overlap,
-                          'cross_section_max': dvh.cross_section_max,
-                          'cross_section_median': dvh.cross_section_median,
-                          'spread_x': dvh.spread_x,
-                          'spread_y': dvh.spread_y,
-                          'spread_z': dvh.spread_z,
-                          'x': x_data,
-                          'y': y_data,
-                          'color': line_colors,
-                          'x_scale': x_scale,
-                          'y_scale': y_scale}
+    print(str(datetime.now()), "writing source['dvhs'].data", sep=' ')
+    source['dvhs'].data = {'mrn': dvh.mrn,
+                           'anon_id': anon_id,
+                           'group': dvh_groups,
+                           'uid': dvh.study_instance_uid,
+                           'roi_institutional': dvh.institutional_roi,
+                           'roi_physician': dvh.physician_roi,
+                           'roi_name': dvh.roi_name,
+                           'roi_type': dvh.roi_type,
+                           'rx_dose': dvh.rx_dose,
+                           'volume': dvh.volume,
+                           'surface_area': dvh.surface_area,
+                           'min_dose': dvh.min_dose,
+                           'mean_dose': dvh.mean_dose,
+                           'max_dose': dvh.max_dose,
+                           'dist_to_ptv_min': dvh.dist_to_ptv_min,
+                           'dist_to_ptv_mean': dvh.dist_to_ptv_mean,
+                           'dist_to_ptv_median': dvh.dist_to_ptv_median,
+                           'dist_to_ptv_max': dvh.dist_to_ptv_max,
+                           'dist_to_ptv_centroids': dvh.dist_to_ptv_centroids,
+                           'ptv_overlap': dvh.ptv_overlap,
+                           'cross_section_max': dvh.cross_section_max,
+                           'cross_section_median': dvh.cross_section_median,
+                           'spread_x': dvh.spread_x,
+                           'spread_y': dvh.spread_y,
+                           'spread_z': dvh.spread_z,
+                           'x': x_data,
+                           'y': y_data,
+                           'color': line_colors,
+                           'x_scale': x_scale,
+                           'y_scale': y_scale}
 
     print(str(datetime.now()), 'begin updating beam, plan, rx data sources', sep=' ')
     update_beam_data(dvh.study_instance_uid)
@@ -1107,46 +1080,19 @@ def update_beam_data(uids):
 
     anon_id = [anon_id_map[beam_data.mrn[i]] for i in range(len(beam_data.mrn))]
 
-    source['beams'].data = {'mrn': beam_data.mrn,
-                            'anon_id': anon_id,
-                            'group': groups,
-                            'uid': beam_data.study_instance_uid,
-                            'beam_dose': beam_data.beam_dose,
-                            'beam_energy_min': beam_data.beam_energy_min,
-                            'beam_energy_max': beam_data.beam_energy_max,
-                            'beam_mu': beam_data.beam_mu,
-                            'beam_mu_per_deg': beam_data.beam_mu_per_deg,
-                            'beam_mu_per_cp': beam_data.beam_mu_per_cp,
-                            'beam_name': beam_data.beam_name,
-                            'beam_number': beam_data.beam_number,
-                            'beam_type': beam_data.beam_type,
-                            'scan_mode': beam_data.scan_mode,
-                            'scan_spot_count': beam_data.scan_spot_count,
-                            'control_point_count': beam_data.control_point_count,
-                            'fx_count': beam_data.fx_count,
-                            'fx_grp_beam_count': beam_data.fx_grp_beam_count,
-                            'fx_grp_number': beam_data.fx_grp_number,
-                            'gantry_start': beam_data.gantry_start,
-                            'gantry_end': beam_data.gantry_end,
-                            'gantry_rot_dir': beam_data.gantry_rot_dir,
-                            'gantry_range': beam_data.gantry_range,
-                            'gantry_min': beam_data.gantry_min,
-                            'gantry_max': beam_data.gantry_max,
-                            'collimator_start': beam_data.collimator_start,
-                            'collimator_end': beam_data.collimator_end,
-                            'collimator_rot_dir': beam_data.collimator_rot_dir,
-                            'collimator_range': beam_data.collimator_range,
-                            'collimator_min': beam_data.collimator_min,
-                            'collimator_max': beam_data.collimator_max,
-                            'couch_start': beam_data.couch_start,
-                            'couch_end': beam_data.couch_end,
-                            'couch_rot_dir': beam_data.couch_rot_dir,
-                            'couch_range': beam_data.couch_range,
-                            'couch_min': beam_data.couch_min,
-                            'couch_max': beam_data.couch_max,
-                            'radiation_type': beam_data.radiation_type,
-                            'ssd': beam_data.ssd,
-                            'treatment_machine': beam_data.treatment_machine}
+    attributes = ['mrn', 'beam_dose', 'beam_energy_min', 'beam_energy_max', 'beam_mu', 'beam_mu_per_deg',
+                  'beam_mu_per_cp', 'beam_name', 'beam_number', 'beam_type', 'scan_mode', 'scan_spot_count',
+                  'control_point_count', 'fx_count', 'fx_grp_beam_count', 'fx_grp_number', 'gantry_start', 'gantry_end',
+                  'gantry_rot_dir', 'gantry_range', 'gantry_min', 'gantry_max', 'collimator_start', 'collimator_end',
+                  'collimator_rot_dir', 'collimator_range', 'collimator_min', 'collimator_max', 'couch_start',
+                  'couch_end', 'couch_rot_dir', 'couch_range', 'couch_min', 'couch_max', 'radiation_type', 'ssd',
+                  'treatment_machine']
+    data = {attr: getattr(beam_data, attr) for attr in attributes}
+    data['anon_id'] = anon_id
+    data['groups'] = groups
+    data['uid'] = beam_data.study_instance_uid
+
+    source['beams'].data = data
 
 
 # updates plan ColumnSourceData for a given list of uids
@@ -1160,24 +1106,15 @@ def update_plan_data(uids):
 
     anon_id = [anon_id_map[plan_data.mrn[i]] for i in range(len(plan_data.mrn))]
 
-    source['plans'].data = {'mrn': plan_data.mrn,
-                            'anon_id': anon_id,
-                            'uid': plan_data.study_instance_uid,
-                            'group': groups,
-                            'age': plan_data.age,
-                            'birth_date': plan_data.birth_date,
-                            'dose_grid_res': plan_data.dose_grid_res,
-                            'fxs': plan_data.fxs,
-                            'patient_orientation': plan_data.patient_orientation,
-                            'patient_sex': plan_data.patient_sex,
-                            'physician': plan_data.physician,
-                            'rx_dose': plan_data.rx_dose,
-                            'sim_study_date': plan_data.sim_study_date,
-                            'total_mu': plan_data.total_mu,
-                            'tx_modality': plan_data.tx_modality,
-                            'tx_site': plan_data.tx_site,
-                            'heterogeneity_correction': plan_data.heterogeneity_correction,
-                            'baseline': plan_data.baseline}
+    attributes = ['mrn', 'age', 'birth_date', 'dose_grid_res', 'fxs', 'patient_orientation', 'patient_sex', 'physician',
+                  'rx_dose', 'sim_study_date', 'total_mu', 'tx_modality', 'tx_site', 'heterogeneity_correction',
+                  'baseline']
+    data = {attr: getattr(plan_data, attr) for attr in attributes}
+    data['anon_id'] = anon_id
+    data['groups'] = groups
+    data['uid'] = plan_data.study_instance_uid
+
+    source['plans'].data = data
 
 
 # updates rx ColumnSourceData for a given list of uids
@@ -1190,20 +1127,14 @@ def update_rx_data(uids):
 
     anon_id = [anon_id_map[rx_data.mrn[i]] for i in range(len(rx_data.mrn))]
 
-    source['rxs'].data = {'mrn': rx_data.mrn,
-                          'anon_id': anon_id,
-                          'uid': rx_data.study_instance_uid,
-                          'group': groups,
-                          'plan_name': rx_data.plan_name,
-                          'fx_dose': rx_data.fx_dose,
-                          'rx_percent': rx_data.rx_percent,
-                          'fxs': rx_data.fxs,
-                          'rx_dose': rx_data.rx_dose,
-                          'fx_grp_count': rx_data.fx_grp_count,
-                          'fx_grp_name': rx_data.fx_grp_name,
-                          'fx_grp_number': rx_data.fx_grp_number,
-                          'normalization_method': rx_data.normalization_method,
-                          'normalization_object': rx_data.normalization_object}
+    attributes = ['mrn', 'plan_name', 'fx_dose', 'rx_percent', 'fxs', 'rx_dose', 'fx_grp_count', 'fx_grp_name',
+                  'fx_grp_number', 'normalization_method', 'normalization_object']
+    data = {attr: getattr(rx_data, attr) for attr in attributes}
+    data['anon_id'] = anon_id
+    data['groups'] = groups
+    data['uid'] = rx_data.study_instance_uid
+
+    source['rxs'].data = data
 
 
 def get_group_list(uids):
@@ -1239,14 +1170,14 @@ def update_source_endpoint_calcs():
         group_1_constraint_count, group_2_constraint_count = group_constraint_count()
 
         ep = {'mrn': ['']}
-        ep_1, ep_2 = {}, {}
+        ep_group = {'1': {}, '2': {}}
 
         table_columns = []
 
         ep['mrn'] = current_dvh.mrn
         ep['uid'] = current_dvh.study_instance_uid
-        ep['group'] = source['dvh'].data['group']
-        ep['roi_name'] = source['dvh'].data['roi_name']
+        ep['group'] = source['dvhs'].data['group']
+        ep['roi_name'] = source['dvhs'].data['roi_name']
 
         table_columns.append(TableColumn(field='mrn', title='MRN'))
         table_columns.append(TableColumn(field='group', title='Group'))
@@ -1271,29 +1202,21 @@ def update_source_endpoint_calcs():
 
             if 'Dose' in data['output_type'][r]:
                 ep[ep_name] = current_dvh.get_dose_to_volume(x, volume_scale=endpoint_input, dose_scale=endpoint_output)
-                if current_dvh_group_1:
-                    ep_1[ep_name] = current_dvh_group_1.get_dose_to_volume(x,
-                                                                           volume_scale=endpoint_input,
-                                                                           dose_scale=endpoint_output)
-                if current_dvh_group_2:
-                    ep_2[ep_name] = current_dvh_group_2.get_dose_to_volume(x,
-                                                                           volume_scale=endpoint_input,
-                                                                           dose_scale=endpoint_output)
+                for g in ['1', '2']:
+                    if current_dvh_group[g]:
+                        ep_group[g][ep_name] = current_dvh_group[g].get_dose_to_volume(x, volume_scale=endpoint_input,
+                                                                                       dose_scale=endpoint_output)
 
             else:
                 ep[ep_name] = current_dvh.get_volume_of_dose(x, dose_scale=endpoint_input, volume_scale=endpoint_output)
-                if current_dvh_group_1:
-                    ep_1[ep_name] = current_dvh_group_1.get_volume_of_dose(x,
-                                                                           dose_scale=endpoint_input,
-                                                                           volume_scale=endpoint_output)
-                if current_dvh_group_2:
-                    ep_2[ep_name] = current_dvh_group_2.get_volume_of_dose(x,
-                                                                           dose_scale=endpoint_input,
-                                                                           volume_scale=endpoint_output)
+                for g in ['1', '2']:
+                    if current_dvh_group[g]:
+                        ep_group[g][ep_name] = current_dvh_group[g].get_volume_of_dose(x, dose_scale=endpoint_input,
+                                                                                       volume_scale=endpoint_output)
 
             if group_1_constraint_count and group_2_constraint_count:
-                ep_1_stats = calc_stats(ep_1[ep_name])
-                ep_2_stats = calc_stats(ep_2[ep_name])
+                ep_1_stats = calc_stats(ep_group['1'][ep_name])
+                ep_2_stats = calc_stats(ep_group['2'][ep_name])
                 stats = []
                 for i in range(len(ep_1_stats)):
                     stats.append(ep_1_stats[i])
@@ -1304,10 +1227,10 @@ def update_source_endpoint_calcs():
         source['endpoint_calcs'].data = ep
 
         # Update endpoint calc from review_dvh, if available
-        if source['dvh'].data['y'][0] != []:
+        if source['dvhs'].data['y'][0] != []:
             review_ep = {}
-            rx = float(source['dvh'].data['rx_dose'][0])
-            volume = float(source['dvh'].data['volume'][0])
+            rx = float(source['dvhs'].data['rx_dose'][0])
+            volume = float(source['dvhs'].data['volume'][0])
             data = source['endpoint_defs'].data
             for r in range(len(data['row'])):
                 ep_name = str(data['label'][r])
@@ -1876,7 +1799,7 @@ def get_include_map():
         extra_rows = 6
     else:
         extra_rows = 0
-    include = [True] * (len(source['dvh'].data['uid']) - extra_rows)
+    include = [True] * (len(source['dvhs'].data['uid']) - extra_rows)
     include[0] = False
     include.extend([False] * extra_rows)
 
@@ -1887,13 +1810,13 @@ def initialize_rad_bio_source():
     include = get_include_map()
 
     # Get data from DVH Table
-    mrn = [j for i, j in enumerate(source['dvh'].data['mrn']) if include[i]]
-    uid = [j for i, j in enumerate(source['dvh'].data['uid']) if include[i]]
-    group = [j for i, j in enumerate(source['dvh'].data['group']) if include[i]]
-    roi_name = [j for i, j in enumerate(source['dvh'].data['roi_name']) if include[i]]
-    ptv_overlap = [j for i, j in enumerate(source['dvh'].data['ptv_overlap']) if include[i]]
-    roi_type = [j for i, j in enumerate(source['dvh'].data['roi_type']) if include[i]]
-    rx_dose = [j for i, j in enumerate(source['dvh'].data['rx_dose']) if include[i]]
+    mrn = [j for i, j in enumerate(source['dvhs'].data['mrn']) if include[i]]
+    uid = [j for i, j in enumerate(source['dvhs'].data['uid']) if include[i]]
+    group = [j for i, j in enumerate(source['dvhs'].data['group']) if include[i]]
+    roi_name = [j for i, j in enumerate(source['dvhs'].data['roi_name']) if include[i]]
+    ptv_overlap = [j for i, j in enumerate(source['dvhs'].data['ptv_overlap']) if include[i]]
+    roi_type = [j for i, j in enumerate(source['dvhs'].data['roi_type']) if include[i]]
+    rx_dose = [j for i, j in enumerate(source['dvhs'].data['rx_dose']) if include[i]]
 
     # Get data from beam table
     fxs, fx_dose = [], []
@@ -1961,13 +1884,13 @@ def rad_bio_apply():
 
 
 def update_eud():
-    uid_roi_list = ["%s_%s" % (uid, source['dvh'].data['roi_name'][i]) for i, uid in enumerate(source['dvh'].data['uid'])]
+    uid_roi_list = ["%s_%s" % (uid, source['dvhs'].data['roi_name'][i]) for i, uid in enumerate(source['dvhs'].data['uid'])]
 
     eud, ntcp_tcp = [], []
     for i, uid in enumerate(source['rad_bio'].data['uid']):
         uid_roi = "%s_%s" % (uid, source['rad_bio'].data['roi_name'][i])
         source_index = uid_roi_list.index(uid_roi)
-        dvh = source['dvh'].data['y'][source_index]
+        dvh = source['dvhs'].data['y'][source_index]
         a = source['rad_bio'].data['eud_a'][i]
         try:
             eud.append(round(calc_eud(dvh, a), 2))
@@ -2172,23 +2095,23 @@ def update_eud_in_correlation():
     global correlation_1, correlation_2, multi_var_reg_vars
 
     # Get data from EUD data
-    uid_roi_list = ["%s_%s" % (uid, source['dvh'].data['roi_name'][i]) for i, uid in enumerate(source['dvh'].data['uid'])]
+    uid_roi_list = ["%s_%s" % (uid, source['dvhs'].data['roi_name'][i]) for i, uid in enumerate(source['dvhs'].data['uid'])]
     eud_1, eud_2, ntcp_tcp_1, ntcp_tcp_2 = [], [], [], []
     uids_rad_bio_1, mrns_rad_bio_1, uids_rad_bio_2, mrns_rad_bio_2 = [], [], [], []
     for i, uid in enumerate(source['rad_bio'].data['uid']):
         uid_roi = "%s_%s" % (uid, source['rad_bio'].data['roi_name'][i])
         source_index = uid_roi_list.index(uid_roi)
-        group = source['dvh'].data['group'][source_index]
+        group = source['dvhs'].data['group'][source_index]
         if group in {'Group 1', 'Group 1 & 2'}:
             eud_1.append(source['rad_bio'].data['eud'][i])
             ntcp_tcp_1.append(source['rad_bio'].data['ntcp_tcp'][i])
             uids_rad_bio_1.append(uid)
-            mrns_rad_bio_1.append(source['dvh'].data['mrn'][source_index])
+            mrns_rad_bio_1.append(source['dvhs'].data['mrn'][source_index])
         if group in {'Group 2', 'Group 1 & 2'}:
             eud_2.append(source['rad_bio'].data['eud'][i])
             ntcp_tcp_2.append(source['rad_bio'].data['ntcp_tcp'][i])
             uids_rad_bio_2.append(uid)
-            mrns_rad_bio_2.append(source['dvh'].data['mrn'][source_index])
+            mrns_rad_bio_2.append(source['dvhs'].data['mrn'][source_index])
     correlation_1['EUD'] = {'uid': uids_rad_bio_1, 'mrn': mrns_rad_bio_1, 'data': eud_1, 'units': 'Gy'}
     correlation_1['NTCP/TCP'] = {'uid': uids_rad_bio_1, 'mrn': mrns_rad_bio_1, 'data': ntcp_tcp_1, 'units': []}
     correlation_2['EUD'] = {'uid': uids_rad_bio_2, 'mrn': mrns_rad_bio_2, 'data': eud_2, 'units': 'Gy'}
@@ -2539,24 +2462,24 @@ def update_control_chart():
                     if new in {'EUD', 'NTCP/TCP'}:
                         roi = source['rad_bio'].data['roi_name'][v]
                     else:
-                        roi = source['dvh'].data['roi_name'][v]
+                        roi = source['dvhs'].data['roi_name'][v]
 
                     found = {'Group 1': False, 'Group 2': False}
 
-                    if current_dvh_group_1:
+                    if current_dvh_group['1']:
                         r1, r1_max = 0, len(current_dvh_group_1.study_instance_uid)
                         while r1 < r1_max and not found['Group 1']:
-                            if current_dvh_group_1.study_instance_uid[r1] == uid and \
-                                            current_dvh_group_1.roi_name[r1] == roi:
+                            if current_dvh_group['1'].study_instance_uid[r1] == uid and \
+                                            current_dvh_group['1'].roi_name[r1] == roi:
                                 found['Group 1'] = True
                                 color = options.GROUP_1_COLOR
                             r1 += 1
 
-                    if current_dvh_group_2:
-                        r2, r2_max = 0, len(current_dvh_group_2.study_instance_uid)
+                    if current_dvh_group['2']:
+                        r2, r2_max = 0, len(current_dvh_group['2'].study_instance_uid)
                         while r2 < r2_max and not found['Group 2']:
-                            if current_dvh_group_2.study_instance_uid[r2] == uid and \
-                                            current_dvh_group_2.roi_name[r2] == roi:
+                            if current_dvh_group['2'].study_instance_uid[r2] == uid and \
+                                            current_dvh_group['2'].roi_name[r2] == roi:
                                 found['Group 2'] = True
                                 if found['Group 1']:
                                     color = options.GROUP_1_and_2_COLOR
@@ -2566,14 +2489,14 @@ def update_control_chart():
 
                     colors.append(color)
                 else:
-                    if current_dvh_group_1 and current_dvh_group_2:
-                        if uid in current_dvh_group_1.study_instance_uid and uid in current_dvh_group_2.study_instance_uid:
+                    if current_dvh_group['1'] and current_dvh_group['2']:
+                        if uid in current_dvh_group['1'].study_instance_uid and uid in current_dvh_group['2'].study_instance_uid:
                             colors.append(options.GROUP_1_and_2_COLOR)
-                        elif uid in current_dvh_group_1.study_instance_uid:
+                        elif uid in current_dvh_group['1'].study_instance_uid:
                             colors.append(options.GROUP_1_COLOR)
                         else:
                             colors.append(options.GROUP_2_COLOR)
-                    elif current_dvh_group_1:
+                    elif current_dvh_group['1']:
                         colors.append(options.GROUP_1_COLOR)
                     else:
                         colors.append(options.GROUP_2_COLOR)
@@ -2800,7 +2723,7 @@ def multi_var_linear_regression():
     included_vars.sort()
 
     # Blue Group
-    if current_dvh_group_1:
+    if current_dvh_group['1']:
         x = []
         x_count = len(correlation_1[list(correlation_1)[0]]['data'])
         for i in range(x_count):
@@ -2841,7 +2764,7 @@ def multi_var_linear_regression():
             clear_source_data(k)
 
     # Red Group
-    if current_dvh_group_2:
+    if current_dvh_group['2']:
         x = []
         x_count = len(correlation_2[list(correlation_2)[0]]['data'])
         for i in range(x_count):
@@ -2869,7 +2792,7 @@ def multi_var_linear_regression():
                                                     'p': coeff_p.tolist(), 'p_str': coeff_p_str}
         source['multi_var_model_results_2'].data = {'model_p': [model_p], 'model_p_str': model_p_str,
                                                     'r_sq': [r_sq], 'r_sq_str': r_sq_str,
-                                                   'y_var': [corr_chart_y.value]}
+                                                    'y_var': [corr_chart_y.value]}
         source['residual_chart_2'].data = {'x': range(1, x_count + 1),
                                            'y': fit.resid.tolist(),
                                            'mrn': correlation_2[corr_chart_y.value]['mrn'],
@@ -2891,7 +2814,7 @@ def update_source_endpoint_view_selection(attr, old, new):
 
 def update_dvh_table_selection(attr, old, new):
     if new:
-        source['dvh'].selected.indices = new
+        source['dvhs'].selected.indices = new
 
 
 def update_dvh_review_rois(attr, old, new):
@@ -2917,7 +2840,7 @@ def update_dvh_review_rois(attr, old, new):
                    'max_dose': [(0, '')],
                    'mrn': [(0, '')],
                    'rx_dose': [(0, '')]}
-        source['dvh'].patch(patches)
+        source['dvhs'].patch(patches)
 
 
 def calculate_review_dvh():
@@ -2934,7 +2857,7 @@ def calculate_review_dvh():
                'rx_dose': [(0, 1)]}
 
     try:
-        if not source['dvh'].data['x']:
+        if not source['dvhs'].data['x']:
             update_data()
 
         else:
@@ -2994,7 +2917,7 @@ def calculate_review_dvh():
     except:
         pass
 
-    source['dvh'].patch(patches)
+    source['dvhs'].patch(patches)
 
     update_source_endpoint_calcs()
 
@@ -3005,7 +2928,7 @@ def select_reviewed_dvh_ticker(attr, old, new):
 
 def review_rx_ticker(attr, old, new):
     if radio_group_dose.active == 0:
-        source['dvh'].patch({'rx_dose': [(0, round(float(review_rx.value), 2))]})
+        source['dvhs'].patch({'rx_dose': [(0, round(float(review_rx.value), 2))]})
     else:
         calculate_review_dvh()
 
@@ -3013,7 +2936,7 @@ def review_rx_ticker(attr, old, new):
 # Ticker function for abs/rel dose radio buttons
 # any change will call update_data, if any source data has been retrieved from SQL
 def radio_group_dose_ticker(attr, old, new):
-    if source['dvh'].data['x'] != '':
+    if source['dvhs'].data['x'] != '':
         update_data()
         calculate_review_dvh()
 
@@ -3021,7 +2944,7 @@ def radio_group_dose_ticker(attr, old, new):
 # Ticker function for abs/rel volume radio buttons
 # any change will call update_data, if any source data has been retrieved from SQL
 def radio_group_volume_ticker(attr, old, new):
-    if source['dvh'].data['x'] != '':
+    if source['dvhs'].data['x'] != '':
         update_data()
         calculate_review_dvh()
 
@@ -3100,10 +3023,8 @@ def update_planning_data_selections(uids):
     global ALLOW_SOURCE_UPDATE
 
     ALLOW_SOURCE_UPDATE = False
-
-    source['rxs'].selected.indices = [i for i, j in enumerate(source['rxs'].data['uid']) if j in uids]
-    source['plans'].selected.indices = [i for i, j in enumerate(source['plans'].data['uid']) if j in uids]
-    source['beams'].selected.indices = [i for i, j in enumerate(source['beams'].data['uid']) if j in uids]
+    for k in ['rxs', 'plans', 'beams']:
+        source[k].selected.indices = [i for i, j in enumerate(source[k].data['uid']) if j in uids]
 
     ALLOW_SOURCE_UPDATE = True
 
@@ -3259,7 +3180,7 @@ query_button.on_click(update_data)
 # define Download button and call download.js on click
 menu = [("All Data", "all"), ("Lite", "lite"), ("Only DVHs", "dvhs"), ("Anonymized DVHs", "anon_dvhs")]
 download_dropdown = Dropdown(label="Download", button_type="default", menu=menu, width=100)
-download_dropdown.callback = CustomJS(args=dict(source=source['dvh'],
+download_dropdown.callback = CustomJS(args=dict(source=source['dvhs'],
                                                 source_rxs=source['rxs'],
                                                 source_plans=source['plans'],
                                                 source_beams=source['beams']),
@@ -3326,7 +3247,7 @@ stats_mean_2 = dvh_plots.line('x', 'mean', source=source['stats_2'],
                               line_dash=options.STATS_2_MEAN_LINE_DASH, alpha=options.STATS_2_MEAN_ALPHA)
 
 # Add all DVHs, but hide them until selected
-dvh_plots.multi_line('x', 'y', source=source['dvh'],
+dvh_plots.multi_line('x', 'y', source=source['dvhs'],
                      selection_color='color', line_width=options.DVH_LINE_WIDTH, alpha=0,
                      line_dash=options.DVH_LINE_DASH, nonselection_alpha=0, selection_alpha=1)
 
@@ -3364,8 +3285,8 @@ columns = [TableColumn(field="mrn", title="MRN / Stat", width=175),
            TableColumn(field="max_dose", title="Max Dose", width=80, formatter=NumberFormatter(format="0.00")),
            TableColumn(field="dist_to_ptv_min", title="Dist to PTV", width=80, formatter=NumberFormatter(format="0.0")),
            TableColumn(field="ptv_overlap", title="PTV Overlap", width=80, formatter=NumberFormatter(format="0.0"))]
-data_table = DataTable(source=source['dvh'], columns=columns, width=1200, editable=True)
-source['dvh'].selected.on_change('indices', update_source_endpoint_view_selection)
+data_table = DataTable(source=source['dvhs'], columns=columns, width=1200, editable=True)
+source['dvhs'].selected.on_change('indices', update_source_endpoint_view_selection)
 data_table.index_position = None
 
 # Set up EndPoint DataTable
@@ -3886,7 +3807,7 @@ data_table_rad_bio_text = Div(text="<b>EUD Calculations for Query</b>", width=50
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 roi_colors = plot_colors.cnames.keys()
 roi_colors.sort()
-roi_viewer_options = [''] + source['dvh'].data['mrn']
+roi_viewer_options = [''] + source['dvhs'].data['mrn']
 roi_viewer_mrn_select = Select(value='', options=roi_viewer_options, width=200, title='MRN')
 roi_viewer_study_date_select = Select(value='', options=[''], width=200, title='Sim Study Date')
 roi_viewer_uid_select = Select(value='', options=[''], width=400, title='Study Instance UID')
@@ -3952,7 +3873,7 @@ roi_viewer_scrolling = CheckboxGroup(labels=["Enable Slice Scrolling with Mouse 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # MLC Analyzer
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-mlc_analyzer_options = [''] + source['dvh'].data['mrn']
+mlc_analyzer_options = [''] + source['dvhs'].data['mrn']
 mlc_analyzer_mrn_select = Select(value='', options=mlc_analyzer_options, width=200, title='MRN')
 mlc_analyzer_study_date_select = Select(value='', options=[''], width=200, title='Sim Study Date')
 mlc_analyzer_uid_select = Select(value='', options=[''], width=400, title='Study Instance UID')
