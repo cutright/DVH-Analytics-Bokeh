@@ -20,6 +20,10 @@ DISABLE_BACKUP_TAB = False
 # but only the number specified below will be displayed
 ENDPOINT_COUNT = 10
 
+N = ['1', '2']
+
+MIN_BORDER = 75
+
 # These colors propagate to all tabs that visualize your two groups
 GROUP_1_COLOR = 'blue'
 GROUP_1_COLOR_NEG_CORR = 'green'

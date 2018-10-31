@@ -1,8 +1,14 @@
 # Change log of DVH Analytics
 
-### 0.4.5 (TBD)
+### 0.4.6 (TBD)
 * Residual chart added to Regression tab, will develop into Control Chart
 * Begin making code more concise using classes and dictionaries
+* Create bokeh_components directory
+    * DataTable column definitions moved to columns.py
+    * ColumnDataSource objects moved to sources.py
+    * Custom Title objects moved to custom_titles.py
+
+### 0.4.5 (scrapped)
 
 ### 0.4.4 (2018.08.15)
 * typo in keyword for parameter in dicom_to_sql (import_latest_plan_only changes to import_latest_only)
