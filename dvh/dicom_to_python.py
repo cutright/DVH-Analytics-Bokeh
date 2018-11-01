@@ -150,8 +150,14 @@ class PlanRow:
             dose_time_stamp = '(NULL)'
 
         # Record treatment planning system vendor, name, and version
-        tps_manufacturer = rt_plan.Manufacturer
-        tps_software_name = rt_plan.ManufacturerModelName
+        if hasattr(rt_plan, 'Manufacturer'):
+            tps_manufacturer = rt_plan.Manufacturer
+        else:
+            tps_manufacturer = '(NULL)'
+        if hasattr(rt_plan, 'ManufacturerModelName'):
+            tps_software_name = rt_plan.ManufacturerModelName
+        else:
+            tps_software_name = '(NULL)'
         if hasattr(rt_plan, 'SoftwareVersions'):
             tps_software_version = rt_plan.SoftwareVersions[0]
         else:
