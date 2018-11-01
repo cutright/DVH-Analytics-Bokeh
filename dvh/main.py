@@ -41,6 +41,8 @@ from get_settings import get_settings, parse_settings_file
 from options import N
 from bokeh_components.custom_titles import custom_title
 from bokeh_components import columns, sources
+from bokeh_components.utiltilies import group_constraint_count, get_include_map, get_correlation, validate_correlation, \
+    update_or_add_endpoints_to_correlation
 
 
 options = load_options(options)
@@ -169,7 +171,7 @@ for key in list(range_categories):
 correlation_variables.sort()
 correlation_names.sort()
 multi_var_reg_var_names = correlation_names + ['EUD', 'NTCP/TCP']
-multi_var_reg_vars = {name: False for name in multi_var_reg_var_names}
+MULTI_VAR_REG_VARS = {name: False for name in multi_var_reg_var_names}
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -771,7 +773,7 @@ def update_dvh_data(dvh):
     global UIDS, ANON_ID_MAP
 
     dvh_group_1, dvh_group_2 = [], []
-    group_1_constraint_count, group_2_constraint_count = group_constraint_count()
+    group_1_constraint_count, group_2_constraint_count = group_constraint_count(sources)
 
     if group_1_constraint_count and group_2_constraint_count:
         extra_rows = 12
@@ -974,7 +976,7 @@ def update_dvh_data(dvh):
     ANON_ID_MAP = {mrn: i for i, mrn in enumerate(list(set(dvh.mrn)))}
     anon_id = [ANON_ID_MAP[dvh.mrn[i]] for i in range(len(dvh.mrn))]
 
-    print(str(datetime.now()), "writing sources.dvhs'].data", sep=' ')
+    print(str(datetime.now()), "writing sources.dvhs.data", sep=' ')
     sources.dvhs.data = {'mrn': dvh.mrn,
                          'anon_id': anon_id,
                          'group': dvh_groups,
@@ -1097,22 +1099,10 @@ def get_group_list(uids):
     return groups
 
 
-def group_constraint_count():
-    data = sources.selectors.data
-    g1a = len([r for r in data['row'] if data['group'][int(r)-1] in {1, 3}])
-    g2a = len([r for r in data['row'] if data['group'][int(r)-1] in {2, 3}])
-
-    data = sources.ranges.data
-    g1b = len([r for r in data['row'] if data['group'][int(r)-1] in {1, 3}])
-    g2b = len([r for r in data['row'] if data['group'][int(r)-1] in {2, 3}])
-
-    return g1a + g1b, g2a + g2b
-
-
 def update_source_endpoint_calcs():
 
     if CURRENT_DVH:
-        group_1_constraint_count, group_2_constraint_count = group_constraint_count()
+        group_1_constraint_count, group_2_constraint_count = group_constraint_count(sources)
 
         ep = {'mrn': ['']}
         ep_group = {'1': {}, '2': {}}
@@ -1421,24 +1411,8 @@ def update_cp_on_selection(attr, old, new):
         mlc_analyzer_cp_select.value = mlc_analyzer_cp_select.options[min(new)]
 
 
-def get_include_map():
-    # remove review and stats from source
-    group_1_constraint_count, group_2_constraint_count = group_constraint_count()
-    if group_1_constraint_count > 0 and group_2_constraint_count > 0:
-        extra_rows = 12
-    elif group_1_constraint_count > 0 or group_2_constraint_count > 0:
-        extra_rows = 6
-    else:
-        extra_rows = 0
-    include = [True] * (len(sources.dvhs.data['uid']) - extra_rows)
-    include[0] = False
-    include.extend([False] * extra_rows)
-
-    return include
-
-
 def initialize_rad_bio_source():
-    include = get_include_map()
+    include = get_include_map(sources)
 
     # Get data from DVH Table
     mrn = [j for i, j in enumerate(sources.dvhs.data['mrn']) if include[i]]
@@ -1552,150 +1526,36 @@ def emami_selection(attr, old, new):
 
 def update_correlation():
 
-    global CORRELATION
+    global CORRELATION, BAD_UID
     CORRELATION = {'1': {}, '2': {}}
 
-    temp_keys = ['uid', 'mrn', 'data', 'units']
-
-    # remove review and stats from source
-    include = get_include_map()
-    # Get data from DVHs table
-    for key in correlation_variables:
-        src = range_categories[key]['source']
-        curr_var = range_categories[key]['var_name']
-        table = range_categories[key]['table']
-        units = range_categories[key]['units']
-
-        if table in {'DVHs'}:
-            temp = {n: {k: [] for k in temp_keys} for n in N}
-            temp['units'] = units
-            for i in range(len(src.data['uid'])):
-                if include[i]:
-                    for n in N:
-                        if src.data['group'][i] in {'Group %s' % n, 'Group 1 & 2'}:
-                            temp[n]['uid'].append(src.data['uid'][i])
-                            temp[n]['mrn'].append(src.data['mrn'][i])
-                            temp[n]['data'].append(src.data[curr_var][i])
-            for n in N:
-                CORRELATION[n][key] = {k: temp[n][k] for k in temp_keys}
-
-    uid_list = {n: CORRELATION[n]['ROI Max Dose']['uid'] for n in N}
-
-    # Get Data from Plans table
-    for key in correlation_variables:
-        src = range_categories[key]['source']
-        curr_var = range_categories[key]['var_name']
-        table = range_categories[key]['table']
-        units = range_categories[key]['units']
-
-        if table in {'Plans'}:
-            temp = {n: {k: [] for k in temp_keys} for n in N}
-            temp['units'] = units
-
-            for n in N:
-                for i in range(len(uid_list[n])):
-                    uid = uid_list[n][i]
-                    uid_index = src.data['uid'].index(uid)
-                    temp[n]['uid'].append(uid)
-                    temp[n]['mrn'].append(src.data['mrn'][uid_index])
-                    temp[n]['data'].append(src.data[curr_var][uid_index])
-
-            for n in N:
-                CORRELATION[n][key] = {k: temp[n][k] for k in temp_keys}
-
-    # Get data from Beams table
-    for key in correlation_variables:
-
-        src = range_categories[key]['source']
-        curr_var = range_categories[key]['var_name']
-        table = range_categories[key]['table']
-        units = range_categories[key]['units']
-
-        stats = ['min', 'mean', 'median', 'max']
-
-        if table in {'Beams'}:
-            beam_keys = stats + ['uid', 'mrn']
-            temp = {n: {bk: [] for bk in beam_keys} for n in N}
-            for n in N:
-                for i in range(len(uid_list[n])):
-                    uid = uid_list[n][i]
-                    uid_indices = [j for j, x in enumerate(src.data['uid']) if x == uid]
-                    plan_values = [src.data[curr_var][j] for j in uid_indices]
-
-                    temp[n]['uid'].append(uid)
-                    temp[n]['mrn'].append(src.data['mrn'][uid_indices[0]])
-                    for s in stats:
-                        temp[n][s].append(getattr(np, s)(plan_values))
-
-            for s in stats:
-                for n in N:
-                    corr_key = "%s (%s)" % (key, s.capitalize())
-                    CORRELATION[n][corr_key] = {'uid': temp[n]['uid'],
-                                                'mrn': temp[n]['mrn'],
-                                                'data': temp[n][s],
-                                                'units': units}
+    CORRELATION = get_correlation(sources, correlation_variables, range_categories)
 
     categories = list(CORRELATION['1'])
     categories.sort()
     corr_chart_x.options = [''] + categories
     corr_chart_y.options = [''] + categories
 
-    validate_correlation()
+    CORRELATION, BAD_UID = validate_correlation(CORRELATION, BAD_UID)
 
 
 def update_endpoints_in_correlation():
-    global CORRELATION
+    global CORRELATION, BAD_UID
 
-    include = get_include_map()
-
-    # clear out any old DVH endpoint data
-    for n in N:
-        if CORRELATION[n]:
-            for key in list(CORRELATION[n]):
-                if key.startswith('ep'):
-                    CORRELATION[n].pop(key, None)
-
-    src = sources.endpoint_calcs
-    for j in range(len(sources.endpoint_defs.data['label'])):
-        key = sources.endpoint_defs.data['label'][j]
-        units = sources.endpoint_defs.data['units_out'][j]
-        ep = "DVH Endpoint: %s" % key
-
-        temp_keys = ['uid', 'mrn', 'data', 'units']
-        temp = {n: {k: [] for k in temp_keys} for n in N}
-        temp['units'] = units
-
-        for i in range(len(src.data['uid'])):
-            if include[i]:
-                for n in N:
-                    if src.data['group'][i] in {'Group %s' % n, 'Group 1 & 2'}:
-                        temp[n]['uid'].append(src.data['uid'][i])
-                        temp[n]['mrn'].append(src.data['mrn'][i])
-                        temp[n]['data'].append(src.data[key][i])
-
-        for n in N:
-            CORRELATION[n][ep] = {k: temp[n][k] for k in temp_keys}
-
-        if ep not in list(multi_var_reg_vars):
-            multi_var_reg_vars[ep] = False
-
-    # declare space to tag variables to be used for multi variable regression
-    for n in N:
-        for key, value in listitems(CORRELATION[n]):
-            CORRELATION[n][key]['include'] = [False] * len(value['uid'])
+    update_or_add_endpoints_to_correlation(sources, CORRELATION, MULTI_VAR_REG_VARS)
 
     categories = list(CORRELATION['1'])
     categories.sort()
     corr_chart_x.options = [''] + categories
     corr_chart_y.options = [''] + categories
 
-    validate_correlation()
+    CORRELATION, BAD_UID = validate_correlation(CORRELATION, BAD_UID)
     update_correlation_matrix()
     update_corr_chart()
 
 
 def update_eud_in_correlation():
-    global CORRELATION, multi_var_reg_vars
+    global CORRELATION, BAD_UID, MULTI_VAR_REG_VARS
 
     # Get data from EUD data
     uid_roi_list = ["%s_%s" % (uid, sources.dvhs.data['roi_name'][i]) for i, uid in enumerate(sources.dvhs.data['uid'])]
@@ -1728,7 +1588,7 @@ def update_eud_in_correlation():
     corr_chart_x.options = [''] + categories
     corr_chart_y.options = [''] + categories
 
-    validate_correlation()
+    CORRELATION, BAD_UID = validate_correlation(CORRELATION, BAD_UID)
     update_correlation_matrix()
     update_corr_chart()
 
@@ -1828,7 +1688,7 @@ def update_correlation_matrix():
 
 
 def update_corr_chart_ticker_x(attr, old, new):
-    if multi_var_reg_vars[corr_chart_x.value]:
+    if MULTI_VAR_REG_VARS[corr_chart_x.value]:
         corr_chart_x_include.active = [0]
     else:
         corr_chart_x_include.active = []
@@ -1938,13 +1798,13 @@ def corr_chart_y_next_ticker():
 
 
 def corr_chart_x_include_ticker(attr, old, new):
-    if new and not multi_var_reg_vars[corr_chart_x.value]:
-        multi_var_reg_vars[corr_chart_x.value] = True
-    if not new and multi_var_reg_vars[corr_chart_x.value]:
+    if new and not MULTI_VAR_REG_VARS[corr_chart_x.value]:
+        MULTI_VAR_REG_VARS[corr_chart_x.value] = True
+    if not new and MULTI_VAR_REG_VARS[corr_chart_x.value]:
         clear_source_selection('multi_var_include')
-        multi_var_reg_vars[corr_chart_x.value] = False
+        MULTI_VAR_REG_VARS[corr_chart_x.value] = False
 
-    included_vars = [key for key, value in listitems(multi_var_reg_vars) if value]
+    included_vars = [key for key, value in listitems(MULTI_VAR_REG_VARS) if value]
     included_vars.sort()
     sources.multi_var_include.data = {'var_name': included_vars}
 
@@ -2255,7 +2115,7 @@ def histograms_ticker(attr, old, new):
 def multi_var_linear_regression():
     print(str(datetime.now()), 'Performing multivariable regression', sep=' ')
 
-    included_vars = [key for key in list(CORRELATION['1']) if multi_var_reg_vars[key]]
+    included_vars = [key for key in list(CORRELATION['1']) if MULTI_VAR_REG_VARS[key]]
     included_vars.sort()
 
     for n in N:
@@ -2452,33 +2312,6 @@ def auth_button_click():
             time.sleep(3)
             auth_button.label = 'Authenticate'
             auth_button.button_type = 'warning'
-
-
-def validate_correlation():
-    global CORRELATION, BAD_UID
-
-    for n in N:
-        if CORRELATION[n]:
-            for range_var in list(CORRELATION[n]):
-                for i, j in enumerate(CORRELATION[n][range_var]['data']):
-                    if j == 'None':
-                        current_uid = CORRELATION[n][range_var]['uid'][i]
-                        if current_uid not in BAD_UID[n]:
-                            BAD_UID[n].append(current_uid)
-                        print("%s[%s] is non-numerical, will remove this patient from correlation data"
-                              % (range_var, i))
-
-            new_correlation = {}
-            for range_var in list(CORRELATION[n]):
-                new_correlation[range_var] = {'mrn': [], 'uid': [], 'data': [],
-                                              'units': CORRELATION['1'][range_var]['units']}
-                for i in range(len(CORRELATION[n][range_var]['data'])):
-                    current_uid = CORRELATION[n][range_var]['uid'][i]
-                    if current_uid not in BAD_UID[n]:
-                        for j in {'mrn', 'uid', 'data'}:
-                            new_correlation[range_var][j].append(CORRELATION[n][range_var][j][i])
-
-            CORRELATION[n] = new_correlation
 
 
 def update_planning_data_selections(uids):
