@@ -77,11 +77,20 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
         plan, beams, dvhs, rxs = [], [], [], []
         mp, ms, md = [], [], []
         if plan_file:
-            mp = dicom.read_file(plan_file).ManufacturerModelName.lower()
+            try:
+                mp = dicom.read_file(plan_file).ManufacturerModelName.lower()
+            except AttributeError:
+                mp = ''
         if struct_file:
-            ms = dicom.read_file(struct_file).ManufacturerModelName.lower()
+            try:
+                ms = dicom.read_file(struct_file).ManufacturerModelName.lower()
+            except AttributeError:
+                ms = ''
         if dose_file:
-            md = dicom.read_file(dose_file).ManufacturerModelName.lower()
+            try:
+                md = dicom.read_file(dose_file).ManufacturerModelName.lower()
+            except AttributeError:
+                ''
 
         if 'gammaplan' in "%s %s %s" % (mp, ms, md):
             print("Leksell Gamma Plan is not currently supported. Skipping import.")

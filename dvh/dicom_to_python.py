@@ -123,12 +123,12 @@ class PlanRow:
         # Count number of fxs and total MUs
         # Note these are total fxs, not treatment days
         for fx_grp in fx_grp_seq:
-            fxs += fx_grp.NumberOfFractionsPlanned
+            fxs += int(float(fx_grp.NumberOfFractionsPlanned))
             fx_mu = 0
             for Beam in range(fx_grp.NumberOfBeams):
                 if hasattr(fx_grp.ReferencedBeamSequence[Beam], 'BeamMeterset'):
-                    fx_mu += fx_grp.ReferencedBeamSequence[Beam].BeamMeterset
-            total_mu += fx_grp.NumberOfFractionsPlanned * fx_mu
+                    fx_mu += float(fx_grp.ReferencedBeamSequence[Beam].BeamMeterset)
+            total_mu += int(float(fx_grp.NumberOfFractionsPlanned)) * fx_mu
         total_mu = round(total_mu, 1)
 
         # This UID must be in all DICOM files associated with this sim study
@@ -141,8 +141,15 @@ class PlanRow:
             patient_orientation = 'UKN'
 
         # Context self-evident, their utility is not (yet)
-        plan_time_stamp = datetime_str_to_obj(rt_plan.RTPlanDate + rt_plan.RTPlanTime)
-        struct_time_stamp = datetime_str_to_obj(rt_structure.StructureSetDate + rt_structure.StructureSetTime)
+        try:
+            plan_time_stamp = datetime_str_to_obj(rt_plan.RTPlanDate + rt_plan.RTPlanTime)
+        except:
+            plan_time_stamp = '(NULL)'
+        try:
+            struct_time_stamp = datetime_str_to_obj(rt_structure.StructureSetDate + rt_structure.StructureSetTime)
+        except:
+            struct_time_stamp = '(NULL)'
+
         if hasattr(rt_dose, 'InstanceCreationDate'):
             dose_time_stamp = datetime_str_to_obj(rt_dose.InstanceCreationDate +
                                                   rt_dose.InstanceCreationTime.split('.')[0])
@@ -272,7 +279,7 @@ class PlanRow:
         # Record resolution of dose grid
         dose_grid_resolution = [str(round(float(rt_dose.PixelSpacing[0]), 1)),
                                 str(round(float(rt_dose.PixelSpacing[1]), 1))]
-        if rt_dose.SliceThickness:
+        if hasattr(rt_dose, 'SliceThickness') and rt_dose.SliceThickness:
             dose_grid_resolution.append(str(round(float(rt_dose.SliceThickness), 1)))
         dose_grid_resolution = ', '.join(dose_grid_resolution)
 
@@ -397,7 +404,6 @@ class DVHTable:
 
 class BeamTable:
     def __init__(self, plan_file):
-
         beam_num = 0
         values = {}
         # Import RT Dose files using dicompyler
@@ -409,7 +415,7 @@ class BeamTable:
         fx_grp = 0
         for fx_grp_seq in rt_plan.FractionGroupSequence:
             fx_grp += 1
-            fxs = int(fx_grp_seq.NumberOfFractionsPlanned)
+            fxs = int(float(fx_grp_seq.NumberOfFractionsPlanned))
             fx_grp_beam_count = int(fx_grp_seq.NumberOfBeams)
 
             for fx_grp_beam in range(fx_grp_beam_count):
@@ -425,9 +431,15 @@ class BeamTable:
 
                 ref_beam_seq = fx_grp_seq.ReferencedBeamSequence[fx_grp_beam]
 
-                treatment_machine = beam_seq.TreatmentMachineName
+                if hasattr(beam_seq, 'TreatmentMachineName'):
+                    treatment_machine = beam_seq.TreatmentMachineName
+                else:
+                    treatment_machine = '(NULL)'
 
-                beam_dose = float(ref_beam_seq.BeamDose)
+                if hasattr(ref_beam_seq, 'BeamDose'):
+                    beam_dose = float(ref_beam_seq.BeamDose)
+                else:
+                    beam_dose = 0.
                 if hasattr(ref_beam_seq, 'BeamMeterset'):
                     beam_mu = float(ref_beam_seq.BeamMeterset)
                 else:
@@ -465,7 +477,7 @@ class BeamTable:
                 scan_spot_count = 0
                 if hasattr(cp_seq[0], 'NumberOfScanSpotPositions'):
                     for cp in cp_seq:
-                        scan_spot_count += cp.NumberOfScanSpotPositions
+                        scan_spot_count += int(cp.NumberOfScanSpotPositions)
                     scan_spot_count /= 2
 
                 energies = []
@@ -639,7 +651,10 @@ class RxTable:
                     normalization_object = 'COORDINATE'
                 elif normalization_method.lower() == 'site':
                     normalization_object_found = True
-                    normalization_object = rt_plan.ManufacturerModelName
+                    if hasattr(rt_plan, 'ManufacturerModelName'):
+                        normalization_object = rt_plan.ManufacturerModelName
+                    else:
+                        normalization_object = '(NULL)'
                 else:
                     ref_roi_num = rt_plan.DoseReferenceSequence[i].ReferencedROINumber
                     normalization_object_found = False
@@ -654,10 +669,10 @@ class RxTable:
 
             if hasattr(fx_grp_seq, 'ReferencedBeamSequence'):
                 for ref_beam_seq in fx_grp_seq[i].ReferencedBeamSequence:
-                    fx_dose += ref_beam_seq.BeamDose
+                    fx_dose += float(ref_beam_seq.BeamDose)
             elif hasattr(fx_grp_seq, 'ReferencedBrachyApplicationSetupSequence'):
                 for ref_app_seq in fx_grp_seq[i].ReferencedBrachyApplicationSetupSequence:
-                    fx_dose += ref_app_seq.BrachyApplicationSetupDose
+                    fx_dose += float(ref_app_seq.BrachyApplicationSetupDose)
 
             fxs = fx_grp_seq[i].NumberOfFractionsPlanned
 
@@ -673,7 +688,6 @@ class RxTable:
             roi_seq = rt_structure.StructureSetROISequence  # just limit num characters in code
             roi_count = len(roi_seq)
             # set defaults in case rx and tx points are not found
-
             while roi_counter < roi_count and not rx_pt_found:
                 roi_name = roi_seq[roi_counter].ROIName.lower()
                 if len(roi_name) > 2:
