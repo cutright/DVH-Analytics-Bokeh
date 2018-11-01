@@ -1,5 +1,9 @@
 # Change log of DVH Analytics
 
+### 0.4.4a (2018.11.1)
+* Minor tweak to check for TPS Vendor tags prior to accessing, working on compliance with DICOM files from 
+http://www.cancerimagingarchive.net/
+
 ### 0.4.4 (2018.08.15)
 * typo in keyword for parameter in dicom_to_sql (import_latest_plan_only changes to import_latest_only)
 * Shapely speedups enabled, if available
