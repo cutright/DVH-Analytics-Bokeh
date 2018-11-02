@@ -116,11 +116,8 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
             print(os.path.isfile(plan_file))
             if not hasattr(dicom.read_file(plan_file), 'BrachyTreatmentType'):
                 if import_latest_only:
-                    print('1a')
                     beams = BeamTable(plan_file)
-                    print('1b')
                     sqlcnx.insert_beams(beams)
-                    print('1c')
                 else:
                     for f in file_paths[uid]['rtplan']['file_path']:
                         sqlcnx.insert_beams(BeamTable(f))
