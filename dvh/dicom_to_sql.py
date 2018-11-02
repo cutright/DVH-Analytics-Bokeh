@@ -112,13 +112,19 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
                 continue
 
         if plan_file:
+            print(plan_file)
+            print(os.path.isfile(plan_file))
             if not hasattr(dicom.read_file(plan_file), 'BrachyTreatmentType'):
                 if import_latest_only:
+                    print('1a')
                     beams = BeamTable(plan_file)
+                    print('1b')
                     sqlcnx.insert_beams(beams)
+                    print('1c')
                 else:
                     for f in file_paths[uid]['rtplan']['file_path']:
                         sqlcnx.insert_beams(BeamTable(f))
+
         if struct_file and dose_file:
             dvhs = DVHTable(struct_file, dose_file)
             setattr(dvhs, 'ptv_number', rank_ptvs_by_D95(dvhs))
@@ -145,6 +151,7 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
             mrn = 'NoMRN'
 
         # convert file_paths[uid] into a list of file paths
+        new_folder = ''
         if move_files:
             files_to_move = []
             move_types = list(FILE_TYPES) + ['other']
@@ -154,16 +161,16 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
             new_folder = os.path.join(import_settings['imported'], mrn)
             move_files_to_new_path(files_to_move, new_folder)
 
-        if plan_file:
-            plan_file = os.path.basename(plan_file)
-        if struct_file:
-            struct_file = os.path.basename(struct_file)
-        if dose_file:
-            dose_file = os.path.basename(dose_file)
-
         if update_dicom_catalogue_table:
             if not import_latest_only:
                 plan_file = ', '.join([os.path.basename(fp) for fp in file_paths[uid]['rtplan']['file_path']])
+            if new_folder:
+                if plan_file:
+                    plan_file = os.path.basename(plan_file)
+                if struct_file:
+                    struct_file = os.path.basename(struct_file)
+                if dose_file:
+                    dose_file = os.path.basename(dose_file)
             update_dicom_catalogue(mrn, uid, new_folder, plan_file, struct_file, dose_file)
 
     # Move remaining files, if any

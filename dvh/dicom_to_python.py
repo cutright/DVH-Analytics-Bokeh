@@ -680,7 +680,8 @@ class RxTable:
                 rx_dose = float(dicompyler_plan['rxdose']) / 100.
 
             if fx_dose == 0:
-                fx_dose = round(rx_dose / float(fxs), 2)
+                if float(fxs):
+                    fx_dose = round(rx_dose / float(fxs), 2)
 
             # Because DICOM does not contain Rx's explicitly, the user must create
             # a point in the RT Structure file called 'rx [#]: ' per rx

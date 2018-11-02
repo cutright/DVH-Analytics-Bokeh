@@ -202,7 +202,6 @@ class DVH_SQL:
         write_import_errors(plan)
 
     def insert_beams(self, beams):
-
         file_path = 'insert_values_beams.sql'
 
         if os.path.isfile(file_path):
@@ -264,11 +263,14 @@ class DVH_SQL:
                           'NOW()']
                 sql_input = "INSERT INTO Beams (%s) VALUES ('%s');\n" % \
                             (','.join(col_names), "','".join(values).replace("'(NULL)'", "(NULL)"))
+
                 with open(file_path, "a") as text_file:
+                    print('beam4')
                     text_file.write(sql_input)
 
-        self.execute_file(file_path)
-        os.remove(file_path)
+        if os.path.isfile(file_path):
+            self.execute_file(file_path)
+            os.remove(file_path)
         print('Beams imported')
 
         write_import_errors(beams)
