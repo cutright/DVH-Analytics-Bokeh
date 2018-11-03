@@ -745,7 +745,9 @@ def update_data():
     CURRENT_DVH = DVH(uid=uids, dvh_condition=dvh_query_str)
     if CURRENT_DVH.count:
         print(str(datetime.now()), 'initializing source data ', CURRENT_DVH.query, sep=' ')
-        time_series.current_dvh_group['1'], time_series.current_dvh_group['2'] = update_dvh_data(CURRENT_DVH)
+        print(time_series.current_dvh_group)
+        time_series.update_current_dvh_group(update_dvh_data(CURRENT_DVH))
+        print(time_series.current_dvh_group)
         if not options.LITE_VIEW:
             print(str(datetime.now()), 'updating correlation data')
             update_correlation()
@@ -1015,7 +1017,7 @@ def update_dvh_data(dvh):
     update_rx_data(dvh.study_instance_uid)
     print(str(datetime.now()), 'all sources set', sep=' ')
 
-    return dvh_group_1, dvh_group_2
+    return {'1': dvh_group_1, '2': dvh_group_2}
 
 
 # updates beam ColumnSourceData for a given list of uids

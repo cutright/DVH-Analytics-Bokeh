@@ -15,7 +15,6 @@ import numpy as np
 from options import N
 from datetime import datetime
 from os.path import dirname, join
-import datetime
 
 
 class TimeSeries:
@@ -144,6 +143,9 @@ class TimeSeries:
         self.histograms.add_layout(legend_hist, 'right')
         self.histograms.legend.click_policy = "hide"
 
+    def update_current_dvh_group(self, data):
+        self.current_dvh_group = data
+
     def update_control_chart_ticker(self, attr, old, new):
         self.update_control_chart()
 
@@ -264,6 +266,7 @@ class TimeSeries:
 
             sort_index = sorted(range(len(x_values)), key=lambda k: x_values[k])
             x_values_sorted, y_values_sorted, y_mrns_sorted, colors_sorted = [], [], [], []
+
             for s in range(len(x_values)):
                 x_values_sorted.append(x_values[sort_index[s]])
                 y_values_sorted.append(y_values[sort_index[s]])
