@@ -19,11 +19,11 @@ import datetime
 
 
 class TimeSeries:
-    def __init__(self, sources, range_categories, current_dvh_group):
+    def __init__(self, sources, range_categories):
 
         self.sources = sources
         self.range_categories = range_categories
-        self.current_dvh_group = current_dvh_group
+        self.current_dvh_group = {n: [] for n in N}
 
         # Control Chart layout (Time-Series)
         tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"

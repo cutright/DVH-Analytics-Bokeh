@@ -65,7 +65,6 @@ CURRENT_DVH = []
 ANON_ID_MAP = {}
 x, y = [], []
 N = options.N
-CURRENT_DVH_GROUP = {n: [] for n in N}
 UIDS = {n: [] for n in N}
 CORRELATION = {n: [] for n in N}
 BAD_UID = {n: [] for n in N}
@@ -155,7 +154,7 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
                     'ROI Cross-Section Median': {'var_name': 'cross_section_median', 'table': 'DVHs', 'units': 'cm^2', 'source': sources.dvhs}}
 
 mlc_analyzer = MLC_Analyzer(sources)
-time_series = TimeSeries(sources, range_categories, CURRENT_DVH_GROUP)
+time_series = TimeSeries(sources, range_categories)
 
 
 # correlation variable names
@@ -734,7 +733,7 @@ def get_query(group=None):
 
 # main update function
 def update_data():
-    global CURRENT_DVH, CURRENT_DVH_GROUP, BAD_UID
+    global CURRENT_DVH, BAD_UID, time_series
     BAD_UID = {n: [] for n in N}
     old_update_button_label = query_button.label
     old_update_button_type = query_button.button_type
@@ -746,7 +745,7 @@ def update_data():
     CURRENT_DVH = DVH(uid=uids, dvh_condition=dvh_query_str)
     if CURRENT_DVH.count:
         print(str(datetime.now()), 'initializing source data ', CURRENT_DVH.query, sep=' ')
-        CURRENT_DVH_GROUP['1'], CURRENT_DVH_GROUP['2'] = update_dvh_data(CURRENT_DVH)
+        time_series.current_dvh_group['1'], time_series.current_dvh_group['2'] = update_dvh_data(CURRENT_DVH)
         if not options.LITE_VIEW:
             print(str(datetime.now()), 'updating correlation data')
             update_correlation()
@@ -1140,15 +1139,15 @@ def update_source_endpoint_calcs():
             if 'Dose' in data['output_type'][r]:
                 ep[ep_name] = CURRENT_DVH.get_dose_to_volume(x, volume_scale=endpoint_input, dose_scale=endpoint_output)
                 for g in N:
-                    if CURRENT_DVH_GROUP[g]:
-                        ep_group[g][ep_name] = CURRENT_DVH_GROUP[g].get_dose_to_volume(x, volume_scale=endpoint_input,
+                    if time_series.current_dvh_group[g]:
+                        ep_group[g][ep_name] = time_series.current_dvh_group[g].get_dose_to_volume(x, volume_scale=endpoint_input,
                                                                                        dose_scale=endpoint_output)
 
             else:
                 ep[ep_name] = CURRENT_DVH.get_volume_of_dose(x, dose_scale=endpoint_input, volume_scale=endpoint_output)
                 for g in N:
-                    if CURRENT_DVH_GROUP[g]:
-                        ep_group[g][ep_name] = CURRENT_DVH_GROUP[g].get_volume_of_dose(x, dose_scale=endpoint_input,
+                    if time_series.current_dvh_group[g]:
+                        ep_group[g][ep_name] = time_series.current_dvh_group[g].get_volume_of_dose(x, dose_scale=endpoint_input,
                                                                                        volume_scale=endpoint_output)
 
             if group_1_constraint_count and group_2_constraint_count:
@@ -1347,7 +1346,7 @@ def update_eud():
 
     update_eud_in_correlation()
     if time_series.control_chart_y.value in {'EUD', 'NTCP/TCP'}:
-        time_series.update_control_chart(CURRENT_DVH_GROUP)
+        time_series.update_control_chart()
 
 
 def emami_selection(attr, old, new):
@@ -1650,7 +1649,7 @@ def multi_var_linear_regression():
     included_vars.sort()
 
     for n in N:
-        if CURRENT_DVH_GROUP[n]:
+        if time_series.current_dvh_group[n]:
             x = []
             x_count = len(CORRELATION[n][list(CORRELATION[n])[0]]['data'])
             for i in range(x_count):
