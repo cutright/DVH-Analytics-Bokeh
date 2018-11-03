@@ -20,7 +20,7 @@ import itertools
 from datetime import datetime
 from os.path import dirname, join
 from bokeh.layouts import column, row
-from bokeh.models import Legend, CustomJS, HoverTool, Slider, Spacer, Range1d
+from bokeh.models import Legend, CustomJS, HoverTool, Slider, Spacer
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
@@ -34,18 +34,18 @@ import statsmodels.api as sm
 import matplotlib.colors as plot_colors
 import time
 import options
-import mlc_analyzer
-import os
 from dateutil.parser import parse
-from get_settings import get_settings, parse_settings_file
 from options import N
 from bokeh_components.custom_titles import custom_title
 from bokeh_components import columns, sources
-from bokeh_components.utiltilies import group_constraint_count, get_include_map, get_correlation, validate_correlation, \
-    update_or_add_endpoints_to_correlation
+from bokeh_components.utiltilies import group_constraint_count, get_include_map, get_correlation,\
+    validate_correlation, update_or_add_endpoints_to_correlation
+from bokeh_components.mlc_analyzer import MLC_Analyzer
 
 
 options = load_options(options)
+
+mlc_analyzer = MLC_Analyzer(sources)
 
 
 # This depends on a user defined function in dvh/auth.py.  By default, this returns True
@@ -65,7 +65,6 @@ COLORS = itertools.cycle(palette)
 CURRENT_DVH = []
 ANON_ID_MAP = {}
 x, y = [], []
-MLC_DATA = []
 N = ['1', '2']
 CURRENT_DVH_GROUP = {n: [] for n in N}
 UIDS = {n: [] for n in N}
@@ -460,7 +459,7 @@ def delete_range_row():
             range_row.options = [str(x+1) for x in range(new_source_length)]
             if range_row.value not in range_row.options:
                 range_row.value = range_row.options[-1]
-            source.ranges.data = new_range_source
+            sources.ranges.data = new_range_source
 
         clear_source_selection('ranges')
 
@@ -755,7 +754,7 @@ def update_data():
             initialize_rad_bio_source()
             control_chart_y.value = ''
             update_roi_viewer_mrn()
-            update_mlc_analyzer_mrn()
+            mlc_analyzer.update_mrn()
     else:
         print(str(datetime.now()), 'empty dataset returned', sep=' ')
         query_button.label = 'No Data'
@@ -1241,174 +1240,6 @@ def update_time_series_options():
 
     control_chart_y.options = new_options
     control_chart_y.value = ''
-
-
-def update_mlc_analyzer_mrn():
-    options = [mrn for mrn in sources.plans.data['mrn']]
-    if options:
-        options.sort()
-        mlc_analyzer_mrn_select.options = options
-        mlc_analyzer_mrn_select.value = options[0]
-    else:
-        mlc_analyzer_mrn_select.options = ['']
-        mlc_analyzer_mrn_select.value = ''
-
-
-def mlc_analyzer_mrn_ticker(attr, old, new):
-
-    if new == '':
-        mlc_analyzer_study_date_select.options = ['']
-        mlc_analyzer_study_date_select.value = ''
-        mlc_analyzer_uid_select.options = ['']
-        mlc_analyzer_uid_select.value = ''
-
-    else:
-
-        options = []
-        for i in range(len(sources.plans.data['mrn'])):
-            if sources.plans.data['mrn'][i] == new:
-                options.append(sources.plans.data['sim_study_date'][i])
-        options.sort()
-        old_sim_date = mlc_analyzer_study_date_select.value
-        mlc_analyzer_study_date_select.options = options
-        mlc_analyzer_study_date_select.value = options[0]
-        if old_sim_date == options[0]:
-            update_mlc_analyzer_uid()
-
-
-def mlc_analyzer_study_date_ticker(attr, old, new):
-    update_mlc_analyzer_uid()
-
-
-def update_mlc_analyzer_uid():
-    if mlc_analyzer_mrn_select.value != '':
-        options = []
-        for i in range(len(sources.plans.data['mrn'])):
-            if sources.plans.data['mrn'][i] == mlc_analyzer_mrn_select.value and \
-                            sources.plans.data['sim_study_date'][i] == mlc_analyzer_study_date_select.value:
-                options.append(sources.plans.data['uid'][i])
-        mlc_analyzer_uid_select.options = options
-        mlc_analyzer_uid_select.value = options[0]
-
-    update_mlc_analyzer_fx_grp()
-
-
-def mlc_analyzer_uid_ticker(attr, old, new):
-    rt_plan = DVH_SQL().query('DICOM_Files', 'folder_path, plan_file', "study_instance_uid = '%s'" % new)[0]
-    folder_path = rt_plan[0]
-    if not os.path.isdir(folder_path):
-        folder_path = os.path.join(parse_settings_file(get_settings('import'))['imported'],
-                                   os.path.split(folder_path)[-1])
-    plan_files = [os.path.join(folder_path, file_path) for file_path in rt_plan[1].split(', ')]
-
-    mlc_analyzer_plan_select.options = plan_files
-    mlc_analyzer_plan_select.value = plan_files[0]
-
-
-def mlc_analyzer_plan_ticker(attr, old, new):
-    global MLC_DATA
-    MLC_DATA = mlc_analyzer.Plan(new)
-
-    mlc_analyzer_fx_grp_select.options = [str(i + 1) for i in range(len(MLC_DATA.fx_group))]
-    if mlc_analyzer_fx_grp_select.value == mlc_analyzer_fx_grp_select.options[0]:
-        update_mlc_analyzer_beam()
-    else:
-        mlc_analyzer_fx_grp_select.value = '1'
-
-
-def mlc_analyzer_fx_grp_ticker(attr, old, new):
-    update_mlc_analyzer_fx_grp()
-    if old == new:
-        update_mlc_analyzer_beam()
-
-
-def update_mlc_analyzer_fx_grp():
-    fx_grp = MLC_DATA.fx_group[int(mlc_analyzer_fx_grp_select.value) - 1]
-    beam_options = ["%s: %s" % (i+1, j) for i, j in enumerate(fx_grp.beam_names)]
-    mlc_analyzer_beam_select.options = beam_options
-    if mlc_analyzer_beam_select.value == mlc_analyzer_beam_select.options[0]:
-        update_mlc_analyzer_beam()
-    else:
-        mlc_analyzer_beam_select.value = beam_options[0]
-
-
-def mlc_analyzer_beam_ticker(attr, old, new):
-    update_mlc_analyzer_beam()
-    update_beam_score()
-
-
-def update_beam_score():
-    scores = sources.mlc_summary.data['cmp_score']
-    mu = sources.mlc_summary.data['cum_mu'][-1]
-    score = np.sum(scores) / float(mu)
-    mlc_viewer_beam_score.text = "<b>Beam Complexity Score: </b>%s" % round(score, 3)
-
-
-def update_mlc_analyzer_beam():
-    fx_grp = MLC_DATA.fx_group[int(mlc_analyzer_fx_grp_select.value) - 1]
-    beam_number = int(mlc_analyzer_beam_select.value.split(':')[0])
-    beam = fx_grp.beam[beam_number-1]
-    cp_count = beam.control_point_count
-    cp_numbers = [str(i + 1) for i in range(cp_count)]
-    mlc_analyzer_cp_select.options = cp_numbers
-    if mlc_analyzer_cp_select.value == mlc_analyzer_cp_select.options[0]:
-        update_mlc_viewer()
-    else:
-        mlc_analyzer_cp_select.value = cp_numbers[0]
-    sources.mlc_summary.data = beam.summary
-
-
-def mlc_analyzer_cp_ticker(attr, old, new):
-    update_mlc_viewer()
-    sources.mlc_summary.selected.indices = [int(new)-1]
-
-
-def update_mlc_viewer():
-    fx_grp = MLC_DATA.fx_group[int(mlc_analyzer_fx_grp_select.value) - 1]
-    beam_number = int(mlc_analyzer_beam_select.value.split(':')[0])
-    beam = fx_grp.beam[beam_number - 1]
-    cp_index = int(mlc_analyzer_cp_select.value) - 1
-
-    x_min, x_max = -options.MAX_FIELD_SIZE_X / 2, options.MAX_FIELD_SIZE_X / 2
-    y_min, y_max = -options.MAX_FIELD_SIZE_Y / 2, options.MAX_FIELD_SIZE_Y / 2
-
-    borders = {'top': [y_max, y_max, y_max, beam.jaws[cp_index]['y_min']],
-               'bottom': [y_min, y_min, beam.jaws[cp_index]['y_max'], y_min],
-               'left': [x_min, beam.jaws[cp_index]['x_max'], x_min, x_min],
-               'right': [beam.jaws[cp_index]['x_min'], x_max, x_max, x_max]}
-    for edge in list(borders):
-        borders[edge].extend(beam.mlc_borders[cp_index][edge])
-    borders['color'] = [options.JAW_COLOR] * 4 + [options.MLC_COLOR] * len(beam.mlc_borders[cp_index]['top'])
-
-    sources.mlc_viewer.data = borders
-
-
-def mlc_viewer_go_to_previous_cp():
-    index = mlc_analyzer_cp_select.options.index(mlc_analyzer_cp_select.value)
-    mlc_analyzer_cp_select.value = mlc_analyzer_cp_select.options[index - 1]
-
-
-def mlc_viewer_go_to_next_cp():
-    index = mlc_analyzer_cp_select.options.index(mlc_analyzer_cp_select.value)
-    if index + 1 == len(mlc_analyzer_cp_select.options):
-        index = -1
-    mlc_analyzer_cp_select.value = mlc_analyzer_cp_select.options[index + 1]
-
-
-def mlc_viewer_play():
-    if mlc_analyzer_cp_select.value == mlc_analyzer_cp_select.options[-1]:
-        mlc_analyzer_cp_select.value = mlc_analyzer_cp_select.options[0]
-    start = mlc_analyzer_cp_select.options.index(mlc_analyzer_cp_select.value)
-    end = len(mlc_analyzer_cp_select.options) - 1
-
-    for i in range(start, end):
-        mlc_viewer_go_to_next_cp()
-        time.sleep(options.CP_TIME_SPACING)
-
-
-def update_cp_on_selection(attr, old, new):
-    if new:
-        mlc_analyzer_cp_select.value = mlc_analyzer_cp_select.options[min(new)]
 
 
 def initialize_rad_bio_source():
@@ -3135,57 +2966,6 @@ roi_viewer.on_event(events.MouseWheel, roi_viewer_wheel_event)
 roi_viewer_scrolling = CheckboxGroup(labels=["Enable Slice Scrolling with Mouse Wheel"], active=[])
 
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# MLC Analyzer
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-mlc_analyzer_options = [''] + sources.dvhs.data['mrn']
-mlc_analyzer_mrn_select = Select(value='', options=mlc_analyzer_options, width=200, title='MRN')
-mlc_analyzer_study_date_select = Select(value='', options=[''], width=200, title='Sim Study Date')
-mlc_analyzer_uid_select = Select(value='', options=[''], width=400, title='Study Instance UID')
-mlc_analyzer_plan_select = Select(value='', options=[''], width=200, title='Plan')
-mlc_analyzer_fx_grp_select = Select(value='', options=[''], width=200, title='Fx Group')
-mlc_analyzer_beam_select = Select(value='', options=[''], width=200, title='Beam')
-mlc_analyzer_cp_select = Select(value='', options=[''], width=50, title='CP')
-
-mlc_analyzer_mrn_select.on_change('value', mlc_analyzer_mrn_ticker)
-mlc_analyzer_study_date_select.on_change('value', mlc_analyzer_study_date_ticker)
-mlc_analyzer_uid_select.on_change('value', mlc_analyzer_uid_ticker)
-mlc_analyzer_plan_select.on_change('value', mlc_analyzer_plan_ticker)
-mlc_analyzer_fx_grp_select.on_change('value', mlc_analyzer_fx_grp_ticker)
-mlc_analyzer_beam_select.on_change('value', mlc_analyzer_beam_ticker)
-mlc_analyzer_cp_select.on_change('value', mlc_analyzer_cp_ticker)
-
-mlc_viewer = figure(plot_width=500, plot_height=500, logo=None, match_aspect=True,
-                    tools="crosshair,save")
-mlc_viewer.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
-mlc_viewer.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
-mlc_viewer.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-mlc_viewer.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-mlc_viewer.min_border_left = min_border
-mlc_viewer.min_border_bottom = min_border
-mlc_viewer.xaxis.axis_label = "X-Axis (mm)"
-mlc_viewer.yaxis.axis_label = "Y-Axis (mm)"
-mlc_viewer.quad(top='top', bottom='bottom', left='left', right='right',
-                source=sources.mlc_viewer, alpha=0.25, color='color')
-mlc_viewer_previous_cp = Button(label="<", button_type="primary", width=50)
-mlc_viewer_next_cp = Button(label=">", button_type="primary", width=50)
-mlc_viewer_play_button = Button(label="Play", button_type="success", width=100)
-mlc_viewer_beam_score = Div(text="<b>Beam Complexity Score: </b>", width=300)
-
-mlc_viewer_data_table = DataTable(source=sources.mlc_summary, columns=columns.mlc_viewer,
-                                  editable=False, width=700, height=425, index_position=None)
-
-mlc_viewer_previous_cp.on_click(mlc_viewer_go_to_previous_cp)
-mlc_viewer_next_cp.on_click(mlc_viewer_go_to_next_cp)
-mlc_viewer_play_button.on_click(mlc_viewer_play)
-sources.mlc_summary.selected.on_change('indices', update_cp_on_selection)
-
-mlc_viewer.x_range = Range1d(-options.MAX_FIELD_SIZE_X/2, options.MAX_FIELD_SIZE_X/2)
-mlc_viewer.y_range = Range1d(-options.MAX_FIELD_SIZE_Y/2, options.MAX_FIELD_SIZE_Y/2)
-mlc_viewer.xgrid.grid_line_color = None
-mlc_viewer.ygrid.grid_line_color = None
-
-
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Control Chart (for real)
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3296,7 +3076,8 @@ layout_roi_viewer = column(row(custom_title['1']['roi_viewer'], Spacer(width=50)
                                roi_viewer_roi_select['4'], roi_viewer_roi_select['5']),
                            row(roi_viewer_roi_select_color['2'], roi_viewer_roi_select_color['3'],
                                roi_viewer_roi_select_color['4'], roi_viewer_roi_select_color['5']),
-                           row(Div(text="<b>NOTE:</b> Axis flipping requires a figure reset (Click the circular double-arrow)", width=1025)),
+                           row(Div(text="<b>NOTE:</b> Axis flipping requires a figure reset "
+                                        "(Click the circular double-arrow)", width=1025)),
                            row(roi_viewer_flip_x_axis_button, roi_viewer_flip_y_axis_button,
                                roi_viewer_plot_tv_button),
                            row(roi_viewer_scrolling),
@@ -3329,13 +3110,14 @@ layout_regression = column(row(custom_title['1']['regression'], Spacer(width=50)
 
 layout_mlc_analyzer = column(row(custom_title['1']['mlc_analyzer'], Spacer(width=50),
                                  custom_title['2']['mlc_analyzer']),
-                             row(mlc_analyzer_mrn_select, mlc_analyzer_study_date_select, mlc_analyzer_uid_select),
-                             row(mlc_analyzer_plan_select),
+                             row(mlc_analyzer.mrn_select, mlc_analyzer.study_date_select, mlc_analyzer.uid_select),
+                             row(mlc_analyzer.plan_select),
                              Div(text="<hr>", width=800),
-                             row(mlc_analyzer_fx_grp_select, mlc_analyzer_beam_select,
-                                 mlc_viewer_previous_cp, mlc_viewer_next_cp,
-                                 Spacer(width=10), mlc_viewer_play_button, Spacer(width=10), mlc_viewer_beam_score),
-                             row(mlc_viewer, mlc_viewer_data_table))
+                             row(mlc_analyzer.fx_grp_select, mlc_analyzer.beam_select,
+                                 mlc_analyzer.mlc_viewer_previous_cp, mlc_analyzer.mlc_viewer_next_cp,
+                                 Spacer(width=10), mlc_analyzer.mlc_viewer_play_button, Spacer(width=10),
+                                 mlc_analyzer.mlc_viewer_beam_score),
+                             row(mlc_analyzer.mlc_viewer, mlc_analyzer.mlc_viewer_data_table))
 
 
 query_tab = Panel(child=layout_query, title='Query')
