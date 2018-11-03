@@ -10,8 +10,8 @@ Created on Sun Apr 21 2017
 from __future__ import print_function
 from future.utils import listitems
 from analysis_tools import DVH, calc_eud, dose_to_volume, volume_of_dose
-from utilities import Temp_DICOM_FileSet, get_planes_from_string, get_union, load_options,\
-    collapse_into_single_dates, moving_avg, calc_stats, get_study_instance_uids, moving_avg_by_calendar_day
+from utilities import Temp_DICOM_FileSet, get_planes_from_string, get_union, load_options, calc_stats,\
+    get_study_instance_uids
 import auth
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL
@@ -38,14 +38,13 @@ from dateutil.parser import parse
 from options import N
 from bokeh_components.custom_titles import custom_title
 from bokeh_components import columns, sources
-from bokeh_components.utiltilies import group_constraint_count, get_include_map, get_correlation,\
+from bokeh_components.utilities import group_constraint_count, get_include_map, get_correlation,\
     validate_correlation, update_or_add_endpoints_to_correlation
 from bokeh_components.mlc_analyzer import MLC_Analyzer
+from bokeh_components.time_series import TimeSeries
 
 
 options = load_options(options)
-
-mlc_analyzer = MLC_Analyzer(sources)
 
 
 # This depends on a user defined function in dvh/auth.py.  By default, this returns True
@@ -65,7 +64,7 @@ COLORS = itertools.cycle(palette)
 CURRENT_DVH = []
 ANON_ID_MAP = {}
 x, y = [], []
-N = ['1', '2']
+N = options.N
 CURRENT_DVH_GROUP = {n: [] for n in N}
 UIDS = {n: [] for n in N}
 CORRELATION = {n: [] for n in N}
@@ -154,6 +153,10 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
                     'Beam MU per control point': {'var_name': 'beam_mu_per_cp', 'table': 'Beams', 'units': '', 'source': sources.beams},
                     'ROI Cross-Section Max': {'var_name': 'cross_section_max', 'table': 'DVHs', 'units': 'cm^2', 'source': sources.dvhs},
                     'ROI Cross-Section Median': {'var_name': 'cross_section_median', 'table': 'DVHs', 'units': 'cm^2', 'source': sources.dvhs}}
+
+mlc_analyzer = MLC_Analyzer(sources)
+time_series = TimeSeries(sources, range_categories, CURRENT_DVH_GROUP)
+
 
 # correlation variable names
 correlation_variables, correlation_names = [], []
@@ -752,7 +755,7 @@ def update_data():
         if not options.LITE_VIEW:
             calculate_review_dvh()
             initialize_rad_bio_source()
-            control_chart_y.value = ''
+            time_series.control_chart_y.value = ''
             update_roi_viewer_mrn()
             mlc_analyzer.update_mrn()
     else:
@@ -1238,8 +1241,8 @@ def update_time_series_options():
     new_options.sort()
     new_options.insert(0, '')
 
-    control_chart_y.options = new_options
-    control_chart_y.value = ''
+    time_series.control_chart_y.options = new_options
+    time_series.control_chart_y.value = ''
 
 
 def initialize_rad_bio_source():
@@ -1343,8 +1346,8 @@ def update_eud():
                            'ntcp_tcp': [(i, j) for i, j in enumerate(ntcp_tcp)]})
 
     update_eud_in_correlation()
-    if control_chart_y.value in {'EUD', 'NTCP/TCP'}:
-        update_control_chart()
+    if time_series.control_chart_y.value in {'EUD', 'NTCP/TCP'}:
+        time_series.update_control_chart(CURRENT_DVH_GROUP)
 
 
 def emami_selection(attr, old, new):
@@ -1638,309 +1641,6 @@ def corr_chart_x_include_ticker(attr, old, new):
     included_vars = [key for key, value in listitems(MULTI_VAR_REG_VARS) if value]
     included_vars.sort()
     sources.multi_var_include.data = {'var_name': included_vars}
-
-
-def update_control_chart_ticker(attr, old, new):
-    update_control_chart()
-
-
-def update_control_chart_y_ticker(attr, old, new):
-    update_control_chart()
-
-
-def update_control_chart_trend_ticker(attr, old, new):
-    control_chart_update_trend()
-
-
-def update_control_chart_y_axis_label():
-    new = str(control_chart_y.value)
-
-    if new:
-
-        # If new has something in parenthesis, extract and put in front
-        new_split = new.split(' (')
-        if len(new_split) > 1:
-            new_display = "%s %s" % (new_split[1].split(')')[0], new_split[0])
-        else:
-            new_display = new
-
-        if new.startswith('DVH Endpoint'):
-            control_chart.yaxis.axis_label = str(control_chart_y.value).split(': ')[1]
-        elif new == 'EUD':
-            control_chart.yaxis.axis_label = 'EUD (Gy)'
-        elif new == 'NTCP/TCP':
-            control_chart.yaxis.axis_label = 'NTCP or TCP'
-        elif range_categories[new]['units']:
-            control_chart.yaxis.axis_label = "%s (%s)" % (new_display, range_categories[new]['units'])
-        else:
-            control_chart.yaxis.axis_label = new_display
-
-
-def update_control_chart():
-    new = str(control_chart_y.value)
-    if new:
-        clear_source_selection('time_1')
-        clear_source_selection('time_2')
-
-        if new.startswith('DVH Endpoint: '):
-            y_var_name = new.split(': ')[1]
-            y_source_values = sources.endpoint_calcs.data[y_var_name]
-            y_source_uids = sources.endpoint_calcs.data['uid']
-            y_source_mrns = sources.endpoint_calcs.data['mrn']
-        elif new == 'EUD':
-            y_source_values = sources.rad_bio.data['eud']
-            y_source_uids = sources.rad_bio.data['uid']
-            y_source_mrns = sources.rad_bio.data['mrn']
-        elif new == 'NTCP/TCP':
-            y_source_values = sources.rad_bio.data['ntcp_tcp']
-            y_source_uids = sources.rad_bio.data['uid']
-            y_source_mrns = sources.rad_bio.data['mrn']
-        else:
-            y_source = range_categories[new]['source']
-            y_var_name = range_categories[new]['var_name']
-            y_source_values = y_source.data[y_var_name]
-            y_source_uids = y_source.data['uid']
-            y_source_mrns = y_source.data['mrn']
-
-        update_control_chart_y_axis_label()
-
-        sim_study_dates = sources.plans.data['sim_study_date']
-        sim_study_dates_uids = sources.plans.data['uid']
-
-        x_values = []
-        skipped = []
-        colors = []
-        for v in range(len(y_source_values)):
-            uid = y_source_uids[v]
-            try:
-                sim_study_dates_index = sim_study_dates_uids.index(uid)
-                current_date_str = sim_study_dates[sim_study_dates_index]
-                if current_date_str == 'None':
-                    current_date = datetime.now()
-                else:
-                    current_date = datetime(int(current_date_str[0:4]),
-                                            int(current_date_str[5:7]),
-                                            int(current_date_str[8:10]))
-                x_values.append(current_date)
-                skipped.append(False)
-            except:
-                skipped.append(True)
-
-            # Get group color
-            if not skipped[-1]:
-                if new.startswith('DVH Endpoint') or new in {'EUD', 'NTCP/TCP'} \
-                        or range_categories[new]['source'] == sources.dvhs:
-                    if new in {'EUD', 'NTCP/TCP'}:
-                        roi = sources.rad_bio.data['roi_name'][v]
-                    else:
-                        roi = sources.dvhs.data['roi_name'][v]
-
-                    found = {'Group 1': False, 'Group 2': False}
-
-                    if CURRENT_DVH_GROUP['1']:
-                        r1, r1_max = 0, len(CURRENT_DVH_GROUP['1'].study_instance_uid)
-                        while r1 < r1_max and not found['Group 1']:
-                            if CURRENT_DVH_GROUP['1'].study_instance_uid[r1] == uid and \
-                                            CURRENT_DVH_GROUP['1'].roi_name[r1] == roi:
-                                found['Group 1'] = True
-                                color = options.GROUP_1_COLOR
-                            r1 += 1
-
-                    if CURRENT_DVH_GROUP['2']:
-                        r2, r2_max = 0, len(CURRENT_DVH_GROUP['2'].study_instance_uid)
-                        while r2 < r2_max and not found['Group 2']:
-                            if CURRENT_DVH_GROUP['2'].study_instance_uid[r2] == uid and \
-                                            CURRENT_DVH_GROUP['2'].roi_name[r2] == roi:
-                                found['Group 2'] = True
-                                if found['Group 1']:
-                                    color = options.GROUP_1_and_2_COLOR
-                                else:
-                                    color = options.GROUP_2_COLOR
-                            r2 += 1
-
-                    colors.append(color)
-                else:
-                    if CURRENT_DVH_GROUP['1'] and CURRENT_DVH_GROUP['2']:
-                        if uid in CURRENT_DVH_GROUP['1'].study_instance_uid and \
-                                uid in CURRENT_DVH_GROUP['2'].study_instance_uid:
-                            colors.append(options.GROUP_1_and_2_COLOR)
-                        elif uid in CURRENT_DVH_GROUP['1'].study_instance_uid:
-                            colors.append(options.GROUP_1_COLOR)
-                        else:
-                            colors.append(options.GROUP_2_COLOR)
-                    elif CURRENT_DVH_GROUP['1']:
-                        colors.append(options.GROUP_1_COLOR)
-                    else:
-                        colors.append(options.GROUP_2_COLOR)
-
-        y_values = []
-        y_mrns = []
-        for v in range(len(y_source_values)):
-            if not skipped[v]:
-                y_values.append(y_source_values[v])
-                y_mrns.append(y_source_mrns[v])
-                if not isinstance(y_values[-1], (int, long, float)):
-                    y_values[-1] = 0
-
-        sort_index = sorted(range(len(x_values)), key=lambda k: x_values[k])
-        x_values_sorted, y_values_sorted, y_mrns_sorted, colors_sorted = [], [], [], []
-        for s in range(len(x_values)):
-            x_values_sorted.append(x_values[sort_index[s]])
-            y_values_sorted.append(y_values[sort_index[s]])
-            y_mrns_sorted.append(y_mrns[sort_index[s]])
-            colors_sorted.append(colors[sort_index[s]])
-
-        source_time_1_data = {'x': [], 'y': [], 'mrn': [], 'date_str': []}
-        source_time_2_data = {'x': [], 'y': [], 'mrn': [], 'date_str': []}
-        for i in range(len(x_values_sorted)):
-            if colors_sorted[i] in {options.GROUP_1_COLOR, options.GROUP_1_and_2_COLOR}:
-                source_time_1_data['x'].append(x_values_sorted[i])
-                source_time_1_data['y'].append(y_values_sorted[i])
-                source_time_1_data['mrn'].append(y_mrns_sorted[i])
-                source_time_1_data['date_str'].append(x_values_sorted[i].strftime("%Y-%m-%d"))
-            if colors_sorted[i] in {options.GROUP_2_COLOR, options.GROUP_1_and_2_COLOR}:
-                source_time_2_data['x'].append(x_values_sorted[i])
-                source_time_2_data['y'].append(y_values_sorted[i])
-                source_time_2_data['mrn'].append(y_mrns_sorted[i])
-                source_time_2_data['date_str'].append(x_values_sorted[i].strftime("%Y-%m-%d"))
-
-        sources.time_1.data = source_time_1_data
-        sources.time_2.data = source_time_2_data
-    else:
-        clear_source_data('time_1')
-        clear_source_data('time_2')
-
-    control_chart_update_trend()
-
-
-def control_chart_update_trend():
-    if control_chart_y.value:
-
-        selected_indices = {n: getattr(sources, 'time_%s' % n).selected.indices for n in N}
-        for n in N:
-            if not selected_indices[n]:
-                selected_indices[n] = range(len(getattr(sources, 'time_%s' % n).data['x']))
-
-        group = {n: {'x': [], 'y': []} for n in N}
-
-        for n in N:
-            for i in range(len(getattr(sources, 'time_%s' % n).data['x'])):
-                if i in selected_indices[n]:
-                    for v in ['x', 'y']:
-                        group[n][v].append(getattr(sources, 'time_%s' % n).data[v][i])
-
-        try:
-            avg_len = int(control_chart_text_lookback_distance.value)
-        except:
-            avg_len = 1
-
-        try:
-            percentile = float(control_chart_percentile.value)
-        except:
-            percentile = 90.
-
-        # average daily data and keep track of points per day, calculate moving average
-
-        group_collapsed = {n: [] for n in N}
-        for n in N:
-            if group[n]['x']:
-                group_collapsed[n] = collapse_into_single_dates(group[n]['x'], group[n]['y'])
-                if control_chart_lookback_units.value == "Dates with a Sim":
-                    x_trend, moving_avgs = moving_avg(group_collapsed[n], avg_len)
-                else:
-                    x_trend, moving_avgs = moving_avg_by_calendar_day(group_collapsed[n], avg_len)
-
-                y_np = np.array(group[n]['y'])
-                upper_bound = float(np.percentile(y_np, 50. + percentile / 2.))
-                average = float(np.percentile(y_np, 50))
-                lower_bound = float(np.percentile(y_np, 50. - percentile / 2.))
-                getattr(sources, 'time_trend_%s' % n).data = {'x': x_trend,
-                                                              'y': moving_avgs,
-                                                              'mrn': ['Avg'] * len(x_trend)}
-                getattr(sources, 'time_bound_%s' % n).data = {'x': group[n]['x'],
-                                                              'mrn': ['Bound'] * len(group[n]['x']),
-                                                              'upper': [upper_bound] * len(group[n]['x']),
-                                                              'avg': [average] * len(group[n]['x']),
-                                                              'lower': [lower_bound] * len(group[n]['x'])}
-                getattr(sources, 'time_patch_%s' % n).data = {'x': [group[n]['x'][0], group[n]['x'][-1],
-                                                                    group[n]['x'][-1], group[n]['x'][0]],
-                                                              'y': [upper_bound, upper_bound, lower_bound, lower_bound]}
-            else:
-                for v in ['trend', 'bound', 'patch']:
-                    clear_source_data('time_%s_%s' % (v, n))
-
-        x_var = str(control_chart_y.value)
-        if x_var.startswith('DVH Endpoint'):
-            histograms.xaxis.axis_label = x_var.split("DVH Endpoint: ")[1]
-        elif x_var == 'EUD':
-            histograms.xaxis.axis_label = "%s (Gy)" % x_var
-        elif x_var == 'NTCP/TCP':
-            histograms.xaxis.axis_label = "NTCP or TCP"
-        else:
-            if range_categories[x_var]['units']:
-                histograms.xaxis.axis_label = "%s (%s)" % (x_var, range_categories[x_var]['units'])
-            else:
-                histograms.xaxis.axis_label = x_var
-
-        # Normal Test
-        s, p = {n: '' for n in N}, {n: '' for n in N}
-        for n in N:
-            if group[n]['y']:
-                s[n], p[n] = normaltest(group[n]['y'])
-                p[n] = "%0.3f" % p[n]
-
-        # t-Test and Rank Sums
-        pt, pr = '', ''
-        if group['1']['y'] and group['2']['y']:
-            st, pt = ttest_ind(group['1']['y'], group['2']['y'])
-            sr, pr = ranksums(group['1']['y'], group['2']['y'])
-            pt = "%0.3f" % pt
-            pr = "%0.3f" % pr
-
-        histogram_normaltest_1_text.text = "Group 1 Normal Test p-value = %s" % p['1']
-        histogram_normaltest_2_text.text = "Group 2 Normal Test p-value = %s" % p['2']
-        histogram_ttest_text.text = "Two Sample t-Test (Group 1 vs 2) p-value = %s" % pt
-        histogram_ranksums_text.text = "Wilcoxon rank-sum (Group 1 vs 2) p-value = %s" % pr
-
-    else:
-        for n in N:
-            for k in ['trend', 'bound', 'patch']:
-                clear_source_data("time_%s_%s" % (k, n))
-
-        histogram_normaltest_1_text.text = "Group 1 Normal Test p-value = "
-        histogram_normaltest_2_text.text = "Group 2 Normal Test p-value = "
-        histogram_ttest_text.text = "Two Sample t-Test (Group 1 vs 2) p-value = "
-        histogram_ranksums_text.text = "Wilcoxon rank-sum (Group 1 vs 2) p-value = "
-
-    update_histograms()
-
-
-def update_histograms():
-
-    if control_chart_y.value != '':
-        # Update Histograms
-        bin_size = int(histogram_bin_slider.value)
-        width_fraction = 0.9
-
-        for n in N:
-            hist, bins = np.histogram(getattr(sources, 'time_%s' % n).data['y'], bins=bin_size)
-            if histogram_radio_group.active == 1:
-                hist = np.divide(hist, np.float(np.max(hist)))
-                histograms.yaxis.axis_label = "Relative Frequency"
-            else:
-                histograms.yaxis.axis_label = "Frequency"
-            width = [width_fraction * (bins[1] - bins[0])] * bin_size
-            center = (bins[:-1] + bins[1:]) / 2.
-            getattr(sources, 'histogram_%s' % n).data = {'x': center,
-                                                         'top': hist,
-                                                         'width': width}
-    else:
-        for n in N:
-            clear_source_data('histogram_%s' % n)
-
-
-def histograms_ticker(attr, old, new):
-    update_histograms()
 
 
 def multi_var_linear_regression():
@@ -2369,123 +2069,6 @@ for s in ['rxs', 'plans', 'beams']:
 sources.dvhs.selected.on_change('indices', update_source_endpoint_view_selection)
 sources.endpoint_view.selected.on_change('indices', update_dvh_table_selection)
 sources.emami.selected.on_change('indices', emami_selection)
-
-# Control Chart layout (Time-Series)
-tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
-control_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None,
-                       active_drag="box_zoom", x_axis_type='datetime')
-control_chart.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
-control_chart.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
-control_chart.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-control_chart.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-# control_chart.min_border_left = min_border
-control_chart.min_border_bottom = min_border
-control_chart_data_1 = control_chart.circle('x', 'y', size=options.TIME_SERIES_1_CIRCLE_SIZE,
-                                            color=options.GROUP_1_COLOR,  alpha=options.TIME_SERIES_1_CIRCLE_ALPHA,
-                                            source=sources.time_1)
-control_chart_data_2 = control_chart.circle('x', 'y', size=options.TIME_SERIES_2_CIRCLE_SIZE,
-                                            color=options.GROUP_2_COLOR, alpha=options.TIME_SERIES_2_CIRCLE_ALPHA,
-                                            source=sources.time_2)
-control_chart_trend_1 = control_chart.line('x', 'y', color=options.GROUP_1_COLOR, source=sources.time_trend_1,
-                                           line_width=options.TIME_SERIES_1_TREND_LINE_WIDTH,
-                                           line_dash=options.TIME_SERIES_1_TREND_LINE_DASH)
-control_chart_trend_2 = control_chart.line('x', 'y', color=options.GROUP_2_COLOR, source=sources.time_trend_2,
-                                           line_width=options.TIME_SERIES_2_TREND_LINE_WIDTH,
-                                           line_dash=options.TIME_SERIES_2_TREND_LINE_DASH)
-control_chart_avg_1 = control_chart.line('x', 'avg', color=options.GROUP_1_COLOR, source=sources.time_bound_1,
-                                         line_width=options.TIME_SERIES_1_AVG_LINE_WIDTH,
-                                         line_dash=options.TIME_SERIES_1_AVG_LINE_DASH)
-control_chart_avg_2 = control_chart.line('x', 'avg', color=options.GROUP_2_COLOR, source=sources.time_bound_2,
-                                         line_width=options.TIME_SERIES_2_AVG_LINE_WIDTH,
-                                         line_dash=options.TIME_SERIES_2_AVG_LINE_DASH)
-control_chart_patch_1 = control_chart.patch('x', 'y', color=options.GROUP_1_COLOR, source=sources.time_patch_1,
-                                            alpha=options.TIME_SERIES_1_PATCH_ALPHA)
-control_chart_patch_2 = control_chart.patch('x', 'y', color=options.GROUP_2_COLOR, source=sources.time_patch_2,
-                                            alpha=options.TIME_SERIES_1_PATCH_ALPHA)
-control_chart.add_tools(HoverTool(show_arrow=True,
-                                  tooltips=[('ID', '@mrn'),
-                                            ('Date', '@x{%F}'),
-                                            ('Value', '@y{0.2f}')],
-                                  formatters={'x': 'datetime'}))
-control_chart.xaxis.axis_label = "Simulation Date"
-control_chart.yaxis.axis_label = ""
-# Set the legend
-legend_control_chart = Legend(items=[("Group 1", [control_chart_data_1]),
-                                     ("Series Average", [control_chart_avg_1]),
-                                     ("Rolling Average", [control_chart_trend_1]),
-                                     ("Percentile Region", [control_chart_patch_1]),
-                                     ("Group 2", [control_chart_data_2]),
-                                     ("Series Average", [control_chart_avg_2]),
-                                     ("Rolling Average", [control_chart_trend_2]),
-                                     ("Percentile Region", [control_chart_patch_2]),],
-                              location=(25, 0))
-
-# Add the layout outside the plot, clicking legend item hides the line
-control_chart.add_layout(legend_control_chart, 'right')
-control_chart.legend.click_policy = "hide"
-
-control_chart_options = list(range_categories)
-control_chart_options.sort()
-control_chart_options.insert(0, '')
-control_chart_y = Select(value=control_chart_options[0], options=control_chart_options, width=300)
-control_chart_y.title = "Select a Range Variable"
-control_chart_y.on_change('value', update_control_chart_y_ticker)
-
-control_chart_text_lookback_distance = TextInput(value='1', title="Lookback Distance", width=200)
-control_chart_text_lookback_distance.on_change('value', update_control_chart_trend_ticker)
-
-control_chart_percentile = TextInput(value='90', title="Percentile", width=200)
-control_chart_percentile.on_change('value', update_control_chart_trend_ticker)
-
-lookback_units_options = ['Dates with a Sim', 'Days']
-control_chart_lookback_units = Select(value=lookback_units_options[0], options=lookback_units_options, width=200)
-control_chart_lookback_units.title = 'Lookback Units'
-control_chart_lookback_units.on_change('value', update_control_chart_ticker)
-
-# source_time.on_change('selected', control_chart_update_trend)
-trend_update_button = Button(label="Update Trend", button_type="primary", width=150)
-trend_update_button.on_click(control_chart_update_trend)
-
-download_time_plot = Button(label="Download Plot Data", button_type="default", width=150)
-download_time_plot.callback = CustomJS(args=dict(source_1=sources.time_1,
-                                                 source_2=sources.time_2),
-                                       code=open(join(dirname(__file__), "download_time_plot.js")).read())
-
-# histograms
-tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
-histograms = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
-histograms.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
-histograms.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
-histograms.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-histograms.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-histograms.min_border_left = min_border
-histograms.min_border_bottom = min_border
-hist_1 = histograms.vbar(x='x', width='width', bottom=0, top='top', source=sources.histogram_1,
-                         color=options.GROUP_1_COLOR, alpha=options.HISTOGRAM_1_ALPHA)
-hist_2 = histograms.vbar(x='x', width='width', bottom=0, top='top', source=sources.histogram_2,
-                         color=options.GROUP_2_COLOR, alpha=options.HISTOGRAM_2_ALPHA)
-histograms.xaxis.axis_label = ""
-histograms.yaxis.axis_label = "Frequency"
-histogram_bin_slider = Slider(start=1, end=100, value=10, step=1, title="Number of Bins")
-histogram_bin_slider.on_change('value', histograms_ticker)
-histogram_radio_group = RadioGroup(labels=["Absolute Y-Axis", "Relative Y-Axis (to Group Max)"], active=0)
-histogram_radio_group.on_change('active', histograms_ticker)
-histogram_normaltest_1_text = Div(text="Group 1 Normal Test p-value = ", width=400)
-histogram_normaltest_2_text = Div(text="Group 2 Normal Test p-value = ", width=400)
-histogram_ttest_text = Div(text="Two Sample t-Test (Group 1 vs 2) p-value = ", width=400)
-histogram_ranksums_text = Div(text="Wilcoxon rank-sum (Group 1 vs 2) p-value = ", width=400)
-histograms.add_tools(HoverTool(show_arrow=True,
-                               line_policy='next',
-                               tooltips=[('x', '@x{0.2f}'),
-                                         ('Counts', '@top')]))
-# Set the legend
-legend_hist = Legend(items=[("Group 1", [hist_1]),
-                            ("Group 2", [hist_2])],
-                     location=(25, 0))
-
-# Add the layout outside the plot, clicking legend item hides the line
-histograms.add_layout(legend_hist, 'right')
-histograms.legend.click_policy = "hide"
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Correlation
@@ -2957,7 +2540,8 @@ roi_viewer.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT
 roi_viewer.min_border_left = min_border
 roi_viewer.min_border_bottom = min_border
 roi_viewer.y_range.flipped = True
-roi_viewer_patch = {str(i): roi_viewer.patch('x', 'y', source=getattr(sources, 'roi%s_viewer' % i), color=colors[i-1], alpha=0.5) for i in range(1, 6)}
+roi_viewer_patch = {str(i): roi_viewer.patch('x', 'y', source=getattr(sources, 'roi%s_viewer' % i),
+                                             color=colors[i-1], alpha=0.5) for i in range(1, 6)}
 
 roi_viewer.patch('x', 'y', source=sources.tv, color='black', alpha=0.5)
 roi_viewer.xaxis.axis_label = "Lateral DICOM Coordinate (mm)"
@@ -3055,15 +2639,17 @@ layout_planning_data = column(row(custom_title['1']['planning'], Spacer(width=50
                               Div(text="<b>Beams Continued</b>", width=1500), data_table_beams2)
 
 layout_time_series = column(row(custom_title['1']['time_series'], Spacer(width=50), custom_title['2']['time_series']),
-                            row(control_chart_y, control_chart_lookback_units, control_chart_text_lookback_distance,
-                                Spacer(width=10), control_chart_percentile, Spacer(width=10), trend_update_button),
-                            control_chart,
-                            download_time_plot,
+                            row(time_series.control_chart_y, time_series.control_chart_lookback_units,
+                                time_series.control_chart_text_lookback_distance,
+                                Spacer(width=10), time_series.control_chart_percentile, Spacer(width=10),
+                                time_series.trend_update_button),
+                            time_series.control_chart,
+                            time_series.download_time_plot,
                             Div(text="<hr>", width=1050),
-                            row(histogram_bin_slider, histogram_radio_group),
-                            row(histogram_normaltest_1_text, histogram_ttest_text),
-                            row(histogram_normaltest_2_text, histogram_ranksums_text),
-                            histograms,
+                            row(time_series.histogram_bin_slider, time_series.histogram_radio_group),
+                            row(time_series.histogram_normaltest_1_text, time_series.histogram_ttest_text),
+                            row(time_series.histogram_normaltest_2_text, time_series.histogram_ranksums_text),
+                            time_series.histograms,
                             Spacer(width=1000, height=100))
 
 layout_roi_viewer = column(row(custom_title['1']['roi_viewer'], Spacer(width=50), custom_title['2']['roi_viewer']),
