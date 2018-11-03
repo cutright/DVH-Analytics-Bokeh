@@ -1,6 +1,6 @@
 # Change log of DVH Analytics
 
-### 0.4.4b-d (2018.11.1)
+### 0.4.4b, 0.4.4.4c, 0.4.4.1 (2018.11.1)
 * Minor tweaks for on compliance with DICOM files from http://www.cancerimagingarchive.net/
 * Move Files Check box added in admin view if user wishes to keep files in the inbox
 
