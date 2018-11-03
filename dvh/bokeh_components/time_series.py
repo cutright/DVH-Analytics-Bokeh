@@ -217,20 +217,20 @@ class TimeSeries:
 
                         found = {'Group 1': False, 'Group 2': False}
 
-                        if current_dvh_group['1']:
-                            r1, r1_max = 0, len(current_dvh_group['1'].study_instance_uid)
+                        if self.current_dvh_group['1']:
+                            r1, r1_max = 0, len(self.current_dvh_group['1'].study_instance_uid)
                             while r1 < r1_max and not found['Group 1']:
-                                if current_dvh_group['1'].study_instance_uid[r1] == uid and \
-                                        current_dvh_group['1'].roi_name[r1] == roi:
+                                if self.current_dvh_group['1'].study_instance_uid[r1] == uid and \
+                                        self.current_dvh_group['1'].roi_name[r1] == roi:
                                     found['Group 1'] = True
                                     color = options.GROUP_1_COLOR
                                 r1 += 1
 
-                        if current_dvh_group['2']:
-                            r2, r2_max = 0, len(current_dvh_group['2'].study_instance_uid)
+                        if self.current_dvh_group['2']:
+                            r2, r2_max = 0, len(self.current_dvh_group['2'].study_instance_uid)
                             while r2 < r2_max and not found['Group 2']:
-                                if current_dvh_group['2'].study_instance_uid[r2] == uid and \
-                                        current_dvh_group['2'].roi_name[r2] == roi:
+                                if self.current_dvh_group['2'].study_instance_uid[r2] == uid and \
+                                        self.current_dvh_group['2'].roi_name[r2] == roi:
                                     found['Group 2'] = True
                                     if found['Group 1']:
                                         color = options.GROUP_1_and_2_COLOR
@@ -240,15 +240,15 @@ class TimeSeries:
 
                         colors.append(color)
                     else:
-                        if current_dvh_group['1'] and current_dvh_group['2']:
-                            if uid in current_dvh_group['1'].study_instance_uid and \
-                                    uid in current_dvh_group['2'].study_instance_uid:
+                        if self.current_dvh_group['1'] and self.current_dvh_group['2']:
+                            if uid in self.current_dvh_group['1'].study_instance_uid and \
+                                    uid in self.current_dvh_group['2'].study_instance_uid:
                                 colors.append(options.GROUP_1_and_2_COLOR)
-                            elif uid in current_dvh_group['1'].study_instance_uid:
+                            elif uid in self.current_dvh_group['1'].study_instance_uid:
                                 colors.append(options.GROUP_1_COLOR)
                             else:
                                 colors.append(options.GROUP_2_COLOR)
-                        elif current_dvh_group['1']:
+                        elif self.current_dvh_group['1']:
                             colors.append(options.GROUP_1_COLOR)
                         else:
                             colors.append(options.GROUP_2_COLOR)
