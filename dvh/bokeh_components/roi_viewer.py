@@ -8,10 +8,11 @@ Created on Sun Nov 4 2018
 import matplotlib.colors as plot_colors
 from bokeh.models.widgets import Select, Button, CheckboxGroup
 from bokeh.plotting import figure
-from bokeh_components.utilities import clear_source_data, get_planes_from_string, get_union
+from bokeh_components.utilities import clear_source_data
 import options
 from bokeh import events
 from sql_connector import DVH_SQL
+from roi_tools import get_planes_from_string, get_union
 
 
 class RoiViewerRoiColorTicker:

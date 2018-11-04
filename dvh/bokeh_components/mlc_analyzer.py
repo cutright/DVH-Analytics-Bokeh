@@ -6,7 +6,7 @@ Created on Sat Nov 3 2018
 @author: Dan Cutright, PhD
 """
 
-import dicom_tools.mlc_analyzer as mlca
+import dicom_mlc_analyzer as mlca
 from sql_connector import DVH_SQL
 from bokeh.models.widgets import Select, Button, Div, DataTable
 from bokeh.plotting import figure
