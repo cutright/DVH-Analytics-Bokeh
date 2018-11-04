@@ -24,6 +24,7 @@ class Correlation:
         self.sources = sources
         self.correlation_names = correlation_names
         self.range_categories = range_categories
+        self.regression = None
 
         self.data = {n: [] for n in N}
         self.bad_uid = {n: [] for n in N}
@@ -185,13 +186,13 @@ class Correlation:
         for k in ['1_pos', '1_neg', '2_pos', '2_neg']:
             getattr(self.sources, "correlation_%s" % k).data = s[k]
 
-        group_1_count, group_2_count = 0, 0
+        group_count = {n: 0 for n in N}
         for n in N:
             if self.data[n]:
-                group_1_count = len(self.data[n][list(self.data[n])[0]]['uid'])
+                group_count[n] = len(self.data[n][list(self.data[n])[0]]['uid'])
 
-        self.fig_text_1.text = "Group 1: %d" % group_1_count
-        self.fig_text_2.text = "Group 2: %d" % group_2_count
+        self.fig_text_1.text = "Group 1: %d" % group_count[N[0]]
+        self.fig_text_2.text = "Group 2: %d" % group_count[N[1]]
 
     def validate_data(self):
 
@@ -333,8 +334,8 @@ class Correlation:
             for n in N:
                 self.data[n][ep] = {k: temp[n][k] for k in temp_keys}
 
-            # if ep not in list(multi_var_reg_vars):
-            #     multi_var_reg_vars[ep] = False
+            if ep not in list(self.regression.multi_var_reg_vars):
+                self.regression.multi_var_reg_vars[ep] = False
 
         # declare space to tag variables to be used for multi variable regression
         for n in N:
@@ -373,5 +374,12 @@ class Correlation:
         self.validate_data()
         self.update_correlation_matrix()
 
+    def clear_old_endpoints(self):
+        # This function will remove endpoint data no longer in the endpoint calcs from self.data
+        pass
+
     def clear_bad_uids(self):
         self.bad_uid = {n: [] for n in N}
+
+    def add_regression_link(self, regression):
+        self.regression = regression

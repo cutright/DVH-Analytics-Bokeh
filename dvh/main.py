@@ -8,10 +8,8 @@ Created on Sun Apr 21 2017
 
 
 from __future__ import print_function
-from future.utils import listitems
-from analysis_tools import DVH, calc_eud, dose_to_volume, volume_of_dose
-from utilities import Temp_DICOM_FileSet, load_options, calc_stats,\
-    get_study_instance_uids
+from analysis_tools import DVH, dose_to_volume, volume_of_dose
+from utilities import Temp_DICOM_FileSet, load_options, calc_stats, get_study_instance_uids
 import auth
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL
@@ -27,19 +25,18 @@ from bokeh.palettes import Colorblind8 as palette
 from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, Panel, Tabs, NumberFormatter,\
     RadioButtonGroup, TextInput, RadioGroup, CheckboxButtonGroup, Dropdown, CheckboxGroup, PasswordInput
 from dicompylercore import dicomparser, dvhcalc
-from scipy.stats import linregress
-import statsmodels.api as sm
 import time
 import options
 from dateutil.parser import parse
-from options import N
-from bokeh_components.custom_titles import custom_title
 from bokeh_components import columns, sources
-from bokeh_components.utilities import group_constraint_count, get_include_map
+from bokeh_components.custom_titles import custom_title
 from bokeh_components.mlc_analyzer import MLC_Analyzer
 from bokeh_components.time_series import TimeSeries
 from bokeh_components.correlation import Correlation
 from bokeh_components.roi_viewer import ROI_Viewer
+from bokeh_components.rad_bio import RadBio
+from bokeh_components.regression import Regression
+from bokeh_components.utilities import group_constraint_count
 
 
 options = load_options(options)
@@ -165,13 +162,14 @@ for key in list(range_categories):
 correlation_variables.sort()
 correlation_names.sort()
 multi_var_reg_var_names = correlation_names + ['EUD', 'NTCP/TCP']
-MULTI_VAR_REG_VARS = {name: False for name in multi_var_reg_var_names}
-
 
 mlc_analyzer = MLC_Analyzer(sources)
 time_series = TimeSeries(sources, range_categories)
 correlation = Correlation(sources, correlation_names, range_categories)
 roi_viewer = ROI_Viewer(sources)
+regression = Regression(sources, time_series, correlation, multi_var_reg_var_names)
+correlation.add_regression_link(regression)
+rad_bio = RadBio(sources, time_series, correlation, regression)
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -752,7 +750,7 @@ def update_data():
         update_source_endpoint_calcs()
         if not options.LITE_VIEW:
             calculate_review_dvh()
-            initialize_rad_bio_source()
+            rad_bio.initialize()
             time_series.y_axis.value = ''
             roi_viewer.update_mrn()
             mlc_analyzer.update_mrn()
@@ -1219,309 +1217,22 @@ def update_endpoint_view():
             ep_view["ep%s" % i] = [''] * rows  # filling table with empty strings
 
         for r in range(len(sources.endpoint_defs.data['row'])):
-            if r < options.ENDPOINT_COUNT:  # limiting UI to ENDPOINT_COUNT for efficieny
+            if r < options.ENDPOINT_COUNT:  # limiting UI to ENDPOINT_COUNT for efficiency
                 key = sources.endpoint_defs.data['label'][r]
                 ep_view["ep%s" % (r+1)] = sources.endpoint_calcs.data[key]
 
         sources.endpoint_view.data = ep_view
         if not options.LITE_VIEW:
             correlation.update_or_add_endpoints_to_correlation()
-
             categories = list(correlation.data['1'])
             categories.sort()
-            corr_chart_x.options = [''] + categories
-            corr_chart_y.options = [''] + categories
+
+            regression.x.options = [''] + categories
+            regression.y.options = [''] + categories
 
             correlation.validate_data()
             correlation.update_correlation_matrix()
-            update_corr_chart()
-
-
-def initialize_rad_bio_source():
-    include = get_include_map(sources)
-
-    # Get data from DVH Table
-    mrn = [j for i, j in enumerate(sources.dvhs.data['mrn']) if include[i]]
-    uid = [j for i, j in enumerate(sources.dvhs.data['uid']) if include[i]]
-    group = [j for i, j in enumerate(sources.dvhs.data['group']) if include[i]]
-    roi_name = [j for i, j in enumerate(sources.dvhs.data['roi_name']) if include[i]]
-    ptv_overlap = [j for i, j in enumerate(sources.dvhs.data['ptv_overlap']) if include[i]]
-    roi_type = [j for i, j in enumerate(sources.dvhs.data['roi_type']) if include[i]]
-    rx_dose = [j for i, j in enumerate(sources.dvhs.data['rx_dose']) if include[i]]
-
-    # Get data from beam table
-    fxs, fx_dose = [], []
-    for eud_uid in uid:
-        plan_index = sources.plans.data['uid'].index(eud_uid)
-        fxs.append(sources.plans.data['fxs'][plan_index])
-
-        rx_uids, rx_fxs = sources.rxs.data['uid'], sources.rxs.data['fxs']
-        rx_indices = [i for i, rx_uid in enumerate(rx_uids) if rx_uid == eud_uid]
-        max_rx_fxs = max([sources.rxs.data['fxs'][i] for i in rx_indices])
-        rx_index = [i for i, rx_uid in enumerate(rx_uids) if rx_uid == eud_uid and rx_fxs[i] == max_rx_fxs][0]
-        fx_dose.append(sources.rxs.data['fx_dose'][rx_index])
-
-    sources.rad_bio.data = {'mrn': mrn,
-                            'uid': uid,
-                            'group': group,
-                            'roi_name': roi_name,
-                            'ptv_overlap': ptv_overlap,
-                            'roi_type': roi_type,
-                            'rx_dose': rx_dose,
-                            'fxs': fxs,
-                            'fx_dose': fx_dose,
-                            'eud_a': [0] * len(uid),
-                            'gamma_50': [0] * len(uid),
-                            'td_tcd': [0] * len(uid),
-                            'eud': [0] * len(uid),
-                            'ntcp_tcp': [0] * len(uid)}
-
-
-def rad_bio_apply():
-    row_count = len(sources.rad_bio.data['uid'])
-
-    if rad_bio_apply_filter.active == [0, 1]:
-        include = [i for i in range(row_count)]
-    elif 0 in rad_bio_apply_filter.active:
-        include = [i for i in range(row_count) if sources.rad_bio.data['group'][i] in {'Group 1', 'Group 1 & 2'}]
-    elif 1 in rad_bio_apply_filter.active:
-        include = [i for i in range(row_count) if sources.rad_bio.data['group'][i] in {'Group 2', 'Group 1 & 2'}]
-    else:
-        include = []
-
-    if 2 in rad_bio_apply_filter.active:
-        include.extend([i for i in range(row_count) if i in sources.rad_bio.selected.indices])
-
-    try:
-        new_eud_a = float(rad_bio_eud_a_input.value)
-    except:
-        new_eud_a = 1.
-    try:
-        new_gamma_50 = float(rad_bio_gamma_50_input.value)
-    except:
-        new_gamma_50 = 1.
-    try:
-        new_td_tcd = float(rad_bio_td_tcd_input.value)
-    except:
-        new_td_tcd = 1.
-
-    patch = {'eud_a': [(i, new_eud_a) for i in range(row_count) if i in include],
-             'gamma_50': [(i, new_gamma_50) for i in range(row_count) if i in include],
-             'td_tcd': [(i, new_td_tcd) for i in range(row_count) if i in include]}
-
-    sources.rad_bio.patch(patch)
-
-    update_eud()
-
-
-def update_eud():
-    uid_roi_list = ["%s_%s" % (uid, sources.dvhs.data['roi_name'][i]) for i, uid in enumerate(sources.dvhs.data['uid'])]
-
-    eud, ntcp_tcp = [], []
-    for i, uid in enumerate(sources.rad_bio.data['uid']):
-        uid_roi = "%s_%s" % (uid, sources.rad_bio.data['roi_name'][i])
-        source_index = uid_roi_list.index(uid_roi)
-        dvh = sources.dvhs.data['y'][source_index]
-        a = sources.rad_bio.data['eud_a'][i]
-        try:
-            eud.append(round(calc_eud(dvh, a), 2))
-        except:
-            eud.append(0)
-        td_tcd = sources.rad_bio.data['td_tcd'][i]
-        gamma_50 = sources.rad_bio.data['gamma_50'][i]
-        if eud[-1] > 0:
-            ntcp_tcp.append(1 / (1 + (td_tcd / eud[-1]) ** (4. * gamma_50)))
-        else:
-            ntcp_tcp.append(0)
-
-    sources.rad_bio.patch({'eud': [(i, j) for i, j in enumerate(eud)],
-                           'ntcp_tcp': [(i, j) for i, j in enumerate(ntcp_tcp)]})
-
-    correlation.update_eud_in_correlation()
-    categories = list(correlation.data[N[0]])
-    categories.sort()
-    corr_chart_x.options = [''] + categories
-    corr_chart_y.options = [''] + categories
-    update_corr_chart()
-    if time_series.y_axis.value in {'EUD', 'NTCP/TCP'}:
-        time_series.update_plot()
-
-
-def emami_selection(attr, old, new):
-    if new:
-        row_index = min(new)
-        rad_bio_eud_a_input.value = str(sources.emami.data['eud_a'][row_index])
-        rad_bio_gamma_50_input.value = str(sources.emami.data['gamma_50'][row_index])
-        rad_bio_td_tcd_input.value = str(sources.emami.data['td_tcd'][row_index])
-
-
-def update_corr_chart_ticker_x(attr, old, new):
-    if MULTI_VAR_REG_VARS[corr_chart_x.value]:
-        corr_chart_x_include.active = [0]
-    else:
-        corr_chart_x_include.active = []
-    update_corr_chart()
-
-
-def update_corr_chart_ticker_y(attr, old, new):
-    update_corr_chart()
-
-
-def update_corr_chart():
-    if corr_chart_x.value and corr_chart_y.value:
-        x_units = correlation.data['1'][corr_chart_x.value]['units']
-        y_units = correlation.data['1'][corr_chart_y.value]['units']
-
-        data = {'x': {n: correlation.data[n][corr_chart_x.value]['data'] for n in N},
-                'y': {n: correlation.data[n][corr_chart_y.value]['data'] for n in N},
-                'mrn': {n: correlation.data[n][corr_chart_x.value]['mrn'] for n in N}}
-
-        if x_units:
-            if corr_chart_x.value.startswith('DVH Endpoint'):
-                label = corr_chart_x.value[14:]
-                label = {'D': 'Dose to ', 'V': 'Volume of '}[label[0]] + corr_chart_x.value.split('_')[1]
-                if '%' in label:
-                    label = label + {'D': ' ROI Volume', 'V': ' Rx Dose'}[label[0]]
-                corr_chart.xaxis.axis_label = "%s (%s)" % (label, x_units)
-            else:
-                corr_chart.xaxis.axis_label = "%s (%s)" % (corr_chart_x.value, x_units)
-        else:
-            corr_chart.xaxis.axis_label = corr_chart_x.value.replace('/', ' or ')
-        if y_units:
-            if corr_chart_y.value.startswith('DVH Endpoint'):
-                label = corr_chart_y.value[14:]
-                label = {'D': 'Dose to ', 'V': 'Volume of '}[label[0]] + corr_chart_y.value.split('_')[1]
-                if '%' in label:
-                    label = label + {'D': ' ROI Volume', 'V': ' Rx Dose'}[label[0]]
-                corr_chart.yaxis.axis_label = "%s (%s)" % (label, y_units)
-            else:
-                corr_chart.yaxis.axis_label = "%s (%s)" % (corr_chart_y.value, y_units)
-        else:
-            corr_chart.yaxis.axis_label = corr_chart_y.value.replace('/', ' or ')
-
-        for n in N:
-            getattr(sources, 'corr_chart_%s' % n).data = {v: data[v][n] for v in list(data)}
-
-        group_stats = {n: [] for n in N}
-
-        for n in N:
-            if data['x'][n]:
-                slope, intercept, r_value, p_value, std_err = linregress(data['x'][n], data['y'][n])
-                group_stats[n] = [round(slope, 3),
-                                  round(intercept, 3),
-                                  round(r_value ** 2, 3),
-                                  round(p_value, 3),
-                                  round(std_err, 3),
-                                  len(data['x'][n])]
-                x_trend = [min(data['x'][n]), max(data['x'][n])]
-                y_trend = np.add(np.multiply(x_trend, slope), intercept)
-                getattr(sources, 'corr_trend_%s' % n).data = {'x': x_trend, 'y': y_trend}
-            else:
-                group_stats[n] = [''] * 6
-                clear_source_data('corr_trend_%s' % n)
-
-        sources.corr_chart_stats.data = {'stat': sources.CORR_CHART_STATS_ROW_NAMES,
-                                         'group_1': group_stats['1'],
-                                         'group_2': group_stats['2']}
-    else:
-        sources.corr_chart_stats.data = {'stat': sources.CORR_CHART_STATS_ROW_NAMES,
-                                         'group_1': [''] * 6,
-                                         'group_2': [''] * 6}
-        for n in N:
-            for k in ['corr_chart', 'corr_trend']:
-                clear_source_data('%s_%s' % (k, n))
-
-
-def corr_chart_x_prev_ticker():
-    current_index = corr_chart_x.options.index(corr_chart_x.value)
-    corr_chart_x.value = corr_chart_x.options[current_index - 1]
-
-
-def corr_chart_y_prev_ticker():
-    current_index = corr_chart_y.options.index(corr_chart_y.value)
-    corr_chart_y.value = corr_chart_y.options[current_index - 1]
-
-
-def corr_chart_x_next_ticker():
-    current_index = corr_chart_x.options.index(corr_chart_x.value)
-    if current_index == len(corr_chart_x.options) - 1:
-        new_index = 0
-    else:
-        new_index = current_index + 1
-    corr_chart_x.value = corr_chart_x.options[new_index]
-
-
-def corr_chart_y_next_ticker():
-    current_index = corr_chart_y.options.index(corr_chart_y.value)
-    if current_index == len(corr_chart_y.options) - 1:
-        new_index = 0
-    else:
-        new_index = current_index + 1
-    corr_chart_y.value = corr_chart_y.options[new_index]
-
-
-def corr_chart_x_include_ticker(attr, old, new):
-    if new and not MULTI_VAR_REG_VARS[corr_chart_x.value]:
-        MULTI_VAR_REG_VARS[corr_chart_x.value] = True
-    if not new and MULTI_VAR_REG_VARS[corr_chart_x.value]:
-        clear_source_selection('multi_var_include')
-        MULTI_VAR_REG_VARS[corr_chart_x.value] = False
-
-    included_vars = [key for key, value in listitems(MULTI_VAR_REG_VARS) if value]
-    included_vars.sort()
-    sources.multi_var_include.data = {'var_name': included_vars}
-
-
-def multi_var_linear_regression():
-    print(str(datetime.now()), 'Performing multivariable regression', sep=' ')
-
-    included_vars = [key for key in list(correlation.data['1']) if MULTI_VAR_REG_VARS[key]]
-    included_vars.sort()
-
-    for n in N:
-        if time_series.current_dvh_group[n]:
-            x = []
-            x_count = len(correlation.data[n][list(correlation.data[n])[0]]['data'])
-            for i in range(x_count):
-                current_x = []
-                for k in included_vars:
-                    current_x.append(correlation.data[n][k]['data'][i])
-                x.append(current_x)
-            x = sm.add_constant(x)  # explicitly add constant to calculate intercept
-            y = correlation.data[n][corr_chart_y.value]['data']
-
-            fit = sm.OLS(y, x).fit()
-
-            coeff = fit.params
-            coeff_p = fit.pvalues
-            r_sq = fit.rsquared
-            model_p = fit.f_pvalue
-
-            coeff_str = ["%0.3E" % i for i in coeff]
-            coeff_p_str = ["%0.3f" % i for i in coeff_p]
-            r_sq_str = ["%0.3f" % r_sq]
-            model_p_str = ["%0.3f" % model_p]
-
-            residual_chart.yaxis.axis_label = "Residual (%s)" % correlation.data[n][corr_chart_y.value]['units']
-
-            getattr(sources, 'multi_var_coeff_results_%s' % n).data = {'var_name': ['Constant'] + included_vars,
-                                                                       'coeff': coeff.tolist(), 'coeff_str': coeff_str,
-                                                                       'p': coeff_p.tolist(), 'p_str': coeff_p_str}
-            getattr(sources, 'multi_var_model_results_%s' % n).data = {'model_p': [model_p], 'model_p_str': model_p_str,
-                                                                       'r_sq': [r_sq], 'r_sq_str': r_sq_str,
-                                                                       'y_var': [corr_chart_y.value]}
-            getattr(sources, 'residual_chart_%s' % n).data = {'x': range(1, x_count + 1),
-                                                              'y': fit.resid.tolist(),
-                                                              'mrn': correlation.data[n][corr_chart_y.value]['mrn'],
-                                                              'db_value': correlation.data[n][corr_chart_y.value]['data']}
-        else:
-            for k in ['multi_var_coeff_results', 'multi_var_model_results', 'residual_chart']:
-                clear_source_data('%s_%s' (k, n))
-
-
-def multi_var_include_selection(attr, old, new):
-    row_index = sources.multi_var_include.selected.indices[0]
-    corr_chart_x.value = sources.multi_var_include.data['var_name'][row_index]
+            regression.update_data()
 
 
 def update_source_endpoint_view_selection(attr, old, new):
@@ -1897,68 +1608,7 @@ for s in ['rxs', 'plans', 'beams']:
     getattr(sources, s).selected.on_change('indices', source_selection[s].ticker)
 sources.dvhs.selected.on_change('indices', update_source_endpoint_view_selection)
 sources.endpoint_view.selected.on_change('indices', update_dvh_table_selection)
-sources.emami.selected.on_change('indices', emami_selection)
-
-# Control Chart layout
-tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
-corr_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
-corr_chart.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
-corr_chart.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
-corr_chart.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-corr_chart.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-corr_chart.min_border_left = min_border
-corr_chart.min_border_bottom = min_border
-corr_chart_data_1 = corr_chart.circle('x', 'y', size=options.REGRESSION_1_CIRCLE_SIZE, color=options.GROUP_1_COLOR,
-                                      alpha=options.REGRESSION_1_ALPHA, source=sources.corr_chart_1)
-corr_chart_data_2 = corr_chart.circle('x', 'y', size=options.REGRESSION_2_CIRCLE_SIZE, color=options.GROUP_2_COLOR,
-                                      alpha=options.REGRESSION_2_ALPHA, source=sources.corr_chart_2)
-corr_chart_trend_1 = corr_chart.line('x', 'y', color=options.GROUP_1_COLOR,
-                                     line_width=options.REGRESSION_1_LINE_WIDTH,
-                                     line_dash=options.REGRESSION_1_LINE_DASH,
-                                     source=sources.corr_trend_1)
-corr_chart_trend_2 = corr_chart.line('x', 'y', color=options.GROUP_2_COLOR,
-                                     line_width=options.REGRESSION_2_LINE_WIDTH,
-                                     line_dash=options.REGRESSION_1_LINE_DASH,
-                                     source=sources.corr_trend_2)
-corr_chart.add_tools(HoverTool(show_arrow=True, tooltips=[('MRN', '@mrn'),
-                                                          ('x', '@x{0.2f}'),
-                                                          ('y', '@y{0.2f}')]))
-
-# Set the legend
-legend_corr_chart = Legend(items=[("Group 1", [corr_chart_data_1]),
-                                  ("Lin Reg", [corr_chart_trend_1]),
-                                  ("Group 2", [corr_chart_data_2]),
-                                  ("Lin Reg", [corr_chart_trend_2])],
-                           location=(25, 0))
-
-# Add the layout outside the plot, clicking legend item hides the line
-corr_chart.add_layout(legend_corr_chart, 'right')
-corr_chart.legend.click_policy = "hide"
-
-corr_chart_x_include = CheckboxGroup(labels=["Include this ind. var. in multi-var regression"], active=[], width=400)
-corr_chart_x_prev = Button(label="<", button_type="primary", width=50)
-corr_chart_x_next = Button(label=">", button_type="primary", width=50)
-corr_chart_y_prev = Button(label="<", button_type="primary", width=50)
-corr_chart_y_next = Button(label=">", button_type="primary", width=50)
-corr_chart_x_prev.on_click(corr_chart_x_prev_ticker)
-corr_chart_x_next.on_click(corr_chart_x_next_ticker)
-corr_chart_y_prev.on_click(corr_chart_y_prev_ticker)
-corr_chart_y_next.on_click(corr_chart_y_next_ticker)
-corr_chart_x_include.on_change('active', corr_chart_x_include_ticker)
-
-corr_chart_do_reg_button = Button(label="Perform Multi-Var Regression", button_type="primary", width=200)
-corr_chart_do_reg_button.on_click(multi_var_linear_regression)
-
-corr_chart_x = Select(value='', options=[''], width=300)
-corr_chart_x.title = "Select an Independent Variable (x-axis)"
-corr_chart_x.on_change('value', update_corr_chart_ticker_x)
-
-corr_chart_y = Select(value='', options=[''], width=300)
-corr_chart_y.title = "Select a Dependent Variable (y-axis)"
-corr_chart_y.on_change('value', update_corr_chart_ticker_y)
-
-corr_chart_text_1 = Div(text="<b>Group 1</b>:", width=1050)
-corr_chart_text_2 = Div(text="<b>Group 2</b>:", width=1050)
+sources.emami.selected.on_change('indices', rad_bio.emami_selection)
 
 data_table_corr_chart = DataTable(source=sources.corr_chart_stats, columns=columns.corr_chart, editable=True,
                                   height=180, width=300, index_position=None)
@@ -1978,7 +1628,7 @@ data_table_multi_var_model_2 = DataTable(source=sources.multi_var_coeff_results_
 data_table_multi_var_coeff_2 = DataTable(source=sources.multi_var_model_results_2, columns=columns.multi_var_coeff_2,
                                          editable=True,  height=60)
 
-sources.multi_var_include.selected.on_change('indices', multi_var_include_selection)
+sources.multi_var_include.selected.on_change('indices', regression.multi_var_include_selection)
 
 # Setup axis normalization radio buttons
 radio_group_dose = RadioGroup(labels=["Absolute Dose", "Relative Dose (Rx)"], active=0, width=200)
@@ -2005,47 +1655,11 @@ review_rx.on_change('value', review_rx_ticker)
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Radbio
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-rad_bio_eud_a_input = TextInput(value='', title='EUD a-value:', width=150)
-rad_bio_gamma_50_input = TextInput(value='', title=u"\u03b3_50:", width=150)
-rad_bio_td_tcd_input = TextInput(value='', title='TD_50 or TCD_50:', width=150)
-rad_bio_apply_button = Button(label="Apply parameters", button_type="primary", width=150)
-rad_bio_apply_filter = CheckboxButtonGroup(labels=["Group 1", "Group 2", "Selected"], active=[0], width=300)
-
-rad_bio_apply_button.on_click(rad_bio_apply)
 
 data_table_rad_bio = DataTable(source=sources.rad_bio, columns=columns.rad_bio, editable=False, width=1100)
 
 data_table_emami = DataTable(source=sources.emami, columns=columns.emami, editable=False, width=1100)
 
-
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# Control Chart (for real)
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
-residual_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None,
-                        active_drag="box_zoom")
-residual_chart.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
-residual_chart.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
-residual_chart.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-residual_chart.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-# residual_chart.min_border_left = min_border
-residual_chart.min_border_bottom = min_border
-residual_chart.xaxis.axis_label = 'Patient #'
-residual_chart_data_1 = residual_chart.circle('x', 'y', size=options.REGRESSION_1_CIRCLE_SIZE,
-                                              color=options.GROUP_1_COLOR, alpha=options.REGRESSION_1_ALPHA,
-                                              source=sources.residual_chart_1)
-residual_chart_data_2 = residual_chart.circle('x', 'y', size=options.REGRESSION_2_CIRCLE_SIZE,
-                                              color=options.GROUP_2_COLOR, alpha=options.REGRESSION_2_ALPHA,
-                                              source=sources.residual_chart_2)
-residual_chart.add_tools(HoverTool(show_arrow=True,
-                                   tooltips=[('ID', '@mrn'),
-                                             ('Residual', '@y'),
-                                             ('Actual', '@db_value')]))
-legend_residual_chart = Legend(items=[("Group 1", [residual_chart_data_1]),
-                                      ("Group 2", [residual_chart_data_2])],
-                               location=(25, 0))
-residual_chart.add_layout(legend_residual_chart, 'right')
-residual_chart.legend.click_policy = "hide"
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Layout objects
@@ -2093,9 +1707,9 @@ layout_rad_bio = column(row(custom_title['1']['rad_bio'], Spacer(width=50), cust
                             width=600),
                         data_table_emami,
                         Div(text="<b>Applied Parameters:</b>", width=150),
-                        row(rad_bio_eud_a_input, Spacer(width=50),
-                            rad_bio_gamma_50_input, Spacer(width=50), rad_bio_td_tcd_input, Spacer(width=50),
-                            rad_bio_apply_filter, Spacer(width=50), rad_bio_apply_button),
+                        row(rad_bio.eud_a_input, Spacer(width=50),
+                            rad_bio.gamma_50_input, Spacer(width=50), rad_bio.td_tcd_input, Spacer(width=50),
+                            rad_bio.apply_filter, Spacer(width=50), rad_bio.apply_button),
                         Div(text="<b>EUD Calculations for Query</b>", width=500),
                         data_table_rad_bio,
                         Spacer(width=1000, height=100))
@@ -2146,15 +1760,15 @@ layout_correlation_matrix = column(row(custom_title['1']['correlation'], Spacer(
                                    row(correlation.fig, correlation.fig_include, correlation.fig_include_2))
 
 layout_regression = column(row(custom_title['1']['regression'], Spacer(width=50), custom_title['2']['regression']),
-                           row(column(corr_chart_x_include,
-                                      row(corr_chart_x_prev, corr_chart_x_next, Spacer(width=10), corr_chart_x),
-                                      row(corr_chart_y_prev, corr_chart_y_next, Spacer(width=10), corr_chart_y)),
+                           row(column(regression.x_include,
+                                      row(regression.x_prev, regression.x_next, Spacer(width=10), regression.x),
+                                      row(regression.y_prev, regression.y_next, Spacer(width=10), regression.y)),
                                Spacer(width=10, height=175), data_table_corr_chart,
                                Spacer(width=10, height=175), data_table_multi_var_include),
-                           corr_chart,
+                           regression.figure,
                            Div(text="<hr>", width=1050),
-                           corr_chart_do_reg_button,
-                           residual_chart,
+                           regression.do_reg_button,
+                           regression.residual_figure,
                            Div(text="<b>Group 1</b>", width=500),
                            data_table_multi_var_coeff_1,
                            data_table_multi_var_model_1,
