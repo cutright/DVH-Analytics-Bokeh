@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
-All COlumnDataSource objects for the main DVH Analytics bokeh program
+All ColumnDataSource objects for the main DVH Analytics bokeh program
 Created on Tue Oct 30 2018
 @author: Dan Cutright, PhD
 """
