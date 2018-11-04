@@ -28,8 +28,7 @@ from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, Pa
     RadioButtonGroup, TextInput, RadioGroup, CheckboxButtonGroup, Dropdown, CheckboxGroup, PasswordInput
 from dicompylercore import dicomparser, dvhcalc
 from bokeh import events
-from scipy.stats import normaltest, pearsonr, linregress
-from math import pi
+from scipy.stats import linregress
 import statsmodels.api as sm
 import matplotlib.colors as plot_colors
 import time
@@ -38,8 +37,7 @@ from dateutil.parser import parse
 from options import N
 from bokeh_components.custom_titles import custom_title
 from bokeh_components import columns, sources
-from bokeh_components.utilities import group_constraint_count, get_include_map, get_correlation,\
-    validate_correlation, update_or_add_endpoints_to_correlation
+from bokeh_components.utilities import group_constraint_count, get_include_map
 from bokeh_components.mlc_analyzer import MLC_Analyzer
 from bokeh_components.time_series import TimeSeries
 from bokeh_components.correlation import Correlation
@@ -67,8 +65,6 @@ ANON_ID_MAP = {}
 x, y = [], []
 N = options.N
 UIDS = {n: [] for n in N}
-CORRELATION = {n: [] for n in N}
-BAD_UID = {n: [] for n in N}
 
 temp_dvh_info = Temp_DICOM_FileSet()
 dvh_review_mrns = temp_dvh_info.mrn
@@ -1389,7 +1385,7 @@ def update_eud_in_correlation():
 
     # declare space to tag variables to be used for multi variable regression
     for n in N:
-        for key, value in listitems(CORRELATION[n]):
+        for key, value in listitems(correlation.data[n]):
             correlation.data[n][key]['include'] = [False] * len(value['uid'])
 
     categories = list(correlation.data['1'])
@@ -1416,12 +1412,12 @@ def update_corr_chart_ticker_y(attr, old, new):
 
 def update_corr_chart():
     if corr_chart_x.value and corr_chart_y.value:
-        x_units = CORRELATION['1'][corr_chart_x.value]['units']
-        y_units = CORRELATION['1'][corr_chart_y.value]['units']
+        x_units = correlation.data['1'][corr_chart_x.value]['units']
+        y_units = correlation.data['1'][corr_chart_y.value]['units']
 
-        data = {'x': {n: CORRELATION[n][corr_chart_x.value]['data'] for n in N},
-                'y': {n: CORRELATION[n][corr_chart_y.value]['data'] for n in N},
-                'mrn': {n: CORRELATION[n][corr_chart_x.value]['mrn'] for n in N}}
+        data = {'x': {n: correlation.data[n][corr_chart_x.value]['data'] for n in N},
+                'y': {n: correlation.data[n][corr_chart_y.value]['data'] for n in N},
+                'mrn': {n: correlation.data[n][corr_chart_x.value]['mrn'] for n in N}}
 
         if x_units:
             if corr_chart_x.value.startswith('DVH Endpoint'):
@@ -1522,20 +1518,20 @@ def corr_chart_x_include_ticker(attr, old, new):
 def multi_var_linear_regression():
     print(str(datetime.now()), 'Performing multivariable regression', sep=' ')
 
-    included_vars = [key for key in list(CORRELATION['1']) if MULTI_VAR_REG_VARS[key]]
+    included_vars = [key for key in list(correlation.data['1']) if MULTI_VAR_REG_VARS[key]]
     included_vars.sort()
 
     for n in N:
         if time_series.current_dvh_group[n]:
             x = []
-            x_count = len(CORRELATION[n][list(CORRELATION[n])[0]]['data'])
+            x_count = len(correlation.data[n][list(correlation.data[n])[0]]['data'])
             for i in range(x_count):
                 current_x = []
                 for k in included_vars:
-                    current_x.append(CORRELATION[n][k]['data'][i])
+                    current_x.append(correlation.data[n][k]['data'][i])
                 x.append(current_x)
             x = sm.add_constant(x)  # explicitly add constant to calculate intercept
-            y = CORRELATION[n][corr_chart_y.value]['data']
+            y = correlation.data[n][corr_chart_y.value]['data']
 
             fit = sm.OLS(y, x).fit()
 
@@ -1549,7 +1545,7 @@ def multi_var_linear_regression():
             r_sq_str = ["%0.3f" % r_sq]
             model_p_str = ["%0.3f" % model_p]
 
-            residual_chart.yaxis.axis_label = "Residual (%s)" % CORRELATION[n][corr_chart_y.value]['units']
+            residual_chart.yaxis.axis_label = "Residual (%s)" % correlation.data[n][corr_chart_y.value]['units']
 
             getattr(sources, 'multi_var_coeff_results_%s' % n).data = {'var_name': ['Constant'] + included_vars,
                                                                        'coeff': coeff.tolist(), 'coeff_str': coeff_str,
@@ -1559,8 +1555,8 @@ def multi_var_linear_regression():
                                                                        'y_var': [corr_chart_y.value]}
             getattr(sources, 'residual_chart_%s' % n).data = {'x': range(1, x_count + 1),
                                                               'y': fit.resid.tolist(),
-                                                              'mrn': CORRELATION[n][corr_chart_y.value]['mrn'],
-                                                              'db_value': CORRELATION[n][corr_chart_y.value]['data']}
+                                                              'mrn': correlation.data[n][corr_chart_y.value]['mrn'],
+                                                              'db_value': correlation.data[n][corr_chart_y.value]['data']}
         else:
             for k in ['multi_var_coeff_results', 'multi_var_model_results', 'residual_chart']:
                 clear_source_data('%s_%s' (k, n))
