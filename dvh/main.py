@@ -10,7 +10,7 @@ Created on Sun Apr 21 2017
 from __future__ import print_function
 from future.utils import listitems
 from analysis_tools import DVH, calc_eud, dose_to_volume, volume_of_dose
-from utilities import Temp_DICOM_FileSet, get_planes_from_string, get_union, load_options, calc_stats,\
+from utilities import Temp_DICOM_FileSet, load_options, calc_stats,\
     get_study_instance_uids
 import auth
 from sql_connector import DVH_SQL
@@ -27,10 +27,8 @@ from bokeh.palettes import Colorblind8 as palette
 from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, Panel, Tabs, NumberFormatter,\
     RadioButtonGroup, TextInput, RadioGroup, CheckboxButtonGroup, Dropdown, CheckboxGroup, PasswordInput
 from dicompylercore import dicomparser, dvhcalc
-from bokeh import events
 from scipy.stats import linregress
 import statsmodels.api as sm
-import matplotlib.colors as plot_colors
 import time
 import options
 from dateutil.parser import parse
@@ -41,6 +39,7 @@ from bokeh_components.utilities import group_constraint_count, get_include_map
 from bokeh_components.mlc_analyzer import MLC_Analyzer
 from bokeh_components.time_series import TimeSeries
 from bokeh_components.correlation import Correlation
+from bokeh_components.roi_viewer import ROI_Viewer
 
 
 options = load_options(options)
@@ -172,6 +171,7 @@ MULTI_VAR_REG_VARS = {name: False for name in multi_var_reg_var_names}
 mlc_analyzer = MLC_Analyzer(sources)
 time_series = TimeSeries(sources, range_categories)
 correlation = Correlation(sources, correlation_names, range_categories)
+roi_viewer = ROI_Viewer(sources)
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -754,7 +754,7 @@ def update_data():
             calculate_review_dvh()
             initialize_rad_bio_source()
             time_series.y_axis.value = ''
-            update_roi_viewer_mrn()
+            roi_viewer.update_mrn()
             mlc_analyzer.update_mrn()
     else:
         print(str(datetime.now()), 'empty dataset returned', sep=' ')
@@ -2061,302 +2061,6 @@ data_table_rad_bio = DataTable(source=sources.rad_bio, columns=columns.rad_bio, 
 data_table_emami = DataTable(source=sources.emami, columns=columns.emami, editable=False, width=1100)
 
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# ROI Viewer
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-def update_roi_viewer_mrn():
-    options = [mrn for mrn in sources.plans.data['mrn']]
-    if options:
-        options.sort()
-        roi_viewer_mrn_select.options = options
-        roi_viewer_mrn_select.value = options[0]
-    else:
-        roi_viewer_mrn_select.options = ['']
-        roi_viewer_mrn_select.value = ''
-
-
-def roi_viewer_mrn_ticker(attr, old, new):
-
-    if new == '':
-        roi_viewer_study_date_select.options = ['']
-        roi_viewer_study_date_select.value = ''
-        roi_viewer_uid_select.options = ['']
-        roi_viewer_uid_select.value = ''
-        for i in range(1, 6):
-            roi_viewer_roi_select[str(i)].options = []
-            roi_viewer_roi_select[str(i)].value = ''
-
-    else:
-        # Clear out additional ROIs since current values may not exist in new patient set
-        for i in range(2, 6):
-            roi_viewer_roi_select[str(i)].value = ''
-
-        options = []
-        for i in range(len(sources.plans.data['mrn'])):
-            if sources.plans.data['mrn'][i] == new:
-                options.append(sources.plans.data['sim_study_date'][i])
-        options.sort()
-        old_sim_date = roi_viewer_study_date_select.value
-        roi_viewer_study_date_select.options = options
-        roi_viewer_study_date_select.value = options[0]
-        if old_sim_date == options[0]:
-            update_roi_viewer_uid()
-
-
-def roi_viewer_study_date_ticker(attr, old, new):
-    update_roi_viewer_uid()
-
-
-def update_roi_viewer_uid():
-    if roi_viewer_mrn_select.value != '':
-        options = []
-        for i in range(len(sources.plans.data['mrn'])):
-            if sources.plans.data['mrn'][i] == roi_viewer_mrn_select.value and \
-                            sources.plans.data['sim_study_date'][i] == roi_viewer_study_date_select.value:
-                options.append(sources.plans.data['uid'][i])
-        roi_viewer_uid_select.options = options
-        roi_viewer_uid_select.value = options[0]
-
-
-def roi_viewer_uid_ticker(attr, old, new):
-    update_roi_viewer_rois()
-
-
-def roi_viewer_slice_ticker(attr, old, new):
-    for i in range(1, 6):
-        roi_number = str(i)
-        z = roi_viewer_slice_select.value
-        if z in list(ROI_VIEWER_DATA[roi_number]):
-            getattr(sources, 'roi%s_viewer' % roi_number).data = ROI_VIEWER_DATA[roi_number][z]
-        else:
-            clear_source_data('roi%s_viewer' % roi_number)
-    clear_source_data('tv')
-
-
-def update_roi_viewer_slice():
-    options = list(ROI_VIEWER_DATA['1'])
-    options.sort()
-    roi_viewer_slice_select.options = options
-    roi_viewer_slice_select.value = options[len(options) / 2]  # default to the middle slice
-
-
-def roi_viewer_go_to_previous_slice():
-    index = roi_viewer_slice_select.options.index(roi_viewer_slice_select.value)
-    roi_viewer_slice_select.value = roi_viewer_slice_select.options[index - 1]
-
-
-def roi_viewer_go_to_next_slice():
-    index = roi_viewer_slice_select.options.index(roi_viewer_slice_select.value)
-    if index + 1 == len(roi_viewer_slice_select.options):
-        index = -1
-    roi_viewer_slice_select.value = roi_viewer_slice_select.options[index + 1]
-
-
-def update_roi_viewer_rois():
-
-    options = DVH_SQL().get_unique_values('DVHs', 'roi_name', "study_instance_uid = '%s'" % roi_viewer_uid_select.value)
-    options.sort()
-
-    roi_viewer_roi_select['1'].options = options
-    # default to an external like ROI if found
-    if 'external' in options:
-        roi_viewer_roi_select['1'].value = 'external'
-    elif 'ext' in options:
-        roi_viewer_roi_select['1'].value = 'ext'
-    elif 'body' in options:
-        roi_viewer_roi_select['1'].value = 'body'
-    elif 'skin' in options:
-        roi_viewer_roi_select['1'].value = 'skin'
-    else:
-        roi_viewer_roi_select['1'].value = options[0]
-
-    for i in range(2, 6):
-        roi_viewer_roi_select[str(i)].options = [''] + options
-        roi_viewer_roi_select[str(i)].value = ''
-
-
-def update_roi_viewer_data(roi_name):
-
-    # if roi_name is an empty string (default selection), return an empty data set
-    if not roi_name:
-        return {'0': {'x': [], 'y': [], 'z': []}}
-
-    roi_data = {}
-    uid = roi_viewer_uid_select.value
-    roi_coord_string = DVH_SQL().query('dvhs',
-                                       'roi_coord_string',
-                                       "study_instance_uid = '%s' and roi_name = '%s'" % (uid, roi_name))
-    roi_planes = get_planes_from_string(roi_coord_string[0][0])
-    for z_plane in list(roi_planes):
-        x, y, z = [], [], []
-        for polygon in roi_planes[z_plane]:
-            initial_polygon_index = len(x)
-            for point in polygon:
-                x.append(point[0])
-                y.append(point[1])
-                z.append(point[2])
-            x.append(x[initial_polygon_index])
-            y.append(y[initial_polygon_index])
-            z.append(z[initial_polygon_index])
-            x.append(float('nan'))
-            y.append(float('nan'))
-            z.append(float('nan'))
-        roi_data[z_plane] = {'x': x, 'y': y, 'z': z}
-
-    return roi_data
-
-
-def update_tv_data():
-    global tv_data
-    tv_data = {}
-
-    uid = roi_viewer_uid_select.value
-    ptv_coordinates_strings = DVH_SQL().query('dvhs',
-                                              'roi_coord_string',
-                                              "study_instance_uid = '%s' and roi_type like 'PTV%%'"
-                                              % uid)
-
-    if ptv_coordinates_strings:
-
-        ptvs = [get_planes_from_string(ptv[0]) for ptv in ptv_coordinates_strings]
-        tv_planes = get_union(ptvs)
-
-    for z_plane in list(tv_planes):
-        x, y, z = [], [], []
-        for polygon in tv_planes[z_plane]:
-            initial_polygon_index = len(x)
-            for point in polygon:
-                x.append(point[0])
-                y.append(point[1])
-                z.append(point[2])
-            x.append(x[initial_polygon_index])
-            y.append(y[initial_polygon_index])
-            z.append(z[initial_polygon_index])
-            x.append(float('nan'))
-            y.append(float('nan'))
-            z.append(float('nan'))
-            tv_data[z_plane] = {'x': x,
-                                'y': y,
-                                'z': z}
-
-
-def roi_viewer_flip_y_axis():
-    if roi_viewer.y_range.flipped:
-        roi_viewer.y_range.flipped = False
-    else:
-        roi_viewer.y_range.flipped = True
-
-
-def roi_viewer_flip_x_axis():
-    if roi_viewer.x_range.flipped:
-        roi_viewer.x_range.flipped = False
-    else:
-        roi_viewer.x_range.flipped = True
-
-
-def roi_viewer_plot_tv():
-    update_tv_data()
-    z = roi_viewer_slice_select.value
-    if z in list(tv_data) and not sources.tv.data['x']:
-        sources.tv.data = tv_data[z]
-    else:
-        clear_source_data('tv')
-
-
-def roi_viewer_wheel_event(event):
-    if roi_viewer_scrolling.active:
-        if event.delta > 0:
-            roi_viewer_go_to_next_slice()
-        elif event.delta < 0:
-            roi_viewer_go_to_previous_slice()
-
-
-roi_colors = plot_colors.cnames.keys()
-roi_colors.sort()
-roi_viewer_options = [''] + sources.dvhs.data['mrn']
-roi_viewer_mrn_select = Select(value='', options=roi_viewer_options, width=200, title='MRN')
-roi_viewer_study_date_select = Select(value='', options=[''], width=200, title='Sim Study Date')
-roi_viewer_uid_select = Select(value='', options=[''], width=400, title='Study Instance UID')
-roi_viewer_roi_select = {str(i): Select(value='', options=[''], width=200, title='ROI %s Name' % i) for i in range(1, 6)}
-colors = ['blue', 'green', 'red', 'orange', 'lightgreen']
-roi_viewer_roi_select_color = {str(i): Select(value=colors[i-1], options=roi_colors, width=150, title='ROI %s Color' % i) for i in range(1, 6)}
-roi_viewer_slice_select = Select(value='', options=[''], width=200, title='Slice: z = ')
-roi_viewer_previous_slice = Button(label="<", button_type="primary", width=50)
-roi_viewer_next_slice = Button(label=">", button_type="primary", width=50)
-roi_viewer_flip_x_axis_button = Button(label='Flip X-Axis', button_type='primary', width=100)
-roi_viewer_flip_y_axis_button = Button(label='Flip Y-Axis', button_type='primary', width=100)
-roi_viewer_plot_tv_button = Button(label='Plot TV', button_type='primary', width=100)
-
-roi_viewer_mrn_select.on_change('value', roi_viewer_mrn_ticker)
-roi_viewer_study_date_select.on_change('value', roi_viewer_study_date_ticker)
-roi_viewer_uid_select.on_change('value', roi_viewer_uid_ticker)
-
-
-class RoiViewerRoiTicker:
-    def __init__(self, roi_number, select):
-        global ROI_VIEWER_DATA
-
-        self.roi_number = str(roi_number)
-        self.select = select
-
-    def ticker(self, attr, old, new):
-        ROI_VIEWER_DATA[self.roi_number] = update_roi_viewer_data(self.select.value)
-        if self.roi_number == '1':
-            update_roi_viewer_slice()
-        else:
-            z = roi_viewer_slice_select.value
-            if z in list(ROI_VIEWER_DATA[self.roi_number]):
-                getattr(sources, 'roi%s_viewer' % self.roi_number).data = ROI_VIEWER_DATA[self.roi_number][z]
-            else:
-                clear_source_data('roi%s_viewer' % self.roi_number)
-
-
-roi_viewer_roi_ticker = {str(i): RoiViewerRoiTicker(i, roi_viewer_roi_select[str(i)]) for i in range(1, 6)}
-
-for i in range(1, 6):
-    roi_viewer_roi_select[str(i)].on_change('value', roi_viewer_roi_ticker[str(i)].ticker)
-
-
-class RoiViewerRoiColorTicker:
-    def __init__(self, roi_number):
-        self.roi_number = str(roi_number)
-
-    def ticker(self, attr, old, new):
-        roi_viewer_patch[self.roi_number].glyph.fill_color = new
-        roi_viewer_patch[self.roi_number].glyph.line_color = new
-
-
-roi_viewer_roi_color_ticker = {str(i): RoiViewerRoiColorTicker(i) for i in range(1, 6)}
-
-for i in range(1, 6):
-    roi_viewer_roi_select_color[str(i)].on_change('value', roi_viewer_roi_color_ticker[str(i)].ticker)
-
-roi_viewer_slice_select.on_change('value', roi_viewer_slice_ticker)
-roi_viewer_previous_slice.on_click(roi_viewer_go_to_previous_slice)
-roi_viewer_next_slice.on_click(roi_viewer_go_to_next_slice)
-roi_viewer_flip_x_axis_button.on_click(roi_viewer_flip_x_axis)
-roi_viewer_flip_y_axis_button.on_click(roi_viewer_flip_y_axis)
-roi_viewer_plot_tv_button.on_click(roi_viewer_plot_tv)
-
-roi_viewer = figure(plot_width=825, plot_height=600, logo=None, match_aspect=True,
-                    tools="pan,wheel_zoom,reset,crosshair,save")
-roi_viewer.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
-roi_viewer.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
-roi_viewer.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-roi_viewer.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-roi_viewer.min_border_left = min_border
-roi_viewer.min_border_bottom = min_border
-roi_viewer.y_range.flipped = True
-roi_viewer_patch = {str(i): roi_viewer.patch('x', 'y', source=getattr(sources, 'roi%s_viewer' % i),
-                                             color=colors[i-1], alpha=0.5) for i in range(1, 6)}
-
-roi_viewer.patch('x', 'y', source=sources.tv, color='black', alpha=0.5)
-roi_viewer.xaxis.axis_label = "Lateral DICOM Coordinate (mm)"
-roi_viewer.yaxis.axis_label = "Anterior/Posterior DICOM Coordinate (mm)"
-roi_viewer.on_event(events.MouseWheel, roi_viewer_wheel_event)
-roi_viewer_scrolling = CheckboxGroup(labels=["Enable Slice Scrolling with Mouse Wheel"], active=[])
-
-
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Control Chart (for real)
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2460,21 +2164,21 @@ layout_time_series = column(row(custom_title['1']['time_series'], Spacer(width=5
                             Spacer(width=1000, height=100))
 
 layout_roi_viewer = column(row(custom_title['1']['roi_viewer'], Spacer(width=50), custom_title['2']['roi_viewer']),
-                           row(roi_viewer_mrn_select, roi_viewer_study_date_select, roi_viewer_uid_select),
+                           row(roi_viewer.mrn_select, roi_viewer.study_date_select, roi_viewer.uid_select),
                            Div(text="<hr>", width=800),
-                           row(roi_viewer_roi_select['1'], roi_viewer_roi_select_color['1'], roi_viewer_slice_select,
-                               roi_viewer_previous_slice, roi_viewer_next_slice),
+                           row(roi_viewer.roi_select['1'], roi_viewer.roi_select_color['1'], roi_viewer.slice_select,
+                               roi_viewer.previous_slice, roi_viewer.next_slice),
                            Div(text="<hr>", width=800),
-                           row(roi_viewer_roi_select['2'], roi_viewer_roi_select['3'],
-                               roi_viewer_roi_select['4'], roi_viewer_roi_select['5']),
-                           row(roi_viewer_roi_select_color['2'], roi_viewer_roi_select_color['3'],
-                               roi_viewer_roi_select_color['4'], roi_viewer_roi_select_color['5']),
+                           row(roi_viewer.roi_select['2'], roi_viewer.roi_select['3'],
+                               roi_viewer.roi_select['4'], roi_viewer.roi_select['5']),
+                           row(roi_viewer.roi_select_color['2'], roi_viewer.roi_select_color['3'],
+                               roi_viewer.roi_select_color['4'], roi_viewer.roi_select_color['5']),
                            row(Div(text="<b>NOTE:</b> Axis flipping requires a figure reset "
                                         "(Click the circular double-arrow)", width=1025)),
-                           row(roi_viewer_flip_x_axis_button, roi_viewer_flip_y_axis_button,
-                               roi_viewer_plot_tv_button),
-                           row(roi_viewer_scrolling),
-                           row(roi_viewer),
+                           row(roi_viewer.flip_x_axis_button, roi_viewer.flip_y_axis_button,
+                               roi_viewer.plot_tv_button),
+                           row(roi_viewer.scrolling),
+                           row(roi_viewer.fig),
                            row(Spacer(width=1000, height=100)))
 
 layout_correlation_matrix = column(row(custom_title['1']['correlation'], Spacer(width=50),

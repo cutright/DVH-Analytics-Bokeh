@@ -21,7 +21,6 @@ from get_settings import get_settings
 import pickle
 from math import ceil
 from shapely import speedups
-from options import N
 
 
 # Enable shapely calculations using C, as opposed to the C++ default

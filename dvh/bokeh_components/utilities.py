@@ -2,6 +2,13 @@ from options import N
 from future.utils import listitems
 import numpy as np
 from dateutil.relativedelta import relativedelta
+from shapely.geometry import Polygon, Point
+from shapely import speedups
+
+
+# Enable shapely calculations using C, as opposed to the C++ default
+if speedups.available:
+    speedups.enable()
 
 
 def collapse_into_single_dates(x, y):
@@ -262,3 +269,118 @@ def clear_source_data(sources, key):
 
 def clear_source_selection(sources, key):
     getattr(sources, key).selected.indices = []
+
+
+def get_planes_from_string(roi_coord_string):
+    """
+    :param roi_coord_string: roi string represntation of an roi as formatted in the SQL database
+    :return: a "sets of points" formatted list
+    :rtype: list
+    """
+    planes = {}
+    contours = roi_coord_string.split(':')
+
+    for contour in contours:
+        contour = contour.split(',')
+        z = contour.pop(0)
+        z = round(float(z), 2)
+        z_str = str(z)
+
+        if z_str not in list(planes):
+            planes[z_str] = []
+
+        i, points = 0, []
+        while i < len(contour):
+            point = [float(contour[i]), float(contour[i+1]), z]
+            points.append(point)
+            i += 2
+        planes[z_str].append(points)
+
+    return planes
+
+
+def get_union(rois):
+    """
+    :param rois: a list of "sets of points"
+    :return: a "sets of points" representing the union of the rois, each item in "sets of points" is a plane
+    :rtype: list
+    """
+
+    new_roi = {}
+
+    all_z_values = []
+    for roi in rois:
+        for z in list(roi):
+            if z not in all_z_values:
+                all_z_values.append(z)
+
+    for z in all_z_values:
+
+        if z not in list(new_roi):
+            new_roi[z] = []
+
+        current_slice = []
+        for roi in rois:
+            # Make sure current roi has at least 3 points in z plane
+            if z in list(roi) and len(roi[z][0]) > 2:
+                if not current_slice:
+                    current_slice = points_to_shapely_polygon(roi[z])
+                else:
+                    current_slice = current_slice.union(points_to_shapely_polygon(roi[z]))
+
+        if current_slice:
+            if current_slice.type != 'MultiPolygon':
+                current_slice = [current_slice]
+
+            for polygon in current_slice:
+                xy = polygon.exterior.xy
+                x_coord, y_coord = xy[0], xy[1]
+                points = []
+                for i in range(len(x_coord)):
+                    points.append([x_coord[i], y_coord[i], round(float(z), 2)])
+                new_roi[z].append(points)
+
+                if hasattr(polygon, 'interiors'):
+                    for interior in polygon.interiors:
+                        xy = interior.coords.xy
+                        x_coord, y_coord = xy[0], xy[1]
+                        points = []
+                        for i in range(len(x_coord)):
+                            points.append([x_coord[i], y_coord[i], round(float(z), 2)])
+                        new_roi[z].append(points)
+        else:
+            print('WARNING: no contour found for slice %s' % z)
+
+    return new_roi
+
+
+def points_to_shapely_polygon(sets_of_points):
+    """
+    :param sets_of_points: sets of points is a dictionary of lists using str(z) as keys
+    :return: a composite polygon as a shapely object (eith polygon or multipolygon)
+    """
+    # sets of points are lists using str(z) as keys
+    # each item is an ordered list of points representing a polygon, each point is a 3-item list [x, y, z]
+    # polygon n is inside polygon n-1, then the current accumulated polygon is
+    #    polygon n subtracted from the accumulated polygon up to and including polygon n-1
+    #    Same method DICOM uses to handle rings and islands
+
+    composite_polygon = []
+    for set_of_points in sets_of_points:
+        if len(set_of_points) > 3:
+            points = [(point[0], point[1]) for point in set_of_points]
+            points.append(points[0])  # Explicitly connect the final point to the first
+
+            # if there are multiple sets of points in a slice, each set is a polygon,
+            # interior polygons are subtractions, exterior are addition
+            # Only need to check one point for interior vs exterior
+            current_polygon = Polygon(points).buffer(0)  # clean stray points
+            if composite_polygon:
+                if Point((points[0][0], points[0][1])).disjoint(composite_polygon):
+                    composite_polygon = composite_polygon.union(current_polygon)
+                else:
+                    composite_polygon = composite_polygon.symmetric_difference(current_polygon)
+            else:
+                composite_polygon = current_polygon
+
+    return composite_polygon
