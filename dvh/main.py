@@ -1225,7 +1225,16 @@ def update_endpoint_view():
 
         sources.endpoint_view.data = ep_view
         if not options.LITE_VIEW:
-            update_endpoints_in_correlation()
+            correlation.update_or_add_endpoints_to_correlation()
+
+            categories = list(correlation.data['1'])
+            categories.sort()
+            corr_chart_x.options = [''] + categories
+            corr_chart_y.options = [''] + categories
+
+            correlation.validate_data()
+            correlation.update_correlation_matrix()
+            update_corr_chart()
 
 
 def initialize_rad_bio_source():
@@ -1328,7 +1337,7 @@ def update_eud():
     sources.rad_bio.patch({'eud': [(i, j) for i, j in enumerate(eud)],
                            'ntcp_tcp': [(i, j) for i, j in enumerate(ntcp_tcp)]})
 
-    update_eud_in_correlation()
+    correlation.update_eud_in_correlation()
     categories = list(correlation.data[N[0]])
     categories.sort()
     corr_chart_x.options = [''] + categories
@@ -1344,58 +1353,6 @@ def emami_selection(attr, old, new):
         rad_bio_eud_a_input.value = str(sources.emami.data['eud_a'][row_index])
         rad_bio_gamma_50_input.value = str(sources.emami.data['gamma_50'][row_index])
         rad_bio_td_tcd_input.value = str(sources.emami.data['td_tcd'][row_index])
-
-
-def update_endpoints_in_correlation():
-
-    correlation.update_or_add_endpoints_to_correlation()
-
-    categories = list(correlation.data['1'])
-    categories.sort()
-    corr_chart_x.options = [''] + categories
-    corr_chart_y.options = [''] + categories
-
-    correlation.validate_data()
-    correlation.update_correlation_matrix()
-    update_corr_chart()
-
-
-def update_eud_in_correlation():
-
-    # Get data from EUD data
-    uid_roi_list = ["%s_%s" % (uid, sources.dvhs.data['roi_name'][i]) for i, uid in enumerate(sources.dvhs.data['uid'])]
-    temp_keys = ['eud', 'ntcp_tcp', 'uid', 'mrn']
-    temp = {n: {tk: [] for tk in temp_keys} for n in N}
-    for i, uid in enumerate(sources.rad_bio.data['uid']):
-        uid_roi = "%s_%s" % (uid, sources.rad_bio.data['roi_name'][i])
-        source_index = uid_roi_list.index(uid_roi)
-        group = sources.dvhs.data['group'][source_index]
-        for n in N:
-            if group in {'Group %s' % n, 'Group 1 & 2'}:
-                temp[n]['eud'].append(sources.rad_bio.data['eud'][i])
-                temp[n]['ntcp_tcp'].append(sources.rad_bio.data['ntcp_tcp'][i])
-                temp[n]['uid'].append(uid)
-                temp[n]['mrn'].append(sources.dvhs.data['mrn'][source_index])
-
-    for n in N:
-        correlation.data[n]['EUD'] = {'uid': temp[n]['uid'], 'mrn': temp[n]['mrn'],
-                                 'data': temp[n]['eud'], 'units': 'Gy'}
-        correlation.data[n]['NTCP/TCP'] = {'uid': temp[n]['uid'], 'mrn': temp[n]['mrn'],
-                                      'data': temp[n]['ntcp_tcp'], 'units': ''}
-
-    # declare space to tag variables to be used for multi variable regression
-    for n in N:
-        for key, value in listitems(correlation.data[n]):
-            correlation.data[n][key]['include'] = [False] * len(value['uid'])
-
-    categories = list(correlation.data['1'])
-    categories.sort()
-    corr_chart_x.options = [''] + categories
-    corr_chart_y.options = [''] + categories
-
-    correlation.validate_data()
-    correlation.update_correlation_matrix()
-    update_corr_chart()
 
 
 def update_corr_chart_ticker_x(attr, old, new):
