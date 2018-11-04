@@ -20,7 +20,7 @@ import itertools
 from datetime import datetime
 from os.path import dirname, join
 from bokeh.layouts import column, row
-from bokeh.models import Legend, CustomJS, HoverTool, Slider, Spacer
+from bokeh.models import Legend, CustomJS, HoverTool, Spacer
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.palettes import Colorblind8 as palette
@@ -28,7 +28,7 @@ from bokeh.models.widgets import Select, Button, Div, TableColumn, DataTable, Pa
     RadioButtonGroup, TextInput, RadioGroup, CheckboxButtonGroup, Dropdown, CheckboxGroup, PasswordInput
 from dicompylercore import dicomparser, dvhcalc
 from bokeh import events
-from scipy.stats import ttest_ind, ranksums, normaltest, pearsonr, linregress
+from scipy.stats import normaltest, pearsonr, linregress
 from math import pi
 import statsmodels.api as sm
 import matplotlib.colors as plot_colors
@@ -42,6 +42,7 @@ from bokeh_components.utilities import group_constraint_count, get_include_map, 
     validate_correlation, update_or_add_endpoints_to_correlation
 from bokeh_components.mlc_analyzer import MLC_Analyzer
 from bokeh_components.time_series import TimeSeries
+from bokeh_components.correlation import Correlation
 
 
 options = load_options(options)
@@ -153,9 +154,6 @@ range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 's
                     'ROI Cross-Section Max': {'var_name': 'cross_section_max', 'table': 'DVHs', 'units': 'cm^2', 'source': sources.dvhs},
                     'ROI Cross-Section Median': {'var_name': 'cross_section_median', 'table': 'DVHs', 'units': 'cm^2', 'source': sources.dvhs}}
 
-mlc_analyzer = MLC_Analyzer(sources)
-time_series = TimeSeries(sources, range_categories)
-
 
 # correlation variable names
 correlation_variables, correlation_names = [], []
@@ -173,6 +171,11 @@ correlation_variables.sort()
 correlation_names.sort()
 multi_var_reg_var_names = correlation_names + ['EUD', 'NTCP/TCP']
 MULTI_VAR_REG_VARS = {name: False for name in multi_var_reg_var_names}
+
+
+mlc_analyzer = MLC_Analyzer(sources)
+time_series = TimeSeries(sources, range_categories)
+correlation = Correlation(sources, correlation_names, range_categories)
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -745,18 +748,16 @@ def update_data():
     CURRENT_DVH = DVH(uid=uids, dvh_condition=dvh_query_str)
     if CURRENT_DVH.count:
         print(str(datetime.now()), 'initializing source data ', CURRENT_DVH.query, sep=' ')
-        print(time_series.current_dvh_group)
         time_series.update_current_dvh_group(update_dvh_data(CURRENT_DVH))
-        print(time_series.current_dvh_group)
         if not options.LITE_VIEW:
             print(str(datetime.now()), 'updating correlation data')
-            update_correlation()
+            correlation.update_data(correlation_variables)
             print(str(datetime.now()), 'correlation data updated')
         update_source_endpoint_calcs()
         if not options.LITE_VIEW:
             calculate_review_dvh()
             initialize_rad_bio_source()
-            time_series.control_chart_y.value = ''
+            time_series.y_axis.value = ''
             update_roi_viewer_mrn()
             mlc_analyzer.update_mrn()
     else:
@@ -1209,7 +1210,7 @@ def update_source_endpoint_calcs():
         update_endpoint_view()
 
     if not options.LITE_VIEW:
-        update_time_series_options()
+        time_series.update_options()
 
 
 def update_endpoint_view():
@@ -1229,21 +1230,6 @@ def update_endpoint_view():
         sources.endpoint_view.data = ep_view
         if not options.LITE_VIEW:
             update_endpoints_in_correlation()
-
-
-def update_time_series_options():
-    new_options = list(range_categories)
-    new_options.extend(['EUD', 'NTCP/TCP'])
-
-    for ep in sources.endpoint_calcs.data:
-        if ep.startswith('V_') or ep.startswith('D_'):
-            new_options.append("DVH Endpoint: %s" % ep)
-
-    new_options.sort()
-    new_options.insert(0, '')
-
-    time_series.control_chart_y.options = new_options
-    time_series.control_chart_y.value = ''
 
 
 def initialize_rad_bio_source():
@@ -1347,8 +1333,13 @@ def update_eud():
                            'ntcp_tcp': [(i, j) for i, j in enumerate(ntcp_tcp)]})
 
     update_eud_in_correlation()
-    if time_series.control_chart_y.value in {'EUD', 'NTCP/TCP'}:
-        time_series.update_control_chart()
+    categories = list(correlation.data[N[0]])
+    categories.sort()
+    corr_chart_x.options = [''] + categories
+    corr_chart_y.options = [''] + categories
+    update_corr_chart()
+    if time_series.y_axis.value in {'EUD', 'NTCP/TCP'}:
+        time_series.update_plot()
 
 
 def emami_selection(attr, old, new):
@@ -1359,38 +1350,21 @@ def emami_selection(attr, old, new):
         rad_bio_td_tcd_input.value = str(sources.emami.data['td_tcd'][row_index])
 
 
-def update_correlation():
-
-    global CORRELATION, BAD_UID
-    CORRELATION = {'1': {}, '2': {}}
-
-    CORRELATION = get_correlation(sources, correlation_variables, range_categories)
-
-    categories = list(CORRELATION['1'])
-    categories.sort()
-    corr_chart_x.options = [''] + categories
-    corr_chart_y.options = [''] + categories
-
-    CORRELATION, BAD_UID = validate_correlation(CORRELATION, BAD_UID)
-
-
 def update_endpoints_in_correlation():
-    global CORRELATION, BAD_UID
 
-    update_or_add_endpoints_to_correlation(sources, CORRELATION, MULTI_VAR_REG_VARS)
+    correlation.update_or_add_endpoints_to_correlation()
 
-    categories = list(CORRELATION['1'])
+    categories = list(correlation.data['1'])
     categories.sort()
     corr_chart_x.options = [''] + categories
     corr_chart_y.options = [''] + categories
 
-    CORRELATION, BAD_UID = validate_correlation(CORRELATION, BAD_UID)
-    update_correlation_matrix()
+    correlation.validate_data()
+    correlation.update_correlation_matrix()
     update_corr_chart()
 
 
 def update_eud_in_correlation():
-    global CORRELATION, BAD_UID, MULTI_VAR_REG_VARS
 
     # Get data from EUD data
     uid_roi_list = ["%s_%s" % (uid, sources.dvhs.data['roi_name'][i]) for i, uid in enumerate(sources.dvhs.data['uid'])]
@@ -1408,118 +1382,24 @@ def update_eud_in_correlation():
                 temp[n]['mrn'].append(sources.dvhs.data['mrn'][source_index])
 
     for n in N:
-        CORRELATION[n]['EUD'] = {'uid': temp[n]['uid'], 'mrn': temp[n]['mrn'],
+        correlation.data[n]['EUD'] = {'uid': temp[n]['uid'], 'mrn': temp[n]['mrn'],
                                  'data': temp[n]['eud'], 'units': 'Gy'}
-        CORRELATION[n]['NTCP/TCP'] = {'uid': temp[n]['uid'], 'mrn': temp[n]['mrn'],
+        correlation.data[n]['NTCP/TCP'] = {'uid': temp[n]['uid'], 'mrn': temp[n]['mrn'],
                                       'data': temp[n]['ntcp_tcp'], 'units': ''}
 
     # declare space to tag variables to be used for multi variable regression
     for n in N:
         for key, value in listitems(CORRELATION[n]):
-            CORRELATION[n][key]['include'] = [False] * len(value['uid'])
+            correlation.data[n][key]['include'] = [False] * len(value['uid'])
 
-    categories = list(CORRELATION['1'])
+    categories = list(correlation.data['1'])
     categories.sort()
     corr_chart_x.options = [''] + categories
     corr_chart_y.options = [''] + categories
 
-    CORRELATION, BAD_UID = validate_correlation(CORRELATION, BAD_UID)
-    update_correlation_matrix()
+    correlation.validate_data()
+    correlation.update_correlation_matrix()
     update_corr_chart()
-
-
-def update_correlation_matrix():
-    categories = [key for index, key in enumerate(correlation_names) if index in corr_fig_include.active]
-
-    if 0 in corr_fig_include_2.active:
-        if CORRELATION['1']:
-            categories.extend([x for x in list(CORRELATION['1']) if x.startswith("DVH Endpoint")])
-        elif CORRELATION['2']:
-            categories.extend([x for x in list(CORRELATION['2']) if x.startswith("DVH Endpoint")])
-
-    if 1 in corr_fig_include_2.active:
-        if "EUD" in list(CORRELATION['1']) or "EUD" in list(CORRELATION['2']):
-            categories.append("EUD")
-
-    if 2 in corr_fig_include_2.active:
-        if "NTCP/TCP" in list(CORRELATION['1']) or "NTCP/TCP" in list(CORRELATION['2']):
-            categories.append("NTCP/TCP")
-
-    categories.sort()
-
-    categories_count = len(categories)
-
-    categories_for_label = [category.replace("Control Point", "CP") for category in categories]
-    categories_for_label = [category.replace("control point", "CP") for category in categories_for_label]
-    categories_for_label = [category.replace("Distance", "Dist") for category in categories_for_label]
-
-    for i, category in enumerate(categories_for_label):
-        if category.startswith('DVH'):
-            categories_for_label[i] = category.split("DVH Endpoint: ")[1]
-
-    corr_fig.x_range.factors = categories_for_label
-    corr_fig.y_range.factors = categories_for_label[::-1]
-    # 0.5 offset due to Bokeh 0.12.9 bug
-    sources.corr_matrix_line.data = {'x': [0.5, len(categories) - 0.5], 'y': [len(categories)-0.5, 0.5]}
-
-    s_keys = ['x', 'y', 'x_name', 'y_name', 'color', 'alpha', 'r', 'p', 'group', 'size', 'x_normality', 'y_normality']
-    s = {k: {sk: [] for sk in s_keys} for k in ['1_pos', '1_neg', '2_pos', '2_neg']}
-
-    max_size = 45
-    for x in range(categories_count):
-        for y in range(categories_count):
-            if x != y:
-                data_to_enter = False
-                if x > y and CORRELATION['1'][categories[0]]['uid']:
-                    n = '1'
-                    data_to_enter = True
-                elif x < y and CORRELATION['2'][categories[0]]['uid']:
-                    n = '2'
-                    data_to_enter = True
-
-                if data_to_enter:
-                    x_data = CORRELATION[n][categories[x]]['data']
-                    y_data = CORRELATION[n][categories[y]]['data']
-                    if x_data and len(x_data) == len(y_data):
-                        r, p_value = pearsonr(x_data, y_data)
-                    else:
-                        r, p_value = 0, 0
-                    if r >= 0:
-                        k = '%s_pos' % n
-                        s[k]['color'].append(getattr(options, 'GROUP_%s_COLOR' % n))
-                        s[k]['group'].append('Group %s' % n)
-                    else:
-                        k = '%s_neg' % n
-                        s[k]['color'].append(getattr(options, 'GROUP_%s_COLOR_NEG_CORR' % n))
-                        s[k]['group'].append('Group %s' % n)
-
-                    if np.isnan(r):
-                        r = 0
-                    s[k]['r'].append(r)
-                    s[k]['p'].append(p_value)
-                    s[k]['alpha'].append(abs(r))
-                    s[k]['size'].append(max_size * abs(r))
-                    # 0.5 offset due to bokeh 0.12.9 bug
-                    s[k]['x'].append(x + 0.5)
-                    s[k]['y'].append(categories_count - y - 0.5)
-                    s[k]['x_name'].append(categories_for_label[x])
-                    s[k]['y_name'].append(categories_for_label[y])
-
-                    x_norm, x_p = normaltest(x_data)
-                    y_norm, y_p = normaltest(y_data)
-                    s[k]['x_normality'].append(x_p)
-                    s[k]['y_normality'].append(y_p)
-
-    for k in ['1_pos', '1_neg', '2_pos', '2_neg']:
-        getattr(sources, "correlation_%s" % k).data = s[k]
-
-    group_1_count, group_2_count = 0, 0
-    for n in N:
-        if CORRELATION[n]:
-            group_1_count = len(CORRELATION[n][list(CORRELATION[n])[0]]['uid'])
-
-    corr_fig_text_1.text = "Group 1: %d" % group_1_count
-    corr_fig_text_2.text = "Group 2: %d" % group_2_count
 
 
 def update_corr_chart_ticker_x(attr, old, new):
@@ -1532,11 +1412,6 @@ def update_corr_chart_ticker_x(attr, old, new):
 
 def update_corr_chart_ticker_y(attr, old, new):
     update_corr_chart()
-
-
-def corr_fig_include_ticker(attr, old, new):
-    if len(corr_fig_include.active) + len(corr_fig_include_2.active) > 1:
-        update_correlation_matrix()
 
 
 def update_corr_chart():
@@ -2071,71 +1946,6 @@ sources.dvhs.selected.on_change('indices', update_source_endpoint_view_selection
 sources.endpoint_view.selected.on_change('indices', update_dvh_table_selection)
 sources.emami.selected.on_change('indices', emami_selection)
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# Correlation
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# Plot
-corr_fig = figure(plot_width=900, plot_height=700, x_axis_location="above",
-                  tools="pan, box_zoom, wheel_zoom, reset, save", logo=None,  x_range=[''], y_range=[''])
-corr_fig.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
-corr_fig.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
-corr_fig.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-corr_fig.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-corr_fig.min_border_left = 175
-corr_fig.min_border_top = 130
-corr_fig.xaxis.major_label_orientation = pi / 4
-corr_fig.toolbar.active_scroll = "auto"
-corr_fig.title.align = 'center'
-corr_fig.title.text_font_style = "italic"
-corr_fig.xaxis.axis_line_color = None
-corr_fig.xaxis.major_tick_line_color = None
-corr_fig.xaxis.minor_tick_line_color = None
-corr_fig.xgrid.grid_line_color = None
-corr_fig.ygrid.grid_line_color = None
-corr_fig.yaxis.axis_line_color = None
-corr_fig.yaxis.major_tick_line_color = None
-corr_fig.yaxis.minor_tick_line_color = None
-corr_fig.outline_line_color = None
-corr_1_pos = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=sources.correlation_1_pos)
-corr_1_neg = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=sources.correlation_1_neg)
-corr_2_pos = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=sources.correlation_2_pos)
-corr_2_neg = corr_fig.circle(x='x', y='y', color='color', alpha='alpha', size='size', source=sources.correlation_2_neg)
-corr_fig.add_tools(HoverTool(show_arrow=True, line_policy='next', tooltips=[('Group', '@group'),
-                                                                            ('x', '@x_name'),
-                                                                            ('y', '@y_name'),
-                                                                            ('r', '@r'),
-                                                                            ('p', '@p'),
-                                                                            ('Norm p-value x', '@x_normality{0.4f}'),
-                                                                            ('Norm p-value y', '@y_normality{0.4f}')],))
-corr_fig.line(x='x', y='y', source=sources.corr_matrix_line,
-              line_width=3, line_dash='dotted', color='black', alpha=0.8)
-# Set the legend
-legend_corr = Legend(items=[("+r Group 1", [corr_1_pos]),
-                            ("-r Group 1", [corr_1_neg]),
-                            ("+r Group 2", [corr_2_pos]),
-                            ("-r Group 2", [corr_2_neg])],
-                     location=(0, -575))
-
-# Add the layout outside the plot, clicking legend item hides the line
-corr_fig.add_layout(legend_corr, 'right')
-corr_fig.legend.click_policy = "hide"
-
-corr_fig_text_1 = Div(text="Group 1:", width=110)
-corr_fig_text_2 = Div(text="Group 2:", width=110)
-
-corr_fig_include = CheckboxGroup(labels=correlation_names, active=options.CORRELATION_MATRIX_DEFAULTS_1)
-corr_fig_include_2 = CheckboxGroup(labels=['DVH Endpoints', 'EUD', 'NTCP / TCP'],
-                                   active=options.CORRELATION_MATRIX_DEFAULTS_2)
-corr_fig_include.on_change('active', corr_fig_include_ticker)
-corr_fig_include_2.on_change('active', corr_fig_include_ticker)
-
-download_corr_fig = Button(label="Download Correlation Figure Data", button_type="default", width=150)
-download_corr_fig.callback = CustomJS(args=dict(source_1_neg=sources.correlation_1_neg,
-                                                source_1_pos=sources.correlation_1_pos,
-                                                source_2_neg=sources.correlation_2_neg,
-                                                source_2_pos=sources.correlation_2_pos),
-                                      code=open(join(dirname(__file__), "download_correlation_matrix.js")).read())
-
 # Control Chart layout
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
 corr_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
@@ -2640,11 +2450,11 @@ layout_planning_data = column(row(custom_title['1']['planning'], Spacer(width=50
                               Div(text="<b>Beams Continued</b>", width=1500), data_table_beams2)
 
 layout_time_series = column(row(custom_title['1']['time_series'], Spacer(width=50), custom_title['2']['time_series']),
-                            row(time_series.control_chart_y, time_series.control_chart_lookback_units,
-                                time_series.control_chart_text_lookback_distance,
-                                Spacer(width=10), time_series.control_chart_percentile, Spacer(width=10),
+                            row(time_series.y_axis, time_series.look_back_units,
+                                time_series.look_back_distance,
+                                Spacer(width=10), time_series.plot_percentile, Spacer(width=10),
                                 time_series.trend_update_button),
-                            time_series.control_chart,
+                            time_series.plot,
                             time_series.download_time_plot,
                             Div(text="<hr>", width=1050),
                             row(time_series.histogram_bin_slider, time_series.histogram_radio_group),
@@ -2673,9 +2483,10 @@ layout_roi_viewer = column(row(custom_title['1']['roi_viewer'], Spacer(width=50)
 
 layout_correlation_matrix = column(row(custom_title['1']['correlation'], Spacer(width=50),
                                        custom_title['2']['correlation']),
-                                   download_corr_fig,
-                                   row(Div(text="<b>Sample Sizes</b>", width=100), corr_fig_text_1, corr_fig_text_2),
-                                   row(corr_fig, corr_fig_include, corr_fig_include_2))
+                                   correlation.download_corr_fig,
+                                   row(Div(text="<b>Sample Sizes</b>", width=100), correlation.fig_text_1,
+                                       correlation.fig_text_2),
+                                   row(correlation.fig, correlation.fig_include, correlation.fig_include_2))
 
 layout_regression = column(row(custom_title['1']['regression'], Spacer(width=50), custom_title['2']['regression']),
                            row(column(corr_chart_x_include,

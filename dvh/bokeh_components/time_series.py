@@ -10,7 +10,7 @@ from bokeh.models import Select, TextInput, RadioGroup, Slider, Div, Legend, Cus
 import options
 from bokeh_components.utilities import clear_source_data, collapse_into_single_dates, moving_avg,\
     moving_avg_by_calendar_day, clear_source_selection
-from scipy.stats import ttest_ind, ranksums, normaltest, pearsonr, linregress
+from scipy.stats import ttest_ind, ranksums, normaltest
 import numpy as np
 from options import N
 from datetime import datetime
@@ -26,86 +26,87 @@ class TimeSeries:
 
         # Control Chart layout (Time-Series)
         tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
-        self.control_chart = figure(plot_width=1050, plot_height=400, tools=tools, logo=None,
-                                    active_drag="box_zoom", x_axis_type='datetime')
-        self.control_chart.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
-        self.control_chart.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
-        self.control_chart.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-        self.control_chart.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
-        # control_chart.min_border_left = min_border
-        self.control_chart.min_border_bottom = options.MIN_BORDER
-        self.control_chart_data_1 = self.control_chart.circle('x', 'y', size=options.TIME_SERIES_1_CIRCLE_SIZE,
-                                                    color=options.GROUP_1_COLOR,
-                                                    alpha=options.TIME_SERIES_1_CIRCLE_ALPHA,
-                                                    source=sources.time_1)
-        self.control_chart_data_2 = self.control_chart.circle('x', 'y', size=options.TIME_SERIES_2_CIRCLE_SIZE,
-                                                    color=options.GROUP_2_COLOR,
-                                                    alpha=options.TIME_SERIES_2_CIRCLE_ALPHA,
-                                                    source=sources.time_2)
-        self.control_chart_trend_1 = self.control_chart.line('x', 'y', color=options.GROUP_1_COLOR, source=sources.time_trend_1,
-                                                   line_width=options.TIME_SERIES_1_TREND_LINE_WIDTH,
-                                                   line_dash=options.TIME_SERIES_1_TREND_LINE_DASH)
-        self.control_chart_trend_2 = self.control_chart.line('x', 'y', color=options.GROUP_2_COLOR, source=sources.time_trend_2,
-                                                   line_width=options.TIME_SERIES_2_TREND_LINE_WIDTH,
-                                                   line_dash=options.TIME_SERIES_2_TREND_LINE_DASH)
-        self.control_chart_avg_1 = self.control_chart.line('x', 'avg', color=options.GROUP_1_COLOR, source=sources.time_bound_1,
-                                                 line_width=options.TIME_SERIES_1_AVG_LINE_WIDTH,
-                                                 line_dash=options.TIME_SERIES_1_AVG_LINE_DASH)
-        self.control_chart_avg_2 = self.control_chart.line('x', 'avg', color=options.GROUP_2_COLOR, source=sources.time_bound_2,
-                                                 line_width=options.TIME_SERIES_2_AVG_LINE_WIDTH,
-                                                 line_dash=options.TIME_SERIES_2_AVG_LINE_DASH)
-        self.control_chart_patch_1 = self.control_chart.patch('x', 'y', color=options.GROUP_1_COLOR, source=sources.time_patch_1,
-                                                    alpha=options.TIME_SERIES_1_PATCH_ALPHA)
-        self.control_chart_patch_2 = self.control_chart.patch('x', 'y', color=options.GROUP_2_COLOR, source=sources.time_patch_2,
-                                                    alpha=options.TIME_SERIES_1_PATCH_ALPHA)
-        self.control_chart.add_tools(HoverTool(show_arrow=True,
-                                          tooltips=[('ID', '@mrn'),
-                                                    ('Date', '@x{%F}'),
-                                                    ('Value', '@y{0.2f}')],
-                                          formatters={'x': 'datetime'}))
-        self.control_chart.xaxis.axis_label = "Simulation Date"
-        self.control_chart.yaxis.axis_label = ""
+        self.plot = figure(plot_width=1050, plot_height=400, tools=tools, logo=None,
+                           active_drag="box_zoom", x_axis_type='datetime')
+        self.plot.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
+        self.plot.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
+        self.plot.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+        self.plot.yaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
+        # plot.min_border_left = min_border
+        self.plot.min_border_bottom = options.MIN_BORDER
+        self.plot_data_1 = self.plot.circle('x', 'y', size=options.TIME_SERIES_1_CIRCLE_SIZE,
+                                            color=options.GROUP_1_COLOR,
+                                            alpha=options.TIME_SERIES_1_CIRCLE_ALPHA,
+                                            source=sources.time_1)
+        self.plot_data_2 = self.plot.circle('x', 'y', size=options.TIME_SERIES_2_CIRCLE_SIZE,
+                                            color=options.GROUP_2_COLOR,
+                                            alpha=options.TIME_SERIES_2_CIRCLE_ALPHA,
+                                            source=sources.time_2)
+        self.plot_trend_1 = self.plot.line('x', 'y', color=options.GROUP_1_COLOR, source=sources.time_trend_1,
+                                           line_width=options.TIME_SERIES_1_TREND_LINE_WIDTH,
+                                           line_dash=options.TIME_SERIES_1_TREND_LINE_DASH)
+        self.plot_trend_2 = self.plot.line('x', 'y', color=options.GROUP_2_COLOR, source=sources.time_trend_2,
+                                           line_width=options.TIME_SERIES_2_TREND_LINE_WIDTH,
+                                           line_dash=options.TIME_SERIES_2_TREND_LINE_DASH)
+        self.plot_avg_1 = self.plot.line('x', 'avg', color=options.GROUP_1_COLOR, source=sources.time_bound_1,
+                                         line_width=options.TIME_SERIES_1_AVG_LINE_WIDTH,
+                                         line_dash=options.TIME_SERIES_1_AVG_LINE_DASH)
+        self.plot_avg_2 = self.plot.line('x', 'avg', color=options.GROUP_2_COLOR, source=sources.time_bound_2,
+                                         line_width=options.TIME_SERIES_2_AVG_LINE_WIDTH,
+                                         line_dash=options.TIME_SERIES_2_AVG_LINE_DASH)
+        self.plot_patch_1 = self.plot.patch('x', 'y', color=options.GROUP_1_COLOR, source=sources.time_patch_1,
+                                            alpha=options.TIME_SERIES_1_PATCH_ALPHA)
+        self.plot_patch_2 = self.plot.patch('x', 'y', color=options.GROUP_2_COLOR, source=sources.time_patch_2,
+                                            alpha=options.TIME_SERIES_1_PATCH_ALPHA)
+        self.plot.add_tools(HoverTool(show_arrow=True,
+                                      tooltips=[('ID', '@mrn'),
+                                                ('Date', '@x{%F}'),
+                                                ('Value', '@y{0.2f}')],
+                                      formatters={'x': 'datetime'}))
+        self.plot.xaxis.axis_label = "Simulation Date"
+        self.plot.yaxis.axis_label = ""
         # Set the legend
-        legend_control_chart = Legend(items=[("Group 1", [self.control_chart_data_1]),
-                                             ("Series Average", [self.control_chart_avg_1]),
-                                             ("Rolling Average", [self.control_chart_trend_1]),
-                                             ("Percentile Region", [self.control_chart_patch_1]),
-                                             ("Group 2", [self.control_chart_data_2]),
-                                             ("Series Average", [self.control_chart_avg_2]),
-                                             ("Rolling Average", [self.control_chart_trend_2]),
-                                             ("Percentile Region", [self.control_chart_patch_2]),],
-                                      location=(25, 0))
+        legend_plot = Legend(items=[("Group 1", [self.plot_data_1]),
+                                    ("Series Average", [self.plot_avg_1]),
+                                    ("Rolling Average", [self.plot_trend_1]),
+                                    ("Percentile Region", [self.plot_patch_1]),
+                                    ("Group 2", [self.plot_data_2]),
+                                    ("Series Average", [self.plot_avg_2]),
+                                    ("Rolling Average", [self.plot_trend_2]),
+                                    ("Percentile Region", [self.plot_patch_2])],
+                             location=(25, 0))
 
         # Add the layout outside the plot, clicking legend item hides the line
-        self.control_chart.add_layout(legend_control_chart, 'right')
-        self.control_chart.legend.click_policy = "hide"
+        self.plot.add_layout(legend_plot, 'right')
+        self.plot.legend.click_policy = "hide"
 
-        control_chart_options = list(range_categories)
-        control_chart_options.sort()
-        control_chart_options.insert(0, '')
-        self.control_chart_y = Select(value=control_chart_options[0], options=control_chart_options, width=300)
-        self.control_chart_y.title = "Select a Range Variable"
-        self.control_chart_y.on_change('value', self.update_control_chart_y_ticker)
+        plot_options = list(range_categories)
+        plot_options.sort()
+        plot_options.insert(0, '')
+        self.y_axis = Select(value=plot_options[0], options=plot_options, width=300)
+        self.y_axis.title = "Select a Range Variable"
+        self.y_axis.on_change('value', self.update_y_axis_ticker)
 
-        self.control_chart_text_lookback_distance = TextInput(value='1', title="Lookback Distance", width=200)
-        self.control_chart_text_lookback_distance.on_change('value', self.update_control_chart_trend_ticker)
+        self.look_back_distance = TextInput(value='1', title="Lookback Distance", width=200)
+        self.look_back_distance.on_change('value', self.update_plot_trend_ticker)
 
-        self.control_chart_percentile = TextInput(value='90', title="Percentile", width=200)
-        self.control_chart_percentile.on_change('value', self.update_control_chart_trend_ticker)
+        self.plot_percentile = TextInput(value='90', title="Percentile", width=200)
+        self.plot_percentile.on_change('value', self.update_plot_trend_ticker)
 
-        lookback_units_options = ['Dates with a Sim', 'Days']
-        self.control_chart_lookback_units = Select(value=lookback_units_options[0], options=lookback_units_options, width=200)
-        self.control_chart_lookback_units.title = 'Lookback Units'
-        self.control_chart_lookback_units.on_change('value', self.update_control_chart_ticker)
+        look_back_units_options = ['Dates with a Sim', 'Days']
+        self.look_back_units = Select(value=look_back_units_options[0], options=look_back_units_options, width=200)
+        self.look_back_units.title = 'Lookback Units'
+        self.look_back_units.on_change('value', self.update_plot_ticker)
 
-        # source_time.on_change('selected', control_chart_update_trend)
+        # source_time.on_change('selected', plot_update_trend)
         self.trend_update_button = Button(label="Update Trend", button_type="primary", width=150)
-        self.trend_update_button.on_click(self.control_chart_update_trend)
+        self.trend_update_button.on_click(self.plot_update_trend)
 
         self.download_time_plot = Button(label="Download Plot Data", button_type="default", width=150)
         self.download_time_plot.callback = CustomJS(args=dict(source_1=sources.time_1,
-                                                         source_2=sources.time_2),
-                                               code=open(join(dirname(dirname(__file__)), "download_time_plot.js")).read())
+                                                              source_2=sources.time_2),
+                                                    code=open(join(dirname(dirname(__file__)),
+                                                                   "download_time_plot.js")).read())
 
         # histograms
         tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
@@ -117,9 +118,9 @@ class TimeSeries:
         self.histograms.min_border_left = options.MIN_BORDER
         self.histograms.min_border_bottom = options.MIN_BORDER
         self.hist_1 = self.histograms.vbar(x='x', width='width', bottom=0, top='top', source=sources.histogram_1,
-                                 color=options.GROUP_1_COLOR, alpha=options.HISTOGRAM_1_ALPHA)
+                                           color=options.GROUP_1_COLOR, alpha=options.HISTOGRAM_1_ALPHA)
         self.hist_2 = self.histograms.vbar(x='x', width='width', bottom=0, top='top', source=sources.histogram_2,
-                                 color=options.GROUP_2_COLOR, alpha=options.HISTOGRAM_2_ALPHA)
+                                           color=options.GROUP_2_COLOR, alpha=options.HISTOGRAM_2_ALPHA)
         self.histograms.xaxis.axis_label = ""
         self.histograms.yaxis.axis_label = "Frequency"
         self.histogram_bin_slider = Slider(start=1, end=100, value=10, step=1, title="Number of Bins")
@@ -130,10 +131,9 @@ class TimeSeries:
         self.histogram_normaltest_2_text = Div(text="Group 2 Normal Test p-value = ", width=400)
         self.histogram_ttest_text = Div(text="Two Sample t-Test (Group 1 vs 2) p-value = ", width=400)
         self.histogram_ranksums_text = Div(text="Wilcoxon rank-sum (Group 1 vs 2) p-value = ", width=400)
-        self.histograms.add_tools(HoverTool(show_arrow=True,
-                                       line_policy='next',
-                                       tooltips=[('x', '@x{0.2f}'),
-                                                 ('Counts', '@top')]))
+        self.histograms.add_tools(HoverTool(show_arrow=True, line_policy='next',
+                                            tooltips=[('x', '@x{0.2f}'),
+                                                      ('Counts', '@top')]))
         # Set the legend
         legend_hist = Legend(items=[("Group 1", [self.hist_1]),
                                     ("Group 2", [self.hist_2])],
@@ -146,20 +146,20 @@ class TimeSeries:
     def update_current_dvh_group(self, data):
         self.current_dvh_group = data
 
-    def update_control_chart_ticker(self, attr, old, new):
-        self.update_control_chart()
+    def update_plot_ticker(self, attr, old, new):
+        self.update_plot()
 
-    def update_control_chart_y_ticker(self, attr, old, new):
-        self.update_control_chart()
+    def update_y_axis_ticker(self, attr, old, new):
+        self.update_plot()
 
-    def update_control_chart_trend_ticker(self, attr, old, new):
-        self.control_chart_update_trend()
+    def update_plot_trend_ticker(self, attr, old, new):
+        self.plot_update_trend()
 
     def histograms_ticker(self, attr, old, new):
         self.update_histograms()
 
-    def update_control_chart(self):
-        new = str(self.control_chart_y.value)
+    def update_plot(self):
+        new = str(self.y_axis.value)
         if new:
             clear_source_selection(self.sources, 'time_1')
             clear_source_selection(self.sources, 'time_2')
@@ -184,7 +184,7 @@ class TimeSeries:
                 y_source_uids = y_source.data['uid']
                 y_source_mrns = y_source.data['mrn']
 
-            self.update_control_chart_y_axis_label()
+            self.update_y_axis_label()
 
             sim_study_dates = self.sources.plans.data['sim_study_date']
             sim_study_dates_uids = self.sources.plans.data['uid']
@@ -218,6 +218,8 @@ class TimeSeries:
                             roi = self.sources.dvhs.data['roi_name'][v]
 
                         found = {'Group 1': False, 'Group 2': False}
+
+                        color = None
 
                         if self.current_dvh_group['1']:
                             r1, r1_max = 0, len(self.current_dvh_group['1'].study_instance_uid)
@@ -293,10 +295,10 @@ class TimeSeries:
             clear_source_data(self.sources, 'time_1')
             clear_source_data(self.sources, 'time_2')
 
-        self.control_chart_update_trend()
+        self.plot_update_trend()
 
-    def control_chart_update_trend(self):
-        if self.control_chart_y.value:
+    def plot_update_trend(self):
+        if self.y_axis.value:
 
             selected_indices = {n: getattr(self.sources, 'time_%s' % n).selected.indices for n in N}
             for n in N:
@@ -312,12 +314,12 @@ class TimeSeries:
                             group[n][v].append(getattr(self.sources, 'time_%s' % n).data[v][i])
 
             try:
-                avg_len = int(self.control_chart_text_lookback_distance.value)
+                avg_len = int(self.look_back_distance.value)
             except:
                 avg_len = 1
 
             try:
-                percentile = float(self.control_chart_percentile.value)
+                percentile = float(self.plot_percentile.value)
             except:
                 percentile = 90.
 
@@ -327,7 +329,7 @@ class TimeSeries:
             for n in N:
                 if group[n]['x']:
                     group_collapsed[n] = collapse_into_single_dates(group[n]['x'], group[n]['y'])
-                    if self.control_chart_lookback_units.value == "Dates with a Sim":
+                    if self.look_back_units.value == "Dates with a Sim":
                         x_trend, moving_avgs = moving_avg(group_collapsed[n], avg_len)
                     else:
                         x_trend, moving_avgs = moving_avg_by_calendar_day(group_collapsed[n], avg_len)
@@ -351,7 +353,7 @@ class TimeSeries:
                     for v in ['trend', 'bound', 'patch']:
                         clear_source_data(self.sources, 'time_%s_%s' % (v, n))
 
-            x_var = str(self.control_chart_y.value)
+            x_var = str(self.y_axis.value)
             if x_var.startswith('DVH Endpoint'):
                 self.histograms.xaxis.axis_label = x_var.split("DVH Endpoint: ")[1]
             elif x_var == 'EUD':
@@ -398,7 +400,7 @@ class TimeSeries:
 
     def update_histograms(self):
 
-        if self.control_chart_y.value != '':
+        if self.y_axis.value != '':
             # Update Histograms
             bin_size = int(self.histogram_bin_slider.value)
             width_fraction = 0.9
@@ -419,8 +421,8 @@ class TimeSeries:
             for n in N:
                     clear_source_data(self.sources, 'histogram_%s' % n)
 
-    def update_control_chart_y_axis_label(self):
-        new = str(self.control_chart_y.value)
+    def update_y_axis_label(self):
+        new = str(self.y_axis.value)
 
         if new:
 
@@ -432,12 +434,26 @@ class TimeSeries:
                 new_display = new
 
             if new.startswith('DVH Endpoint'):
-                self.control_chart.yaxis.axis_label = str(self.control_chart_y.value).split(': ')[1]
+                self.plot.yaxis.axis_label = str(self.y_axis.value).split(': ')[1]
             elif new == 'EUD':
-                self.control_chart.yaxis.axis_label = 'EUD (Gy)'
+                self.plot.yaxis.axis_label = 'EUD (Gy)'
             elif new == 'NTCP/TCP':
-                self.control_chart.yaxis.axis_label = 'NTCP or TCP'
+                self.plot.yaxis.axis_label = 'NTCP or TCP'
             elif self.range_categories[new]['units']:
-                self.control_chart.yaxis.axis_label = "%s (%s)" % (new_display, self.range_categories[new]['units'])
+                self.plot.yaxis.axis_label = "%s (%s)" % (new_display, self.range_categories[new]['units'])
             else:
-                self.control_chart.yaxis.axis_label = new_display
+                self.plot.yaxis.axis_label = new_display
+
+    def update_options(self):
+        new_options = list(self.range_categories)
+        new_options.extend(['EUD', 'NTCP/TCP'])
+
+        for ep in self.sources.endpoint_calcs.data:
+            if ep.startswith('V_') or ep.startswith('D_'):
+                new_options.append("DVH Endpoint: %s" % ep)
+
+        new_options.sort()
+        new_options.insert(0, '')
+
+        self.y_axis.options = new_options
+        self.y_axis.value = ''
