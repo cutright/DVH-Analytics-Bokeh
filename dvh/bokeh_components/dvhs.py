@@ -30,10 +30,10 @@ class DVHs:
         self.dvh_review_rois = []
         self.query = None
 
-        temp_dvh_info = Temp_DICOM_FileSet()
-        self.dvh_review_mrns = temp_dvh_info.mrn
+        self.temp_dvh_info = Temp_DICOM_FileSet()
+        self.dvh_review_mrns = self.temp_dvh_info.mrn
         if self.dvh_review_mrns[0] != '':
-            self.dvh_review_rois = temp_dvh_info.get_roi_names(self.dvh_review_mrns[0]).values()
+            self.dvh_review_rois = self.temp_dvh_info.get_roi_names(self.dvh_review_mrns[0]).values()
             self.dvh_review_mrns.append('')
         else:
             self.dvh_review_rois = ['']
