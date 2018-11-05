@@ -6,9 +6,10 @@ Created on Sat Nov 3 2018
 @author: Dan Cutright, PhD
 """
 from future.utils import listitems
-from bokeh.models import Legend, CustomJS, HoverTool, CheckboxGroup
+from bokeh.models import Legend, CustomJS, HoverTool, CheckboxGroup, Spacer
 from bokeh.models.widgets import Button, Div
 from bokeh.plotting import figure
+from bokeh.layouts import row, column
 import options
 from options import N
 from math import pi
@@ -19,7 +20,7 @@ from bokeh_components.utilities import get_include_map
 
 
 class Correlation:
-    def __init__(self, sources, correlation_names, range_categories):
+    def __init__(self, sources, correlation_names, range_categories, custom_title):
 
         self.sources = sources
         self.correlation_names = correlation_names
@@ -95,6 +96,12 @@ class Correlation:
                                                              source_2_pos=sources.correlation_2_pos),
                                                    code=open(join(dirname(dirname(__file__)),
                                                                   "download_correlation_matrix.js")).read())
+
+        self.layout = column(row(custom_title['1']['correlation'], Spacer(width=50), custom_title['2']['correlation']),
+                             self.download_corr_fig,
+                             row(Div(text="<b>Sample Sizes</b>", width=100), self.fig_text_1,
+                                 self.fig_text_2),
+                             row(self.fig, self.fig_include, self.fig_include_2))
 
     def fig_include_ticker(self, attr, old, new):
         if len(self.fig_include.active) + len(self.fig_include_2.active) > 1:

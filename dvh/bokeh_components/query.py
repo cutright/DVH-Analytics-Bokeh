@@ -7,17 +7,18 @@ Created on Sun Nov 4 2018
 """
 from __future__ import print_function
 from sql_connector import DVH_SQL
-from bokeh.models.widgets import Select, Button, TextInput, CheckboxButtonGroup, Dropdown, CheckboxGroup
-from os.path import dirname, join
-from bokeh.models import CustomJS
 from dateutil.parser import parse
+from os.path import dirname, join
+from bokeh.models.widgets import Select, Button, TextInput, CheckboxButtonGroup, Dropdown, CheckboxGroup, Div
+from bokeh.models import CustomJS, Spacer
 from bokeh_components.utilities import get_study_instance_uids, clear_source_selection, clear_source_data,\
     group_constraint_count, calc_stats
+from bokeh.layouts import column, row
+from bokeh.palettes import Colorblind8 as palette
 from sql_to_python import QuerySQL
 from analysis_tools import DVH
 from datetime import datetime
 import itertools
-from bokeh.palettes import Colorblind8 as palette
 import numpy as np
 import options
 from options import N
@@ -25,8 +26,8 @@ import time
 
 
 class Query:
-    def __init__(self, sources, categories, correlation_variables,
-                 dvhs, rad_bio, roi_viewer, time_series, correlation, regression, mlc_analyzer):
+    def __init__(self, sources, categories, correlation_variables, dvhs, rad_bio, roi_viewer, time_series,
+                 correlation, regression, mlc_analyzer, custom_title, data_tables):
         self.sources = sources
         self.selector_categories = categories.selector
         self.range_categories = categories.range
@@ -123,6 +124,23 @@ class Query:
                                                              source_plans=sources.plans,
                                                              source_beams=sources.beams),
                                                    code=open(join(dirname(dirname(__file__)), "download.js")).read())
+
+        self.layout = column(row(custom_title['1']['query'], Spacer(width=50), custom_title['2']['query'],
+                                 Spacer(width=50), self.query_button, Spacer(width=50), self.download_dropdown),
+                             Div(text="<b>Query by Categorical Data</b>", width=1000),
+                             self.add_selector_row_button,
+                             row(self.selector_row, Spacer(width=10), self.select_category1, self.select_category2,
+                                 self.group_selector, self.delete_selector_row_button, Spacer(width=10),
+                                 self.selector_not_operator_checkbox),
+                             data_tables.selection_filter,
+                             Div(text="<hr>", width=1050),
+                             Div(text="<b>Query by Numerical Data</b>", width=1000),
+                             self.add_range_row_button,
+                             row(self.range_row, Spacer(width=10), self.select_category, self.text_min,
+                                 Spacer(width=30),
+                                 self.text_max, Spacer(width=30), self.group_range,
+                                 self.delete_range_row_button, Spacer(width=10), self.range_not_operator_checkbox),
+                             data_tables.range_filter)
 
     def get_query(self, group=None):
 

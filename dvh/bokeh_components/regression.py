@@ -13,14 +13,15 @@ import options
 from options import N
 from bokeh.plotting import figure
 from bokeh.models.widgets import Select, Button, Div, CheckboxGroup
-from bokeh.models import Legend, HoverTool
+from bokeh.models import Legend, HoverTool, Spacer
+from bokeh.layouts import row, column
 from scipy.stats import linregress
 import numpy as np
 from bokeh_components.utilities import clear_source_data, clear_source_selection
 
 
 class Regression:
-    def __init__(self, sources, time_series, correlation, multi_var_reg_var_names):
+    def __init__(self, sources, time_series, correlation, multi_var_reg_var_names, custom_title, data_tables):
         self.sources = sources
         self.time_series = time_series
         self.correlation = correlation
@@ -125,6 +126,24 @@ class Regression:
                                        location=(25, 0))
         self.residual_figure.add_layout(legend_residual_chart, 'right')
         self.residual_figure.legend.click_policy = "hide"
+
+        self.layout = column(row(custom_title['1']['regression'], Spacer(width=50), custom_title['2']['regression']),
+                             row(column(self.x_include,
+                                        row(self.x_prev, self.x_next, Spacer(width=10), self.x),
+                                        row(self.y_prev, self.y_next, Spacer(width=10), self.y)),
+                                 Spacer(width=10, height=175), data_tables.corr_chart,
+                                 Spacer(width=10, height=175), data_tables.multi_var_include),
+                             self.figure,
+                             Div(text="<hr>", width=1050),
+                             self.do_reg_button,
+                             self.residual_figure,
+                             Div(text="<b>Group 1</b>", width=500),
+                             data_tables.multi_var_coeff_1,
+                             data_tables.multi_var_model_1,
+                             Div(text="<b>Group 2</b>", width=500),
+                             data_tables.multi_var_coeff_2,
+                             data_tables.multi_var_model_2,
+                             Spacer(width=1000, height=100))
 
     def update_corr_chart_ticker_x(self, attr, old, new):
         if self.multi_var_reg_vars[self.x.value]:

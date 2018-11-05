@@ -5,14 +5,16 @@ All Rad Bio tab objects and functions for the main DVH Analytics bokeh program
 Created on Sun Nov 4 2018
 @author: Dan Cutright, PhD
 """
-from bokeh.models.widgets import Button, TextInput, CheckboxButtonGroup
+from bokeh.models.widgets import Button, TextInput, CheckboxButtonGroup, Div
+from bokeh.models import Spacer
+from bokeh.layouts import column, row
 from bokeh_components.utilities import get_include_map
 from analysis_tools import calc_eud
 from options import N
 
 
 class RadBio:
-    def __init__(self, sources, time_series, correlation, regression):
+    def __init__(self, sources, time_series, correlation, regression, custom_title, data_tables):
         self.sources = sources
         self.time_series = time_series
         self.correlation = correlation
@@ -25,6 +27,19 @@ class RadBio:
         self.apply_filter = CheckboxButtonGroup(labels=["Group 1", "Group 2", "Selected"], active=[0], width=300)
 
         self.apply_button.on_click(self.apply_rad_bio_parameters)
+
+        self.layout = column(row(custom_title['1']['rad_bio'], Spacer(width=50), custom_title['2']['rad_bio']),
+                             Div(text="<b>Published EUD Parameters from Emami"
+                                      " et. al. for 1.8-2.0Gy fractions</b> (Click to apply)",
+                                 width=600),
+                             data_tables.emami,
+                             Div(text="<b>Applied Parameters:</b>", width=150),
+                             row(self.eud_a_input, Spacer(width=50),
+                                 self.gamma_50_input, Spacer(width=50), self.td_tcd_input, Spacer(width=50),
+                                 self.apply_filter, Spacer(width=50), self.apply_button),
+                             Div(text="<b>EUD Calculations for Query</b>", width=500),
+                             data_tables.rad_bio,
+                             Spacer(width=1000, height=100))
 
     def initialize(self):
         include = get_include_map(self.sources)

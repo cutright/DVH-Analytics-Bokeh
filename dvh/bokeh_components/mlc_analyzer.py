@@ -10,7 +10,8 @@ import dicom_mlc_analyzer as mlca
 from sql_connector import DVH_SQL
 from bokeh.models.widgets import Select, Button, Div, DataTable
 from bokeh.plotting import figure
-from bokeh.models import Range1d
+from bokeh.models import Range1d, Spacer
+from bokeh.layouts import row, column
 import os
 from get_settings import get_settings, parse_settings_file
 import numpy as np
@@ -20,7 +21,7 @@ from bokeh_components.columns import mlc_viewer as mlc_viewer_columns
 
 
 class MLC_Analyzer:
-    def __init__(self, sources):
+    def __init__(self, sources, custom_title, data_tables):
         self.sources = sources
 
         self.mlc_data = []
@@ -73,6 +74,18 @@ class MLC_Analyzer:
         self.mlc_viewer.y_range = Range1d(-options.MAX_FIELD_SIZE_Y / 2, options.MAX_FIELD_SIZE_Y / 2)
         self.mlc_viewer.xgrid.grid_line_color = None
         self.mlc_viewer.ygrid.grid_line_color = None
+
+        self.layout = column(row(custom_title['1']['mlc_analyzer'], Spacer(width=50),
+                                 custom_title['2']['mlc_analyzer']),
+                             row(self.mrn_select, self.study_date_select,
+                                 self.uid_select),
+                             row(self.plan_select),
+                             Div(text="<hr>", width=800),
+                             row(self.fx_grp_select, self.beam_select,
+                                 self.mlc_viewer_previous_cp, self.mlc_viewer_next_cp,
+                                 Spacer(width=10), self.mlc_viewer_play_button, Spacer(width=10),
+                                 self.mlc_viewer_beam_score),
+                             row(self.mlc_viewer, data_tables.mlc_viewer))
 
     def mrn_ticker(self, attr, old, new):
         if new == '':

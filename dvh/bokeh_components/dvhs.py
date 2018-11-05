@@ -5,9 +5,11 @@ All DVHs tab objects and functions for the main DVH Analytics bokeh program
 Created on Sun Nov 4 2018
 @author: Dan Cutright, PhD
 """
-from bokeh.models.widgets import Select, Button, TableColumn, NumberFormatter, RadioButtonGroup, TextInput, RadioGroup
-from bokeh.models import Legend, CustomJS, HoverTool
+from bokeh.models.widgets import Select, Button, TableColumn, NumberFormatter, RadioButtonGroup, TextInput,\
+    RadioGroup, Div
+from bokeh.models import Legend, CustomJS, HoverTool, Spacer
 from bokeh.plotting import figure
+from bokeh.layouts import column, row
 import options
 from options import N
 from os.path import dirname, join
@@ -19,7 +21,7 @@ from dicompylercore import dicomparser, dvhcalc
 
 
 class DVHs:
-    def __init__(self, sources, time_series, correlation, regression):
+    def __init__(self, sources, time_series, correlation, regression, custom_title, data_tables):
         self.sources = sources
         self.time_series = time_series
         self.correlation = correlation
@@ -128,6 +130,32 @@ class DVHs:
 
         self.review_rx = TextInput(value='', title="Rx Dose (Gy):", width=170)
         self.review_rx.on_change('value', self.review_rx_ticker)
+
+        if options.LITE_VIEW:
+            self.layout = column(row(self.radio_group_dose, self.radio_group_volume),
+                                 self.add_endpoint_row_button,
+                                 row(self.ep_row, Spacer(width=10), self.select_ep_type, self.ep_text_input,
+                                     Spacer(width=20),
+                                     self.ep_units_in, self.delete_ep_row_button, Spacer(width=50),
+                                     self.download_endpoints_button),
+                                 data_tables.ep)
+        else:
+            self.layout = column(row(custom_title['1']['dvhs'], Spacer(width=50), custom_title['2']['dvhs']),
+                                 row(self.radio_group_dose, self.radio_group_volume),
+                                 row(self.select_reviewed_mrn, self.select_reviewed_dvh, self.review_rx),
+                                 self.plot,
+                                 Div(text="<b>DVHs</b>", width=1200),
+                                 data_tables.dvhs,
+                                 Div(text="<hr>", width=1050),
+                                 Div(text="<b>Define Endpoints</b>", width=1000),
+                                 self.add_endpoint_row_button,
+                                 row(self.ep_row, Spacer(width=10), self.select_ep_type, self.ep_text_input,
+                                     Spacer(width=20),
+                                     self.ep_units_in, self.delete_ep_row_button, Spacer(width=50),
+                                     self.download_endpoints_button),
+                                 data_tables.ep,
+                                 Div(text="<b>DVH Endpoints</b>", width=1200),
+                                 data_tables.endpoints)
 
     def add_endpoint(self):
         if self.sources.endpoint_defs.data['row']:

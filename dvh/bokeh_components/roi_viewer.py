@@ -6,8 +6,10 @@ Created on Sun Nov 4 2018
 @author: Dan Cutright, PhD
 """
 import matplotlib.colors as plot_colors
-from bokeh.models.widgets import Select, Button, CheckboxGroup
+from bokeh.models.widgets import Select, Button, CheckboxGroup, Div
 from bokeh.plotting import figure
+from bokeh.layouts import row, column
+from bokeh.models import Spacer
 from bokeh_components.utilities import clear_source_data
 import options
 from bokeh import events
@@ -84,7 +86,7 @@ class RoiViewerRoiTicker:
 
 
 class ROI_Viewer:
-    def __init__(self, sources):
+    def __init__(self, sources, custom_title):
         self.sources = sources
 
         self.data = {str(i): {} for i in range(1, 6)}
@@ -143,6 +145,24 @@ class ROI_Viewer:
         self.roi_color_ticker = {str(i): RoiViewerRoiColorTicker(i, self.patch) for i in range(1, 6)}
         for i in range(1, 6):
             self.roi_select_color[str(i)].on_change('value', self.roi_color_ticker[str(i)].ticker)
+
+        self.layout = column(row(custom_title['1']['roi_viewer'], Spacer(width=50), custom_title['2']['roi_viewer']),
+                             row(self.mrn_select, self.study_date_select, self.uid_select),
+                             Div(text="<hr>", width=800),
+                             row(self.roi_select['1'], self.roi_select_color['1'], self.slice_select,
+                                 self.previous_slice, self.next_slice),
+                             Div(text="<hr>", width=800),
+                             row(self.roi_select['2'], self.roi_select['3'],
+                                 self.roi_select['4'], self.roi_select['5']),
+                             row(self.roi_select_color['2'], self.roi_select_color['3'],
+                                 self.roi_select_color['4'], self.roi_select_color['5']),
+                             row(Div(text="<b>NOTE:</b> Axis flipping requires a figure reset "
+                                          "(Click the circular double-arrow)", width=1025)),
+                             row(self.flip_x_axis_button, self.flip_y_axis_button,
+                                 self.plot_tv_button),
+                             row(self.scrolling),
+                             row(self.fig),
+                             row(Spacer(width=1000, height=100)))
 
     def update_mrn(self):
         new_options = [mrn for mrn in self.sources.plans.data['mrn']]

@@ -6,7 +6,8 @@ Created on Sat Nov 3 2018
 @author: Dan Cutright, PhD
 """
 from bokeh.plotting import figure
-from bokeh.models import Select, TextInput, RadioGroup, Slider, Div, Legend, CustomJS, HoverTool, Button
+from bokeh.models import Select, TextInput, RadioGroup, Slider, Div, Legend, CustomJS, HoverTool, Button, Spacer
+from bokeh.layouts import column, row
 import options
 from bokeh_components.utilities import clear_source_data, collapse_into_single_dates, moving_avg,\
     moving_avg_by_calendar_day, clear_source_selection
@@ -18,7 +19,7 @@ from os.path import dirname, join
 
 
 class TimeSeries:
-    def __init__(self, sources, range_categories):
+    def __init__(self, sources, range_categories, custom_title, data_tables):
 
         self.sources = sources
         self.range_categories = range_categories
@@ -142,6 +143,20 @@ class TimeSeries:
         # Add the layout outside the plot, clicking legend item hides the line
         self.histograms.add_layout(legend_hist, 'right')
         self.histograms.legend.click_policy = "hide"
+
+        self.layout = column(row(custom_title['1']['time_series'], Spacer(width=50),
+                                 custom_title['2']['time_series']),
+                             row(self.y_axis, self.look_back_units, self.look_back_distance,
+                                 Spacer(width=10), self.plot_percentile, Spacer(width=10),
+                                 self.trend_update_button),
+                             self.plot,
+                             self.download_time_plot,
+                             Div(text="<hr>", width=1050),
+                             row(self.histogram_bin_slider, self.histogram_radio_group),
+                             row(self.histogram_normaltest_1_text, self.histogram_ttest_text),
+                             row(self.histogram_normaltest_2_text, self.histogram_ranksums_text),
+                             self.histograms,
+                             Spacer(width=1000, height=10))
 
     def update_current_dvh_group(self, data):
         self.current_dvh_group = data
