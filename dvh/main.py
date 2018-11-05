@@ -28,6 +28,7 @@ from bokeh_components.dvhs import DVHs
 from bokeh_components.data_tables import DataTables
 from bokeh_components.categories import Categories
 from bokeh_components.planning_data import PlanningData
+from bokeh_components.source_listener import SourceListener
 
 options = load_options(options)
 
@@ -38,88 +39,39 @@ options = load_options(options)
 # Please see Bokeh documentation for more information
 ACCESS_GRANTED = not options.AUTH_USER_REQ
 
-# Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
-categories = Categories(sources)
-
-
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# Correlation and Regression variable names
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-correlation_variables, correlation_names = [], []
-correlation_variables_beam = ['Beam Dose', 'Beam MU', 'Control Point Count', 'Gantry Range',
-                              'SSD', 'Beam MU per control point']
-for key in list(categories.range):
-    if key.startswith('ROI') or key.startswith('PTV') or key in {'Total Plan MU', 'Rx Dose'}:
-        correlation_variables.append(key)
-        correlation_names.append(key)
-    if key in correlation_variables_beam:
-        correlation_variables.append(key)
-        for stat in ['Min', 'Mean', 'Median', 'Max']:
-            correlation_names.append("%s (%s)" % (key, stat))
-correlation_variables.sort()
-correlation_names.sort()
-multi_var_reg_var_names = correlation_names + ['EUD', 'NTCP/TCP']
-
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Bokeh component classes
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+# Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
+categories = Categories(sources)
+
+# Bokeh table objects
 data_tables = DataTables(sources)
 
+# Bokeh objects for each tab layout
 planning_data = PlanningData(custom_title, data_tables)
 roi_viewer = ROI_Viewer(sources, custom_title)
 mlc_analyzer = MLC_Analyzer(sources, custom_title, data_tables)
 time_series = TimeSeries(sources, categories.range, custom_title, data_tables)
-correlation = Correlation(sources, correlation_names, categories.range, custom_title)
-regression = Regression(sources, time_series, correlation, multi_var_reg_var_names, custom_title, data_tables)
+correlation = Correlation(sources, categories, custom_title)
+regression = Regression(sources, time_series, correlation, categories.multi_var_reg_var_names, custom_title, data_tables)
 correlation.add_regression_link(regression)
 rad_bio = RadBio(sources, time_series, correlation, regression, custom_title, data_tables)
 dvhs = DVHs(sources, time_series, correlation, regression, custom_title, data_tables)
-query = Query(sources, categories, correlation_variables,
-              dvhs, rad_bio, roi_viewer, time_series, correlation, regression, mlc_analyzer, custom_title, data_tables)
+query = Query(sources, categories, dvhs, rad_bio, roi_viewer, time_series, correlation, regression, mlc_analyzer,
+              custom_title, data_tables)
 dvhs.add_query_link(query)
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Listen for changes to sources
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-class SourceSelection:
-    def __init__(self, table):
-        self.table = table
-
-    def ticker(self, attr, old, new):
-        if query.allow_source_update:
-            src = getattr(sources, self.table)
-            uids = list(set([src.data['uid'][i] for i in new]))
-            self.update_planning_data_selections(uids)
-
-    @staticmethod
-    def update_planning_data_selections(uids):
-
-        query.allow_source_update = False
-        for k in ['rxs', 'plans', 'beams']:
-            src = getattr(sources, k)
-            src.selected.indices = [i for i, j in enumerate(src.data['uid']) if j in uids]
-
-        query.allow_source_update = True
-
-
-sources.selectors.selected.on_change('indices', query.update_selector_row_on_selection)
-query.update_selector_source()
-
-sources.ranges.selected.on_change('indices', query.update_range_row_on_selection)
-sources.endpoint_defs.selected.on_change('indices', dvhs.update_ep_row_on_selection)
-
-source_selection = {s: SourceSelection(s) for s in ['rxs', 'plans', 'beams']}
-for s in ['rxs', 'plans', 'beams']:
-    getattr(sources, s).selected.on_change('indices', source_selection[s].ticker)
-sources.dvhs.selected.on_change('indices', dvhs.update_source_endpoint_view_selection)
-sources.endpoint_view.selected.on_change('indices', dvhs.update_dvh_table_selection)
-sources.emami.selected.on_change('indices', rad_bio.emami_selection)
-sources.multi_var_include.selected.on_change('indices', regression.multi_var_include_selection)
+source_listener = SourceListener(sources, query, dvhs, rad_bio, regression)
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# Layout objects
+# Layout
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 query_tab = Panel(child=query.layout, title='Query')

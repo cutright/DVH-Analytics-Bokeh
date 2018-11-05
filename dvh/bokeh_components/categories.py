@@ -1,6 +1,7 @@
 class Categories:
     def __init__(self, sources):
 
+        # This is a maps categorical data type selections to SQL columns and SQL tables
         self.selector = {'ROI Institutional Category': {'var_name': 'institutional_roi', 'table': 'DVHs'},
                          'ROI Physician Category': {'var_name': 'physician_roi', 'table': 'DVHs'},
                          'ROI Type': {'var_name': 'roi_type', 'table': 'DVHs'},
@@ -23,6 +24,7 @@ class Categories:
                          'UID': {'var_name': 'study_instance_uid', 'table': 'Plans'},
                          'Baseline': {'var_name': 'baseline', 'table': 'Plans'}}
 
+        # This is a maps quantitative data type selections to SQL columns and SQL tables, and the bokeh source
         self.range = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 'source': sources.plans},
                       'Beam Energy Min': {'var_name': 'beam_energy_min', 'table': 'Beams', 'units': '', 'source': sources.beams},
                       'Beam Energy Max': {'var_name': 'beam_energy_max', 'table': 'Beams', 'units': '', 'source': sources.beams},
@@ -71,3 +73,22 @@ class Categories:
                       'Beam MU per control point': {'var_name': 'beam_mu_per_cp', 'table': 'Beams', 'units': '', 'source': sources.beams},
                       'ROI Cross-Section Max': {'var_name': 'cross_section_max', 'table': 'DVHs', 'units': 'cm^2', 'source': sources.dvhs},
                       'ROI Cross-Section Median': {'var_name': 'cross_section_median', 'table': 'DVHs', 'units': 'cm^2', 'source': sources.dvhs}}
+
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # Correlation and Regression variable names
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.correlation_variables = []
+        self.correlation_names = []
+        self.correlation_variables_beam = ['Beam Dose', 'Beam MU', 'Control Point Count', 'Gantry Range',
+                                           'SSD', 'Beam MU per control point']
+        for key in list(self.range):
+            if key.startswith('ROI') or key.startswith('PTV') or key in {'Total Plan MU', 'Rx Dose'}:
+                self.correlation_variables.append(key)
+                self.correlation_names.append(key)
+            if key in self.correlation_variables_beam:
+                self.correlation_variables.append(key)
+                for stat in ['Min', 'Mean', 'Median', 'Max']:
+                    self.correlation_names.append("%s (%s)" % (key, stat))
+        self.correlation_variables.sort()
+        self.correlation_names.sort()
+        self.multi_var_reg_var_names = self.correlation_names + ['EUD', 'NTCP/TCP']

@@ -20,11 +20,11 @@ from bokeh_components.utilities import get_include_map
 
 
 class Correlation:
-    def __init__(self, sources, correlation_names, range_categories, custom_title):
+    def __init__(self, sources, categories, custom_title):
 
         self.sources = sources
-        self.correlation_names = correlation_names
-        self.range_categories = range_categories
+        self.correlation_names = categories.correlation_names
+        self.range_categories = categories.range
         self.regression = None
 
         self.data = {n: [] for n in N}
@@ -83,7 +83,7 @@ class Correlation:
         self.fig_text_1 = Div(text="Group 1:", width=110)
         self.fig_text_2 = Div(text="Group 2:", width=110)
 
-        self.fig_include = CheckboxGroup(labels=correlation_names, active=options.CORRELATION_MATRIX_DEFAULTS_1)
+        self.fig_include = CheckboxGroup(labels=self.correlation_names, active=options.CORRELATION_MATRIX_DEFAULTS_1)
         self.fig_include_2 = CheckboxGroup(labels=['DVH Endpoints', 'EUD', 'NTCP / TCP'],
                                            active=options.CORRELATION_MATRIX_DEFAULTS_2)
         self.fig_include.on_change('active', self.fig_include_ticker)

@@ -26,12 +26,12 @@ import time
 
 
 class Query:
-    def __init__(self, sources, categories, correlation_variables, dvhs, rad_bio, roi_viewer, time_series,
+    def __init__(self, sources, categories, dvhs, rad_bio, roi_viewer, time_series,
                  correlation, regression, mlc_analyzer, custom_title, data_tables):
         self.sources = sources
         self.selector_categories = categories.selector
         self.range_categories = categories.range
-        self.correlation_variables = correlation_variables
+        self.correlation_variables = categories.correlation_variables
         self.dvhs = dvhs
         self.rad_bio = rad_bio
         self.roi_viewer = roi_viewer
