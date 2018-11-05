@@ -12,10 +12,10 @@ import auth
 from bokeh.layouts import column, row
 from bokeh.models import Spacer
 from bokeh.io import curdoc
-from bokeh.models.widgets import Button, Div, DataTable, Panel, Tabs, TextInput, PasswordInput
+from bokeh.models.widgets import Button, Div, Panel, Tabs, TextInput, PasswordInput
 import time
 import options
-from bokeh_components import columns, sources
+from bokeh_components import sources
 from bokeh_components.custom_titles import custom_title
 from bokeh_components.mlc_analyzer import MLC_Analyzer
 from bokeh_components.time_series import TimeSeries
@@ -25,7 +25,10 @@ from bokeh_components.rad_bio import RadBio
 from bokeh_components.regression import Regression
 from bokeh_components.query import Query
 from bokeh_components.dvhs import DVHs
+from bokeh_components.data_tables import DataTables
 
+
+data_tables = DataTables(sources)
 
 options = load_options(options)
 
@@ -179,71 +182,20 @@ class SourceSelection:
             update_planning_data_selections(uids)
 
 
-source_selection = {s: SourceSelection(s) for s in ['rxs', 'plans', 'beams']}
-
-
-# Selector Category table
-selection_filter_data_table = DataTable(source=sources.selectors,
-                                        columns=columns.selection_filter, width=1000, height=150, index_position=None)
+# Listen for changes to source selections
 sources.selectors.selected.on_change('indices', query.update_selector_row_on_selection)
 query.update_selector_source()
 
-
-# Selector Category table
-range_filter_data_table = DataTable(source=sources.ranges,
-                                    columns=columns.range_filter, width=1000, height=150, index_position=None)
 sources.ranges.selected.on_change('indices', query.update_range_row_on_selection)
-
-# endpoint  table
-ep_data_table = DataTable(source=sources.endpoint_defs, columns=columns.ep_data, width=300, height=150)
-
 sources.endpoint_defs.selected.on_change('indices', dvhs.update_ep_row_on_selection)
 
-# Set up DataTable for dvhs
-data_table = DataTable(source=sources.dvhs, columns=columns.dvhs, width=1200,
-                       editable=True, index_position=None)
-data_table_beams = DataTable(source=sources.beams, columns=columns.beams, width=1300,
-                             editable=True, index_position=None)
-data_table_beams2 = DataTable(source=sources.beams, columns=columns.beams2, width=1300,
-                              editable=True, index_position=None)
-data_table_plans = DataTable(source=sources.plans, columns=columns.plans, width=1300,
-                             editable=True, index_position=None)
-data_table_rxs = DataTable(source=sources.rxs, columns=columns.rxs, width=1300,
-                           editable=True, index_position=None)
-data_table_endpoints = DataTable(source=sources.endpoint_view, columns=columns.endpoints, width=1200,
-                                 editable=True, index_position=None)
-
-
-# Listen for changes to source selections
+source_selection = {s: SourceSelection(s) for s in ['rxs', 'plans', 'beams']}
 for s in ['rxs', 'plans', 'beams']:
     getattr(sources, s).selected.on_change('indices', source_selection[s].ticker)
 sources.dvhs.selected.on_change('indices', dvhs.update_source_endpoint_view_selection)
 sources.endpoint_view.selected.on_change('indices', dvhs.update_dvh_table_selection)
 sources.emami.selected.on_change('indices', rad_bio.emami_selection)
-
-data_table_corr_chart = DataTable(source=sources.corr_chart_stats, columns=columns.corr_chart, editable=True,
-                                  height=180, width=300, index_position=None)
-
-data_table_multi_var_include = DataTable(source=sources.multi_var_include, columns=columns.multi_var_include,
-                                         height=175, width=275, index_position=None)
-
-data_table_multi_var_model_1 = DataTable(source=sources.multi_var_coeff_results_1, columns=columns.multi_var_model_1,
-                                         editable=True, height=200, index_position=None)
-
-data_table_multi_var_coeff_1 = DataTable(source=sources.multi_var_model_results_1, columns=columns.multi_var_coeff_1,
-                                         editable=True, height=60, index_position=None)
-
-data_table_multi_var_model_2 = DataTable(source=sources.multi_var_coeff_results_2, columns=columns.multi_var_model_2,
-                                         editable=True, height=200)
-
-data_table_multi_var_coeff_2 = DataTable(source=sources.multi_var_model_results_2, columns=columns.multi_var_coeff_2,
-                                         editable=True,  height=60)
-
 sources.multi_var_include.selected.on_change('indices', regression.multi_var_include_selection)
-
-data_table_rad_bio = DataTable(source=sources.rad_bio, columns=columns.rad_bio, editable=False, width=1100)
-
-data_table_emami = DataTable(source=sources.emami, columns=columns.emami, editable=False, width=1100)
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -256,14 +208,14 @@ layout_query = column(row(custom_title['1']['query'], Spacer(width=50), custom_t
                       row(query.selector_row, Spacer(width=10), query.select_category1, query.select_category2,
                           query.group_selector, query.delete_selector_row_button, Spacer(width=10),
                           query.selector_not_operator_checkbox),
-                      selection_filter_data_table,
+                      data_tables.selection_filter,
                       Div(text="<hr>", width=1050),
                       Div(text="<b>Query by Numerical Data</b>", width=1000),
                       query.add_range_row_button,
                       row(query.range_row, Spacer(width=10), query.select_category, query.text_min, Spacer(width=30),
                           query.text_max, Spacer(width=30), query.group_range,
                           query.delete_range_row_button, Spacer(width=10), query.range_not_operator_checkbox),
-                      range_filter_data_table)
+                      data_tables.range_filter)
 
 if options.LITE_VIEW:
     layout_dvhs = column(row(dvhs.radio_group_dose, dvhs.radio_group_volume),
@@ -271,42 +223,42 @@ if options.LITE_VIEW:
                          row(dvhs.ep_row, Spacer(width=10), dvhs.select_ep_type, dvhs.ep_text_input, Spacer(width=20),
                              dvhs.ep_units_in, dvhs.delete_ep_row_button, Spacer(width=50),
                              dvhs.download_endpoints_button),
-                         ep_data_table)
+                         data_tables.ep)
 else:
     layout_dvhs = column(row(custom_title['1']['dvhs'], Spacer(width=50), custom_title['2']['dvhs']),
                          row(dvhs.radio_group_dose, dvhs.radio_group_volume),
                          row(dvhs.select_reviewed_mrn, dvhs.select_reviewed_dvh, dvhs.review_rx),
                          dvhs.plot,
                          Div(text="<b>DVHs</b>", width=1200),
-                         data_table,
+                         data_tables.dvhs,
                          Div(text="<hr>", width=1050),
                          Div(text="<b>Define Endpoints</b>", width=1000),
                          dvhs.add_endpoint_row_button,
                          row(dvhs.ep_row, Spacer(width=10), dvhs.select_ep_type, dvhs.ep_text_input, Spacer(width=20),
                              dvhs.ep_units_in, dvhs.delete_ep_row_button, Spacer(width=50),
                              dvhs.download_endpoints_button),
-                         ep_data_table,
+                         data_tables.ep,
                          Div(text="<b>DVH Endpoints</b>", width=1200),
-                         data_table_endpoints)
+                         data_tables.endpoints)
 
 layout_rad_bio = column(row(custom_title['1']['rad_bio'], Spacer(width=50), custom_title['2']['rad_bio']),
                         Div(text="<b>Published EUD Parameters from Emami"
                                  " et. al. for 1.8-2.0Gy fractions</b> (Click to apply)",
                             width=600),
-                        data_table_emami,
+                        data_tables.emami,
                         Div(text="<b>Applied Parameters:</b>", width=150),
                         row(rad_bio.eud_a_input, Spacer(width=50),
                             rad_bio.gamma_50_input, Spacer(width=50), rad_bio.td_tcd_input, Spacer(width=50),
                             rad_bio.apply_filter, Spacer(width=50), rad_bio.apply_button),
                         Div(text="<b>EUD Calculations for Query</b>", width=500),
-                        data_table_rad_bio,
+                        data_tables.rad_bio,
                         Spacer(width=1000, height=100))
 
 layout_planning_data = column(row(custom_title['1']['planning'], Spacer(width=50), custom_title['2']['planning']),
-                              Div(text="<b>Rxs</b>", width=1000), data_table_rxs,
-                              Div(text="<b>Plans</b>", width=1200), data_table_plans,
-                              Div(text="<b>Beams</b>", width=1500), data_table_beams,
-                              Div(text="<b>Beams Continued</b>", width=1500), data_table_beams2)
+                              Div(text="<b>Rxs</b>", width=1000), data_tables.rxs,
+                              Div(text="<b>Plans</b>", width=1200), data_tables.plans,
+                              Div(text="<b>Beams</b>", width=1500), data_tables.beams,
+                              Div(text="<b>Beams Continued</b>", width=1500), data_tables.beams2)
 
 layout_time_series = column(row(custom_title['1']['time_series'], Spacer(width=50), custom_title['2']['time_series']),
                             row(time_series.y_axis, time_series.look_back_units,
@@ -351,18 +303,18 @@ layout_regression = column(row(custom_title['1']['regression'], Spacer(width=50)
                            row(column(regression.x_include,
                                       row(regression.x_prev, regression.x_next, Spacer(width=10), regression.x),
                                       row(regression.y_prev, regression.y_next, Spacer(width=10), regression.y)),
-                               Spacer(width=10, height=175), data_table_corr_chart,
-                               Spacer(width=10, height=175), data_table_multi_var_include),
+                               Spacer(width=10, height=175), data_tables.corr_chart,
+                               Spacer(width=10, height=175), data_tables.multi_var_include),
                            regression.figure,
                            Div(text="<hr>", width=1050),
                            regression.do_reg_button,
                            regression.residual_figure,
                            Div(text="<b>Group 1</b>", width=500),
-                           data_table_multi_var_coeff_1,
-                           data_table_multi_var_model_1,
+                           data_tables.multi_var_coeff_1,
+                           data_tables.multi_var_model_1,
                            Div(text="<b>Group 2</b>", width=500),
-                           data_table_multi_var_coeff_2,
-                           data_table_multi_var_model_2,
+                           data_tables.multi_var_coeff_2,
+                           data_tables.multi_var_model_2,
                            Spacer(width=1000, height=100))
 
 layout_mlc_analyzer = column(row(custom_title['1']['mlc_analyzer'], Spacer(width=50),
@@ -374,7 +326,7 @@ layout_mlc_analyzer = column(row(custom_title['1']['mlc_analyzer'], Spacer(width
                                  mlc_analyzer.mlc_viewer_previous_cp, mlc_analyzer.mlc_viewer_next_cp,
                                  Spacer(width=10), mlc_analyzer.mlc_viewer_play_button, Spacer(width=10),
                                  mlc_analyzer.mlc_viewer_beam_score),
-                             row(mlc_analyzer.mlc_viewer, mlc_analyzer.mlc_viewer_data_table))
+                             row(mlc_analyzer.mlc_viewer, data_tables.mlc_viewer))
 
 
 query_tab = Panel(child=layout_query, title='Query')
