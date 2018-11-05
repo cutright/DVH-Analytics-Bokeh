@@ -26,9 +26,7 @@ from bokeh_components.regression import Regression
 from bokeh_components.query import Query
 from bokeh_components.dvhs import DVHs
 from bokeh_components.data_tables import DataTables
-
-
-data_tables = DataTables(sources)
+from bokeh_components.categories import Categories
 
 options = load_options(options)
 
@@ -40,82 +38,16 @@ options = load_options(options)
 ACCESS_GRANTED = not options.AUTH_USER_REQ
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
-selector_categories = {'ROI Institutional Category': {'var_name': 'institutional_roi', 'table': 'DVHs'},
-                       'ROI Physician Category': {'var_name': 'physician_roi', 'table': 'DVHs'},
-                       'ROI Type': {'var_name': 'roi_type', 'table': 'DVHs'},
-                       'Beam Type': {'var_name': 'beam_type', 'table': 'Beams'},
-                       'Collimator Rotation Direction': {'var_name': 'collimator_rot_dir', 'table': 'Beams'},
-                       'Couch Rotation Direction': {'var_name': 'couch_rot_dir', 'table': 'Beams'},
-                       'Dose Grid Resolution': {'var_name': 'dose_grid_res', 'table': 'Plans'},
-                       'Gantry Rotation Direction': {'var_name': 'gantry_rot_dir', 'table': 'Beams'},
-                       'Radiation Type': {'var_name': 'radiation_type', 'table': 'Beams'},
-                       'Patient Orientation': {'var_name': 'patient_orientation', 'table': 'Plans'},
-                       'Patient Sex': {'var_name': 'patient_sex', 'table': 'Plans'},
-                       'Physician': {'var_name': 'physician', 'table': 'Plans'},
-                       'Tx Modality': {'var_name': 'tx_modality', 'table': 'Plans'},
-                       'Tx Site': {'var_name': 'tx_site', 'table': 'Plans'},
-                       'Normalization': {'var_name': 'normalization_method', 'table': 'Rxs'},
-                       'Treatment Machine': {'var_name': 'treatment_machine', 'table': 'Beams'},
-                       'Heterogeneity Correction': {'var_name': 'heterogeneity_correction', 'table': 'Plans'},
-                       'Scan Mode': {'var_name': 'scan_mode', 'table': 'Beams'},
-                       'MRN': {'var_name': 'mrn', 'table': 'Plans'},
-                       'UID': {'var_name': 'study_instance_uid', 'table': 'Plans'},
-                       'Baseline': {'var_name': 'baseline', 'table': 'Plans'}}
-range_categories = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 'source': sources.plans},
-                    'Beam Energy Min': {'var_name': 'beam_energy_min', 'table': 'Beams', 'units': '', 'source': sources.beams},
-                    'Beam Energy Max': {'var_name': 'beam_energy_max', 'table': 'Beams', 'units': '', 'source': sources.beams},
-                    'Birth Date': {'var_name': 'birth_date', 'table': 'Plans', 'units': '', 'source': sources.plans},
-                    'Planned Fractions': {'var_name': 'fxs', 'table': 'Plans', 'units': '', 'source': sources.plans},
-                    'Rx Dose': {'var_name': 'rx_dose', 'table': 'Plans', 'units': 'Gy', 'source': sources.plans},
-                    'Rx Isodose': {'var_name': 'rx_percent', 'table': 'Rxs', 'units': '%', 'source': sources.rxs},
-                    'Simulation Date': {'var_name': 'sim_study_date', 'table': 'Plans', 'units': '', 'source': sources.plans},
-                    'Total Plan MU': {'var_name': 'total_mu', 'table': 'Plans', 'units': 'MU', 'source': sources.plans},
-                    'Fraction Dose': {'var_name': 'fx_dose', 'table': 'Rxs', 'units': 'Gy', 'source': sources.rxs},
-                    'Beam Dose': {'var_name': 'beam_dose', 'table': 'Beams', 'units': 'Gy', 'source': sources.beams},
-                    'Beam MU': {'var_name': 'beam_mu', 'table': 'Beams', 'units': '', 'source': sources.beams},
-                    'Control Point Count': {'var_name': 'control_point_count', 'table': 'Beams', 'units': '', 'source': sources.beams},
-                    'Collimator Start Angle': {'var_name': 'collimator_start', 'table': 'Beams', 'units': 'deg', 'source': sources.beams},
-                    'Collimator End Angle': {'var_name': 'collimator_end', 'table': 'Beams', 'units': 'deg', 'source': sources.beams},
-                    'Collimator Min Angle': {'var_name': 'collimator_min', 'table': 'Beams', 'units': 'deg', 'source': sources.beams},
-                    'Collimator Max Angle': {'var_name': 'collimator_max', 'table': 'Beams', 'units': 'deg', 'source': sources.beams},
-                    'Collimator Range': {'var_name': 'collimator_range', 'table': 'Beams', 'units': 'deg', 'source': sources.beams},
-                    'Couch Start Angle': {'var_name': 'couch_start', 'table': 'Beams', 'units': 'deg', 'source': sources.beams},
-                    'Couch End Angle': {'var_name': 'couch_end', 'table': 'Beams', 'units': 'deg', 'source': sources.beams},
-                    'Couch Min Angle': {'var_name': 'couch_min', 'table': 'Beams', 'units': 'deg', 'source': sources.beams},
-                    'Couch Max Angle': {'var_name': 'couch_max', 'table': 'Beams', 'units': 'deg', 'source': sources.beams},
-                    'Couch Range': {'var_name': 'couch_range', 'table': 'Beams', 'units': 'deg', 'source': sources.beams},
-                    'Gantry Start Angle': {'var_name': 'gantry_start', 'table': 'Beams', 'units': 'deg', 'source': sources.beams},
-                    'Gantry End Angle': {'var_name': 'gantry_end', 'table': 'Beams', 'units': 'deg', 'source': sources.beams},
-                    'Gantry Min Angle': {'var_name': 'gantry_min', 'table': 'Beams', 'units': 'deg', 'source': sources.beams},
-                    'Gantry Max Angle': {'var_name': 'gantry_max', 'table': 'Beams', 'units': 'deg', 'source': sources.beams},
-                    'Gantry Range': {'var_name': 'gantry_range', 'table': 'Beams', 'units': 'deg', 'source': sources.beams},
-                    'SSD': {'var_name': 'ssd', 'table': 'Beams', 'units': 'cm', 'source': sources.beams},
-                    'ROI Min Dose': {'var_name': 'min_dose', 'table': 'DVHs', 'units': 'Gy', 'source': sources.dvhs},
-                    'ROI Mean Dose': {'var_name': 'mean_dose', 'table': 'DVHs', 'units': 'Gy', 'source': sources.dvhs},
-                    'ROI Max Dose': {'var_name': 'max_dose', 'table': 'DVHs', 'units': 'Gy', 'source': sources.dvhs},
-                    'ROI Volume': {'var_name': 'volume', 'table': 'DVHs', 'units': 'cc', 'source': sources.dvhs},
-                    'ROI Surface Area': {'var_name': 'surface_area', 'table': 'DVHs', 'units': 'cm^2', 'source': sources.dvhs},
-                    'ROI Spread X': {'var_name': 'spread_x', 'table': 'DVHs', 'units': 'cm', 'source': sources.dvhs},
-                    'ROI Spread Y': {'var_name': 'spread_y', 'table': 'DVHs', 'units': 'cm', 'source': sources.dvhs},
-                    'ROI Spread Z': {'var_name': 'spread_z', 'table': 'DVHs', 'units': 'cm', 'source': sources.dvhs},
-                    'PTV Distance (Min)': {'var_name': 'dist_to_ptv_min', 'table': 'DVHs', 'units': 'cm', 'source': sources.dvhs},
-                    'PTV Distance (Mean)': {'var_name': 'dist_to_ptv_mean', 'table': 'DVHs', 'units': 'cm', 'source': sources.dvhs},
-                    'PTV Distance (Median)': {'var_name': 'dist_to_ptv_median', 'table': 'DVHs', 'units': 'cm', 'source': sources.dvhs},
-                    'PTV Distance (Max)': {'var_name': 'dist_to_ptv_max', 'table': 'DVHs', 'units': 'cm', 'source': sources.dvhs},
-                    'PTV Distance (Centroids)': {'var_name': 'dist_to_ptv_centroids', 'table': 'DVHs', 'units': 'cm', 'source': sources.dvhs},
-                    'PTV Overlap': {'var_name': 'ptv_overlap', 'table': 'DVHs', 'units': 'cc', 'source': sources.dvhs},
-                    'Scan Spots': {'var_name': 'scan_spot_count', 'table': 'Beams', 'units': '', 'source': sources.beams},
-                    'Beam MU per deg': {'var_name': 'beam_mu_per_deg', 'table': 'Beams', 'units': '', 'source': sources.beams},
-                    'Beam MU per control point': {'var_name': 'beam_mu_per_cp', 'table': 'Beams', 'units': '', 'source': sources.beams},
-                    'ROI Cross-Section Max': {'var_name': 'cross_section_max', 'table': 'DVHs', 'units': 'cm^2', 'source': sources.dvhs},
-                    'ROI Cross-Section Median': {'var_name': 'cross_section_median', 'table': 'DVHs', 'units': 'cm^2', 'source': sources.dvhs}}
+categories = Categories(sources)
 
 
-# correlation variable names
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Correlation and Regression variable names
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 correlation_variables, correlation_names = [], []
 correlation_variables_beam = ['Beam Dose', 'Beam MU', 'Control Point Count', 'Gantry Range',
                               'SSD', 'Beam MU per control point']
-for key in list(range_categories):
+for key in list(categories.range):
     if key.startswith('ROI') or key.startswith('PTV') or key in {'Total Plan MU', 'Rx Dose'}:
         correlation_variables.append(key)
         correlation_names.append(key)
@@ -127,50 +59,27 @@ correlation_variables.sort()
 correlation_names.sort()
 multi_var_reg_var_names = correlation_names + ['EUD', 'NTCP/TCP']
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Bokeh component classes
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+data_tables = DataTables(sources)
+
 roi_viewer = ROI_Viewer(sources)
 mlc_analyzer = MLC_Analyzer(sources)
-time_series = TimeSeries(sources, range_categories)
-correlation = Correlation(sources, correlation_names, range_categories)
+time_series = TimeSeries(sources, categories.range)
+correlation = Correlation(sources, correlation_names, categories.range)
 regression = Regression(sources, time_series, correlation, multi_var_reg_var_names)
 correlation.add_regression_link(regression)
 rad_bio = RadBio(sources, time_series, correlation, regression)
 dvhs = DVHs(sources, time_series, correlation, regression)
-query = Query(sources, selector_categories, range_categories, correlation_variables,
+query = Query(sources, categories, correlation_variables,
               dvhs, rad_bio, roi_viewer, time_series, correlation, regression, mlc_analyzer)
 dvhs.add_query_link(query)
 
 
-def auth_button_click():
-    global ACCESS_GRANTED
-
-    if not ACCESS_GRANTED:
-        ACCESS_GRANTED = auth.check_credentials(auth_user.value, auth_pass.value, 'generic')
-        if ACCESS_GRANTED:
-            auth_button.label = 'Access Granted'
-            auth_button.button_type = 'success'
-            curdoc().clear()
-            curdoc().add_root(tabs)
-        else:
-            auth_button.label = 'Failed'
-            auth_button.button_type = 'danger'
-            time.sleep(3)
-            auth_button.label = 'Authenticate'
-            auth_button.button_type = 'warning'
-
-
-def update_planning_data_selections(uids):
-
-    query.allow_source_update = False
-    for k in ['rxs', 'plans', 'beams']:
-        src = getattr(sources, k)
-        src.selected.indices = [i for i, j in enumerate(src.data['uid']) if j in uids]
-
-    query.allow_source_update = True
-
-
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Listen for changes to sources
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 class SourceSelection:
     def __init__(self, table):
         self.table = table
@@ -179,10 +88,19 @@ class SourceSelection:
         if query.allow_source_update:
             src = getattr(sources, self.table)
             uids = list(set([src.data['uid'][i] for i in new]))
-            update_planning_data_selections(uids)
+            self.update_planning_data_selections(uids)
+
+    @staticmethod
+    def update_planning_data_selections(uids):
+
+        query.allow_source_update = False
+        for k in ['rxs', 'plans', 'beams']:
+            src = getattr(sources, k)
+            src.selected.indices = [i for i, j in enumerate(src.data['uid']) if j in uids]
+
+        query.allow_source_update = True
 
 
-# Listen for changes to source selections
 sources.selectors.selected.on_change('indices', query.update_selector_row_on_selection)
 query.update_selector_source()
 
@@ -198,9 +116,9 @@ sources.emami.selected.on_change('indices', rad_bio.emami_selection)
 sources.multi_var_include.selected.on_change('indices', regression.multi_var_include_selection)
 
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Layout objects
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 layout_query = column(row(custom_title['1']['query'], Spacer(width=50), custom_title['2']['query'],
                           Spacer(width=50), query.query_button, Spacer(width=50), query.download_dropdown),
                       Div(text="<b>Query by Categorical Data</b>", width=1000),
@@ -348,16 +266,37 @@ else:
 tabs = Tabs(tabs=rendered_tabs)
 
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Custom authorization
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+def auth_button_click():
+    global ACCESS_GRANTED
+
+    if not ACCESS_GRANTED:
+        ACCESS_GRANTED = auth.check_credentials(auth_user.value, auth_pass.value, 'generic')
+        if ACCESS_GRANTED:
+            auth_button.label = 'Access Granted'
+            auth_button.button_type = 'success'
+            curdoc().clear()
+            curdoc().add_root(tabs)
+        else:
+            auth_button.label = 'Failed'
+            auth_button.button_type = 'danger'
+            time.sleep(3)
+            auth_button.label = 'Authenticate'
+            auth_button.button_type = 'warning'
+
+
 auth_user = TextInput(value='', title='User Name:', width=150)
 auth_pass = PasswordInput(value='', title='Password:', width=150)
 auth_button = Button(label="Authenticate", button_type="warning", width=100)
 auth_button.on_click(auth_button_click)
 layout_login = row(auth_user, Spacer(width=50), auth_pass, Spacer(width=50), auth_button)
 
-# Create the document Bokeh server will use to generate the webpage
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Create the document Bokeh server will use to generate the web page
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 if ACCESS_GRANTED:
     curdoc().add_root(tabs)
 else:

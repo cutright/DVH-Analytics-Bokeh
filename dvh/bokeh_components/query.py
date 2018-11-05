@@ -25,10 +25,11 @@ import time
 
 
 class Query:
-    def __init__(self, sources, selector_categories, range_categories, correlation_variables,
+    def __init__(self, sources, categories, correlation_variables,
                  dvhs, rad_bio, roi_viewer, time_series, correlation, regression, mlc_analyzer):
         self.sources = sources
-        self.selector_categories = selector_categories
+        self.selector_categories = categories.selector
+        self.range_categories = categories.range
         self.correlation_variables = correlation_variables
         self.dvhs = dvhs
         self.rad_bio = rad_bio
@@ -47,7 +48,7 @@ class Query:
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # Selection Filter UI objects
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        category_options = list(selector_categories)
+        category_options = list(self.selector_categories)
         category_options.sort()
 
         # Add Current row to source
@@ -64,8 +65,8 @@ class Query:
         self.select_category1.on_change('value', self.select_category1_ticker)
 
         # Category 2
-        cat_2_sql_table = selector_categories[self.select_category1.value]['table']
-        cat_2_var_name = selector_categories[self.select_category1.value]['var_name']
+        cat_2_sql_table = self.selector_categories[self.select_category1.value]['table']
+        cat_2_var_name = self.selector_categories[self.select_category1.value]['var_name']
         self.category2_values = DVH_SQL().get_unique_values(cat_2_sql_table, cat_2_var_name)
         self.select_category2 = Select(value=self.category2_values[0], options=self.category2_values, width=300,
                                        title="Category 2")
@@ -82,7 +83,7 @@ class Query:
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # Range Filter UI objects
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        category_options = list(range_categories)
+        category_options = list(self.range_categories)
         category_options.sort()
 
         # Add Current row to source
@@ -347,7 +348,7 @@ class Query:
         self.update_range_titles(reset_values=True)
         self.update_range_source()
 
-        clear_source_selection('ranges')
+        clear_source_selection(self.sources, 'ranges')
 
     def update_range_source(self):
         if self.range_row.value:
