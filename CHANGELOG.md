@@ -3,10 +3,7 @@
 ### 0.4.6 (TBD)
 * Residual chart added to Regression tab, will develop into Control Chart
 * Begin making code more concise using classes and dictionaries
-* Create bokeh_components directory
-    * DataTable column definitions moved to columns.py
-    * ColumnDataSource objects moved to sources.py
-    * Custom Title objects moved to custom_titles.py
+* Major restructuring with majority of main.py moved into bokeh_components directory
 
 ### 0.4.5 (scrapped)
 
