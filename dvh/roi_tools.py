@@ -1,6 +1,10 @@
 from shapely.geometry import Polygon, Point
 from shapely import speedups
 from scipy.spatial.distance import cdist
+import numpy as np
+
+
+MIN_SLICE_THICKNESS = 2  # Update method to pull from DICOM
 
 
 # Enable shapely calculations using C, as opposed to the C++ default
