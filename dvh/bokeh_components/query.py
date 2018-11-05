@@ -336,7 +336,7 @@ class Query:
                 self.selector_row.options = [str(x + 1) for x in range(new_source_length)]
                 if self.selector_row.value not in self.selector_row.options:
                     self.selector_row.value = self.selector_row.options[-1]
-                self.sources.selectors.data = self.new_selectors_source
+                self.sources.selectors.data = new_selectors_source
 
             clear_source_selection(self.sources, 'selectors')
 
