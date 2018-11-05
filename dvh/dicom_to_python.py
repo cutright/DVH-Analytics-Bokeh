@@ -12,8 +12,9 @@ from future.utils import listitems
 from dicompylercore import dicomparser, dvhcalc
 from dateutil.relativedelta import relativedelta  # python-dateutil
 from roi_name_manager import DatabaseROIs, clean_name
-from utilities import datetime_str_to_obj, dicompyler_roi_coord_to_db_string, change_angle_origin,\
-    surface_area_of_roi, date_str_to_obj, calc_centroid, get_planes_from_string, calc_spread, calc_cross_section
+from utilities import datetime_str_to_obj, change_angle_origin, date_str_to_obj, calc_spread
+from roi_tools import dicompyler_roi_coord_to_db_string, surface_area_of_roi,  calc_centroid, get_planes_from_string,\
+    calc_cross_section
 import numpy as np
 try:
     import pydicom as dicom  # for pydicom >= 1.0
