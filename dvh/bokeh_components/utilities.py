@@ -1,4 +1,35 @@
+from sql_to_python import QuerySQL
+from future.utils import listitems
 from dateutil.relativedelta import relativedelta
+import numpy as np
+import os
+from get_settings import get_settings
+from dicompylercore import dicomparser
+try:
+    import pydicom as dicom
+except ImportError:
+    import dicom
+
+
+def calc_stats(data):
+    """
+    :param data: a list or numpy 1D array of numbers
+    :return: a standard list of stats (max, 75%, median, mean, 25%, and min)
+    :rtype: list
+    """
+    data = [x for x in data if x != 'None']
+    try:
+        data_np = np.array(data)
+        rtn_data = [np.max(data_np),
+                    np.percentile(data_np, 75),
+                    np.median(data_np),
+                    np.mean(data_np),
+                    np.percentile(data_np, 25),
+                    np.min(data_np)]
+    except:
+        rtn_data = [0, 0, 0, 0, 0, 0]
+        print("calc_stats() received non-numerical data")
+    return rtn_data
 
 
 def collapse_into_single_dates(x, y):
@@ -103,3 +134,134 @@ def clear_source_data(sources, key):
 
 def clear_source_selection(sources, key):
     getattr(sources, key).selected.indices = []
+
+
+def get_group_list(uids, all_uids):
+
+    groups = []
+    for r in range(len(uids)):
+        if uids[r] in all_uids['1']:
+            if uids[r] in all_uids['2']:
+                groups.append('Group 1 & 2')
+            else:
+                groups.append('Group 1')
+        else:
+            groups.append('Group 2')
+
+    return groups
+
+
+def get_study_instance_uids(**kwargs):
+    uids = {}
+    complete_list = []
+    for key, value in listitems(kwargs):
+        uids[key] = QuerySQL(key, value).study_instance_uid
+        complete_list.extend(uids[key])
+
+    uids['unique'] = list(set(complete_list))
+    uids['union'] = [uid for uid in uids['unique'] if is_uid_in_all_keys(uid, uids)]
+
+    return uids
+
+
+def is_uid_in_all_keys(uid, uids):
+    key_answer = {}
+    # Initialize a False value for each key
+    for key in list(uids):
+        key_answer[key] = False
+    # search for uid in each keyword fof uid_kwlist
+    for key, value in listitems(uids):
+        if uid in value:
+            key_answer[key] = True
+
+    final_answer = True
+    # Product of all answer[key] values (except 'unique')
+    for key, value in listitems(key_answer):
+        if key not in 'unique':
+            final_answer *= value
+    return final_answer
+
+
+class Temp_DICOM_FileSet:
+    def __init__(self, start_path=None):
+
+        # Read SQL configuration file
+        if start_path:
+            abs_file_path = os.path.join(os.path.dirname(__file__), start_path)
+            start_path = abs_file_path
+        else:
+            abs_file_path = get_settings('import')
+
+            with open(abs_file_path, 'r') as document:
+                for line in document:
+                    line = line.split()
+                    if not line:
+                        continue
+                    if line[0] == 'review':
+                        start_path = line[1:][0]
+
+        self.plan = []
+        self.structure = []
+        self.dose = []
+        self.mrn = []
+        self.study_instance_uid = []
+
+        f = []
+
+        for root, dirs, files in os.walk(start_path, topdown=False):
+            for name in files:
+                f.append(os.path.join(root, name))
+
+        plan_files = []
+        study_uid_plan = []
+        structure_files = []
+        study_uid_structure = []
+        dose_files = []
+        study_uid_dose = []
+
+        for x in range(len(f)):
+            try:
+                dicom_file = dicom.read_file(f[x])
+                if dicom_file.Modality.lower() == 'rtplan':
+                    plan_files.append(f[x])
+                    study_uid_plan.append(dicom_file.StudyInstanceUID)
+                elif dicom_file.Modality.lower() == 'rtstruct':
+                    structure_files.append(f[x])
+                    study_uid_structure.append(dicom_file.StudyInstanceUID)
+                elif dicom_file.Modality.lower() == 'rtdose':
+                    dose_files.append(f[x])
+                    study_uid_dose.append(dicom_file.StudyInstanceUID)
+            except Exception:
+                pass
+
+        self.count = len(plan_files)
+
+        for a in range(self.count):
+            self.plan.append(plan_files[a])
+            self.mrn.append(dicom.read_file(plan_files[a]).PatientID)
+            self.study_instance_uid.append(dicom.read_file(plan_files[a]).StudyInstanceUID)
+            for b in range(len(structure_files)):
+                if study_uid_plan[a] == study_uid_structure[b]:
+                    self.structure.append(structure_files[b])
+            for c in range(len(dose_files)):
+                if study_uid_plan[a] == study_uid_dose[c]:
+                    self.dose.append(dose_files[c])
+
+        if self.count == 0:
+            self.plan.append('')
+            self.mrn.append('')
+            self.structure.append('')
+            self.dose.append('')
+
+    def get_roi_names(self, mrn):
+
+        structure_file = self.structure[self.mrn.index(mrn)]
+        rt_st = dicomparser.DicomParser(structure_file)
+        rt_structures = rt_st.GetStructures()
+
+        roi = {}
+        for key in list(rt_structures):
+            if rt_structures[key]['type'].upper() not in {'MARKER', 'REGISTRATION', 'ISOCENTER'}:
+                roi[key] = rt_structures[key]['name']
+
+        return roi

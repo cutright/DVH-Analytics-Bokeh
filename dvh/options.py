@@ -14,6 +14,9 @@ AUTH_USER_REQ = False
 # if you do not have pgsql command line tool installed, maybe best to just disable this tab to be cautious
 DISABLE_BACKUP_TAB = False
 
+SELECT_CATEGORY1_DEFAULT = 'ROI Institutional Category'
+SELECT_CATEGORY_DEFAULT = 'Rx Dose'
+
 # DVH Endpoint Table view cap, bokeh is very slow to delete a table and add another
 # This would need to happen if "changing" number of columns in a table, so DVH Analytics prints
 # and empty table with the number of endpoints set below.  All endpoints specified in main app will be calulated,
