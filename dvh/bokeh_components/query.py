@@ -564,7 +564,7 @@ class Query:
                       'radiation_type', 'ssd', 'treatment_machine']
         data = {attr: getattr(beam_data, attr) for attr in attributes}
         data['anon_id'] = anon_id
-        data['groups'] = groups
+        data['group'] = groups
         data['uid'] = beam_data.study_instance_uid
 
         self.sources.beams.data = data
@@ -586,7 +586,7 @@ class Query:
                       'baseline']
         data = {attr: getattr(plan_data, attr) for attr in attributes}
         data['anon_id'] = anon_id
-        data['groups'] = groups
+        data['group'] = groups
         data['uid'] = plan_data.study_instance_uid
 
         self.sources.plans.data = data
@@ -605,7 +605,7 @@ class Query:
                       'fx_grp_number', 'normalization_method', 'normalization_object']
         data = {attr: getattr(rx_data, attr) for attr in attributes}
         data['anon_id'] = anon_id
-        data['groups'] = groups
+        data['group'] = groups
         data['uid'] = rx_data.study_instance_uid
 
         self.sources.rxs.data = data
