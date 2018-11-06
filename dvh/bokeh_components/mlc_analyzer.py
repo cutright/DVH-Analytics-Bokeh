@@ -121,13 +121,19 @@ class MLC_Analyzer:
         self.plan_select.value = plan_files[0]
 
     def plan_ticker(self, attr, old, new):
-        self.mlc_data = mlca.Plan(new)
+        if os.path.isfile(new):
+            self.mlc_data = mlca.Plan(new)
 
-        self.fx_grp_select.options = [str(i + 1) for i in range(len(self.mlc_data.fx_group))]
-        if self.fx_grp_select.value == self.fx_grp_select.options[0]:
-            self.update_beam()
+            self.fx_grp_select.options = [str(i + 1) for i in range(len(self.mlc_data.fx_group))]
+            if self.fx_grp_select.value == self.fx_grp_select.options[0]:
+                self.update_beam()
+            else:
+                self.fx_grp_select.value = '1'
         else:
-            self.fx_grp_select.value = '1'
+            self.mlc_data = []
+            self.fx_grp_select.options = ['']
+            self.fx_grp_select.value = ''
+            self.mlc_viewer_beam_score.text = 'DICOM plan file not found!!!'
 
     def fx_grp_ticker(self, attr, old, new):
         self.update_fx_grp()
