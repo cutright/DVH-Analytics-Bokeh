@@ -6,7 +6,7 @@ Created on Sun Nov 4 2018
 @author: Dan Cutright, PhD
 """
 from __future__ import print_function
-from future.utils import listitems
+from future.utils import listitems, listvalues
 from datetime import datetime
 import statsmodels.api as sm
 import options
@@ -269,54 +269,56 @@ class Regression:
         self.sources.multi_var_include.data = {'var_name': included_vars}
 
     def multi_var_linear_regression(self):
-        print(str(datetime.now()), 'Performing multi-variable regression', sep=' ')
 
-        self.update_residual_y_axis_label()
+        if any(listvalues(self.multi_var_reg_vars)):
+            print(str(datetime.now()), 'Performing multi-variable regression', sep=' ')
 
-        included_vars = [key for key in list(self.correlation.data['1']) if self.multi_var_reg_vars[key]]
-        included_vars.sort()
+            self.update_residual_y_axis_label()
 
-        for n in GROUP_LABELS:
-            if self.time_series.current_dvh_group[n]:
-                x = []
-                x_count = len(self.correlation.data[n][list(self.correlation.data[n])[0]]['data'])
-                for i in range(x_count):
-                    current_x = []
-                    for k in included_vars:
-                        current_x.append(self.correlation.data[n][k]['data'][i])
-                    x.append(current_x)
-                x = sm.add_constant(x)  # explicitly add constant to calculate intercept
-                y = self.correlation.data[n][self.y.value]['data']
+            included_vars = [key for key in list(self.correlation.data['1']) if self.multi_var_reg_vars[key]]
+            included_vars.sort()
 
-                fit = sm.OLS(y, x).fit()
+            for n in GROUP_LABELS:
+                if self.time_series.current_dvh_group[n]:
+                    x = []
+                    x_count = len(self.correlation.data[n][list(self.correlation.data[n])[0]]['data'])
+                    for i in range(x_count):
+                        current_x = []
+                        for k in included_vars:
+                            current_x.append(self.correlation.data[n][k]['data'][i])
+                        x.append(current_x)
+                    x = sm.add_constant(x)  # explicitly add constant to calculate intercept
+                    y = self.correlation.data[n][self.y.value]['data']
 
-                coeff = fit.params
-                coeff_p = fit.pvalues
-                r_sq = fit.rsquared
-                model_p = fit.f_pvalue
+                    fit = sm.OLS(y, x).fit()
 
-                coeff_str = ["%0.3E" % i for i in coeff]
-                coeff_p_str = ["%0.3f" % i for i in coeff_p]
-                r_sq_str = ["%0.3f" % r_sq]
-                model_p_str = ["%0.3f" % model_p]
+                    coeff = fit.params
+                    coeff_p = fit.pvalues
+                    r_sq = fit.rsquared
+                    model_p = fit.f_pvalue
 
-                getattr(self.sources, 'multi_var_coeff_results_%s' % n).data = {'var_name': ['Constant'] + included_vars,
-                                                                                'coeff': coeff.tolist(),
-                                                                                'coeff_str': coeff_str,
-                                                                                'p': coeff_p.tolist(),
-                                                                                'p_str': coeff_p_str}
-                getattr(self.sources, 'multi_var_model_results_%s' % n).data = {'model_p': [model_p],
-                                                                                'model_p_str': model_p_str,
-                                                                                'r_sq': [r_sq],
-                                                                                'r_sq_str': r_sq_str,
-                                                                                'y_var': [self.y.value]}
-                getattr(self.sources, 'residual_chart_%s' % n).data = {'x': range(1, x_count + 1),
-                                                                       'y': fit.resid.tolist(),
-                                                                       'mrn': self.correlation.data[n][self.y.value]['mrn'],
-                                                                       'db_value': self.correlation.data[n][self.y.value]['data']}
-            else:
-                for k in ['multi_var_coeff_results', 'multi_var_model_results', 'residual_chart']:
-                    clear_source_data(self.sources, '%s_%s'(k, n))
+                    coeff_str = ["%0.3E" % i for i in coeff]
+                    coeff_p_str = ["%0.3f" % i for i in coeff_p]
+                    r_sq_str = ["%0.3f" % r_sq]
+                    model_p_str = ["%0.3f" % model_p]
+
+                    getattr(self.sources, 'multi_var_coeff_results_%s' % n).data = {'var_name': ['Constant'] + included_vars,
+                                                                                    'coeff': coeff.tolist(),
+                                                                                    'coeff_str': coeff_str,
+                                                                                    'p': coeff_p.tolist(),
+                                                                                    'p_str': coeff_p_str}
+                    getattr(self.sources, 'multi_var_model_results_%s' % n).data = {'model_p': [model_p],
+                                                                                    'model_p_str': model_p_str,
+                                                                                    'r_sq': [r_sq],
+                                                                                    'r_sq_str': r_sq_str,
+                                                                                    'y_var': [self.y.value]}
+                    getattr(self.sources, 'residual_chart_%s' % n).data = {'x': range(1, x_count + 1),
+                                                                           'y': fit.resid.tolist(),
+                                                                           'mrn': self.correlation.data[n][self.y.value]['mrn'],
+                                                                           'db_value': self.correlation.data[n][self.y.value]['data']}
+                else:
+                    for k in ['multi_var_coeff_results', 'multi_var_model_results', 'residual_chart']:
+                        clear_source_data(self.sources, '%s_%s'(k, n))
 
     def multi_var_include_selection(self, attr, old, new):
         row_index = self.sources.multi_var_include.selected.indices[0]
