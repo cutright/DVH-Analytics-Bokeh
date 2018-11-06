@@ -189,7 +189,7 @@ class Regression:
         self.figure.yaxis.axis_label = self.get_axis_label(self.y)
 
     def update_data(self):
-        if self.x.value != '' and self.y.value != '':
+        if '' not in {str(self.x.value), str(self.y.value)}:
 
             data = {'x': {n: self.correlation.data[n][self.x.value]['data'] for n in N},
                     'y': {n: self.correlation.data[n][self.y.value]['data'] for n in N},
@@ -229,6 +229,8 @@ class Regression:
             for n in N:
                 for k in ['corr_chart', 'corr_trend']:
                     clear_source_data(self.sources, '%s_%s' % (k, n))
+            self.figure.xaxis.axis_label = ''
+            self.figure.yaxis.axis_label = ''
 
     def x_prev_ticker(self):
         current_index = self.x.options.index(self.x.value)
@@ -257,7 +259,7 @@ class Regression:
     def x_include_ticker(self, attr, old, new):
         if new and not self.multi_var_reg_vars[self.x.value]:
             self.multi_var_reg_vars[self.x.value] = True
-        if not new and self.multi_var_reg_vars[self.x.value]:
+        if not new and new in list(self.multi_var_reg_vars) and self.multi_var_reg_vars[self.x.value]:
             clear_source_selection(self.sources, 'multi_var_include')
             self.multi_var_reg_vars[self.x.value] = False
 
