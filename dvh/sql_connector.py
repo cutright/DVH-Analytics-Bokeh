@@ -202,7 +202,6 @@ class DVH_SQL:
         write_import_errors(plan)
 
     def insert_beams(self, beams):
-
         file_path = 'insert_values_beams.sql'
 
         if os.path.isfile(file_path):
@@ -264,11 +263,14 @@ class DVH_SQL:
                           'NOW()']
                 sql_input = "INSERT INTO Beams (%s) VALUES ('%s');\n" % \
                             (','.join(col_names), "','".join(values).replace("'(NULL)'", "(NULL)"))
+
                 with open(file_path, "a") as text_file:
+                    print('beam4')
                     text_file.write(sql_input)
 
-        self.execute_file(file_path)
-        os.remove(file_path)
+        if os.path.isfile(file_path):
+            self.execute_file(file_path)
+            os.remove(file_path)
         print('Beams imported')
 
         write_import_errors(beams)
@@ -284,6 +286,9 @@ class DVH_SQL:
                      'fx_dose', 'fxs', 'rx_dose', 'rx_percent', 'normalization_method', 'normalization_object',
                      'import_time_stamp']
 
+        # for key, value in rx_table.__dict__.items():
+        #     print(key, type(value), value)
+
         for x in range(rx_table.count):
             values = [str(rx_table.mrn[x]),
                       str(rx_table.study_instance_uid[x]),
@@ -292,13 +297,14 @@ class DVH_SQL:
                       str(rx_table.fx_grp_number[x]),
                       str(rx_table.fx_grp_count[x]),
                       str(round(rx_table.fx_dose[x], 2)),
-                      str(rx_table.fxs[x]),
+                      str(int(float(rx_table.fxs[x]))),
                       str(round(rx_table.rx_dose[x], 2)),
                       str(round(rx_table.rx_percent[x], 1)),
                       str(rx_table.normalization_method[x]),
                       str(rx_table.normalization_object[x]).replace("'", "`"),
                       'NOW()']
             sql_input = "INSERT INTO Rxs (%s) VALUES ('%s');\n" % (','.join(col_names), "','".join(values))
+            # print(sql_input)
             with open(file_path, "a") as text_file:
                 text_file.write(sql_input)
 
