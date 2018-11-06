@@ -4,6 +4,7 @@
 * Residual chart added to Regression tab, will develop into Control Chart
 * Begin making code more concise using classes and dictionaries
 * Major restructuring with majority of main.py moved into bokeh_components directory
+* Issue #42 - Regression drop-downs not updating properly when deleting/changing EP
 
 ### 0.4.5 (scrapped)
 

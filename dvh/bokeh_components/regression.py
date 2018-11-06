@@ -72,8 +72,7 @@ class Regression:
         self.figure.add_layout(legend_corr_chart, 'right')
         self.figure.legend.click_policy = "hide"
 
-        self.x_include = CheckboxGroup(labels=["Include this ind. var. in multi-var regression"], active=[],
-                                             width=400)
+        self.x_include = CheckboxGroup(labels=["Include this ind. var. in multi-var regression"], active=[], width=400)
         self.x_prev = Button(label="<", button_type="primary", width=50)
         self.x_next = Button(label=">", button_type="primary", width=50)
         self.y_prev = Button(label="<", button_type="primary", width=50)
@@ -146,7 +145,7 @@ class Regression:
                              Spacer(width=1000, height=100))
 
     def update_corr_chart_ticker_x(self, attr, old, new):
-        if self.multi_var_reg_vars[self.x.value]:
+        if self.x.value in self.multi_var_reg_vars and self.multi_var_reg_vars[self.x.value]:
             self.x_include.active = [0]
         else:
             self.x_include.active = []
@@ -156,7 +155,7 @@ class Regression:
         self.update_data()
 
     def update_data(self):
-        if self.x.value and self.y.value:
+        if self.x.value != '' and self.y.value != '':
             x_units = self.correlation.data[N[0]][self.x.value]['units']
             y_units = self.correlation.data[N[0]][self.y.value]['units']
 
@@ -308,3 +307,13 @@ class Regression:
     def multi_var_include_selection(self, attr, old, new):
         row_index = self.sources.multi_var_include.selected.indices[0]
         self.x.value = self.sources.multi_var_include.data['var_name'][row_index]
+
+    def update_axis_selector_options(self):
+        new_options = [''] + list(self.multi_var_reg_vars)
+        self.x.options = new_options
+        if self.x.value not in new_options:
+            self.x.value = ''
+
+        self.y.options = new_options
+        if self.y.value not in new_options:
+            self.y.value = ''

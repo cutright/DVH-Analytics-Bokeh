@@ -349,6 +349,8 @@ class Correlation:
             for key, value in listitems(self.data[n]):
                 self.data[n][key]['include'] = [False] * len(value['uid'])
 
+        self.clear_old_endpoints()
+
     def update_eud_in_correlation(self):
 
         # Get data from EUD data
@@ -382,8 +384,21 @@ class Correlation:
         self.update_correlation_matrix()
 
     def clear_old_endpoints(self):
-        # This function will remove endpoint data no longer in the endpoint calcs from self.data
-        pass
+        # As defined in DVHs tab web view
+        current_eps = self.sources.endpoint_defs.data['label']
+
+        # endpoints currently in correlation dataset
+        eps_in_correlation = [key for key in list(self.data[N[0]]) if key.startswith('DVH Endpoint: ')]
+
+        # remove endpoint keys in correlation data that are no longer in DVHs tab web view
+        for key in eps_in_correlation:
+            if key.startswith('DVH Endpoint'):
+                if key.replace('DVH Endpoint: ', '') not in current_eps:
+                    self.regression.multi_var_reg_vars.pop(key)
+                    for n in N:
+                        self.data[n].pop(str(key))
+
+        self.regression.update_axis_selector_options()
 
     def clear_bad_uids(self):
         self.bad_uid = {n: [] for n in N}
