@@ -154,38 +154,49 @@ class Regression:
     def update_corr_chart_ticker_y(self, attr, old, new):
         self.update_data()
 
+    def get_axis_label(self, axis_selector):
+        new = str(axis_selector.value)
+
+        axis_label = ''
+
+        if new:
+
+            # If new has something in parenthesis, extract and put in front
+            new_split = new.split(' (')
+            if len(new_split) > 1:
+                new_display = "%s %s" % (new_split[1].split(')')[0], new_split[0])
+                new = new_split[0]
+            else:
+                new_display = new
+
+            if new.startswith('DVH Endpoint'):
+                axis_label = str(self.x.value).split(': ')[1]
+            elif new == 'EUD':
+                axis_label = 'EUD (Gy)'
+            elif new == 'NTCP/TCP':
+                axis_label = 'NTCP or TCP'
+            elif self.time_series.range_categories[new]['units']:
+                axis_label = "%s (%s)" % (new_display, self.time_series.range_categories[new]['units'])
+            else:
+                axis_label = new_display
+
+        return axis_label
+
+    def update_figure_x_axis_label(self):
+        self.figure.xaxis.axis_label = self.get_axis_label(self.x)
+
+    def update_figure_y_axis_label(self):
+        self.figure.yaxis.axis_label = self.get_axis_label(self.y)
+
     def update_data(self):
         if self.x.value != '' and self.y.value != '':
-            x_units = self.correlation.data[N[0]][self.x.value]['units']
-            y_units = self.correlation.data[N[0]][self.y.value]['units']
 
             data = {'x': {n: self.correlation.data[n][self.x.value]['data'] for n in N},
                     'y': {n: self.correlation.data[n][self.y.value]['data'] for n in N},
                     'mrn': {n: self.correlation.data[n][self.x.value]['mrn'] for n in N}}
 
-            if x_units:
-                if self.x.value.startswith('DVH Endpoint'):
-                    label = self.x.value[14:]
-                    label = {'D': 'Dose to ', 'V': 'Volume of '}[label[0]] + self.x.value.split('_')[1]
-                    if '%' in label:
-                        label = label + {'D': ' ROI Volume', 'V': ' Rx Dose'}[label[0]]
-                    self.figure.xaxis.axis_label = "%s (%s)" % (label, x_units)
-                else:
-                    self.figure.xaxis.axis_label = "%s (%s)" % (self.x.value, x_units)
-            else:
-                self.figure.xaxis.axis_label = self.x.value.replace('/', ' or ')
-
-            if y_units:
-                if self.y.value.startswith('DVH Endpoint'):
-                    label = self.y.value[14:]
-                    label = {'D': 'Dose to ', 'V': 'Volume of '}[label[0]] + self.y.value.split('_')[1]
-                    if '%' in label:
-                        label = label + {'D': ' ROI Volume', 'V': ' Rx Dose'}[label[0]]
-                    self.figure.yaxis.axis_label = "%s (%s)" % (label, y_units)
-                else:
-                    self.figure.yaxis.axis_label = "%s (%s)" % (self.y.value, y_units)
-            else:
-                self.figure.yaxis.axis_label = self.y.value.replace('/', ' or ')
+            self.update_figure_x_axis_label()
+            self.update_figure_y_axis_label()
 
             for n in N:
                 getattr(self.sources, 'corr_chart_%s' % n).data = {v: data[v][n] for v in list(data)}
@@ -255,7 +266,9 @@ class Regression:
         self.sources.multi_var_include.data = {'var_name': included_vars}
 
     def multi_var_linear_regression(self):
-        print(str(datetime.now()), 'Performing multivariable regression', sep=' ')
+        print(str(datetime.now()), 'Performing multi-variable regression', sep=' ')
+
+        self.update_residual_y_axis_label()
 
         included_vars = [key for key in list(self.correlation.data['1']) if self.multi_var_reg_vars[key]]
         included_vars.sort()
@@ -283,8 +296,6 @@ class Regression:
                 coeff_p_str = ["%0.3f" % i for i in coeff_p]
                 r_sq_str = ["%0.3f" % r_sq]
                 model_p_str = ["%0.3f" % model_p]
-
-                self.residual_figure.yaxis.axis_label = "Residual (%s)" % self.correlation.data[n][self.y.value]['units']
 
                 getattr(self.sources, 'multi_var_coeff_results_%s' % n).data = {'var_name': ['Constant'] + included_vars,
                                                                                 'coeff': coeff.tolist(),
@@ -317,3 +328,6 @@ class Regression:
         self.y.options = new_options
         if self.y.value not in new_options:
             self.y.value = ''
+
+    def update_residual_y_axis_label(self):
+        self.residual_figure.yaxis.axis_label = self.get_axis_label(self.x)
