@@ -479,7 +479,7 @@ class Query:
             new_source_length = len(self.sources.ranges.data['category']) - 1
 
             if new_source_length == 0:
-                clear_source_data('ranges')
+                clear_source_data(self.sources, 'ranges')
                 self.range_row.options = ['']
                 self.range_row.value = ''
                 self.group_range.active = [0]
@@ -658,8 +658,8 @@ class Query:
 
         if group_1_constraint_count == 0:
             self.uids['1'] = []
-            clear_source_data('patch_1')
-            clear_source_data('stats_1')
+            clear_source_data(self.sources, 'patch_1')
+            clear_source_data(self.sources, 'stats_1')
         else:
             print(str(datetime.now()), 'Constructing Group 1 query', sep=' ')
             self.uids['1'], dvh_query_str = self.get_query(group=1)
@@ -684,8 +684,8 @@ class Query:
                                          'max': stat_dvhs_1['max'].tolist()}
         if group_2_constraint_count == 0:
             self.uids['2'] = []
-            clear_source_data('patch_2')
-            clear_source_data('stats_2')
+            clear_source_data(self.sources, 'patch_2')
+            clear_source_data(self.sources, 'stats_2')
 
         else:
             print(str(datetime.now()), 'Constructing Group 2 query', sep=' ')
