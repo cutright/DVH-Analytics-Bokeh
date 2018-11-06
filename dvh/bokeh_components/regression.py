@@ -10,7 +10,7 @@ from future.utils import listitems
 from datetime import datetime
 import statsmodels.api as sm
 import options
-from options import N
+from options import GROUP_LABELS
 from bokeh.plotting import figure
 from bokeh.models.widgets import Select, Button, Div, CheckboxGroup
 from bokeh.models import Legend, HoverTool, Spacer
@@ -192,19 +192,19 @@ class Regression:
     def update_data(self):
         if '' not in {str(self.x.value), str(self.y.value)}:
 
-            data = {'x': {n: self.correlation.data[n][self.x.value]['data'] for n in N},
-                    'y': {n: self.correlation.data[n][self.y.value]['data'] for n in N},
-                    'mrn': {n: self.correlation.data[n][self.x.value]['mrn'] for n in N}}
+            data = {'x': {n: self.correlation.data[n][self.x.value]['data'] for n in GROUP_LABELS},
+                    'y': {n: self.correlation.data[n][self.y.value]['data'] for n in GROUP_LABELS},
+                    'mrn': {n: self.correlation.data[n][self.x.value]['mrn'] for n in GROUP_LABELS}}
 
             self.update_figure_x_axis_label()
             self.update_figure_y_axis_label()
 
-            for n in N:
+            for n in GROUP_LABELS:
                 getattr(self.sources, 'corr_chart_%s' % n).data = {v: data[v][n] for v in list(data)}
 
-            group_stats = {n: [] for n in N}
+            group_stats = {n: [] for n in GROUP_LABELS}
 
-            for n in N:
+            for n in GROUP_LABELS:
                 if data['x'][n]:
                     slope, intercept, r_value, p_value, std_err = linregress(data['x'][n], data['y'][n])
                     group_stats[n] = [round(slope, 3),
@@ -227,7 +227,7 @@ class Regression:
             self.sources.corr_chart_stats.data = {'stat': self.sources.CORR_CHART_STATS_ROW_NAMES,
                                                   'group_1': [''] * 6,
                                                   'group_2': [''] * 6}
-            for n in N:
+            for n in GROUP_LABELS:
                 for k in ['corr_chart', 'corr_trend']:
                     clear_source_data(self.sources, '%s_%s' % (k, n))
             self.figure.xaxis.axis_label = ''
@@ -276,7 +276,7 @@ class Regression:
         included_vars = [key for key in list(self.correlation.data['1']) if self.multi_var_reg_vars[key]]
         included_vars.sort()
 
-        for n in N:
+        for n in GROUP_LABELS:
             if self.time_series.current_dvh_group[n]:
                 x = []
                 x_count = len(self.correlation.data[n][list(self.correlation.data[n])[0]]['data'])

@@ -25,7 +25,7 @@ SELECT_CATEGORY_DEFAULT = 'Rx Dose'
 # but only the number specified below will be displayed
 ENDPOINT_COUNT = 10
 
-N = ['1', '2']
+GROUP_LABELS = ['1', '2']
 
 MIN_BORDER = 75
 

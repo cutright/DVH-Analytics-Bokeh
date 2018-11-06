@@ -21,7 +21,7 @@ from datetime import datetime
 import itertools
 import numpy as np
 import options
-from options import N
+from options import GROUP_LABELS
 import time
 
 
@@ -40,7 +40,7 @@ class Query:
         self.regression = regression
         self.mlc_analyzer = mlc_analyzer
 
-        self.uids = {n: [] for n in N}
+        self.uids = {n: [] for n in GROUP_LABELS}
         self.allow_source_update = True
         self.current_dvh = []
         self.anon_id_map = []
@@ -514,7 +514,7 @@ class Query:
     # main update function
     def update_data(self):
         global BAD_UID
-        BAD_UID = {n: [] for n in N}
+        BAD_UID = {n: [] for n in GROUP_LABELS}
         old_update_button_label = self.query_button.label
         old_update_button_type = self.query_button.button_type
         self.query_button.label = 'Updating...'

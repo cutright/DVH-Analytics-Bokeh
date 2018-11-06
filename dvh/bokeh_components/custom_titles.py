@@ -6,7 +6,7 @@ Created on Tue Oct 30 2018
 @author: Dan Cutright, PhD
 """
 
-from options import GROUP_1_COLOR, GROUP_2_COLOR, N
+from options import GROUP_1_COLOR, GROUP_2_COLOR, GROUP_LABELS
 from bokeh.models.widgets import TextInput
 
 TITLE_TYPES = ['query', 'dvhs', 'rad_bio', 'roi_viewer', 'planning', 'time_series',
@@ -27,7 +27,7 @@ def custom_title_2_ticker(attr, old, new):
         custom_title['2'][t].value = new
 
 
-custom_title = {n: {t: TextInput(value='', title=title[n], width=300) for t in TITLE_TYPES} for n in N}
+custom_title = {n: {t: TextInput(value='', title=title[n], width=300) for t in TITLE_TYPES} for n in GROUP_LABELS}
 
 for t in TITLE_TYPES:
     custom_title['1'][t].on_change('value', custom_title_1_ticker)

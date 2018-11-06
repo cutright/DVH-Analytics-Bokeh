@@ -11,7 +11,7 @@ from bokeh.layouts import column, row
 from bokeh_components.utilities import get_include_map
 from analysis_tools import calc_eud
 import options
-from options import N
+from options import GROUP_LABELS
 
 
 class RadBio:
@@ -129,7 +129,7 @@ class RadBio:
                                     'ntcp_tcp': [(i, j) for i, j in enumerate(ntcp_tcp)]})
 
         self.correlation.update_eud_in_correlation()
-        categories = list(self.correlation.data[N[0]])
+        categories = list(self.correlation.data[GROUP_LABELS[0]])
         categories.sort()
         self.regression.x.options = [''] + categories
         self.regression.y.options = [''] + categories

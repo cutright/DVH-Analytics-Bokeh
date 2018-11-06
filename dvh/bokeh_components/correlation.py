@@ -11,7 +11,7 @@ from bokeh.models.widgets import Button, Div
 from bokeh.plotting import figure
 from bokeh.layouts import row, column
 import options
-from options import N
+from options import GROUP_LABELS
 from math import pi
 from scipy.stats import normaltest, pearsonr
 from os.path import dirname, join
@@ -27,8 +27,8 @@ class Correlation:
         self.range_categories = categories.range
         self.regression = None
 
-        self.data = {n: [] for n in N}
-        self.bad_uid = {n: [] for n in N}
+        self.data = {n: [] for n in GROUP_LABELS}
+        self.bad_uid = {n: [] for n in GROUP_LABELS}
 
         self.fig = figure(plot_width=900, plot_height=700, x_axis_location="above",
                           tools="pan, box_zoom, wheel_zoom, reset, save", logo=None,  x_range=[''], y_range=[''])
@@ -194,17 +194,17 @@ class Correlation:
         for k in ['1_pos', '1_neg', '2_pos', '2_neg']:
             getattr(self.sources, "correlation_%s" % k).data = s[k]
 
-        group_count = {n: 0 for n in N}
-        for n in N:
+        group_count = {n: 0 for n in GROUP_LABELS}
+        for n in GROUP_LABELS:
             if self.data[n]:
                 group_count[n] = len(self.data[n][list(self.data[n])[0]]['uid'])
 
-        self.fig_text_1.text = "Group 1: %d" % group_count[N[0]]
-        self.fig_text_2.text = "Group 2: %d" % group_count[N[1]]
+        self.fig_text_1.text = "Group 1: %d" % group_count[GROUP_LABELS[0]]
+        self.fig_text_2.text = "Group 2: %d" % group_count[GROUP_LABELS[1]]
 
     def validate_data(self):
 
-        for n in N:
+        for n in GROUP_LABELS:
             if self.data[n]:
                 for range_var in list(self.data[n]):
                     for i, j in enumerate(self.data[n][range_var]['data']):
@@ -242,19 +242,19 @@ class Correlation:
             units = self.range_categories[key]['units']
 
             if table in {'DVHs'}:
-                temp = {n: {k: [] for k in temp_keys} for n in N}
+                temp = {n: {k: [] for k in temp_keys} for n in GROUP_LABELS}
                 temp['units'] = units
                 for i in range(len(src.data['uid'])):
                     if include[i]:
-                        for n in N:
+                        for n in GROUP_LABELS:
                             if src.data['group'][i] in {'Group %s' % n, 'Group 1 & 2'}:
                                 temp[n]['uid'].append(src.data['uid'][i])
                                 temp[n]['mrn'].append(src.data['mrn'][i])
                                 temp[n]['data'].append(src.data[curr_var][i])
-                for n in N:
+                for n in GROUP_LABELS:
                     self.data[n][key] = {k: temp[n][k] for k in temp_keys}
 
-        uid_list = {n: self.data[n]['ROI Max Dose']['uid'] for n in N}
+        uid_list = {n: self.data[n]['ROI Max Dose']['uid'] for n in GROUP_LABELS}
 
         # Get Data from Plans table
         for key in correlation_variables:
@@ -264,10 +264,10 @@ class Correlation:
             units = self.range_categories[key]['units']
 
             if table in {'Plans'}:
-                temp = {n: {k: [] for k in temp_keys} for n in N}
+                temp = {n: {k: [] for k in temp_keys} for n in GROUP_LABELS}
                 temp['units'] = units
 
-                for n in N:
+                for n in GROUP_LABELS:
                     for i in range(len(uid_list[n])):
                         uid = uid_list[n][i]
                         uid_index = src.data['uid'].index(uid)
@@ -275,7 +275,7 @@ class Correlation:
                         temp[n]['mrn'].append(src.data['mrn'][uid_index])
                         temp[n]['data'].append(src.data[curr_var][uid_index])
 
-                for n in N:
+                for n in GROUP_LABELS:
                     self.data[n][key] = {k: temp[n][k] for k in temp_keys}
 
         # Get data from Beams table
@@ -290,8 +290,8 @@ class Correlation:
 
             if table in {'Beams'}:
                 beam_keys = stats + ['uid', 'mrn']
-                temp = {n: {bk: [] for bk in beam_keys} for n in N}
-                for n in N:
+                temp = {n: {bk: [] for bk in beam_keys} for n in GROUP_LABELS}
+                for n in GROUP_LABELS:
                     for i in range(len(uid_list[n])):
                         uid = uid_list[n][i]
                         uid_indices = [j for j, x in enumerate(src.data['uid']) if x == uid]
@@ -303,7 +303,7 @@ class Correlation:
                             temp[n][s].append(getattr(np, s)(plan_values))
 
                 for s in stats:
-                    for n in N:
+                    for n in GROUP_LABELS:
                         corr_key = "%s (%s)" % (key, s.capitalize())
                         self.data[n][corr_key] = {'uid': temp[n]['uid'],
                                                   'mrn': temp[n]['mrn'],
@@ -315,7 +315,7 @@ class Correlation:
         include = get_include_map(self.sources)
 
         # clear out any old DVH endpoint data
-        for n in N:
+        for n in GROUP_LABELS:
             if self.data[n]:
                 for key in list(self.data[n]):
                     if key.startswith('ep'):
@@ -328,25 +328,25 @@ class Correlation:
             ep = "DVH Endpoint: %s" % key
 
             temp_keys = ['uid', 'mrn', 'data', 'units']
-            temp = {n: {k: [] for k in temp_keys} for n in N}
+            temp = {n: {k: [] for k in temp_keys} for n in GROUP_LABELS}
             temp['units'] = units
 
             for i in range(len(src.data['uid'])):
                 if include[i]:
-                    for n in N:
+                    for n in GROUP_LABELS:
                         if src.data['group'][i] in {'Group %s' % n, 'Group 1 & 2'}:
                             temp[n]['uid'].append(src.data['uid'][i])
                             temp[n]['mrn'].append(src.data['mrn'][i])
                             temp[n]['data'].append(src.data[key][i])
 
-            for n in N:
+            for n in GROUP_LABELS:
                 self.data[n][ep] = {k: temp[n][k] for k in temp_keys}
 
             if ep not in list(self.regression.multi_var_reg_vars):
                 self.regression.multi_var_reg_vars[ep] = False
 
         # declare space to tag variables to be used for multi variable regression
-        for n in N:
+        for n in GROUP_LABELS:
             for key, value in listitems(self.data[n]):
                 self.data[n][key]['include'] = [False] * len(value['uid'])
 
@@ -358,26 +358,26 @@ class Correlation:
         uid_roi_list = ["%s_%s" % (uid, self.sources.dvhs.data['roi_name'][i]) for i, uid in
                         enumerate(self.sources.dvhs.data['uid'])]
         temp_keys = ['eud', 'ntcp_tcp', 'uid', 'mrn']
-        temp = {n: {tk: [] for tk in temp_keys} for n in N}
+        temp = {n: {tk: [] for tk in temp_keys} for n in GROUP_LABELS}
         for i, uid in enumerate(self.sources.rad_bio.data['uid']):
             uid_roi = "%s_%s" % (uid, self.sources.rad_bio.data['roi_name'][i])
             source_index = uid_roi_list.index(uid_roi)
             group = self.sources.dvhs.data['group'][source_index]
-            for n in N:
+            for n in GROUP_LABELS:
                 if group in {'Group %s' % n, 'Group 1 & 2'}:
                     temp[n]['eud'].append(self.sources.rad_bio.data['eud'][i])
                     temp[n]['ntcp_tcp'].append(self.sources.rad_bio.data['ntcp_tcp'][i])
                     temp[n]['uid'].append(uid)
                     temp[n]['mrn'].append(self.sources.dvhs.data['mrn'][source_index])
 
-        for n in N:
+        for n in GROUP_LABELS:
             self.data[n]['EUD'] = {'uid': temp[n]['uid'], 'mrn': temp[n]['mrn'],
                                    'data': temp[n]['eud'], 'units': 'Gy'}
             self.data[n]['NTCP/TCP'] = {'uid': temp[n]['uid'], 'mrn': temp[n]['mrn'],
                                         'data': temp[n]['ntcp_tcp'], 'units': ''}
 
         # declare space to tag variables to be used for multi variable regression
-        for n in N:
+        for n in GROUP_LABELS:
             for key, value in listitems(self.data[n]):
                 self.data[n][key]['include'] = [False] * len(value['uid'])
 
@@ -389,20 +389,20 @@ class Correlation:
         current_eps = self.sources.endpoint_defs.data['label']
 
         # endpoints currently in correlation dataset
-        eps_in_correlation = [key for key in list(self.data[N[0]]) if key.startswith('DVH Endpoint: ')]
+        eps_in_correlation = [key for key in list(self.data[GROUP_LABELS[0]]) if key.startswith('DVH Endpoint: ')]
 
         # remove endpoint keys in correlation data that are no longer in DVHs tab web view
         for key in eps_in_correlation:
             if key.startswith('DVH Endpoint'):
                 if key.replace('DVH Endpoint: ', '') not in current_eps:
                     self.regression.multi_var_reg_vars.pop(key)
-                    for n in N:
+                    for n in GROUP_LABELS:
                         self.data[n].pop(str(key))
 
         self.regression.update_axis_selector_options()
 
     def clear_bad_uids(self):
-        self.bad_uid = {n: [] for n in N}
+        self.bad_uid = {n: [] for n in GROUP_LABELS}
 
     def add_regression_link(self, regression):
         self.regression = regression

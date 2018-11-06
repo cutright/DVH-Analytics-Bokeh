@@ -11,7 +11,7 @@ from bokeh.models import Legend, CustomJS, HoverTool, Spacer
 from bokeh.plotting import figure
 from bokeh.layouts import column, row
 import options
-from options import N
+from options import GROUP_LABELS
 from os.path import dirname, join
 from bokeh_components.utilities import clear_source_selection, clear_source_data, group_constraint_count, calc_stats,\
     Temp_DICOM_FileSet
@@ -340,7 +340,7 @@ class DVHs:
                 if 'Dose' in data['output_type'][r]:
                     ep[ep_name] = self.query.current_dvh.get_dose_to_volume(x, volume_scale=endpoint_input,
                                                                  dose_scale=endpoint_output)
-                    for g in N:
+                    for g in GROUP_LABELS:
                         if self.time_series.current_dvh_group[g]:
                             ep_group[g][ep_name] = self.time_series.current_dvh_group[g].get_dose_to_volume(x,
                                                                                                        volume_scale=endpoint_input,
@@ -349,7 +349,7 @@ class DVHs:
                 else:
                     ep[ep_name] = self.query.current_dvh.get_volume_of_dose(x, dose_scale=endpoint_input,
                                                                  volume_scale=endpoint_output)
-                    for g in N:
+                    for g in GROUP_LABELS:
                         if self.time_series.current_dvh_group[g]:
                             ep_group[g][ep_name] = self.time_series.current_dvh_group[g].get_volume_of_dose(x,
                                                                                                        dose_scale=endpoint_input,

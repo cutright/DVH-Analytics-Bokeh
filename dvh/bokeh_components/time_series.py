@@ -13,7 +13,7 @@ from bokeh_components.utilities import clear_source_data, collapse_into_single_d
     moving_avg_by_calendar_day, clear_source_selection
 from scipy.stats import ttest_ind, ranksums, normaltest
 import numpy as np
-from options import N
+from options import GROUP_LABELS
 from datetime import datetime
 from os.path import dirname, join
 
@@ -23,7 +23,7 @@ class TimeSeries:
 
         self.sources = sources
         self.range_categories = range_categories
-        self.current_dvh_group = {n: [] for n in N}
+        self.current_dvh_group = {n: [] for n in GROUP_LABELS}
 
         # Control Chart layout (Time-Series)
         tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
@@ -316,14 +316,14 @@ class TimeSeries:
     def plot_update_trend(self):
         if self.y_axis.value:
 
-            selected_indices = {n: getattr(self.sources, 'time_%s' % n).selected.indices for n in N}
-            for n in N:
+            selected_indices = {n: getattr(self.sources, 'time_%s' % n).selected.indices for n in GROUP_LABELS}
+            for n in GROUP_LABELS:
                 if not selected_indices[n]:
                     selected_indices[n] = range(len(getattr(self.sources, 'time_%s' % n).data['x']))
 
-            group = {n: {'x': [], 'y': []} for n in N}
+            group = {n: {'x': [], 'y': []} for n in GROUP_LABELS}
 
-            for n in N:
+            for n in GROUP_LABELS:
                 for i in range(len(getattr(self.sources, 'time_%s' % n).data['x'])):
                     if i in selected_indices[n]:
                         for v in ['x', 'y']:
@@ -341,8 +341,8 @@ class TimeSeries:
 
             # average daily data and keep track of points per day, calculate moving average
 
-            group_collapsed = {n: [] for n in N}
-            for n in N:
+            group_collapsed = {n: [] for n in GROUP_LABELS}
+            for n in GROUP_LABELS:
                 if group[n]['x']:
                     group_collapsed[n] = collapse_into_single_dates(group[n]['x'], group[n]['y'])
                     if self.look_back_units.value == "Dates with a Sim":
@@ -383,8 +383,8 @@ class TimeSeries:
                     self.histograms.xaxis.axis_label = x_var
 
             # Normal Test
-            s, p = {n: '' for n in N}, {n: '' for n in N}
-            for n in N:
+            s, p = {n: '' for n in GROUP_LABELS}, {n: '' for n in GROUP_LABELS}
+            for n in GROUP_LABELS:
                 if group[n]['y']:
                     s[n], p[n] = normaltest(group[n]['y'])
                     p[n] = "%0.3f" % p[n]
@@ -403,7 +403,7 @@ class TimeSeries:
             self.histogram_ranksums_text.text = "Wilcoxon rank-sum (Group 1 vs 2) p-value = %s" % pr
 
         else:
-            for n in N:
+            for n in GROUP_LABELS:
                 for k in ['trend', 'bound', 'patch']:
                     clear_source_data(self.sources, "time_%s_%s" % (k, n))
 
@@ -421,7 +421,7 @@ class TimeSeries:
             bin_size = int(self.histogram_bin_slider.value)
             width_fraction = 0.9
 
-            for n in N:
+            for n in GROUP_LABELS:
                 hist, bins = np.histogram(getattr(self.sources, 'time_%s' % n).data['y'], bins=bin_size)
                 if self.histogram_radio_group.active == 1:
                     hist = np.divide(hist, np.float(np.max(hist)))
@@ -434,7 +434,7 @@ class TimeSeries:
                                                              'top': hist,
                                                              'width': width}
         else:
-            for n in N:
+            for n in GROUP_LABELS:
                     clear_source_data(self.sources, 'histogram_%s' % n)
 
     def update_y_axis_label(self):
