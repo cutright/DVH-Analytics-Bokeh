@@ -97,7 +97,8 @@ class Correlation:
                                                    code=open(join(dirname(dirname(__file__)),
                                                                   "download_correlation_matrix.js")).read())
 
-        self.layout = column(row(custom_title['1']['correlation'], Spacer(width=50), custom_title['2']['correlation']),
+        self.layout = column(Div(text="<b>DVH Analytics v%s</b>" % options.VERSION),
+                             row(custom_title['1']['correlation'], Spacer(width=50), custom_title['2']['correlation']),
                              self.download_corr_fig,
                              row(Div(text="<b>Sample Sizes</b>", width=100), self.fig_text_1,
                                  self.fig_text_2),

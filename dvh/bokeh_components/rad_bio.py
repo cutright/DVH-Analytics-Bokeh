@@ -10,6 +10,7 @@ from bokeh.models import Spacer
 from bokeh.layouts import column, row
 from bokeh_components.utilities import get_include_map
 from analysis_tools import calc_eud
+import options
 from options import N
 
 
@@ -28,7 +29,8 @@ class RadBio:
 
         self.apply_button.on_click(self.apply_rad_bio_parameters)
 
-        self.layout = column(row(custom_title['1']['rad_bio'], Spacer(width=50), custom_title['2']['rad_bio']),
+        self.layout = column(Div(text="<b>DVH Analytics v%s</b>" % options.VERSION),
+                             row(custom_title['1']['rad_bio'], Spacer(width=50), custom_title['2']['rad_bio']),
                              Div(text="<b>Published EUD Parameters from Emami"
                                       " et. al. for 1.8-2.0Gy fractions</b> (Click to apply)",
                                  width=600),

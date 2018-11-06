@@ -125,7 +125,8 @@ class Query:
                                                              source_beams=sources.beams),
                                                    code=open(join(dirname(dirname(__file__)), "download.js")).read())
 
-        self.layout = column(row(custom_title['1']['query'], Spacer(width=50), custom_title['2']['query'],
+        self.layout = column(Div(text="<b>DVH Analytics v%s</b>" % options.VERSION),
+                             row(custom_title['1']['query'], Spacer(width=50), custom_title['2']['query'],
                                  Spacer(width=50), self.query_button, Spacer(width=50), self.download_dropdown),
                              Div(text="<b>Query by Categorical Data</b>", width=1000),
                              self.add_selector_row_button,

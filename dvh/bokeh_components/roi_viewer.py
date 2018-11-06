@@ -146,7 +146,8 @@ class ROI_Viewer:
         for i in range(1, 6):
             self.roi_select_color[str(i)].on_change('value', self.roi_color_ticker[str(i)].ticker)
 
-        self.layout = column(row(custom_title['1']['roi_viewer'], Spacer(width=50), custom_title['2']['roi_viewer']),
+        self.layout = column(Div(text="<b>DVH Analytics v%s</b>" % options.VERSION),
+                             row(custom_title['1']['roi_viewer'], Spacer(width=50), custom_title['2']['roi_viewer']),
                              row(self.mrn_select, self.study_date_select, self.uid_select),
                              Div(text="<hr>", width=800),
                              row(self.roi_select['1'], self.roi_select_color['1'], self.slice_select,

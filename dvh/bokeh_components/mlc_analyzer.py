@@ -75,7 +75,8 @@ class MLC_Analyzer:
         self.mlc_viewer.xgrid.grid_line_color = None
         self.mlc_viewer.ygrid.grid_line_color = None
 
-        self.layout = column(row(custom_title['1']['mlc_analyzer'], Spacer(width=50),
+        self.layout = column(Div(text="<b>DVH Analytics v%s</b>" % options.VERSION),
+                             row(custom_title['1']['mlc_analyzer'], Spacer(width=50),
                                  custom_title['2']['mlc_analyzer']),
                              row(self.mrn_select, self.study_date_select,
                                  self.uid_select),

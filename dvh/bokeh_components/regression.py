@@ -126,7 +126,8 @@ class Regression:
         self.residual_figure.add_layout(legend_residual_chart, 'right')
         self.residual_figure.legend.click_policy = "hide"
 
-        self.layout = column(row(custom_title['1']['regression'], Spacer(width=50), custom_title['2']['regression']),
+        self.layout = column(Div(text="<b>DVH Analytics v%s</b>" % options.VERSION),
+                             row(custom_title['1']['regression'], Spacer(width=50), custom_title['2']['regression']),
                              row(column(self.x_include,
                                         row(self.x_prev, self.x_next, Spacer(width=10), self.x),
                                         row(self.y_prev, self.y_next, Spacer(width=10), self.y)),

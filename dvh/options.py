@@ -4,6 +4,8 @@ Created on Sat Oct 28 2017
 @author: Dan Cutright, PhD
 """
 
+VERSION = '0.4.6'
+
 # Setting this to true enables log in screens
 # You must add your own code in into check_credentials of auth.py
 # main.py sends a usergroup of 'generic', settings.py and admin.py send usergroup of 'admin',

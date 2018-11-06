@@ -144,7 +144,8 @@ class TimeSeries:
         self.histograms.add_layout(legend_hist, 'right')
         self.histograms.legend.click_policy = "hide"
 
-        self.layout = column(row(custom_title['1']['time_series'], Spacer(width=50),
+        self.layout = column(Div(text="<b>DVH Analytics v%s</b>" % options.VERSION),
+                             row(custom_title['1']['time_series'], Spacer(width=50),
                                  custom_title['2']['time_series']),
                              row(self.y_axis, self.look_back_units, self.look_back_distance,
                                  Spacer(width=10), self.plot_percentile, Spacer(width=10),

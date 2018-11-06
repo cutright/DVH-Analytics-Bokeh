@@ -132,7 +132,8 @@ class DVHs:
         self.review_rx.on_change('value', self.review_rx_ticker)
 
         if options.LITE_VIEW:
-            self.layout = column(row(self.radio_group_dose, self.radio_group_volume),
+            self.layout = column(Div(text="<b>DVH Analytics v%s</b>" % options.VERSION),
+                                 row(self.radio_group_dose, self.radio_group_volume),
                                  self.add_endpoint_row_button,
                                  row(self.ep_row, Spacer(width=10), self.select_ep_type, self.ep_text_input,
                                      Spacer(width=20),
@@ -140,7 +141,8 @@ class DVHs:
                                      self.download_endpoints_button),
                                  data_tables.ep)
         else:
-            self.layout = column(row(custom_title['1']['dvhs'], Spacer(width=50), custom_title['2']['dvhs']),
+            self.layout = column(Div(text="<b>DVH Analytics v%s</b>" % options.VERSION),
+                                 row(custom_title['1']['dvhs'], Spacer(width=50), custom_title['2']['dvhs']),
                                  row(self.radio_group_dose, self.radio_group_volume),
                                  row(self.select_reviewed_mrn, self.select_reviewed_dvh, self.review_rx),
                                  self.plot,

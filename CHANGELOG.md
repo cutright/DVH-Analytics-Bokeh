@@ -1,10 +1,12 @@
 # Change log of DVH Analytics
 
 ### 0.4.6 (TBD)
+* MAJOR restructuring with majority of main.py moved into bokeh_components directory
+    * Next release will begin working on better efficiency
 * Residual chart added to Regression tab, will develop into Control Chart
 * Begin making code more concise using classes and dictionaries
-* Major restructuring with majority of main.py moved into bokeh_components directory
 * Issue #42 - Regression drop-downs not updating properly when deleting/changing EP
+* MLC Analyzer does not cause crash if DICOM plan file cannot be found
 
 ### 0.4.5 (scrapped)
 
