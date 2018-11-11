@@ -6,6 +6,7 @@ Created on Sat Nov 3 2018
 @author: Dan Cutright, PhD
 """
 
+from __future__ import print_function
 import dicom_mlc_analyzer as mlca
 from sql_connector import DVH_SQL
 from bokeh.models.widgets import Select, Button, Div, DataTable
@@ -17,7 +18,7 @@ from get_settings import get_settings, parse_settings_file
 import numpy as np
 import options
 import time
-from bokeh_components.columns import mlc_viewer as mlc_viewer_columns
+from columns import mlc_viewer as mlc_viewer_columns
 
 
 class MLC_Analyzer:
@@ -123,13 +124,16 @@ class MLC_Analyzer:
 
     def plan_ticker(self, attr, old, new):
         if os.path.isfile(new):
-            self.mlc_data = mlca.Plan(new)
-
-            self.fx_grp_select.options = [str(i + 1) for i in range(len(self.mlc_data.fx_group))]
-            if self.fx_grp_select.value == self.fx_grp_select.options[0]:
-                self.update_beam()
-            else:
-                self.fx_grp_select.value = '1'
+            try:
+                self.mlc_data = mlca.Plan(new)
+                self.fx_grp_select.options = [str(i + 1) for i in range(len(self.mlc_data.fx_group))]
+                if self.fx_grp_select.value == self.fx_grp_select.options[0]:
+                    self.update_beam()
+                else:
+                    self.fx_grp_select.value = '1'
+            except:
+                self.mlc_data = []
+                print('MLC import failure: %s' % new)
         else:
             self.mlc_data = []
             self.fx_grp_select.options = ['']
@@ -177,43 +181,46 @@ class MLC_Analyzer:
         self.update_fx_grp()
 
     def update_fx_grp(self):
-        fx_grp = self.mlc_data.fx_group[int(self.fx_grp_select.value) - 1]
-        beam_options = ["%s: %s" % (i+1, j) for i, j in enumerate(fx_grp.beam_names)]
-        self.beam_select.options = beam_options
-        if self.beam_select.value == self.beam_select.options[0]:
-            self.update_beam()
-        else:
-            self.beam_select.value = beam_options[0]
+        if self.mlc_data:
+            fx_grp = self.mlc_data.fx_group[int(self.fx_grp_select.value) - 1]
+            beam_options = ["%s: %s" % (i+1, j) for i, j in enumerate(fx_grp.beam_names)]
+            self.beam_select.options = beam_options
+            if self.beam_select.value == self.beam_select.options[0]:
+                self.update_beam()
+            else:
+                self.beam_select.value = beam_options[0]
 
     def update_beam(self):
-        fx_grp = self.mlc_data.fx_group[int(self.fx_grp_select.value) - 1]
-        beam_number = int(self.beam_select.value.split(':')[0])
-        beam = fx_grp.beam[beam_number-1]
-        cp_count = beam.control_point_count
-        cp_numbers = [str(i + 1) for i in range(cp_count)]
-        self.cp_select.options = cp_numbers
-        if self.cp_select.value == self.cp_select.options[0]:
-            self.update_mlc_viewer()
-        else:
-            self.cp_select.value = cp_numbers[0]
-        self.sources.mlc_summary.data = beam.summary
+        if self.mlc_data:
+            fx_grp = self.mlc_data.fx_group[int(self.fx_grp_select.value) - 1]
+            beam_number = int(self.beam_select.value.split(':')[0])
+            beam = fx_grp.beam[beam_number-1]
+            cp_count = beam.control_point_count
+            cp_numbers = [str(i + 1) for i in range(cp_count)]
+            self.cp_select.options = cp_numbers
+            if self.cp_select.value == self.cp_select.options[0]:
+                self.update_mlc_viewer()
+            else:
+                self.cp_select.value = cp_numbers[0]
+            self.sources.mlc_summary.data = beam.summary
 
     def update_mlc_viewer(self):
-        fx_grp = self.mlc_data.fx_group[int(self.fx_grp_select.value) - 1]
-        beam_number = int(self.beam_select.value.split(':')[0])
-        beam = fx_grp.beam[beam_number - 1]
-        cp_index = int(self.cp_select.value) - 1
+        if self.mlc_data:
+            fx_grp = self.mlc_data.fx_group[int(self.fx_grp_select.value) - 1]
+            beam_number = int(self.beam_select.value.split(':')[0])
+            beam = fx_grp.beam[beam_number - 1]
+            cp_index = int(self.cp_select.value) - 1
 
-        x_min, x_max = -options.MAX_FIELD_SIZE_X / 2, options.MAX_FIELD_SIZE_X / 2
-        y_min, y_max = -options.MAX_FIELD_SIZE_Y / 2, options.MAX_FIELD_SIZE_Y / 2
+            x_min, x_max = -options.MAX_FIELD_SIZE_X / 2, options.MAX_FIELD_SIZE_X / 2
+            y_min, y_max = -options.MAX_FIELD_SIZE_Y / 2, options.MAX_FIELD_SIZE_Y / 2
 
-        borders = {'top': [y_max, y_max, y_max, beam.jaws[cp_index]['y_min']],
-                   'bottom': [y_min, y_min, beam.jaws[cp_index]['y_max'], y_min],
-                   'left': [x_min, beam.jaws[cp_index]['x_max'], x_min, x_min],
-                   'right': [beam.jaws[cp_index]['x_min'], x_max, x_max, x_max]}
-        for edge in list(borders):
-            borders[edge].extend(beam.mlc_borders[cp_index][edge])
-        borders['color'] = [options.JAW_COLOR] * 4 + [options.MLC_COLOR] * len(beam.mlc_borders[cp_index]['top'])
+            borders = {'top': [y_max, y_max, y_max, beam.jaws[cp_index]['y_min']],
+                       'bottom': [y_min, y_min, beam.jaws[cp_index]['y_max'], y_min],
+                       'left': [x_min, beam.jaws[cp_index]['x_max'], x_min, x_min],
+                       'right': [beam.jaws[cp_index]['x_min'], x_max, x_max, x_max]}
+            for edge in list(borders):
+                borders[edge].extend(beam.mlc_borders[cp_index][edge])
+            borders['color'] = [options.JAW_COLOR] * 4 + [options.MLC_COLOR] * len(beam.mlc_borders[cp_index]['top'])
 
         self.sources.mlc_viewer.data = borders
 

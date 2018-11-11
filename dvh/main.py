@@ -15,20 +15,20 @@ from bokeh.io import curdoc
 from bokeh.models.widgets import Button, Panel, Tabs, TextInput, PasswordInput
 import time
 import options
-from bokeh_components import sources
-from bokeh_components.custom_titles import custom_title
-from bokeh_components.mlc_analyzer import MLC_Analyzer
-from bokeh_components.time_series import TimeSeries
-from bokeh_components.correlation import Correlation
-from bokeh_components.roi_viewer import ROI_Viewer
-from bokeh_components.rad_bio import RadBio
-from bokeh_components.regression import Regression
-from bokeh_components.query import Query
-from bokeh_components.dvhs import DVHs
-from bokeh_components.data_tables import DataTables
-from bokeh_components.categories import Categories
-from bokeh_components.planning_data import PlanningData
-from bokeh_components.source_listener import SourceListener
+import sources
+from custom_titles import custom_title
+from mlc_analyzer import MLC_Analyzer
+from time_series import TimeSeries
+from correlation import Correlation
+from roi_viewer import ROI_Viewer
+from rad_bio import RadBio
+from regression import Regression
+from query import Query
+from dvhs import DVHs
+from data_tables import DataTables
+from categories import Categories
+from planning_data import PlanningData
+from source_listener import SourceListener
 
 options = load_options(options)
 

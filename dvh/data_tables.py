@@ -7,7 +7,7 @@ Created on Sun Nov 4 2018
 """
 
 from bokeh.models.widgets import DataTable
-from bokeh_components import columns
+import columns
 
 
 class DataTables:
@@ -21,10 +21,10 @@ class DataTables:
 
         self.ep = DataTable(source=sources.endpoint_defs, columns=columns.ep_data, width=300, height=150)
 
-        self.dvhs = DataTable(source=sources.dvhs, columns=columns.dvhs, width=1200,  editable=True)
+        self.dvhs = DataTable(source=sources.dvhs, columns=columns.dvhs, width=1200, editable=True)
         self.beams = DataTable(source=sources.beams, columns=columns.beams, width=1300, editable=True)
         self.beams2 = DataTable(source=sources.beams, columns=columns.beams2, width=1300, editable=True)
-        self.plans = DataTable(source=sources.plans, columns=columns.plans, width=1300,  editable=True)
+        self.plans = DataTable(source=sources.plans, columns=columns.plans, width=1300, editable=True)
         self.rxs = DataTable(source=sources.rxs, columns=columns.rxs, width=1300, editable=True)
         self.endpoints = DataTable(source=sources.endpoint_view, columns=columns.endpoints, width=1200, editable=True)
 
@@ -44,7 +44,7 @@ class DataTables:
                                            editable=True, height=200)
 
         self.multi_var_coeff_2 = DataTable(source=sources.multi_var_model_results_2, columns=columns.multi_var_coeff_2,
-                                           editable=True,  height=60)
+                                           editable=True, height=60)
 
         self.rad_bio = DataTable(source=sources.rad_bio, columns=columns.rad_bio, editable=False, width=1100)
 
