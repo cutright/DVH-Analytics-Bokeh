@@ -8,6 +8,7 @@ def get_settings(settings_type):
     :return:
     """
     if os.path.isfile('/this_is_running_in_docker'):
+        print('docker')
         return SETTINGS_PATHS['docker'][settings_type]
     else:
         script_dir = os.path.dirname(__file__)

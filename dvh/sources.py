@@ -9,6 +9,10 @@ Created on Tue Oct 30 2018
 from bokeh.models import ColumnDataSource
 
 dvhs = ColumnDataSource(data=dict(color=[], x=[], y=[], mrn=[]))
+query_csv_anon_dvhs = ColumnDataSource(data=dict(text=[]))
+query_csv_all = ColumnDataSource(data=dict(text=[]))
+query_csv_lite = ColumnDataSource(data=dict(text=[]))
+query_csv_dvhs = ColumnDataSource(data=dict(text=[]))
 
 selectors = ColumnDataSource(data=dict(row=[1], category1=[''], category2=[''],
                                        group=[''], group_label=[''], not_status=['']))
