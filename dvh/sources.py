@@ -21,6 +21,7 @@ endpoint_defs = ColumnDataSource(data=dict(row=[], output_type=[], input_type=[]
 
 endpoint_view = ColumnDataSource(data=dict(mrn=[], group=[], roi_name=[], ep1=[], ep2=[], ep3=[], ep4=[],
                                            ep5=[], ep6=[], ep7=[], ep8=[], ep9=[], ep10=[]))
+endpoints_csv = ColumnDataSource(data=dict(text=[]))
 
 patch_1 = ColumnDataSource(data=dict(x_patch=[], y_patch=[]))
 patch_2 = ColumnDataSource(data=dict(x_patch=[], y_patch=[]))

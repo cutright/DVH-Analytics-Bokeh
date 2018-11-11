@@ -9,8 +9,8 @@ from bokeh.plotting import figure
 from bokeh.models import Select, TextInput, RadioGroup, Slider, Div, Legend, CustomJS, HoverTool, Button, Spacer
 from bokeh.layouts import column, row
 import options
-from bokeh_components.utilities import clear_source_data, collapse_into_single_dates, moving_avg,\
-    moving_avg_by_calendar_day, clear_source_selection
+from utilities import clear_source_data, collapse_into_single_dates, moving_avg,\
+    moving_avg_by_calendar_day, clear_source_selection, get_csv
 from scipy.stats import ttest_ind, ranksums, normaltest
 import numpy as np
 from options import GROUP_LABELS
@@ -105,7 +105,7 @@ class TimeSeries:
 
         self.download_time_plot = Button(label="Download Plot Data", button_type="default", width=150)
         self.download_time_plot.callback = CustomJS(args=dict(source=self.sources.time_csv),
-                                                    code=open(join(dirname(dirname(__file__)),
+                                                    code=open(join(dirname(__file__),
                                                                    "download_new.js")).read())
 
         # histograms
@@ -478,13 +478,7 @@ class TimeSeries:
     def update_csv(self):
 
         src_data = [self.sources.time_1.data, self.sources.time_2.data]
-        text = []
+        columns = ['mrn', 'x', 'y']
+        csv_text = get_csv(src_data, columns)
 
-        for i, s in enumerate(src_data):
-            text.append('Group %s\nmrn,x,y' % (i+1))
-            for j, mrn in enumerate(s['mrn']):
-                text.append('%s,%s,%s' % (mrn, s['x'][j], s['y'][j]))
-            text.append('')
-        text = '\n'.join(text)
-
-        self.sources.time_csv.data = {'text': [text]}
+        self.sources.time_csv.data = {'text': [csv_text]}

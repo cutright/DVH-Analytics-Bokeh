@@ -14,7 +14,7 @@ import options
 from options import GROUP_LABELS
 from os.path import dirname, join
 from utilities import clear_source_selection, clear_source_data, group_constraint_count, calc_stats,\
-    Temp_DICOM_FileSet
+    Temp_DICOM_FileSet, get_csv
 from analysis_tools import dose_to_volume, volume_of_dose
 import numpy as np
 from dicompylercore import dicomparser, dvhcalc
@@ -111,9 +111,9 @@ class DVHs:
         self.plot.legend.click_policy = "hide"
 
         self.download_endpoints_button = Button(label="Download Endpoints", button_type="default", width=150)
-        self.download_endpoints_button.callback = CustomJS(args=dict(source=sources.endpoint_calcs),
+        self.download_endpoints_button.callback = CustomJS(args=dict(source=self.sources.endpoints_csv),
                                                            code=open(join(dirname(__file__),
-                                                                          "download_endpoints.js")).read())
+                                                                          "download_new.js")).read())
 
         # Setup axis normalization radio buttons
         self.radio_group_dose = RadioGroup(labels=["Absolute Dose", "Relative Dose (Rx)"], active=0, width=200)
@@ -411,6 +411,7 @@ class DVHs:
                 self.sources.endpoint_calcs.patch(review_ep)
 
             self.update_endpoint_view()
+            self.update_endpoint_csv()
 
         if not options.LITE_VIEW:
             self.time_series.update_options()
@@ -569,3 +570,14 @@ class DVHs:
 
     def add_query_link(self, query):
         self.query = query
+
+    def update_endpoint_csv(self):
+
+        src_data = [self.sources.endpoint_calcs.data]
+        columns = ['mrn', 'uid', 'group', 'roi_name']
+        eps = [key for key in list(src_data[0]) if key not in columns]
+        eps.sort()
+        columns.extend(eps)
+        csv_text = get_csv(src_data, columns)
+
+        self.sources.endpoints_csv.data = {'text': [csv_text]}
