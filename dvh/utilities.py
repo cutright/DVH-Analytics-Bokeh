@@ -893,12 +893,11 @@ class Temp_DICOM_FileSet:
         return roi
 
 
-def get_csv(data_dict_list, columns):
+def get_csv(data_dict_list, data_dict_names, columns):
 
     text = []
     for s, data_dict in enumerate(data_dict_list):
-        if len(data_dict_list) > 1:
-            text.append('Group %s' % (s+1))
+        text.append(data_dict_names[s])
         text.append(','.join(columns))  # Column headers
         row_count = len(data_dict[columns[0]])
         for r in range(row_count):

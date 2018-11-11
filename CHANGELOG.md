@@ -1,5 +1,8 @@
 # Change log of DVH Analytics
 
+### 0.4.7 (TBD)
+* Move csv creation to python for less javascript (download.js)
+
 ### 0.4.62 & 0.4.68 (2018.11.11)
 * If a RT Plan that is incompatible with the current version of dicom_mlc_analyzer.py, DVH Analytics would crash. 
 Now the command prompt will print the failed RT Plan file, and skip the MLC Analyzer tab update, preventing a crash.

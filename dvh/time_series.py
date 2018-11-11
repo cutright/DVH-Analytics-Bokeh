@@ -478,7 +478,8 @@ class TimeSeries:
     def update_csv(self):
 
         src_data = [self.sources.time_1.data, self.sources.time_2.data]
+        src_names = ['Group 1', 'Group 2']
         columns = ['mrn', 'x', 'y']
-        csv_text = get_csv(src_data, columns)
+        csv_text = get_csv(src_data, src_names, columns)
 
         self.sources.time_csv.data = {'text': [csv_text]}

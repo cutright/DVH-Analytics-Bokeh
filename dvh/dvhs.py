@@ -578,6 +578,6 @@ class DVHs:
         eps = [key for key in list(src_data[0]) if key not in columns]
         eps.sort()
         columns.extend(eps)
-        csv_text = get_csv(src_data, columns)
+        csv_text = get_csv(src_data, ['Endpoint Calcs'], columns)
 
         self.sources.endpoints_csv.data = {'text': [csv_text]}

@@ -104,3 +104,4 @@ correlation_2_pos = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[],
                                                group=[], size=[], x_normality=[], y_normality=[]))
 correlation_2_neg = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[], color=[], alpha=[], r=[], p=[],
                                                group=[], size=[], x_normality=[], y_normality=[]))
+correlation_csv = ColumnDataSource(data=dict(text=[]))

@@ -10,7 +10,7 @@ from future.utils import listvalues
 from utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection, \
     recalculate_ages, update_min_distances_in_db, update_treatment_volume_overlap_in_db, update_volumes_in_db, \
     update_surface_area_in_db, load_options, update_centroid_in_db, update_spread_in_db, update_cross_section_in_db,\
-    update_dist_to_ptv_centroids_in_db
+    update_dist_to_ptv_centroids_in_db, get_csv
 import os
 from os.path import dirname, join
 from datetime import datetime
@@ -41,6 +41,7 @@ ACCESS_GRANTED = not options.AUTH_USER_REQ
 
 # Create empty Bokeh data sources
 query_source = ColumnDataSource(data=dict())
+query_data_csv = ColumnDataSource(data=dict(text=[]))
 baseline_source = ColumnDataSource(data=dict(mrn=[]))
 
 directories = {}
@@ -738,6 +739,8 @@ def update_query_source():
         db_editor_layout.children.pop()
         db_editor_layout.children.append(data_table_new)
 
+    update_csv()
+
 
 def update_db():
     if update_db_condition.value and update_db_value.value:
@@ -1390,6 +1393,30 @@ def calculate_exec():
             calc_map[calculate_select.value]()
 
 
+def update_csv():
+    src_data = [query_source.data]
+    src_names = ['Queried Data']
+    columns = list(src_data[0])
+
+    mrn_index, uid_index = None, None
+    for i, c in enumerate(columns):
+        if c == 'mrn':
+            mrn_index = i
+        if c == 'study_instance_uid':
+            uid_index = i
+
+    if uid_index is not None:
+        columns.pop(uid_index)
+        columns.insert(0, 'study_instance_uid')
+    if mrn_index is not None:
+        columns.pop(mrn_index)
+        columns.insert(0, 'mrn')
+
+    csv_text = get_csv(src_data, src_names, columns)
+
+    query_data_csv.data = {'text': [csv_text]}
+
+
 ######################################################
 # Layout objects
 ######################################################
@@ -1643,8 +1670,8 @@ calculate_exec_button = Button(label='Perform Calc', button_type='primary', widt
 calculate_exec_button.on_click(calculate_exec)
 
 download = Button(label="Download Table", button_type="default", width=150)
-download.callback = CustomJS(args=dict(source=query_source),
-                             code=open(join(dirname(__file__), "download_admin_query.js")).read())
+download.callback = CustomJS(args=dict(source=query_data_csv),
+                             code=open(join(dirname(__file__), "download_new.js")).read())
 
 db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [import_inbox_force],
