@@ -17,7 +17,7 @@ from get_settings import get_settings, parse_settings_file
 import numpy as np
 import options
 import time
-from bokeh_components.columns import mlc_viewer as mlc_viewer_columns
+from columns import mlc_viewer as mlc_viewer_columns
 
 
 class MLC_Analyzer:

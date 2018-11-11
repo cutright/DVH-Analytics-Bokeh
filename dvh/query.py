@@ -11,7 +11,7 @@ from dateutil.parser import parse
 from os.path import dirname, join
 from bokeh.models.widgets import Select, Button, TextInput, CheckboxButtonGroup, Dropdown, CheckboxGroup, Div
 from bokeh.models import CustomJS, Spacer
-from bokeh_components.utilities import get_study_instance_uids, clear_source_selection, clear_source_data,\
+from utilities import get_study_instance_uids, clear_source_selection, clear_source_data,\
     group_constraint_count, calc_stats
 from bokeh.layouts import column, row
 from bokeh.palettes import Colorblind8 as palette
@@ -123,7 +123,7 @@ class Query:
                                                              source_rxs=sources.rxs,
                                                              source_plans=sources.plans,
                                                              source_beams=sources.beams),
-                                                   code=open(join(dirname(dirname(__file__)), "download.js")).read())
+                                                   code=open(join(dirname(__file__), "download.js")).read())
 
         self.layout = column(Div(text="<b>DVH Analytics v%s</b>" % options.VERSION),
                              row(custom_title['1']['query'], Spacer(width=50), custom_title['2']['query'],

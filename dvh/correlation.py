@@ -16,7 +16,7 @@ from math import pi
 from scipy.stats import normaltest, pearsonr
 from os.path import dirname, join
 import numpy as np
-from bokeh_components.utilities import get_include_map
+from utilities import get_include_map
 
 
 class Correlation:
@@ -94,7 +94,7 @@ class Correlation:
                                                              source_1_pos=sources.correlation_1_pos,
                                                              source_2_neg=sources.correlation_2_neg,
                                                              source_2_pos=sources.correlation_2_pos),
-                                                   code=open(join(dirname(dirname(__file__)),
+                                                   code=open(join(dirname(__file__),
                                                                   "download_correlation_matrix.js")).read())
 
         self.layout = column(Div(text="<b>DVH Analytics v%s</b>" % options.VERSION),
