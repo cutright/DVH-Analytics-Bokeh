@@ -1,5 +1,14 @@
 # Change log of DVH Analytics
 
+### 0.4.62 & 0.4.68 (2018.11.11)
+* If a RT Plan that is incompatible with the current version of dicom_mlc_analyzer.py, DVH Analytics would crash. 
+Now the command prompt will print the failed RT Plan file, and skip the MLC Analyzer tab update, preventing a crash.
+* Moving to the bokeh_components directory caused relative import errors. As a temporary fix, all python files moved 
+to main dvh directory. This version was verified to work via pip install (and subsequently running with dvh command 
+calling `__main__.py` for entry point), as well as in docker.
+* These versions were explicitly tested by running source code with direct bokeh serve calls, pip install of 
+DVH Analytics, and using docker-compose.
+
 ### 0.4.6 (2018.11.6)
 * MAJOR restructuring with majority of main.py moved into bokeh_components directory
     * Next release will begin working on better efficiency
