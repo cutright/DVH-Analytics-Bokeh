@@ -36,6 +36,7 @@ rad_bio = ColumnDataSource(data=dict(mrn=[], uid=[], roi_name=[], ptv_overlap=[]
 
 time_1 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
 time_2 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
+time_csv = ColumnDataSource(data=dict(text=[]))
 
 time_trend_1 = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
 time_trend_2 = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))

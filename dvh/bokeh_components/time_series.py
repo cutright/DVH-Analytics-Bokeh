@@ -19,7 +19,7 @@ from os.path import dirname, join
 
 
 class TimeSeries:
-    def __init__(self, sources, range_categories, custom_title, data_tables):
+    def __init__(self, sources, range_categories, custom_title):
 
         self.sources = sources
         self.range_categories = range_categories
@@ -104,10 +104,9 @@ class TimeSeries:
         self.trend_update_button.on_click(self.plot_update_trend)
 
         self.download_time_plot = Button(label="Download Plot Data", button_type="default", width=150)
-        self.download_time_plot.callback = CustomJS(args=dict(source_1=sources.time_1,
-                                                              source_2=sources.time_2),
+        self.download_time_plot.callback = CustomJS(args=dict(source=self.sources.time_csv),
                                                     code=open(join(dirname(dirname(__file__)),
-                                                                   "download_time_plot.js")).read())
+                                                                   "download_new.js")).read())
 
         # histograms
         tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
@@ -311,6 +310,8 @@ class TimeSeries:
             clear_source_data(self.sources, 'time_1')
             clear_source_data(self.sources, 'time_2')
 
+        self.update_csv()
+
         self.plot_update_trend()
 
     def plot_update_trend(self):
@@ -473,3 +474,17 @@ class TimeSeries:
 
         self.y_axis.options = new_options
         self.y_axis.value = ''
+
+    def update_csv(self):
+
+        src_data = [self.sources.time_1.data, self.sources.time_2.data]
+        text = []
+
+        for i, s in enumerate(src_data):
+            text.append('Group %s\nmrn,x,y' % (i+1))
+            for j, mrn in enumerate(s['mrn']):
+                text.append('%s,%s,%s' % (mrn, s['x'][j], s['y'][j]))
+            text.append('')
+        text = '\n'.join(text)
+
+        self.sources.time_csv.data = {'text': [text]}
