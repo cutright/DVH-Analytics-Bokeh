@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+from dvh.options import VERSION
 
 requires = [
     'numpy <= 1.14.5',
@@ -24,7 +25,7 @@ setup(
     name='dvh-analytics',
     include_package_data=True,
     packages=find_packages(),
-    version='0.4.62',
+    version=VERSION,
     description='Create a database of DVHs, views with Bokeh',
     author='Dan Cutright',
     author_email='dan.cutright@gmail.com',

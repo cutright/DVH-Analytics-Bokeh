@@ -536,7 +536,10 @@ class Query:
                 self.rad_bio.initialize()
                 self.time_series.y_axis.value = ''
                 self.roi_viewer.update_mrn()
-                self.mlc_analyzer.update_mrn()
+                try:
+                    self.mlc_analyzer.update_mrn()
+                except:
+                    pass
         else:
             print(str(datetime.now()), 'empty dataset returned', sep=' ')
             self.query_button.label = 'No Data'
