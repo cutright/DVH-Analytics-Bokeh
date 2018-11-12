@@ -4,7 +4,7 @@ Created on Sat Oct 28 2017
 @author: Dan Cutright, PhD
 """
 
-VERSION = '0.4.68'
+VERSION = '0.4.697'
 
 # Setting this to true enables log in screens
 # You must add your own code in into check_credentials of auth.py
@@ -126,8 +126,8 @@ OPTIONAL_TABS = {'ROI Viewer': True,
                  'MLC Analyzer': True}
 
 # Note that docker paths are absolute, default will be treated as relative to script directory
-SETTINGS_PATHS = {'docker': {'import': "/import_settings.txt",
-                             'sql': "/sql_connection.cnf"},
+SETTINGS_PATHS = {'docker': {'import': "/import_and_connection/import_settings.txt",
+                             'sql': "/import_and_connection/sql_connection.cnf"},
                   'default': {'import': "preferences/import_settings.txt",
                               'sql': "preferences/sql_connection.cnf"}}
 
