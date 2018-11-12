@@ -1,5 +1,11 @@
 # Change log of DVH Analytics
 
+### 0.4.697 (2018.11.11)
+* The docker compose file for DVH Analytics Docker had a bug such that it would not share import and sql connection settings between 
+main, admin, and settings views.  A directory was created to share changes with each server.
+* DVH Analytics will detect if you're using Docker and have docker applicable default sql connection settings
+* Note that DVH Analytics Docker has only been validated on Mac
+
 ### 0.4.62 & 0.4.68 (2018.11.11)
 * If a RT Plan that is incompatible with the current version of dicom_mlc_analyzer.py, DVH Analytics would crash. 
 Now the command prompt will print the failed RT Plan file, and skip the MLC Analyzer tab update, preventing a crash.
