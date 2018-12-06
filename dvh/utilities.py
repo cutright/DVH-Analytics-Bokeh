@@ -906,3 +906,9 @@ def get_csv(data_dict_list, data_dict_names, columns):
         text.append('')
 
     return '\n'.join(text)
+
+
+def truncate_string(input_string, character_limit):
+    if len(input_string) > character_limit:
+        return input_string[0:(character_limit-1)]
+    return input_string

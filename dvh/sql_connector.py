@@ -11,6 +11,7 @@ import psycopg2
 import os
 from datetime import datetime
 from get_settings import get_settings, parse_settings_file
+from utilities import truncate_string
 
 
 class DVH_SQL:
@@ -164,6 +165,11 @@ class DVH_SQL:
                      'dose_time_stamp', 'tps_manufacturer', 'tps_software_name', 'tps_software_version', 'tx_modality',
                      'tx_time', 'total_mu', 'dose_grid_res', 'heterogeneity_correction', 'baseline',
                      'import_time_stamp']
+        plan.physician = truncate_string(plan.physician, 50)
+        plan.tx_site = truncate_string(plan.tx_site, 50)
+        plan.tps_manufacturer = truncate_string(plan.tps_manufacturer, 50)
+        plan.tps_software_name = truncate_string(plan.tps_software_name, 50)
+        plan.tps_software_version = truncate_string(plan.tps_software_version, 30)
         values = [str(plan.mrn),
                   plan.study_instance_uid,
                   str(plan.birth_date),
@@ -285,6 +291,9 @@ class DVH_SQL:
         col_names = ['mrn', 'study_instance_uid', 'plan_name', 'fx_grp_name', 'fx_grp_number', 'fx_grp_count',
                      'fx_dose', 'fxs', 'rx_dose', 'rx_percent', 'normalization_method', 'normalization_object',
                      'import_time_stamp']
+
+        rx_table.plan_name = truncate_string(rx_table.plan_name, 50)
+        rx_table.fx_grp_name = truncate_string(rx_table.fx_grp_name, 30)
 
         # for key, value in rx_table.__dict__.items():
         #     print(key, type(value), value)
