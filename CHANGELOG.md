@@ -1,5 +1,11 @@
 # Change log of DVH Analytics
 
+### 0.4.7 (TBD)
+* Move csv creation to python for less javascript (download.js)
+* Some bug catches if certain fields are too long to import into its SQL column
+* ROI Name Manager in the Admin view displays a table of the currently saved ROI Map of the 
+currently selected physician
+
 ### 0.4.697 (2018.11.11)
 * The docker compose file for DVH Analytics Docker had a bug such that it would not share import and sql connection settings between 
 main, admin, and settings views.  A directory was created to share changes with each server.

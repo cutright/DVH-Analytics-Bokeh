@@ -10,7 +10,7 @@ from future.utils import listvalues
 from utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection, \
     recalculate_ages, update_min_distances_in_db, update_treatment_volume_overlap_in_db, update_volumes_in_db, \
     update_surface_area_in_db, load_options, update_centroid_in_db, update_spread_in_db, update_cross_section_in_db,\
-    update_dist_to_ptv_centroids_in_db
+    update_dist_to_ptv_centroids_in_db, get_csv
 import os
 from os.path import dirname, join
 from datetime import datetime
@@ -41,7 +41,9 @@ ACCESS_GRANTED = not options.AUTH_USER_REQ
 
 # Create empty Bokeh data sources
 query_source = ColumnDataSource(data=dict())
+query_data_csv = ColumnDataSource(data=dict(text=[]))
 baseline_source = ColumnDataSource(data=dict(mrn=[]))
+roi_map_table_source = ColumnDataSource(data=dict(institutional_roi=[], physician_roi=[], variation=[]))
 
 directories = {}
 config = {}
@@ -216,6 +218,7 @@ def select_physician_change(attr, old, new):
     update_select_unlinked_institutional_roi()
     update_uncategorized_variation_select()
     update_ignored_variations_select()
+    update_roi_map_table_source()
 
 
 def rename_physician():
@@ -396,6 +399,7 @@ def save_db():
     db.write_to_file()
     save_button_roi.button_type = 'primary'
     save_button_roi.label = 'Map Saved'
+    update_roi_map_table_source()
 
 
 def update_roi_map_source_data():
@@ -737,6 +741,8 @@ def update_query_source():
                                    width=int(table_slider.value), editable=True)
         db_editor_layout.children.pop()
         db_editor_layout.children.append(data_table_new)
+
+    update_csv()
 
 
 def update_db():
@@ -1390,6 +1396,40 @@ def calculate_exec():
             calc_map[calculate_select.value]()
 
 
+def update_csv():
+    src_data = [query_source.data]
+    src_names = ['Queried Data']
+    columns = list(src_data[0])
+
+    mrn_index, uid_index = None, None
+    for i, c in enumerate(columns):
+        if c == 'mrn':
+            mrn_index = i
+        if c == 'study_instance_uid':
+            uid_index = i
+
+    if uid_index is not None:
+        columns.pop(uid_index)
+        columns.insert(0, 'study_instance_uid')
+    if mrn_index is not None:
+        columns.pop(mrn_index)
+        columns.insert(0, 'mrn')
+
+    csv_text = get_csv(src_data, src_names, columns)
+
+    query_data_csv.data = {'text': [csv_text]}
+
+
+def update_roi_map_table_source():
+    phys_roi = db.get_physician_rois(select_physician.value)
+    inst_roi = [db.get_institutional_roi(select_physician.value, roi) for roi in phys_roi]
+    vari_roi = [', '.join(db.get_variations(select_physician.value, roi)) for roi in phys_roi]
+    roi_map_table_source.data = {'institutional_roi': inst_roi,
+                                 'physician_roi': phys_roi,
+                                 'variation_roi': vari_roi}
+    div_roi_map_table.text = "<b>Currently Saved ROI Map for %s" % select_physician.value
+
+
 ######################################################
 # Layout objects
 ######################################################
@@ -1553,6 +1593,13 @@ labels = LabelSet(x="x", y="y", text="name", y_offset=8,
 roi_map_plot.add_layout(labels)
 roi_map_plot.segment(x0='x0', y0='y0', x1='x1', y1='y1', source=roi_map_source, alpha=0.5)
 update_roi_map_source_data()
+div_roi_map_table = Div(text='')
+update_roi_map_table_source()
+
+columns = [TableColumn(field="institutional_roi", title="Institutional", width=150),
+           TableColumn(field="physician_roi", title="Physician", width=150),
+           TableColumn(field="variation_roi", title="Variations", width=500)]
+roi_map_table = DataTable(source=roi_map_table_source, columns=columns, index_position=None, width=1000, editable=True)
 
 roi_layout = layout([[select_institutional_roi],
                      [div_horizontal_bar1],
@@ -1569,6 +1616,8 @@ roi_layout = layout([[select_institutional_roi],
                      [div_action],
                      [action_button],
                      [roi_map_plot],
+                     [div_roi_map_table],
+                     [roi_map_table],
                      [Spacer(width=1000, height=100)]])
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1643,8 +1692,8 @@ calculate_exec_button = Button(label='Perform Calc', button_type='primary', widt
 calculate_exec_button.on_click(calculate_exec)
 
 download = Button(label="Download Table", button_type="default", width=150)
-download.callback = CustomJS(args=dict(source=query_source),
-                             code=open(join(dirname(__file__), "download_admin_query.js")).read())
+download.callback = CustomJS(args=dict(source=query_data_csv),
+                             code=open(join(dirname(__file__), "download_new.js")).read())
 
 db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [import_inbox_force],

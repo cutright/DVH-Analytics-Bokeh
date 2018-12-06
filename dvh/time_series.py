@@ -10,7 +10,7 @@ from bokeh.models import Select, TextInput, RadioGroup, Slider, Div, Legend, Cus
 from bokeh.layouts import column, row
 import options
 from utilities import clear_source_data, collapse_into_single_dates, moving_avg,\
-    moving_avg_by_calendar_day, clear_source_selection
+    moving_avg_by_calendar_day, clear_source_selection, get_csv
 from scipy.stats import ttest_ind, ranksums, normaltest
 import numpy as np
 from options import GROUP_LABELS
@@ -19,7 +19,7 @@ from os.path import dirname, join
 
 
 class TimeSeries:
-    def __init__(self, sources, range_categories, custom_title, data_tables):
+    def __init__(self, sources, range_categories, custom_title):
 
         self.sources = sources
         self.range_categories = range_categories
@@ -104,10 +104,9 @@ class TimeSeries:
         self.trend_update_button.on_click(self.plot_update_trend)
 
         self.download_time_plot = Button(label="Download Plot Data", button_type="default", width=150)
-        self.download_time_plot.callback = CustomJS(args=dict(source_1=sources.time_1,
-                                                              source_2=sources.time_2),
+        self.download_time_plot.callback = CustomJS(args=dict(source=self.sources.time_csv),
                                                     code=open(join(dirname(__file__),
-                                                                   "download_time_plot.js")).read())
+                                                                   "download_new.js")).read())
 
         # histograms
         tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
@@ -311,6 +310,8 @@ class TimeSeries:
             clear_source_data(self.sources, 'time_1')
             clear_source_data(self.sources, 'time_2')
 
+        self.update_csv()
+
         self.plot_update_trend()
 
     def plot_update_trend(self):
@@ -473,3 +474,12 @@ class TimeSeries:
 
         self.y_axis.options = new_options
         self.y_axis.value = ''
+
+    def update_csv(self):
+
+        src_data = [self.sources.time_1.data, self.sources.time_2.data]
+        src_names = ['Group 1', 'Group 2']
+        columns = ['mrn', 'x', 'y']
+        csv_text = get_csv(src_data, src_names, columns)
+
+        self.sources.time_csv.data = {'text': [csv_text]}

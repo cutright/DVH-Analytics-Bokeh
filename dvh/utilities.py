@@ -891,3 +891,18 @@ class Temp_DICOM_FileSet:
                 roi[key] = rt_structures[key]['name']
 
         return roi
+
+
+def get_csv(data_dict_list, data_dict_names, columns):
+
+    text = []
+    for s, data_dict in enumerate(data_dict_list):
+        text.append(data_dict_names[s])
+        text.append(','.join(columns))  # Column headers
+        row_count = len(data_dict[columns[0]])
+        for r in range(row_count):
+            line = [str(data_dict[c][r]).replace(',', '^') for c in columns]
+            text.append(','.join(line))
+        text.append('')
+
+    return '\n'.join(text)

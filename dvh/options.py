@@ -4,7 +4,7 @@ Created on Sat Oct 28 2017
 @author: Dan Cutright, PhD
 """
 
-VERSION = '0.4.697'
+VERSION = '0.4.7'
 
 # Setting this to true enables log in screens
 # You must add your own code in into check_credentials of auth.py

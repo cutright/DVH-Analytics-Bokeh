@@ -16,7 +16,7 @@ from math import pi
 from scipy.stats import normaltest, pearsonr
 from os.path import dirname, join
 import numpy as np
-from utilities import get_include_map
+from utilities import get_include_map, get_csv
 
 
 class Correlation:
@@ -90,12 +90,8 @@ class Correlation:
         self.fig_include_2.on_change('active', self.fig_include_ticker)
 
         self.download_corr_fig = Button(label="Download Correlation Figure Data", button_type="default", width=150)
-        self.download_corr_fig.callback = CustomJS(args=dict(source_1_neg=sources.correlation_1_neg,
-                                                             source_1_pos=sources.correlation_1_pos,
-                                                             source_2_neg=sources.correlation_2_neg,
-                                                             source_2_pos=sources.correlation_2_pos),
-                                                   code=open(join(dirname(__file__),
-                                                                  "download_correlation_matrix.js")).read())
+        self.download_corr_fig.callback = CustomJS(args=dict(source=self.sources.correlation_csv),
+                                                   code=open(join(dirname(__file__), "download_new.js")).read())
 
         self.layout = column(Div(text="<b>DVH Analytics v%s</b>" % options.VERSION),
                              row(custom_title['1']['correlation'], Spacer(width=50), custom_title['2']['correlation']),
@@ -310,6 +306,8 @@ class Correlation:
                                                   'data': temp[n][s],
                                                   'units': units}
 
+        self.update_csv()
+
     def update_or_add_endpoints_to_correlation(self):
 
         include = get_include_map(self.sources)
@@ -351,6 +349,7 @@ class Correlation:
                 self.data[n][key]['include'] = [False] * len(value['uid'])
 
         self.clear_old_endpoints()
+        self.update_csv()
 
     def update_eud_in_correlation(self):
 
@@ -383,6 +382,7 @@ class Correlation:
 
         self.validate_data()
         self.update_correlation_matrix()
+        self.update_csv()
 
     def clear_old_endpoints(self):
         # As defined in DVHs tab web view
@@ -406,3 +406,14 @@ class Correlation:
 
     def add_regression_link(self, regression):
         self.regression = regression
+
+    def update_csv(self):
+        src_data = [self.sources.correlation_1_pos.data,
+                    self.sources.correlation_1_neg.data,
+                    self.sources.correlation_2_pos.data,
+                    self.sources.correlation_2_neg.data]
+        src_names = ['Group 1 Positive R', 'Group 1 Negative R', 'Group 2 Positive R', 'Group 2 Negative R']
+        columns = ['group', 'x_name', 'y_name', 'x_normality', 'y_normality', 'r', 'p']
+        csv_text = get_csv(src_data, src_names, columns)
+
+        self.sources.correlation_csv.data = {'text': [csv_text]}

@@ -9,6 +9,10 @@ Created on Tue Oct 30 2018
 from bokeh.models import ColumnDataSource
 
 dvhs = ColumnDataSource(data=dict(color=[], x=[], y=[], mrn=[]))
+query_csv_anon_dvhs = ColumnDataSource(data=dict(text=[]))
+query_csv_all = ColumnDataSource(data=dict(text=[]))
+query_csv_lite = ColumnDataSource(data=dict(text=[]))
+query_csv_dvhs = ColumnDataSource(data=dict(text=[]))
 
 selectors = ColumnDataSource(data=dict(row=[1], category1=[''], category2=[''],
                                        group=[''], group_label=[''], not_status=['']))
@@ -21,6 +25,7 @@ endpoint_defs = ColumnDataSource(data=dict(row=[], output_type=[], input_type=[]
 
 endpoint_view = ColumnDataSource(data=dict(mrn=[], group=[], roi_name=[], ep1=[], ep2=[], ep3=[], ep4=[],
                                            ep5=[], ep6=[], ep7=[], ep8=[], ep9=[], ep10=[]))
+endpoints_csv = ColumnDataSource(data=dict(text=[]))
 
 patch_1 = ColumnDataSource(data=dict(x_patch=[], y_patch=[]))
 patch_2 = ColumnDataSource(data=dict(x_patch=[], y_patch=[]))
@@ -36,6 +41,7 @@ rad_bio = ColumnDataSource(data=dict(mrn=[], uid=[], roi_name=[], ptv_overlap=[]
 
 time_1 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
 time_2 = ColumnDataSource(data=dict(x=[], y=[], mrn=[]))
+time_csv = ColumnDataSource(data=dict(text=[]))
 
 time_trend_1 = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
 time_trend_2 = ColumnDataSource(data=dict(x=[], y=[], w=[], mrn=[]))
@@ -102,3 +108,4 @@ correlation_2_pos = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[],
                                                group=[], size=[], x_normality=[], y_normality=[]))
 correlation_2_neg = ColumnDataSource(data=dict(x=[], y=[], x_name=[], y_name=[], color=[], alpha=[], r=[], p=[],
                                                group=[], size=[], x_normality=[], y_normality=[]))
+correlation_csv = ColumnDataSource(data=dict(text=[]))

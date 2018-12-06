@@ -8,10 +8,9 @@ This is the main python file for command line implementation.
 
 from __future__ import print_function
 from dicom_to_sql import dicom_to_sql
-from utilities import Temp_DICOM_FileSet
 from sql_connector import DVH_SQL
 from analysis_tools import DVH
-from utilities import is_import_settings_defined, is_sql_connection_defined,\
+from utilities import is_import_settings_defined, is_sql_connection_defined, Temp_DICOM_FileSet,\
     write_import_settings, write_sql_connection_settings, validate_import_settings, validate_sql_connection
 from get_settings import get_settings
 import os
