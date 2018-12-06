@@ -22,10 +22,13 @@ def parse_settings_file(abs_file_path):
             line = line.split()
             if not line:
                 continue
-            settings[line[0]] = line[1:][0]
-            # Convert strings to boolean
-            if line[1:][0].lower() == 'true':
-                settings[line[0]] = True
-            elif line[1:][0].lower() == 'false':
-                settings[line[0]] = False
+            if len(line) > 1:
+                settings[line[0]] = line[1:][0]
+                # Convert strings to boolean
+                if line[1:][0].lower() == 'true':
+                    settings[line[0]] = True
+                elif line[1:][0].lower() == 'false':
+                    settings[line[0]] = False
+            else:
+                settings[line[0]] = ''
     return settings

@@ -823,7 +823,7 @@ class Temp_DICOM_FileSet:
                     line = line.split()
                     if not line:
                         continue
-                    if line[0] == 'review':
+                    if line[0] == 'review' and len(line) > 1:
                         start_path = line[1:][0]
 
         self.plan = []
@@ -833,10 +833,10 @@ class Temp_DICOM_FileSet:
         self.study_instance_uid = []
 
         f = []
-
-        for root, dirs, files in os.walk(start_path, topdown=False):
-            for name in files:
-                f.append(os.path.join(root, name))
+        if start_path:
+            for root, dirs, files in os.walk(start_path, topdown=False):
+                for name in files:
+                    f.append(os.path.join(root, name))
 
         plan_files = []
         study_uid_plan = []

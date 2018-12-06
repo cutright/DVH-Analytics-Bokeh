@@ -177,18 +177,30 @@ def initialize_default_import_settings_file():
     # Create default import settings file
     import_settings_path = get_settings('import')
     if not os.path.isfile(import_settings_path):
-        write_import_settings({'inbox': '',
-                               'imported': '',
-                               'review': ''})
+        if os.path.isfile('/this_is_running_in_docker'):
+            write_import_settings({'inbox': '/dicom/inbox',
+                                   'imported': '/dicom/imported',
+                                   'review': '/dicom/review'})
+        else:
+            write_import_settings({'inbox': '',
+                                   'imported': '',
+                                   'review': ''})
 
 
 def initialize_default_sql_connection_config_file():
     # Create default sql connection config file
     sql_connection_path = get_settings('sql')
+    print(sql_connection_path)
     if not os.path.isfile(sql_connection_path):
-        write_sql_connection_settings({'host': 'localhost',
-                                       'dbname': 'dvh',
-                                       'port': '5432'})
+        if os.path.isfile('/this_is_running_in_docker'):
+            write_sql_connection_settings({'host': 'docker.for.mac.localhost',
+                                           'user': 'postgres',
+                                           'dbname': 'postgres',
+                                           'port': '5432'})
+        else:
+            write_sql_connection_settings({'host': 'localhost',
+                                           'dbname': 'dvh',
+                                           'port': '5432'})
 
 
 def main():
