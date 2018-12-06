@@ -11,7 +11,6 @@ import psycopg2
 import os
 from datetime import datetime
 from get_settings import get_settings, parse_settings_file
-from utilities import truncate_string
 
 
 class DVH_SQL:
@@ -454,6 +453,12 @@ def write_import_errors(obj):
                         line = "%s %s: plan %s: %s is NULL\n" % (str(datetime.now()).split('.')[0],
                                                                  obj.mrn, obj.tx_site, key)
                         warning_log.write(line)
+
+
+def truncate_string(input_string, character_limit):
+    if len(input_string) > character_limit:
+        return input_string[0:(character_limit-1)]
+    return input_string
 
 
 if __name__ == '__main__':

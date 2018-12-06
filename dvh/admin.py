@@ -43,6 +43,7 @@ ACCESS_GRANTED = not options.AUTH_USER_REQ
 query_source = ColumnDataSource(data=dict())
 query_data_csv = ColumnDataSource(data=dict(text=[]))
 baseline_source = ColumnDataSource(data=dict(mrn=[]))
+roi_map_table_source = ColumnDataSource(data=dict(institutional_roi=[], physician_roi=[], variation=[]))
 
 directories = {}
 config = {}
@@ -217,6 +218,7 @@ def select_physician_change(attr, old, new):
     update_select_unlinked_institutional_roi()
     update_uncategorized_variation_select()
     update_ignored_variations_select()
+    update_roi_map_table_source()
 
 
 def rename_physician():
@@ -397,6 +399,7 @@ def save_db():
     db.write_to_file()
     save_button_roi.button_type = 'primary'
     save_button_roi.label = 'Map Saved'
+    update_roi_map_table_source()
 
 
 def update_roi_map_source_data():
@@ -1417,6 +1420,16 @@ def update_csv():
     query_data_csv.data = {'text': [csv_text]}
 
 
+def update_roi_map_table_source():
+    phys_roi = db.get_physician_rois(select_physician.value)
+    inst_roi = [db.get_institutional_roi(select_physician.value, roi) for roi in phys_roi]
+    vari_roi = [', '.join(db.get_variations(select_physician.value, roi)) for roi in phys_roi]
+    roi_map_table_source.data = {'institutional_roi': inst_roi,
+                                 'physician_roi': phys_roi,
+                                 'variation_roi': vari_roi}
+    div_roi_map_table.text = "<b>Currently Saved ROI Map for %s" % select_physician.value
+
+
 ######################################################
 # Layout objects
 ######################################################
@@ -1580,6 +1593,13 @@ labels = LabelSet(x="x", y="y", text="name", y_offset=8,
 roi_map_plot.add_layout(labels)
 roi_map_plot.segment(x0='x0', y0='y0', x1='x1', y1='y1', source=roi_map_source, alpha=0.5)
 update_roi_map_source_data()
+div_roi_map_table = Div(text='')
+update_roi_map_table_source()
+
+columns = [TableColumn(field="institutional_roi", title="Institutional", width=150),
+           TableColumn(field="physician_roi", title="Physician", width=150),
+           TableColumn(field="variation_roi", title="Variations", width=500)]
+roi_map_table = DataTable(source=roi_map_table_source, columns=columns, index_position=None, width=1000, editable=True)
 
 roi_layout = layout([[select_institutional_roi],
                      [div_horizontal_bar1],
@@ -1596,6 +1616,8 @@ roi_layout = layout([[select_institutional_roi],
                      [div_action],
                      [action_button],
                      [roi_map_plot],
+                     [div_roi_map_table],
+                     [roi_map_table],
                      [Spacer(width=1000, height=100)]])
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
