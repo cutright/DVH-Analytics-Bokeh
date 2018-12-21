@@ -126,14 +126,14 @@ class MLC_Analyzer:
         if os.path.isfile(new):
             try:
                 self.mlc_data = mlca.Plan(new)
-                self.fx_grp_select.options = [str(i + 1) for i in range(len(self.mlc_data.fx_group))]
-                if self.fx_grp_select.value == self.fx_grp_select.options[0]:
-                    self.update_beam()
-                else:
-                    self.fx_grp_select.value = '1'
             except:
                 self.mlc_data = []
                 print('MLC import failure: %s' % new)
+            self.fx_grp_select.options = [str(i + 1) for i in range(len(self.mlc_data.fx_group))]
+            if self.fx_grp_select.value == self.fx_grp_select.options[0]:
+                self.update_beam()
+            else:
+                self.fx_grp_select.value = '1'
         else:
             self.mlc_data = []
             self.fx_grp_select.options = ['']
