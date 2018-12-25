@@ -6,28 +6,30 @@ Created on Fri Mar 24 13:43:28 2017
 """
 
 from __future__ import print_function
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 from future.utils import listvalues
-from utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection, \
+from tools.utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection, \
     recalculate_ages, update_min_distances_in_db, update_treatment_volume_overlap_in_db, update_volumes_in_db, \
     update_surface_area_in_db, load_options, update_centroid_in_db, update_spread_in_db, update_cross_section_in_db,\
     update_dist_to_ptv_centroids_in_db, get_csv
-import os
 from os.path import dirname, join
 from datetime import datetime
-from roi_name_manager import DatabaseROIs, clean_name
-from sql_connector import DVH_SQL
-from dicom_to_sql import dicom_to_sql, rebuild_database
+from tools.roi_name_manager import DatabaseROIs, clean_name
+from tools.sql_connector import DVH_SQL
+from tools.dicom_to_sql import dicom_to_sql, rebuild_database
 from bokeh.models.widgets import Select, Button, Tabs, Panel, TextInput, RadioButtonGroup,\
     Div, MultiSelect, TableColumn, DataTable, CheckboxGroup, PasswordInput
 from bokeh.layouts import layout, row, column
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.models import ColumnDataSource, LabelSet, Range1d, Slider, CustomJS, Spacer
-import auth
+from tools import auth
 import time
 import options
-from get_settings import get_settings, parse_settings_file
+from tools.get_settings import get_settings, parse_settings_file
 from shutil import copyfile
+from paths import BACKUP_DIR
 
 
 options = load_options(options)
@@ -1330,7 +1332,7 @@ def reimport_button_click():
         print("Aborting DICOM reimport.")
 
 
-options_map = {'Default': os.path.join(os.path.dirname(__file__), 'backups'),
+options_map = {'Default': BACKUP_DIR,
                'Root': '/',
                'Home': os.path.expanduser('~'),
                'Custom': ''}
@@ -1693,7 +1695,7 @@ calculate_exec_button.on_click(calculate_exec)
 
 download = Button(label="Download Table", button_type="default", width=150)
 download.callback = CustomJS(args=dict(source=query_data_csv),
-                             code=open(join(dirname(__file__), "download_new.js")).read())
+                             code=open(join(dirname(__file__), 'dvh_bokeh_models', 'download_new.js')).read())
 
 db_editor_layout = layout([[import_inbox_button, rebuild_db_button],
                            [import_inbox_force],

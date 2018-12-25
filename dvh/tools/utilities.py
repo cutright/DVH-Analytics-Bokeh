@@ -2,14 +2,15 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))  # for abs imports to script path
 from future.utils import listitems
 from sql_to_python import QuerySQL
 from sql_connector import DVH_SQL
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from dicompylercore import dicomparser
-import os
-import sys
 import numpy as np
 from get_settings import get_settings
 import pickle
@@ -20,6 +21,7 @@ try:
     import pydicom as dicom  # for pydicom >= 1.0
 except:
     import dicom
+from paths import APPS_DIR, APP_DIR, PREF_DIR, DATA_DIR, INBOX_DIR, IMPORTED_DIR, REVIEW_DIR, BACKUP_DIR
 
 
 # Enable shapely calculations using C, as opposed to the C++ default
@@ -809,22 +811,18 @@ def is_uid_in_all_keys(uid, uids):
 
 
 class Temp_DICOM_FileSet:
-    def __init__(self, start_path=None):
+    def __init__(self):
 
         # Read SQL configuration file
-        if start_path:
-            abs_file_path = os.path.join(os.path.dirname(__file__), start_path)
-            start_path = abs_file_path
-        else:
-            abs_file_path = get_settings('import')
+        abs_file_path = get_settings('import')
 
-            with open(abs_file_path, 'r') as document:
-                for line in document:
-                    line = line.split()
-                    if not line:
-                        continue
-                    if line[0] == 'review' and len(line) > 1:
-                        start_path = line[1:][0]
+        with open(abs_file_path, 'r') as document:
+            for line in document:
+                line = line.split()
+                if not line:
+                    continue
+                if line[0] == 'review' and len(line) > 1:
+                    start_path = line[1:][0]
 
         self.plan = []
         self.structure = []
@@ -906,3 +904,10 @@ def get_csv(data_dict_list, data_dict_names, columns):
         text.append('')
 
     return '\n'.join(text)
+
+
+def initialize_directories_settings():
+    directories = [APPS_DIR, APP_DIR, PREF_DIR, DATA_DIR, INBOX_DIR, IMPORTED_DIR, REVIEW_DIR, BACKUP_DIR]
+    for directory in directories:
+        if not os.path.isdir(directory):
+            os.mkdir(directory)

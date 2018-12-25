@@ -7,7 +7,7 @@ Created on Sun Nov 4 2018
 """
 
 from bokeh.models.widgets import DataTable
-import columns
+from dvh_bokeh_models.main import columns
 
 
 class DataTables:

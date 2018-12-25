@@ -13,9 +13,9 @@ from bokeh.layouts import column, row
 import options
 from options import GROUP_LABELS
 from os.path import dirname, join
-from utilities import clear_source_selection, clear_source_data, group_constraint_count, calc_stats,\
+from tools.utilities import clear_source_selection, clear_source_data, group_constraint_count, calc_stats,\
     Temp_DICOM_FileSet, get_csv
-from analysis_tools import dose_to_volume, volume_of_dose
+from tools.analysis_tools import dose_to_volume, volume_of_dose
 import numpy as np
 from dicompylercore import dicomparser, dvhcalc
 
@@ -112,7 +112,7 @@ class DVHs:
 
         self.download_endpoints_button = Button(label="Download Endpoints", button_type="default", width=150)
         self.download_endpoints_button.callback = CustomJS(args=dict(source=self.sources.endpoints_csv),
-                                                           code=open(join(dirname(__file__),
+                                                           code=open(join(dirname(dirname(__file__)),
                                                                           "download_new.js")).read())
 
         # Setup axis normalization radio buttons

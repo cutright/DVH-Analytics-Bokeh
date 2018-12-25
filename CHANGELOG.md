@@ -1,6 +1,11 @@
 # Change log of DVH Analytics
 
-### 0.4.7 (TBD)
+### 0.4.8 (TBD)
+* Reorganize python files into directories
+    * with: sys.path.append(dirname(dirname(realpath(\_\_file\_\_))))
+* remove test files
+
+### 0.4.7 (2018.12.6)
 * Move csv creation to python for less javascript (download.js)
 * Some bug catches if certain fields are too long to import into its SQL column
 * ROI Name Manager in the Admin view displays a table of the currently saved ROI Map of the 

@@ -7,19 +7,21 @@ Created on Fri Mar 24 13:43:28 2017
 """
 
 from __future__ import print_function
-from future.utils import listvalues
-from utilities import is_import_settings_defined, is_sql_connection_defined,\
-    write_import_settings, write_sql_connection_settings, validate_sql_connection, save_options, load_options
+import sys
 import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+from future.utils import listvalues
+from tools.utilities import is_import_settings_defined, is_sql_connection_defined,\
+    write_import_settings, write_sql_connection_settings, validate_sql_connection, save_options, load_options
+from tools import auth
+from tools.get_settings import get_settings, parse_settings_file
+from tools.sql_connector import DVH_SQL
+from dvh import options
 import time
-from sql_connector import DVH_SQL
 from bokeh.models.widgets import Button, TextInput, Div, PasswordInput, RadioButtonGroup, CheckboxGroup, Select
 from bokeh.models import Spacer
 from bokeh.layouts import layout, row, column
 from bokeh.io import curdoc
-import auth
-import options
-from get_settings import get_settings, parse_settings_file
 import matplotlib.colors as plot_colors
 
 
@@ -573,7 +575,6 @@ settings_layout = layout([[div_import],
                           [default_options_button, div_default_options]])
 
 # Create the document Bokeh server will use to generate the webpage
-# Create the document Bokeh server will use to generate the webpage
 if ACCESS_GRANTED:
     curdoc().add_root(settings_layout)
 else:
@@ -584,6 +585,3 @@ curdoc().title = "DVH Analytics"
 update_directory_status("Inbox", input_inbox)
 update_directory_status("Imported", input_imported)
 update_directory_status("Review", input_review)
-
-if __name__ == '__main__':
-    pass

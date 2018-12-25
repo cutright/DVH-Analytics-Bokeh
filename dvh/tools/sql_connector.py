@@ -7,10 +7,13 @@ Created on Sat Mar  4 11:33:10 2017
 """
 
 from __future__ import print_function
-import psycopg2
+import sys
 import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+import psycopg2
 from datetime import datetime
 from get_settings import get_settings, parse_settings_file
+from paths import SCRIPT_DIR
 
 
 class DVH_SQL:
@@ -365,9 +368,8 @@ class DVH_SQL:
         self.cnx.commit()
 
     def initialize_database(self):
-        script_dir = os.path.dirname(__file__)
         rel_path = "preferences/create_tables.sql"
-        abs_file_path = os.path.join(script_dir, rel_path)
+        abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
         self.execute_file(abs_file_path)
 
     def reinitialize_database(self):

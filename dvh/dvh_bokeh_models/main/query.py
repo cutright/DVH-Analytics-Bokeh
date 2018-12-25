@@ -6,17 +6,17 @@ Created on Sun Nov 4 2018
 @author: Dan Cutright, PhD
 """
 from __future__ import print_function
-from sql_connector import DVH_SQL
+from tools.sql_connector import DVH_SQL
 from dateutil.parser import parse
 from os.path import dirname, join
 from bokeh.models.widgets import Select, Button, TextInput, CheckboxButtonGroup, Dropdown, CheckboxGroup, Div
 from bokeh.models import CustomJS, Spacer
-from utilities import get_study_instance_uids, clear_source_selection, clear_source_data,\
+from tools.utilities import get_study_instance_uids, clear_source_selection, clear_source_data,\
     group_constraint_count, calc_stats
 from bokeh.layouts import column, row
 from bokeh.palettes import Colorblind8 as palette
-from sql_to_python import QuerySQL
-from analysis_tools import DVH
+from tools.sql_to_python import QuerySQL
+from tools.analysis_tools import DVH
 from datetime import datetime
 import itertools
 import numpy as np
@@ -123,7 +123,7 @@ class Query:
                                                              source_rxs=sources.rxs,
                                                              source_plans=sources.plans,
                                                              source_beams=sources.beams),
-                                                   code=open(join(dirname(__file__), "download.js")).read())
+                                                   code=open(join(dirname(dirname(__file__)), "download.js")).read())
 
         self.layout = column(Div(text="<b>DVH Analytics v%s</b>" % options.VERSION),
                              row(custom_title['1']['query'], Spacer(width=50), custom_title['2']['query'],

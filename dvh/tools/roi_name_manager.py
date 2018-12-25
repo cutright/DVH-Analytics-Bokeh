@@ -7,10 +7,13 @@ Created on Fri Mar 24 13:43:28 2017
 """
 
 from __future__ import print_function
+import sys
 import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 # from fuzzywuzzy import fuzz
 from sql_to_python import QuerySQL
 from sql_connector import DVH_SQL
+from paths import PREF_DIR
 
 
 class Physician:
@@ -471,12 +474,8 @@ def clean_name(name):
 
 def get_physicians_from_roi_files():
 
-    script_dir = os.path.dirname(__file__)
-    rel_path = "preferences/"
-    abs_dir_path = os.path.join(script_dir, rel_path)
-
     physicians = ['DEFAULT']
-    for file_name in os.listdir(abs_dir_path):
+    for file_name in os.listdir(PREF_DIR):
         if file_name.startswith("physician_") and file_name.endswith(".roi"):
             physician = file_name.replace('physician_', '').replace('.roi', '')
             physician = clean_name(physician).upper()

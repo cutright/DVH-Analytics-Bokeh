@@ -1,5 +1,13 @@
-from options import SETTINGS_PATHS
-import os
+import sys
+from os.path import isfile, dirname, join, realpath
+sys.path.append(dirname(dirname(realpath(__file__))))
+from paths import PREF_DIR
+
+
+SETTINGS_PATHS = {'docker': {'import': "/import_and_connection/import_settings.txt",
+                             'sql': "/import_and_connection/sql_connection.cnf"},
+                  'default': {'import': join(PREF_DIR, 'import_settings.txt'),
+                              'sql': join(PREF_DIR, 'sql_connection.cnf')}}
 
 
 def get_settings(settings_type):
@@ -7,12 +15,10 @@ def get_settings(settings_type):
     :param settings_type: either 'sql' or 'import'
     :return:
     """
-    if os.path.isfile('/this_is_running_in_docker'):
-        print('docker')
+    if isfile('/this_is_running_in_docker'):
         return SETTINGS_PATHS['docker'][settings_type]
     else:
-        script_dir = os.path.dirname(__file__)
-        return os.path.join(script_dir, SETTINGS_PATHS['default'][settings_type])
+        return SETTINGS_PATHS['default'][settings_type]
 
 
 def parse_settings_file(abs_file_path):

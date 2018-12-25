@@ -7,28 +7,31 @@ Created on Sun Apr 21 2017
 """
 
 from __future__ import print_function
-from utilities import load_options
-import auth
+from os.path import dirname, realpath
+import sys
+sys.path.append(dirname(dirname(realpath(__file__))))
+from tools.utilities import load_options
+from tools import auth
 from bokeh.layouts import row
 from bokeh.models import Spacer
 from bokeh.io import curdoc
 from bokeh.models.widgets import Button, Panel, Tabs, TextInput, PasswordInput
 import time
 import options
-import sources
-from custom_titles import custom_title
-from mlc_analyzer import MLC_Analyzer
-from time_series import TimeSeries
-from correlation import Correlation
-from roi_viewer import ROI_Viewer
-from rad_bio import RadBio
-from regression import Regression
-from query import Query
-from dvhs import DVHs
-from data_tables import DataTables
-from categories import Categories
-from planning_data import PlanningData
-from source_listener import SourceListener
+from dvh_bokeh_models.main import sources
+from dvh_bokeh_models.main.custom_titles import custom_title
+from dvh_bokeh_models.main.mlc_analyzer import MLC_Analyzer
+from dvh_bokeh_models.main.time_series import TimeSeries
+from dvh_bokeh_models.main.correlation import Correlation
+from dvh_bokeh_models.main.roi_viewer import ROI_Viewer
+from dvh_bokeh_models.main.rad_bio import RadBio
+from dvh_bokeh_models.main.regression import Regression
+from dvh_bokeh_models.main.query import Query
+from dvh_bokeh_models.main.dvhs import DVHs
+from dvh_bokeh_models.main.data_tables import DataTables
+from dvh_bokeh_models.main.categories import Categories
+from dvh_bokeh_models.main.planning_data import PlanningData
+from tools.source_listener import SourceListener
 
 options = load_options(options)
 

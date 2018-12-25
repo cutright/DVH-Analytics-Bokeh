@@ -6,27 +6,28 @@ Created on Thu May 23 16:57 2017
 This is the main python file for command line implementation.
 """
 
+
 from __future__ import print_function
-from dicom_to_sql import dicom_to_sql
-from sql_connector import DVH_SQL
-from analysis_tools import DVH
-from utilities import is_import_settings_defined, is_sql_connection_defined, Temp_DICOM_FileSet,\
-    write_import_settings, write_sql_connection_settings, validate_import_settings, validate_sql_connection
-from get_settings import get_settings
-import os
+import sys
+from os.path import dirname, realpath, isfile, isdir, join
+sys.path.append(dirname(dirname(realpath(__file__))))
+from tools.dicom_to_sql import dicom_to_sql
+from tools.sql_connector import DVH_SQL
+from tools.utilities import is_import_settings_defined, is_sql_connection_defined, write_import_settings,\
+    write_sql_connection_settings, validate_sql_connection, initialize_directories_settings
+from tools.get_settings import get_settings
 from getpass import getpass
 import argparse
 from subprocess import call
+from paths import INBOX_DIR, IMPORTED_DIR, REVIEW_DIR
 
 
-SCRIPT_DIR = os.path.dirname(__file__)
+SCRIPT_DIR = dirname(__file__)
+initialize_directories_settings()
 
 
 if is_sql_connection_defined():
-    try:
-        DVH_SQL().initialize_database()
-    except:
-        print("Warning: could not initialize SQL database")
+    DVH_SQL().initialize_database()
 
 
 def settings(dir=False, sql=False):
@@ -57,42 +58,6 @@ def test_import_sql_cnx_definitions():
         return True
 
     return False
-
-
-def test_dvh_code():
-    if test_import_sql_cnx_definitions():
-        is_import_valid = validate_import_settings()
-        is_sql_connection_valid = validate_sql_connection()
-        if not is_import_valid and not is_sql_connection_valid:
-            print("ERROR: Create the directories listed above or input valid directories.\n",
-                  "ERROR: Cannot connect to SQL.\n",
-                  "Please run:\n    $ dvh settings", sep='')
-        elif not is_import_valid:
-            print("ERROR: Create the directories listed above or input valid directories by running:\n",
-                  "    $ dvh settings --dir", sep='')
-        elif not is_sql_connection_valid:
-            print("ERROR: Cannot connect to SQL.\n",
-                  "Verify database is active and/or update SQL connection information with:\n",
-                  "    $ dvh settings --sql", sep='')
-
-        else:
-            print("Importing test files")
-            dicom_to_sql(start_path="test_files/",
-                         force_update=False)
-
-            print("Reading data from SQL DB with analysis_tools.py")
-            test = DVH()
-
-            print("Reading dicom information from test files with utilities.py (for plan review module)")
-            test_files = Temp_DICOM_FileSet(start_path="test_files/")
-
-            print("Deleting test data from SQL database")
-            for i in range(0, test_files.count):
-                cond_str = "mrn = '" + test_files.mrn[i]
-                cond_str += "' and study_instance_uid = '" + test_files.study_instance_uid[i] + "'"
-                DVH_SQL().delete_rows(cond_str)
-
-            print("Tests successful!")
 
 
 def get_import_settings_from_user():
@@ -175,23 +140,22 @@ def print_mrns():
 def initialize_default_import_settings_file():
     # Create default import settings file
     import_settings_path = get_settings('import')
-    if not os.path.isfile(import_settings_path):
-        if os.path.isfile('/this_is_running_in_docker'):
+    if not isfile(import_settings_path):
+        if isfile('/this_is_running_in_docker'):
             write_import_settings({'inbox': '/dicom/inbox',
                                    'imported': '/dicom/imported',
                                    'review': '/dicom/review'})
         else:
-            write_import_settings({'inbox': '',
-                                   'imported': '',
-                                   'review': ''})
+            write_import_settings({'inbox': INBOX_DIR,
+                                   'imported': IMPORTED_DIR,
+                                   'review': REVIEW_DIR})
 
 
 def initialize_default_sql_connection_config_file():
     # Create default sql connection config file
     sql_connection_path = get_settings('sql')
-    print(sql_connection_path)
-    if not os.path.isfile(sql_connection_path):
-        if os.path.isfile('/this_is_running_in_docker'):
+    if not isfile(sql_connection_path):
+        if isfile('/this_is_running_in_docker'):
             write_sql_connection_settings({'host': 'docker.for.mac.localhost',
                                            'user': 'postgres',
                                            'dbname': 'postgres',
@@ -247,9 +211,6 @@ def main():
                 if args.dir:
                     settings(dir=True)
 
-        elif args.command[0] == 'test':
-            test_dvh_code()
-
         elif args.command[0] == 'echo':
             validate_sql_connection()
 
@@ -263,7 +224,7 @@ def main():
             force_update = False
 
             if args.start_path:
-                if os.path.isdir(args.start_path):
+                if isdir(args.start_path):
                     start_path = str(args.start_path)
                 else:
                     print(args.start_path, 'is not a valid path', sep=' ')
@@ -310,8 +271,7 @@ def main():
                 command.append("--allow-websocket-origin")
                 command.append(args.allow_websocket_origin)
 
-            file_name = 'admin.py'
-            abs_file_path = os.path.join(SCRIPT_DIR, file_name)
+            abs_file_path = join(SCRIPT_DIR, 'admin.py')
 
             command.append(abs_file_path)
 
@@ -338,8 +298,7 @@ def main():
                 command.append("--allow-websocket-origin")
                 command.append(args.allow_websocket_origin)
 
-            file_name = 'settings.py'
-            abs_file_path = os.path.join(SCRIPT_DIR, file_name)
+            abs_file_path = join(SCRIPT_DIR, 'settings.py')
 
             command.append(abs_file_path)
 

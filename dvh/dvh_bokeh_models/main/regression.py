@@ -17,7 +17,7 @@ from bokeh.models import Legend, HoverTool, Spacer
 from bokeh.layouts import row, column
 from scipy.stats import linregress
 import numpy as np
-from utilities import clear_source_data, clear_source_selection
+from tools.utilities import clear_source_data, clear_source_selection
 
 
 class Regression:

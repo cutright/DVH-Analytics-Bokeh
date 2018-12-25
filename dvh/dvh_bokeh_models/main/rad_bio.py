@@ -8,8 +8,8 @@ Created on Sun Nov 4 2018
 from bokeh.models.widgets import Button, TextInput, CheckboxButtonGroup, Div
 from bokeh.models import Spacer
 from bokeh.layouts import column, row
-from utilities import get_include_map
-from analysis_tools import calc_eud
+from tools.utilities import get_include_map
+from tools.analysis_tools import calc_eud
 import options
 from options import GROUP_LABELS
 

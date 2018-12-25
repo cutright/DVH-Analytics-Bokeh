@@ -6,6 +6,9 @@ Created on Thu Mar  9 18:48:19 2017
 """
 
 from __future__ import print_function
+import sys
+from os.path import dirname, realpath
+sys.path.append(dirname(dirname(realpath(__file__))))
 import numpy as np
 from sql_connector import DVH_SQL
 from sql_to_python import QuerySQL
