@@ -600,9 +600,7 @@ def flatten_list_of_lists(some_list):
 
 
 def save_options(options):
-    script_dir = os.path.dirname(__file__)
-    rel_path = "preferences/options"
-    abs_file_path = os.path.join(script_dir, rel_path)
+    abs_file_path = os.path.join(PREF_DIR, 'options')
 
     out_options = {}
     for i in options.__dict__:
@@ -619,9 +617,7 @@ class Object():
 
 
 def load_options(options):
-    script_dir = os.path.dirname(__file__)
-    rel_path = "preferences/options"
-    abs_file_path = os.path.join(script_dir, rel_path)
+    abs_file_path = os.path.join(PREF_DIR, 'options')
 
     if os.path.isfile(abs_file_path):
 
@@ -636,7 +632,11 @@ def load_options(options):
 
         return new_options
     else:
-        return options
+        out_options = Object()
+        for i in options.__dict__:
+            if not i.startswith('_'):
+                setattr(out_options, i, getattr(options, i))
+        return out_options
 
 
 def calc_stats(data):

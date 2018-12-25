@@ -6,13 +6,13 @@ Created on Fri Mar 24 13:43:28 2017
 """
 
 from __future__ import print_function
-import os, sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+import update_sys_path  # noqa
 from future.utils import listvalues
 from tools.utilities import is_import_settings_defined, is_sql_connection_defined, validate_sql_connection, \
     recalculate_ages, update_min_distances_in_db, update_treatment_volume_overlap_in_db, update_volumes_in_db, \
     update_surface_area_in_db, load_options, update_centroid_in_db, update_spread_in_db, update_cross_section_in_db,\
     update_dist_to_ptv_centroids_in_db, get_csv
+import os
 from os.path import dirname, join
 from datetime import datetime
 from tools.roi_name_manager import DatabaseROIs, clean_name

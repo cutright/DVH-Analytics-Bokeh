@@ -7,9 +7,7 @@ Created on Sun Apr 21 2017
 """
 
 from __future__ import print_function
-from os.path import dirname, realpath
-import sys
-sys.path.append(dirname(dirname(realpath(__file__))))
+import update_sys_path  # noqa
 from tools.utilities import load_options
 from tools import auth
 from bokeh.layouts import row

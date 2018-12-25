@@ -8,9 +8,8 @@ This is the main python file for command line implementation.
 
 
 from __future__ import print_function
-import sys
-from os.path import dirname, realpath, isfile, isdir, join
-sys.path.append(dirname(dirname(realpath(__file__))))
+import update_sys_path  # noqa
+from os.path import dirname, isfile, isdir, join
 from tools.dicom_to_sql import dicom_to_sql
 from tools.sql_connector import DVH_SQL
 from tools.utilities import is_import_settings_defined, is_sql_connection_defined, write_import_settings,\
