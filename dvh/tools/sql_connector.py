@@ -13,7 +13,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 import psycopg2
 from datetime import datetime
 from get_settings import get_settings, parse_settings_file
-from paths import SCRIPT_DIR, APP_DIR
+from paths import SCRIPT_DIR, DATA_DIR
 
 
 class DVH_SQL:
@@ -439,7 +439,7 @@ class DVH_SQL:
 
 def write_import_errors(obj):
     detail_col = [c for c in ['beam_name', 'roi_name', 'plan_name'] if hasattr(obj, c)]
-    file_path = os.path.join(APP_DIR, 'import_warning_log.txt')
+    file_path = os.path.join(DATA_DIR, 'import_warning_log.txt')
     with open(file_path, "a") as warning_log:
         for key, value in obj.__dict__.items():
             if not key.startswith("__"):
