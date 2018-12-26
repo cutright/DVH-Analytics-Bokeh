@@ -252,13 +252,18 @@ def main():
                     if DVH_SQL().is_sql_table_empty('DVHs'):
                         print("There is no data in your SQL table.")
                         print("You may import data from the admin view (use the 'admin' command instead of 'run'")
-
-                    call(command)
+                    try:
+                        call(command)
+                    except KeyboardInterrupt:
+                        print('DVH Analytics main server shutdown complete.')
                 else:
                     print("Could not connect to SQL. You may need to update/initiate settings.")
                     print("Try running with 'settings' command instead of 'run'")
             else:
-                call(command)
+                try:
+                    call(command)
+                except KeyboardInterrupt:
+                    print('DVH Analytics main server shutdown complete.')
 
         elif args.command[0] == 'admin':
             command = ["bokeh", "serve", "--show", "--port"]
@@ -276,12 +281,18 @@ def main():
 
             if not args.bypass_sql_test:
                 if test_import_sql_cnx_definitions():
-                    call(command)
+                    try:
+                        call(command)
+                    except KeyboardInterrupt:
+                        print('Admin server shutdown complete.')
                 else:
                     print("Could not connect to SQL. You may need to update/initiate settings.")
                     print("Try running with 'settings' command instead of 'admin'")
             else:
-                call(command)
+                try:
+                    call(command)
+                except KeyboardInterrupt:
+                    print('Admin server shutdown complete.')
 
         elif args.command[0] == 'settings':
 
@@ -301,7 +312,10 @@ def main():
 
             command.append(abs_file_path)
 
-            call(command)
+            try:
+                call(command)
+            except KeyboardInterrupt:
+                print('Settings server shutdown complete.')
 
         elif args.command[0] == 'create_tables':
 
