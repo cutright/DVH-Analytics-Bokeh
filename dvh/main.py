@@ -33,7 +33,7 @@ from tools.source_listener import SourceListener
 
 
 options = load_options(options)
-sources = Sources()
+
 
 # This depends on a user defined function in dvh/auth.py.  By default, this returns True
 # It is up to the user/installer to write their own function (e.g., using python-ldap)
@@ -41,9 +41,13 @@ sources = Sources()
 # Please see Bokeh documentation for more information
 ACCESS_GRANTED = not options.AUTH_USER_REQ
 
+
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Bokeh component classes
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+# ColumnDataSource objects
+sources = Sources()
 
 # Categories map of dropdown values, SQL column, and SQL table (and data source for range_categories)
 categories = Categories(sources)
