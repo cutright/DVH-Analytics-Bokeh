@@ -3,7 +3,8 @@
 ### 0.4.8 (TBD)
 * Reorganize python files into directories
     * with: sys.path.append(dirname(dirname(realpath(\_\_file\_\_))))
-* remove test files
+* Remove test files
+* Catch keyboard interrupt in \_\_main\_\_.py for graceful shutdown
 
 ### 0.4.7 (2018.12.6)
 * Move csv creation to python for less javascript (download.js)
@@ -22,7 +23,7 @@ main, admin, and settings views.  A directory was created to share changes with 
 Now the command prompt will print the failed RT Plan file, and skip the MLC Analyzer tab update, preventing a crash.
 * Moving to the bokeh_components directory caused relative import errors. As a temporary fix, all python files moved 
 to main dvh directory. This version was verified to work via pip install (and subsequently running with dvh command 
-calling `__main__.py` for entry point), as well as in docker.
+calling \_\_main\_\_.py for entry point), as well as in docker.
 * These versions were explicitly tested by running source code with direct bokeh serve calls, pip install of 
 DVH Analytics, and using docker-compose.
 
