@@ -1,9 +1,9 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
-Created on Fri Mar 24 13:43:28 2017
-
-@author: nightowl
+custom options for settings view
+Created on Tue Dec 25 2018
+@author: Dan Cutright, PhD
 """
 
 from __future__ import print_function

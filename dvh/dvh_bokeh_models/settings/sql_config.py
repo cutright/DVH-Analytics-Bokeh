@@ -7,8 +7,7 @@ Created on Tue Dec 25 2018
 """
 
 from __future__ import print_function
-from tools.utilities import is_sql_connection_defined, write_sql_connection_settings, validate_sql_connection
-from tools.get_settings import get_settings, parse_settings_file
+from tools.utilities import write_sql_connection_settings, validate_sql_connection, load_sql_settings
 from tools.sql_connector import DVH_SQL
 import time
 from bokeh.models.widgets import Button, TextInput, Div, PasswordInput
@@ -62,16 +61,7 @@ class SqlConfig:
                              row(self.check_tables_button, self.create_tables_button, self.clear_tables_button))
 
     def load(self, update_widgets=True):
-        if is_sql_connection_defined():
-            self.config = parse_settings_file(get_settings('sql'))
-            self.validate_config()
-
-        else:
-            self.config = {'host': 'localhost',
-                           'port': '5432',
-                           'dbname': 'dvh',
-                           'user': '',
-                           'password': ''}
+        self.config = load_sql_settings()
 
         if update_widgets:
             for key in self.input_types:
@@ -79,14 +69,6 @@ class SqlConfig:
 
             self.save_button.button_type = 'default'
             self.save_button.label = 'Save'
-
-    def validate_config(self):
-        if 'user' not in list(self.config):
-            self.config['user'] = ''
-            self.config['password'] = ''
-
-        if 'password' not in list(self.config):
-            self.config['password'] = ''
 
     def save(self):
         self.update_config()

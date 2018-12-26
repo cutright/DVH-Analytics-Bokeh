@@ -12,7 +12,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from dicompylercore import dicomparser
 import numpy as np
-from get_settings import get_settings
+from get_settings import get_settings, parse_settings_file
 import pickle
 from math import ceil
 from shapely import speedups
@@ -911,3 +911,38 @@ def initialize_directories_settings():
     for directory in directories:
         if not os.path.isdir(directory):
             os.mkdir(directory)
+
+
+def load_sql_settings():
+    if is_sql_connection_defined():
+        config = parse_settings_file(get_settings('sql'))
+        config = validate_config(config)
+
+    else:
+        config = {'host': 'localhost',
+                  'port': '5432',
+                  'dbname': 'dvh',
+                  'user': '',
+                  'password': ''}
+
+    return config
+
+
+def validate_config(config):
+    if 'user' not in list(config):
+        config['user'] = ''
+        config['password'] = ''
+
+    if 'password' not in list(config):
+        config['password'] = ''
+
+    return config
+
+
+def load_directories():
+    if is_import_settings_defined():
+        return parse_settings_file(get_settings('import'))
+    else:
+        return {'inbox': INBOX_DIR,
+                'imported': IMPORTED_DIR,
+                'review': REVIEW_DIR}

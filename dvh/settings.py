@@ -1,9 +1,9 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
-Created on Fri Mar 24 13:43:28 2017
-
-@author: nightowl
+settings view
+Created on Tue Dec 25 2018
+@author: Dan Cutright, PhD
 """
 
 from __future__ import print_function
@@ -12,12 +12,16 @@ from dvh_bokeh_models.settings.dicom_directories import DicomDirectories
 from dvh_bokeh_models.settings.custom_options import CustomOptions
 from dvh_bokeh_models.settings.sql_config import SqlConfig
 from tools import auth
+from tools.utilities import initialize_directories_settings
 from dvh import options
 import time
 from bokeh.models.widgets import Button, TextInput, Div, PasswordInput
 from bokeh.models import Spacer
 from bokeh.layouts import layout, row, column
 from bokeh.io import curdoc
+
+
+initialize_directories_settings()
 
 dicom_directories = DicomDirectories()
 sql_config = SqlConfig()
