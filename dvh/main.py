@@ -16,7 +16,7 @@ from bokeh.io import curdoc
 from bokeh.models.widgets import Button, Panel, Tabs, TextInput, PasswordInput
 import time
 import options
-from dvh_bokeh_models.main import sources
+from dvh_bokeh_models.main.sources import Sources
 from dvh_bokeh_models.main.custom_titles import custom_title
 from dvh_bokeh_models.main.mlc_analyzer import MLC_Analyzer
 from dvh_bokeh_models.main.time_series import TimeSeries
@@ -31,8 +31,9 @@ from dvh_bokeh_models.main.categories import Categories
 from dvh_bokeh_models.main.planning_data import PlanningData
 from tools.source_listener import SourceListener
 
-options = load_options(options)
 
+options = load_options(options)
+sources = Sources()
 
 # This depends on a user defined function in dvh/auth.py.  By default, this returns True
 # It is up to the user/installer to write their own function (e.g., using python-ldap)

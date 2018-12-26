@@ -5,6 +5,7 @@
     * with: sys.path.append(dirname(dirname(realpath(\_\_file\_\_))))
 * Remove test files
 * Catch keyboard interrupt in \_\_main\_\_.py for graceful shutdown
+* Moved import_warning_log.txt to user's data directory
 
 ### 0.4.7 (2018.12.6)
 * Move csv creation to python for less javascript (download.js)
