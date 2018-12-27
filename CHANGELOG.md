@@ -12,7 +12,7 @@
 * May need to copy files from <script-dir>/preferences into ~/Apps/dvh_analytics/preferences/
 * Data directory defaults to ~/Apps/dvh_analytics/data but can still be customized
 * All sql/preference backups stored in ~/Apps/dvh_analytics/data/backup now (can't customize)
-* options.py now constains imports (os and paths.py)
+* options.py now contains imports (os and paths.py)
     * This broke load_options, code added to ignore ModuleType
 
 ### 0.4.7 (2018.12.6)
