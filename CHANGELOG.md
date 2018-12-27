@@ -8,6 +8,11 @@
 * Remove test files
 * Catch keyboard interrupt in \_\_main\_\_.py for graceful shutdown
 * Moved import_warning_log.txt to user's data directory
+* All preferences stored in user folder now so that there's no need to run servers with sudo
+* May need to copy files from <script-dir>/preferences into ~/Apps/dvh_analytics/preferences/
+* Data directory defaults to ~/Apps/dvh_analytics/data but can still be customized
+* All sql/preference backups stored in ~/Apps/dvh_analytics/data/backup now (can't customize)
+
 
 ### 0.4.7 (2018.12.6)
 * Move csv creation to python for less javascript (download.js)
