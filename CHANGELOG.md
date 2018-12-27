@@ -4,6 +4,7 @@
 * Reorganize python files into directories:
     * path updated with: `import update_sys_path`
     * columns.py and custom_titles.py now have code wrapped in a class
+    * Multiple simultaneous sessions enabled again by wrapping all bokeh objects into classes
 * Remove test files
 * Catch keyboard interrupt in \_\_main\_\_.py for graceful shutdown
 * Moved import_warning_log.txt to user's data directory
