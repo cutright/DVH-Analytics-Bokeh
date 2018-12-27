@@ -17,7 +17,7 @@ from bokeh.models.widgets import Button, Panel, Tabs, TextInput, PasswordInput
 import time
 import options
 from dvh_bokeh_models.main.sources import Sources
-from dvh_bokeh_models.main.custom_titles import custom_title
+from dvh_bokeh_models.main.custom_titles import CustomTitles
 from dvh_bokeh_models.main.mlc_analyzer import MLC_Analyzer
 from dvh_bokeh_models.main.time_series import TimeSeries
 from dvh_bokeh_models.main.correlation import Correlation
@@ -33,6 +33,7 @@ from tools.source_listener import SourceListener
 
 
 options = load_options(options)
+custom_title = CustomTitles().custom_title
 
 
 # This depends on a user defined function in dvh/auth.py.  By default, this returns True

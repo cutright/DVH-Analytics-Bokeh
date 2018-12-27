@@ -7,11 +7,13 @@ Created on Sun Nov 4 2018
 """
 
 from bokeh.models.widgets import DataTable
-from dvh_bokeh_models.main import columns
+from dvh_bokeh_models.main.columns import Columns
 
 
 class DataTables:
     def __init__(self, sources):
+
+        columns = Columns()
 
         self.selection_filter = DataTable(source=sources.selectors,
                                           columns=columns.selection_filter, width=1000, height=150)

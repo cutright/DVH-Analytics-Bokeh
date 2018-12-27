@@ -18,11 +18,14 @@ from tools.get_settings import get_settings, parse_settings_file
 import numpy as np
 import options
 import time
-from dvh_bokeh_models.main.columns import mlc_viewer as mlc_viewer_columns
+from dvh_bokeh_models.main.columns import Columns
 
 
 class MLC_Analyzer:
     def __init__(self, sources, custom_title, data_tables):
+
+        mlc_viewer_columns = Columns().mlc_viewer
+
         self.sources = sources
 
         self.mlc_data = []

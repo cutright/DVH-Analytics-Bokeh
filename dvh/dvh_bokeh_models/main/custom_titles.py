@@ -9,26 +9,28 @@ Created on Tue Oct 30 2018
 from options import GROUP_1_COLOR, GROUP_2_COLOR, GROUP_LABELS
 from bokeh.models.widgets import TextInput
 
-TITLE_TYPES = ['query', 'dvhs', 'rad_bio', 'roi_viewer', 'planning', 'time_series',
-               'correlation', 'regression', 'mlc_analyzer']
 
-group_1_title = 'Group 1 (%s) Custom Title:' % GROUP_1_COLOR.capitalize()
-group_2_title = 'Group 2 (%s) Custom Title:' % GROUP_2_COLOR.capitalize()
-title = {'1': group_1_title, '2': group_2_title}
+class CustomTitles:
+    def __init__(self):
 
+        self.TITLE_TYPES = ['query', 'dvhs', 'rad_bio', 'roi_viewer', 'planning', 'time_series',
+                            'correlation', 'regression', 'mlc_analyzer']
 
-def custom_title_1_ticker(attr, old, new):
-    for t in TITLE_TYPES:
-        custom_title['1'][t].value = new
+        self.group_1_title = 'Group 1 (%s) Custom Title:' % GROUP_1_COLOR.capitalize()
+        self.group_2_title = 'Group 2 (%s) Custom Title:' % GROUP_2_COLOR.capitalize()
+        self.title = {'1': self.group_1_title, '2': self.group_2_title}
 
+        self.custom_title = {n: {t: TextInput(value='', title=self.title[n], width=300) for t in self.TITLE_TYPES}
+                             for n in GROUP_LABELS}
 
-def custom_title_2_ticker(attr, old, new):
-    for t in TITLE_TYPES:
-        custom_title['2'][t].value = new
+        for t in self.TITLE_TYPES:
+            self.custom_title['1'][t].on_change('value', self.custom_title_1_ticker)
+            self.custom_title['2'][t].on_change('value', self.custom_title_2_ticker)
 
+    def custom_title_1_ticker(self, attr, old, new):
+        for t in self.TITLE_TYPES:
+            self.custom_title['1'][t].value = new
 
-custom_title = {n: {t: TextInput(value='', title=title[n], width=300) for t in TITLE_TYPES} for n in GROUP_LABELS}
-
-for t in TITLE_TYPES:
-    custom_title['1'][t].on_change('value', custom_title_1_ticker)
-    custom_title['2'][t].on_change('value', custom_title_2_ticker)
+    def custom_title_2_ticker(self, attr, old, new):
+        for t in self.TITLE_TYPES:
+            self.custom_title['2'][t].value = new
