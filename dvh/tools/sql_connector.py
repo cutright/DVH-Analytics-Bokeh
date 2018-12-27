@@ -296,9 +296,6 @@ class DVH_SQL:
         rx_table.plan_name = truncate_string(rx_table.plan_name, 50)
         rx_table.fx_grp_name = truncate_string(rx_table.fx_grp_name, 30)
 
-        # for key, value in rx_table.__dict__.items():
-        #     print(key, type(value), value)
-
         for x in range(rx_table.count):
             values = [str(rx_table.mrn[x]),
                       str(rx_table.study_instance_uid[x]),
@@ -314,7 +311,7 @@ class DVH_SQL:
                       str(rx_table.normalization_object[x]).replace("'", "`"),
                       'NOW()']
             sql_input = "INSERT INTO Rxs (%s) VALUES ('%s');\n" % (','.join(col_names), "','".join(values))
-            # print(sql_input)
+
             with open(file_path, "a") as text_file:
                 text_file.write(sql_input)
 

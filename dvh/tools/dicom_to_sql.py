@@ -112,8 +112,6 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
                 continue
 
         if plan_file:
-            print(plan_file)
-            print(os.path.isfile(plan_file))
             if not hasattr(dicom.read_file(plan_file), 'BrachyTreatmentType'):
                 if import_latest_only:
                     beams = BeamTable(plan_file)
