@@ -1,8 +1,9 @@
 # Change log of DVH Analytics
 
-### 0.4.8 (TBD)
-* Reorganize python files into directories
-    * with: sys.path.append(dirname(dirname(realpath(\_\_file\_\_))))
+### 0.4.8 (2018.12.27)
+* Reorganize python files into directories:
+    * path updated with: `import update_sys_path`
+    * columns.py and custom_titles.py now have code wrapped in a class
 * Remove test files
 * Catch keyboard interrupt in \_\_main\_\_.py for graceful shutdown
 * Moved import_warning_log.txt to user's data directory
