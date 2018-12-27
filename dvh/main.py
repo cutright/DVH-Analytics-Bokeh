@@ -7,7 +7,7 @@ Created on Sun Apr 21 2017
 """
 
 from __future__ import print_function
-import update_sys_path  # noqa
+import update_sys_path
 from tools.utilities import load_options
 from tools import auth
 from bokeh.layouts import row

@@ -7,7 +7,7 @@ Created on Tue Dec 25 2018
 """
 
 from __future__ import print_function
-import update_sys_path  # noqa
+import update_sys_path
 from dvh_bokeh_models.settings.dicom_directories import DicomDirectories
 from dvh_bokeh_models.settings.custom_options import CustomOptions
 from dvh_bokeh_models.settings.sql_config import SqlConfig

@@ -6,7 +6,7 @@ Created on Fri Mar 24 13:43:28 2017
 """
 
 from __future__ import print_function
-import update_sys_path  # noqa
+import update_sys_path
 from bokeh.models.widgets import Button, Tabs, Panel, TextInput,Div, PasswordInput
 from bokeh.layouts import row, column
 from bokeh.io import curdoc
