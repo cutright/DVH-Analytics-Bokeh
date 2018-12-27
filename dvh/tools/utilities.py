@@ -22,6 +22,7 @@ try:
 except:
     import dicom
 from paths import APPS_DIR, APP_DIR, PREF_DIR, DATA_DIR, INBOX_DIR, IMPORTED_DIR, REVIEW_DIR, BACKUP_DIR
+import types
 
 
 # Enable shapely calculations using C, as opposed to the C++ default
@@ -621,22 +622,27 @@ def load_options(options):
 
     if os.path.isfile(abs_file_path):
 
-        infile = open(abs_file_path, 'rb')
-        new_dict = pickle.load(infile)
+        try:
+            infile = open(abs_file_path, 'rb')
+            new_dict = pickle.load(infile)
 
-        new_options = Object()
-        for key, value in listitems(new_dict):
-            setattr(new_options, key, value)
+            new_options = Object()
+            for key, value in listitems(new_dict):
+                setattr(new_options, key, value)
 
-        infile.close()
+            infile.close()
 
-        return new_options
-    else:
-        out_options = Object()
-        for i in options.__dict__:
-            if not i.startswith('_'):
-                setattr(out_options, i, getattr(options, i))
-        return out_options
+            return new_options
+        except EOFError:
+            print('Corrupt options file, loading defaults.')
+
+    out_options = Object()
+    for i in options.__dict__:
+        if not i.startswith('_'):
+            value = getattr(options, i)
+            if not isinstance(value, types.ModuleType):  # ignore imports in options.py
+                setattr(out_options, i, value)
+    return out_options
 
 
 def calc_stats(data):
