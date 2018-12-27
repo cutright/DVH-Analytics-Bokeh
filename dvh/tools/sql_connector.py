@@ -273,7 +273,6 @@ class DVH_SQL:
                             (','.join(col_names), "','".join(values).replace("'(NULL)'", "(NULL)"))
 
                 with open(file_path, "a") as text_file:
-                    print('beam4')
                     text_file.write(sql_input)
 
         if os.path.isfile(file_path):
