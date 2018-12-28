@@ -7,22 +7,25 @@ Created on Sat Nov 3 2018
 """
 
 from __future__ import print_function
-import dicom_mlc_analyzer as mlca
-from sql_connector import DVH_SQL
+from tools import mlc_analyzer as mlca
+from tools.sql_connector import DVH_SQL
 from bokeh.models.widgets import Select, Button, Div, DataTable
 from bokeh.plotting import figure
 from bokeh.models import Range1d, Spacer
 from bokeh.layouts import row, column
 import os
-from get_settings import get_settings, parse_settings_file
+from tools.get_settings import get_settings, parse_settings_file
 import numpy as np
 import options
 import time
-from columns import mlc_viewer as mlc_viewer_columns
+from dvh_bokeh_models.main.columns import Columns
 
 
 class MLC_Analyzer:
     def __init__(self, sources, custom_title, data_tables):
+
+        mlc_viewer_columns = Columns().mlc_viewer
+
         self.sources = sources
 
         self.mlc_data = []

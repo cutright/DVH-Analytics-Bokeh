@@ -10,11 +10,11 @@ from bokeh.models.widgets import Select, Button, CheckboxGroup, Div
 from bokeh.plotting import figure
 from bokeh.layouts import row, column
 from bokeh.models import Spacer
-from utilities import clear_source_data
+from tools.utilities import clear_source_data
 import options
 from bokeh import events
-from sql_connector import DVH_SQL
-from roi_tools import get_planes_from_string, get_union
+from tools.sql_connector import DVH_SQL
+from tools.roi_tools import get_planes_from_string, get_union
 
 
 class RoiViewerRoiColorTicker:

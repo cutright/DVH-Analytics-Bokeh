@@ -7,10 +7,13 @@ Created on Sat Mar  4 11:33:10 2017
 """
 
 from __future__ import print_function
-import psycopg2
+import sys
 import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+import psycopg2
 from datetime import datetime
 from get_settings import get_settings, parse_settings_file
+from paths import SCRIPT_DIR, DATA_DIR
 
 
 class DVH_SQL:
@@ -270,7 +273,6 @@ class DVH_SQL:
                             (','.join(col_names), "','".join(values).replace("'(NULL)'", "(NULL)"))
 
                 with open(file_path, "a") as text_file:
-                    print('beam4')
                     text_file.write(sql_input)
 
         if os.path.isfile(file_path):
@@ -294,9 +296,6 @@ class DVH_SQL:
         rx_table.plan_name = truncate_string(rx_table.plan_name, 50)
         rx_table.fx_grp_name = truncate_string(rx_table.fx_grp_name, 30)
 
-        # for key, value in rx_table.__dict__.items():
-        #     print(key, type(value), value)
-
         for x in range(rx_table.count):
             values = [str(rx_table.mrn[x]),
                       str(rx_table.study_instance_uid[x]),
@@ -312,7 +311,7 @@ class DVH_SQL:
                       str(rx_table.normalization_object[x]).replace("'", "`"),
                       'NOW()']
             sql_input = "INSERT INTO Rxs (%s) VALUES ('%s');\n" % (','.join(col_names), "','".join(values))
-            # print(sql_input)
+
             with open(file_path, "a") as text_file:
                 text_file.write(sql_input)
 
@@ -365,9 +364,8 @@ class DVH_SQL:
         self.cnx.commit()
 
     def initialize_database(self):
-        script_dir = os.path.dirname(__file__)
         rel_path = "preferences/create_tables.sql"
-        abs_file_path = os.path.join(script_dir, rel_path)
+        abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
         self.execute_file(abs_file_path)
 
     def reinitialize_database(self):
@@ -437,7 +435,8 @@ class DVH_SQL:
 
 def write_import_errors(obj):
     detail_col = [c for c in ['beam_name', 'roi_name', 'plan_name'] if hasattr(obj, c)]
-    with open("import_warning_log.txt", "a") as warning_log:
+    file_path = os.path.join(DATA_DIR, 'import_warning_log.txt')
+    with open(file_path, "a") as warning_log:
         for key, value in obj.__dict__.items():
             if not key.startswith("__"):
                 if type(value) == list:  # beams, rxs, and dvhs tables will be lists here

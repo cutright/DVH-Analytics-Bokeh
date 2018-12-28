@@ -1,6 +1,23 @@
 # Change log of DVH Analytics
 
-### 0.4.7 (TBD)
+### 0.4.8 (2018.12.27)
+* Reorganize python files into directories:
+    * path updated with: import update_sys_path
+    * columns.py and custom_titles.py now have code wrapped in a class
+    * Multiple simultaneous sessions enabled again by wrapping all bokeh objects into classes
+* Remove test files
+* Catch keyboard interrupt in \_\_main\_\_.py for graceful shutdown
+* Moved import_warning_log.txt to user's data directory
+* All preferences stored in user folder now so that there's no need to run servers with sudo
+* May need to copy files from <script-dir>/preferences into ~/Apps/dvh_analytics/preferences/
+* Data directory defaults to ~/Apps/dvh_analytics/data but can still be customized
+* All sql/preference backups stored in ~/Apps/dvh_analytics/data/backup now (can't customize)
+* options.py now contains imports (os and paths.py)
+    * This broke load_options, code added to ignore ModuleType
+* Automatically update uncategorized variations in ROI Manager after importing data, updating database, deleting data, 
+or reimporting database
+
+### 0.4.7 (2018.12.6)
 * Move csv creation to python for less javascript (download.js)
 * Some bug catches if certain fields are too long to import into its SQL column
 * ROI Name Manager in the Admin view displays a table of the currently saved ROI Map of the 
@@ -17,7 +34,7 @@ main, admin, and settings views.  A directory was created to share changes with 
 Now the command prompt will print the failed RT Plan file, and skip the MLC Analyzer tab update, preventing a crash.
 * Moving to the bokeh_components directory caused relative import errors. As a temporary fix, all python files moved 
 to main dvh directory. This version was verified to work via pip install (and subsequently running with dvh command 
-calling `__main__.py` for entry point), as well as in docker.
+calling \_\_main\_\_.py for entry point), as well as in docker.
 * These versions were explicitly tested by running source code with direct bokeh serve calls, pip install of 
 DVH Analytics, and using docker-compose.
 

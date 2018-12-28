@@ -4,7 +4,11 @@ Created on Sat Oct 28 2017
 @author: Dan Cutright, PhD
 """
 
-VERSION = '0.4.7'
+import os
+import paths
+
+
+VERSION = '0.4.8'
 
 # Setting this to true enables log in screens
 # You must add your own code in into check_credentials of auth.py
@@ -128,8 +132,8 @@ OPTIONAL_TABS = {'ROI Viewer': True,
 # Note that docker paths are absolute, default will be treated as relative to script directory
 SETTINGS_PATHS = {'docker': {'import': "/import_and_connection/import_settings.txt",
                              'sql': "/import_and_connection/sql_connection.cnf"},
-                  'default': {'import': "preferences/import_settings.txt",
-                              'sql': "preferences/sql_connection.cnf"}}
+                  'default': {'import': os.path.join(paths.PREF_DIR, 'import_settings.txt'),
+                              'sql': os.path.join(paths.PREF_DIR, 'sql_connection.cnf')}}
 
 # Set this to True to turn off all modules except Query and DVHs.  No graphics are generated.  Activating this will
 # be useful for VERY large datasets when the user is only interested in raw data and DVH Endpoint calculation

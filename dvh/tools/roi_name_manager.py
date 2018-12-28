@@ -7,10 +7,14 @@ Created on Fri Mar 24 13:43:28 2017
 """
 
 from __future__ import print_function
+import sys
 import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 # from fuzzywuzzy import fuzz
 from sql_to_python import QuerySQL
 from sql_connector import DVH_SQL
+from paths import PREF_DIR, SCRIPT_DIR
+from shutil import copyfile
 
 
 class Physician:
@@ -40,11 +44,13 @@ class DatabaseROIs:
         self.physicians = {}
         self.institutional_rois = []
 
-        self.script_dir = os.path.dirname(__file__)
+        # Copy default ROI files to user folder if they do not exist
+        if not os.path.isfile(os.path.join(PREF_DIR, 'institutional.roi')):
+            initialize_roi_preference_file('institutional.roi')
+            initialize_roi_preference_file('physician_BBM.roi')
 
         # Import institutional roi names
-        rel_path = "preferences/institutional.roi"
-        abs_file_path = os.path.join(self.script_dir, rel_path)
+        abs_file_path = os.path.join(PREF_DIR, 'institutional.roi')
         if os.path.isfile(abs_file_path):
             with open(abs_file_path, 'r') as document:
                 for line in document:
@@ -68,8 +74,8 @@ class DatabaseROIs:
     def import_physician_roi_maps(self):
 
         for physician in list(self.physicians):
-            rel_path = 'preferences/physician_' + physician + '.roi'
-            abs_file_path = os.path.join(self.script_dir, rel_path)
+            rel_path = 'physician_%s.roi' % physician
+            abs_file_path = os.path.join(PREF_DIR, rel_path)
             if os.path.isfile(abs_file_path):
                 self.import_physician_roi_map(abs_file_path, physician)
 
@@ -381,12 +387,8 @@ class DatabaseROIs:
     # Export to file
     ########################
     def write_to_file(self):
-        script_dir = os.path.dirname(__file__)
-
-        rel_dir = "preferences/"
-
         file_name = 'institutional.roi'
-        abs_file_path = os.path.join(script_dir, rel_dir, file_name)
+        abs_file_path = os.path.join(PREF_DIR, file_name)
         document = open(abs_file_path, 'w')
         lines = self.institutional_rois
         lines.sort()
@@ -400,7 +402,7 @@ class DatabaseROIs:
 
         for physician in physicians:
             file_name = 'physician_' + physician + '.roi'
-            abs_file_path = os.path.join(script_dir, rel_dir, file_name)
+            abs_file_path = os.path.join(PREF_DIR, file_name)
             lines = []
             for physician_roi in self.get_physician_rois(physician):
                 institutional_roi = self.get_institutional_roi(physician, physician_roi)
@@ -422,7 +424,7 @@ class DatabaseROIs:
         for physician in get_physicians_from_roi_files():
             if physician not in physicians and physician != 'DEFAULT':
                 file_name = 'physician_' + physician + '.roi'
-                abs_file_path = os.path.join(script_dir, rel_dir, file_name)
+                abs_file_path = os.path.join(PREF_DIR, file_name)
                 os.remove(abs_file_path)
 
     ################
@@ -471,12 +473,8 @@ def clean_name(name):
 
 def get_physicians_from_roi_files():
 
-    script_dir = os.path.dirname(__file__)
-    rel_path = "preferences/"
-    abs_dir_path = os.path.join(script_dir, rel_path)
-
     physicians = ['DEFAULT']
-    for file_name in os.listdir(abs_dir_path):
+    for file_name in os.listdir(PREF_DIR):
         if file_name.startswith("physician_") and file_name.endswith(".roi"):
             physician = file_name.replace('physician_', '').replace('.roi', '')
             physician = clean_name(physician).upper()
@@ -572,5 +570,9 @@ def print_uncategorized_rois():
 #     return combined
 
 
-if __name__ == '__main__':
-    pass
+def initialize_roi_preference_file(rel_file_name):
+    roi_files_user = [f for f in os.listdir(PREF_DIR) if '.roi' in f]
+    if rel_file_name not in roi_files_user:
+        src = os.path.join(SCRIPT_DIR, 'preferences', rel_file_name)
+        dest = os.path.join(PREF_DIR, rel_file_name)
+        copyfile(src, dest)

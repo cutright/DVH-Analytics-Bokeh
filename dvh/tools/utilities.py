@@ -2,16 +2,17 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))  # for abs imports to script path
 from future.utils import listitems
 from sql_to_python import QuerySQL
 from sql_connector import DVH_SQL
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from dicompylercore import dicomparser
-import os
-import sys
 import numpy as np
-from get_settings import get_settings
+from get_settings import get_settings, parse_settings_file
 import pickle
 from math import ceil
 from shapely import speedups
@@ -20,6 +21,8 @@ try:
     import pydicom as dicom  # for pydicom >= 1.0
 except:
     import dicom
+from paths import APPS_DIR, APP_DIR, PREF_DIR, DATA_DIR, INBOX_DIR, IMPORTED_DIR, REVIEW_DIR, BACKUP_DIR
+import types
 
 
 # Enable shapely calculations using C, as opposed to the C++ default
@@ -598,9 +601,7 @@ def flatten_list_of_lists(some_list):
 
 
 def save_options(options):
-    script_dir = os.path.dirname(__file__)
-    rel_path = "preferences/options"
-    abs_file_path = os.path.join(script_dir, rel_path)
+    abs_file_path = os.path.join(PREF_DIR, 'options')
 
     out_options = {}
     for i in options.__dict__:
@@ -617,24 +618,31 @@ class Object():
 
 
 def load_options(options):
-    script_dir = os.path.dirname(__file__)
-    rel_path = "preferences/options"
-    abs_file_path = os.path.join(script_dir, rel_path)
+    abs_file_path = os.path.join(PREF_DIR, 'options')
 
     if os.path.isfile(abs_file_path):
 
-        infile = open(abs_file_path, 'rb')
-        new_dict = pickle.load(infile)
+        try:
+            infile = open(abs_file_path, 'rb')
+            new_dict = pickle.load(infile)
 
-        new_options = Object()
-        for key, value in listitems(new_dict):
-            setattr(new_options, key, value)
+            new_options = Object()
+            for key, value in listitems(new_dict):
+                setattr(new_options, key, value)
 
-        infile.close()
+            infile.close()
 
-        return new_options
-    else:
-        return options
+            return new_options
+        except EOFError:
+            print('Corrupt options file, loading defaults.')
+
+    out_options = Object()
+    for i in options.__dict__:
+        if not i.startswith('_'):
+            value = getattr(options, i)
+            if not isinstance(value, types.ModuleType):  # ignore imports in options.py
+                setattr(out_options, i, value)
+    return out_options
 
 
 def calc_stats(data):
@@ -809,22 +817,18 @@ def is_uid_in_all_keys(uid, uids):
 
 
 class Temp_DICOM_FileSet:
-    def __init__(self, start_path=None):
+    def __init__(self):
 
         # Read SQL configuration file
-        if start_path:
-            abs_file_path = os.path.join(os.path.dirname(__file__), start_path)
-            start_path = abs_file_path
-        else:
-            abs_file_path = get_settings('import')
+        abs_file_path = get_settings('import')
 
-            with open(abs_file_path, 'r') as document:
-                for line in document:
-                    line = line.split()
-                    if not line:
-                        continue
-                    if line[0] == 'review' and len(line) > 1:
-                        start_path = line[1:][0]
+        with open(abs_file_path, 'r') as document:
+            for line in document:
+                line = line.split()
+                if not line:
+                    continue
+                if line[0] == 'review' and len(line) > 1:
+                    start_path = line[1:][0]
 
         self.plan = []
         self.structure = []
@@ -906,3 +910,45 @@ def get_csv(data_dict_list, data_dict_names, columns):
         text.append('')
 
     return '\n'.join(text)
+
+
+def initialize_directories_settings():
+    directories = [APPS_DIR, APP_DIR, PREF_DIR, DATA_DIR, INBOX_DIR, IMPORTED_DIR, REVIEW_DIR, BACKUP_DIR]
+    for directory in directories:
+        if not os.path.isdir(directory):
+            os.mkdir(directory)
+
+
+def load_sql_settings():
+    if is_sql_connection_defined():
+        config = parse_settings_file(get_settings('sql'))
+        config = validate_config(config)
+
+    else:
+        config = {'host': 'localhost',
+                  'port': '5432',
+                  'dbname': 'dvh',
+                  'user': '',
+                  'password': ''}
+
+    return config
+
+
+def validate_config(config):
+    if 'user' not in list(config):
+        config['user'] = ''
+        config['password'] = ''
+
+    if 'password' not in list(config):
+        config['password'] = ''
+
+    return config
+
+
+def load_directories():
+    if is_import_settings_defined():
+        return parse_settings_file(get_settings('import'))
+    else:
+        return {'inbox': INBOX_DIR,
+                'imported': IMPORTED_DIR,
+                'review': REVIEW_DIR}

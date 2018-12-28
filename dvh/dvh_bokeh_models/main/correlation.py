@@ -16,7 +16,7 @@ from math import pi
 from scipy.stats import normaltest, pearsonr
 from os.path import dirname, join
 import numpy as np
-from utilities import get_include_map, get_csv
+from tools.utilities import get_include_map, get_csv
 
 
 class Correlation:
@@ -91,7 +91,8 @@ class Correlation:
 
         self.download_corr_fig = Button(label="Download Correlation Figure Data", button_type="default", width=150)
         self.download_corr_fig.callback = CustomJS(args=dict(source=self.sources.correlation_csv),
-                                                   code=open(join(dirname(__file__), "download_new.js")).read())
+                                                   code=open(join(dirname(dirname(__file__)),
+                                                                  "download_new.js")).read())
 
         self.layout = column(Div(text="<b>DVH Analytics v%s</b>" % options.VERSION),
                              row(custom_title['1']['correlation'], Spacer(width=50), custom_title['2']['correlation']),
