@@ -21,7 +21,9 @@ from bokeh.models import ColumnDataSource, Slider, CustomJS, Spacer
 
 
 class DatabaseEditor:
-    def __init__(self):
+    def __init__(self, roi_manager):
+
+        self.roi_manager = roi_manager  # allows ROI Name manager updates after importing data
 
         self.source = ColumnDataSource(data=dict())
         self.source_csv = ColumnDataSource(data=dict(text=[]))
@@ -198,6 +200,9 @@ class DatabaseEditor:
             self.update_db_button.label = 'Update'
             self.update_db_button.button_type = 'warning'
 
+            self.roi_manager.update_uncategorized_variation_select()
+            self.roi_manager.update_ignored_variations_select()
+
     def delete_from_db(self):
         if self.delete_from_db_value.value and self.delete_auth_text.value == 'delete':
             condition = self.delete_from_db_column.value + " = '" + self.delete_from_db_value.value + "'"
@@ -205,6 +210,9 @@ class DatabaseEditor:
             self.update_query_source()
             self.delete_from_db_value.value = ''
             self.delete_auth_text.value = ''
+
+            self.roi_manager.update_uncategorized_variation_select()
+            self.roi_manager.update_ignored_variations_select()
 
     def change_mrn_uid(self):
         self.change_mrn_uid_button.label = 'Updating...'
@@ -250,6 +258,9 @@ class DatabaseEditor:
             else:
                 import_latest_only = False
             dicom_to_sql(force_update=force_update, import_latest_only=import_latest_only, move_files=move_files)
+
+        self.roi_manager.update_uncategorized_variation_select()
+
         self.import_inbox_button.button_type = 'success'
         self.import_inbox_button.label = 'Import all from inbox'
 
@@ -442,6 +453,9 @@ class DatabaseEditor:
                              move_files=False, update_dicom_catalogue_table=False)
                 self.reimport_button.label = "Reimport"
                 self.reimport_button.button_type = 'warning'
+
+                self.roi_manager.update_uncategorized_variation_select()
+                self.roi_manager.update_ignored_variations_select()
         else:
             print("WARNING: %s does not exist" % dicom_directory)
             print("Aborting DICOM reimport.")

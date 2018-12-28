@@ -31,8 +31,8 @@ initialize_directories_settings()
 ACCESS_GRANTED = not options.AUTH_USER_REQ
 
 
-database_editor = DatabaseEditor()
 roi_manager = RoiManager()
+database_editor = DatabaseEditor(roi_manager)
 baseline = Baseline()
 backup = Backup()
 
