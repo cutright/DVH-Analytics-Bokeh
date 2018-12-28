@@ -14,7 +14,8 @@
 * All sql/preference backups stored in ~/Apps/dvh_analytics/data/backup now (can't customize)
 * options.py now contains imports (os and paths.py)
     * This broke load_options, code added to ignore ModuleType
-* Automatically update uncategorized variations in ROI Manager after importing data
+* Automatically update uncategorized variations in ROI Manager after importing data, updating database, deleting data, 
+or reimporting database
 
 ### 0.4.7 (2018.12.6)
 * Move csv creation to python for less javascript (download.js)
