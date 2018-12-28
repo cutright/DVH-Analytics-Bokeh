@@ -387,12 +387,8 @@ class DatabaseROIs:
     # Export to file
     ########################
     def write_to_file(self):
-        script_dir = os.path.dirname(__file__)
-
-        rel_dir = "preferences/"
-
         file_name = 'institutional.roi'
-        abs_file_path = os.path.join(script_dir, rel_dir, file_name)
+        abs_file_path = os.path.join(PREF_DIR, file_name)
         document = open(abs_file_path, 'w')
         lines = self.institutional_rois
         lines.sort()
@@ -406,7 +402,7 @@ class DatabaseROIs:
 
         for physician in physicians:
             file_name = 'physician_' + physician + '.roi'
-            abs_file_path = os.path.join(script_dir, rel_dir, file_name)
+            abs_file_path = os.path.join(PREF_DIR, file_name)
             lines = []
             for physician_roi in self.get_physician_rois(physician):
                 institutional_roi = self.get_institutional_roi(physician, physician_roi)
@@ -428,7 +424,7 @@ class DatabaseROIs:
         for physician in get_physicians_from_roi_files():
             if physician not in physicians and physician != 'DEFAULT':
                 file_name = 'physician_' + physician + '.roi'
-                abs_file_path = os.path.join(script_dir, rel_dir, file_name)
+                abs_file_path = os.path.join(PREF_DIR, file_name)
                 os.remove(abs_file_path)
 
     ################
