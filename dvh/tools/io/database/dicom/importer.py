@@ -74,21 +74,20 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
         print("dose file: %s" % dose_file)
 
         # Process DICOM files into Python objects
-        plan, beams, dvhs, rxs = [], [], [], []
         mp, ms, md = [], [], []
         if plan_file:
             try:
-                mp = tools.database_io.dicom.read_file(plan_file).ManufacturerModelName.lower()
+                mp = dicom.read_file(plan_file).ManufacturerModelName.lower()
             except AttributeError:
                 mp = ''
         if struct_file:
             try:
-                ms = tools.database_io.dicom.read_file(struct_file).ManufacturerModelName.lower()
+                ms = dicom.read_file(struct_file).ManufacturerModelName.lower()
             except AttributeError:
                 ms = ''
         if dose_file:
             try:
-                md = tools.database_io.dicom.read_file(dose_file).ManufacturerModelName.lower()
+                md = dicom.read_file(dose_file).ManufacturerModelName.lower()
             except AttributeError:
                 ''
 
@@ -112,7 +111,7 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
                 continue
 
         if plan_file:
-            if not hasattr(tools.database_io.dicom.read_file(plan_file), 'BrachyTreatmentType'):
+            if not hasattr(dicom.read_file(plan_file), 'BrachyTreatmentType'):
                 if import_latest_only:
                     beams = BeamTable(plan_file)
                     sqlcnx.insert_beams(beams)
@@ -135,11 +134,11 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
         # get mrn for folder name, can't assume a complete set of dose, plan, struct files
         mrn = []
         if dose_file:
-            mrn = tools.database_io.dicom.read_file(dose_file).PatientID
+            mrn = dicom.read_file(dose_file).PatientID
         elif plan_file:
-            mrn = tools.database_io.dicom.read_file(plan_file).PatientID
+            mrn = dicom.read_file(plan_file).PatientID
         elif struct_file:
-            mrn = tools.database_io.dicom.read_file(struct_file).PatientID
+            mrn = dicom.read_file(struct_file).PatientID
         if mrn:
             mrn = "".join(x for x in mrn if x.isalnum())  # remove any special characters
         else:
@@ -201,7 +200,7 @@ def get_file_paths(start_path):
     file_paths = {}
     for file_path in f:
         try:
-            dicom_file = tools.database_io.dicom.read_file(file_path)
+            dicom_file = dicom.read_file(file_path)
         except:
             dicom_file = False
 
@@ -237,14 +236,11 @@ def get_file_paths(start_path):
 
 
 def rebuild_database(start_path):
-    print('connecting to SQL DB')
-    sqlcnx = DVH_SQL()
-    print('connection established')
 
-    sqlcnx.reinitialize_database()
-    print('DB reinitialized with no data')
-    dicom_to_sql(start_path=start_path, force_update=True)
-    sqlcnx.cnx.close()
+    DVH_SQL().reinitialize_database()
+    print('Database reinitialized with no data.')
+    print('Begin importing from data from %s' % start_path)
+    dicom_to_sql(start_path=start_path)
 
 
 def is_uid_imported(uid):

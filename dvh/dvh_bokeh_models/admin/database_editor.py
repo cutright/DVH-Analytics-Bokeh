@@ -15,6 +15,7 @@ from datetime import datetime
 from tools.io.database.sql_connector import DVH_SQL
 from tools.io.database.dicom.importer import dicom_to_sql, rebuild_database
 from tools.io.database import update as db_update
+from tools.io.database.recalculate import recalculate_ages
 from bokeh.models.widgets import Select, Button, TextInput, Div, MultiSelect, TableColumn, DataTable, CheckboxGroup
 from bokeh.layouts import row, column
 from bokeh.models import ColumnDataSource, Slider, CustomJS, Spacer
@@ -431,7 +432,7 @@ class DatabaseEditor:
     def calculate_exec(self):
         calc_map = {'PTV Distances': self.update_all_min_distances_in_db,
                     'PTV Overlap': self.update_all_tv_overlaps_in_db,
-                    'Patient Ages': db_update.recalculate_ages,
+                    'Patient Ages': recalculate_ages,
                     'ROI Centroid': self.update_all_centroids_in_db,
                     'ROI Spread': self.update_all_spreads_in_db,
                     'ROI Cross-Section': self.update_all_cross_sections_in_db,
@@ -439,7 +440,7 @@ class DatabaseEditor:
                     'All (except age)': self.update_all_except_age_in_db,
                     'Default Post-Import': self.update_default_post_import}
 
-        if self.calculate_select.value not in {'All (except age)', 'Default Post-Import'}:
+        if self.calculate_select.value:
 
             start_time = datetime.now()
             print(str(start_time), 'Beginning %s calculations' % self.calculate_condition.value, sep=' ')
@@ -465,16 +466,12 @@ class DatabaseEditor:
             m, s = divmod(seconds, 60)
             h, m = divmod(m, 60)
             if h:
-                print("These calculations took %dhrs %02dmin %02dsec to complete" % (h, m, s))
+                print("Calculations for %s took %dhrs %02dmin %02dsec to complete" %
+                      (self.calculate_select.value, h, m, s))
             elif m:
-                print("These calculations took %02dmin %02dsec to complete" % (m, s))
+                print("Calculations for %s took %02dmin %02dsec to complete" % (self.calculate_select.value, m, s))
             else:
-                print("These calculations took %02dsec to complete" % s)
-        else:
-            if self.calculate_condition.value:
-                calc_map[self.calculate_select.value](self.calculate_condition.value)
-            else:
-                calc_map[self.calculate_select.value]()
+                print("Calculations for %s took %02dsec to complete" % (self.calculate_select.value, s))
 
     def update_csv(self):
         src_data = [self.source.data]
