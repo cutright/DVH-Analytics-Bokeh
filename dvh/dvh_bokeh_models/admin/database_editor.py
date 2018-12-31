@@ -7,14 +7,14 @@ Created on Tue Dec 25 2018
 """
 
 from __future__ import print_function
-from tools.utilities import recalculate_ages, update_min_distances_in_db, update_treatment_volume_overlap_in_db,\
-    update_volumes_in_db, update_surface_area_in_db, update_centroid_in_db, update_spread_in_db,\
-    update_cross_section_in_db, update_dist_to_ptv_centroids_in_db, get_csv, load_directories
+from tools.utilities import get_csv
+from tools.io.preferences.import_settings import load_directories
 import os
 from os.path import dirname, join
 from datetime import datetime
-from tools.sql_connector import DVH_SQL
-from tools.dicom_to_sql import dicom_to_sql, rebuild_database
+from tools.io.database.sql_connector import DVH_SQL
+from tools.io.database.dicom.importer import dicom_to_sql, rebuild_database
+from tools.io.database import update as db_update
 from bokeh.models.widgets import Select, Button, TextInput, Div, MultiSelect, TableColumn, DataTable, CheckboxGroup
 from bokeh.layouts import row, column
 from bokeh.models import ColumnDataSource, Slider, CustomJS, Spacer
@@ -298,11 +298,16 @@ class DatabaseEditor:
             if roi[1].lower() not in {'external', 'skin'} and \
                     roi[2].lower() not in {'uncategorized', 'ignored', 'external', 'skin'}:
                 print('updating dist to ptv:', roi[1], sep=' ')
-                update_min_distances_in_db(roi[0], roi[1])
+                db_update.min_distances(roi[0], roi[1])
             else:
                 print('skipping dist to ptv:', roi[1], sep=' ')
 
-    def update_all_tv_overlaps_in_db(self, *condition):
+    def update_all(self, variable, *condition):
+        variable_function_map = {'ptv_overlap': db_update.treatment_volume_overlap,
+                                 'centroid': db_update.centroid,
+                                 'spread': db_update.spread,
+                                 'cross_section': db_update.cross_section,
+                                 'ptv_centroids': db_update.dist_to_ptv_centroids}
         if condition:
             rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
         else:
@@ -312,60 +317,23 @@ class DatabaseEditor:
         for roi in rois:
             self.calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
             counter += 1.
-            print('updating ptv_overlap:', roi[1], sep=' ')
-            update_treatment_volume_overlap_in_db(roi[0], roi[1])
+            print('updating %s:' % variable, roi[1], sep=' ')
+            variable_function_map[variable](roi[0], roi[1])
+
+    def update_all_tv_overlaps_in_db(self, *condition):
+        self.update_all('ptv_overlap', condition)
 
     def update_all_centroids_in_db(self, *condition):
-        if condition:
-            rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
-        else:
-            rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
-        counter = 0.
-        total_rois = float(len(rois))
-        for roi in rois:
-            self.calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
-            counter += 1.
-            print('updating centroid:', roi[1], sep=' ')
-            update_centroid_in_db(roi[0], roi[1])
+        self.update_all('centroid', condition)
 
     def update_all_spreads_in_db(self, *condition):
-        if condition:
-            rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
-        else:
-            rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
-        counter = 0.
-        total_rois = float(len(rois))
-        for roi in rois:
-            self.calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
-            counter += 1.
-            print('updating spread:', roi[1], sep=' ')
-            update_spread_in_db(roi[0], roi[1])
+        self.update_all('spread', condition)
 
     def update_all_cross_sections_in_db(self, *condition):
-        if condition:
-            rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
-        else:
-            rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
-        counter = 0.
-        total_rois = float(len(rois))
-        for roi in rois:
-            self.calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
-            counter += 1.
-            print('updating cross-section:', roi[1], sep=' ')
-            update_cross_section_in_db(roi[0], roi[1])
+        self.update_all('cross_section', condition)
 
     def update_all_dist_to_ptv_centoids_in_db(self, *condition):
-        if condition:
-            rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
-        else:
-            rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
-        counter = 0.
-        total_rois = float(len(rois))
-        for roi in rois:
-            self.calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
-            counter += 1.
-            print('updating min_dist_to_ptv_centroid:', roi[1], sep=' ')
-            update_dist_to_ptv_centroids_in_db(roi[0], roi[1])
+        self.update_all('ptv_centroids', condition)
 
     def update_all_except_age_in_db(self):
         for f in self.calculate_select.options:
@@ -392,7 +360,7 @@ class DatabaseEditor:
         for roi in rois:
             counter += 1.
             print('updating volume:', roi[1], int(100. * counter / total_rois), sep=' ')
-            update_volumes_in_db(roi[0], roi[1])
+            db_update.volumes(roi[0], roi[1])
 
     # Calculates surface area using Shapely
     # This function is not in the GUI
@@ -407,7 +375,7 @@ class DatabaseEditor:
         for roi in rois:
             counter += 1.
             print('updating surface area:', roi[1], int(100. * counter / total_rois), sep=' ')
-            update_surface_area_in_db(roi[0], roi[1])
+            db_update.surface_area(roi[0], roi[1])
 
     def reimport_mrn_ticker(self, attr, old, new):
         new_options = DVH_SQL().get_unique_values('Plans', 'sim_study_date', "mrn = '%s'" % new)
@@ -463,7 +431,7 @@ class DatabaseEditor:
     def calculate_exec(self):
         calc_map = {'PTV Distances': self.update_all_min_distances_in_db,
                     'PTV Overlap': self.update_all_tv_overlaps_in_db,
-                    'Patient Ages': recalculate_ages,
+                    'Patient Ages': db_update.recalculate_ages,
                     'ROI Centroid': self.update_all_centroids_in_db,
                     'ROI Spread': self.update_all_spreads_in_db,
                     'ROI Cross-Section': self.update_all_cross_sections_in_db,

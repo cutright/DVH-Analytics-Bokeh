@@ -6,9 +6,6 @@ Created on Wed, Feb 28 2018
 @author: Dan Cutright, PhD
 """
 
-import sys
-from os.path import dirname, realpath
-sys.path.append(dirname(dirname(realpath(__file__))))
 from dicompylercore import dicomparser
 import numpy as np
 from shapely.geometry import Polygon
@@ -279,4 +276,3 @@ def update_missing_jaws(beam_list):
                 beam_list[i].jaws[j] = beam.jaws[0]
 
     return beam_list
-

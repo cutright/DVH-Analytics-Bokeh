@@ -6,12 +6,9 @@ Created on Thu Mar  9 18:48:19 2017
 """
 
 from __future__ import print_function
-import sys
-from os.path import dirname, realpath
-sys.path.append(dirname(dirname(realpath(__file__))))
 import numpy as np
 from sql_connector import DVH_SQL
-from sql_to_python import QuerySQL
+from tools.io.database.sql_to_python import QuerySQL
 from options import RESAMPLED_DVH_BIN_COUNT
 
 
@@ -298,7 +295,3 @@ def calc_eud(dvh, a):
     eud = np.round(eud, 2) * 0.01
 
     return eud
-
-
-if __name__ == '__main__':
-    pass

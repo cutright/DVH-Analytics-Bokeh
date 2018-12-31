@@ -8,7 +8,7 @@ Created on Sun Apr 21 2017
 
 from __future__ import print_function
 import update_sys_path
-from tools.utilities import load_options
+from tools.io.preferences.options import load_options
 from tools import auth
 from bokeh.layouts import row
 from bokeh.models import Spacer
@@ -29,7 +29,7 @@ from dvh_bokeh_models.main.dvhs import DVHs
 from dvh_bokeh_models.main.data_tables import DataTables
 from dvh_bokeh_models.main.categories import Categories
 from dvh_bokeh_models.main.planning_data import PlanningData
-from tools.source_listener import SourceListener
+from dvh_bokeh_models.main.source_listener import SourceListener
 
 
 options = load_options(options)

@@ -12,7 +12,7 @@ from dvh_bokeh_models.settings.dicom_directories import DicomDirectories
 from dvh_bokeh_models.settings.custom_options import CustomOptions
 from dvh_bokeh_models.settings.sql_config import SqlConfig
 from tools import auth
-from tools.utilities import initialize_directories_settings
+from tools.io.preferences.import_settings import initialize_directories_settings
 from dvh import options
 import time
 from bokeh.models.widgets import Button, TextInput, Div, PasswordInput

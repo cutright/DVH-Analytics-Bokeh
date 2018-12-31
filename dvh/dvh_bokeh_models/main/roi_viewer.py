@@ -13,8 +13,9 @@ from bokeh.models import Spacer
 from tools.utilities import clear_source_data
 import options
 from bokeh import events
-from tools.sql_connector import DVH_SQL
-from tools.roi_tools import get_planes_from_string, get_union
+from tools.io.database.sql_connector import DVH_SQL
+from tools.roi.formatter import get_planes_from_string
+from tools.roi.geometry import union
 
 
 class RoiViewerRoiColorTicker:
@@ -272,7 +273,7 @@ class ROI_Viewer:
         if ptv_coordinates_strings:
 
             ptvs = [get_planes_from_string(ptv[0]) for ptv in ptv_coordinates_strings]
-            tv_planes = get_union(ptvs)
+            tv_planes = union(ptvs)
 
         for z_plane in list(tv_planes):
             x, y, z = [], [], []

@@ -10,12 +10,12 @@ from __future__ import print_function
 from os import remove, listdir, system, mkdir
 from os.path import isfile, isdir, dirname, join
 from datetime import datetime
-from tools.sql_connector import DVH_SQL
+from tools.io.database.sql_connector import DVH_SQL
 from bokeh.models.widgets import Select, Button, Div
 from bokeh.layouts import row, column
 from shutil import copyfile
 from paths import BACKUP_DIR, PREF_DIR
-from tools.utilities import load_sql_settings
+from tools.io.preferences.sql import load_sql_settings
 
 
 class Backup:

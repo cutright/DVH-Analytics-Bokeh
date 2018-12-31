@@ -8,7 +8,7 @@ Created on Tue Dec 25 2018
 
 from __future__ import print_function
 import os
-from tools.utilities import save_options, load_options
+from tools.io.preferences.options import save_options, load_options
 from dvh import options
 from bokeh.models.widgets import Button, TextInput, Div, RadioButtonGroup, CheckboxGroup, Select
 from bokeh.layouts import row, column

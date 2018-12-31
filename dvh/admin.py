@@ -12,7 +12,7 @@ from bokeh.layouts import row, column
 from bokeh.io import curdoc
 from bokeh.models import Spacer
 from tools import auth
-from tools.utilities import initialize_directories_settings
+from tools.io.preferences.import_settings import initialize_directories_settings
 import time
 import options
 from dvh_bokeh_models.admin.database_editor import DatabaseEditor

@@ -11,14 +11,14 @@ from __future__ import print_function
 from future.utils import listitems
 from dicompylercore import dicomparser, dvhcalc
 from dateutil.relativedelta import relativedelta  # python-dateutil
-from roi_name_manager import DatabaseROIs, clean_name
-from utilities import datetime_str_to_obj, change_angle_origin, date_str_to_obj, calc_spread
-from roi_tools import dicompyler_roi_coord_to_db_string, surface_area_of_roi,  calc_centroid, get_planes_from_string,\
-    calc_cross_section
+from tools.roi.name_manager import DatabaseROIs, clean_name
+from tools.utilities import datetime_str_to_obj, change_angle_origin, date_str_to_obj
+from tools.roi.formatter import dicompyler_roi_coord_to_db_string, get_planes_from_string
+import tools.roi.geometry as roi_calc
 import numpy as np
 try:
     import pydicom as dicom  # for pydicom >= 1.0
-except:
+except ImportError:
     import dicom
 
 
@@ -363,15 +363,15 @@ class DVHTable:
                     coord = rt_structure.GetStructureCoordinates(key)
                     roi_coord_str = dicompyler_roi_coord_to_db_string(rt_structure.GetStructureCoordinates(key))
                     try:
-                        surface_area = surface_area_of_roi(coord)
+                        surface_area = roi_calc.surface_area(coord)
                     except:
                         print("Surface area calculation failed for key, name: %s, %s" % (key, current_dvh_calc.name))
                         surface_area = '(NULL)'
 
                     planes = get_planes_from_string(roi_coord_str)
-                    centroid = calc_centroid(planes)
-                    spread = calc_spread(planes)
-                    cross_sections = calc_cross_section(planes)
+                    centroid = roi_calc.centroid(planes)
+                    spread = roi_calc.spread(planes)
+                    cross_sections = roi_calc.cross_section(planes)
 
                     current_dvh_row = DVHRow(mrn,
                                              study_instance_uid,
@@ -738,7 +738,3 @@ def get_tables(structure_file, dose_file, plan_file):
     beam_table = BeamTable(plan_file)
 
     return dvh_table, plan_table, rx_table, beam_table
-
-
-if __name__ == '__main__':
-    pass

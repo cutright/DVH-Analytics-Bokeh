@@ -6,7 +6,7 @@ Created on Sun Nov 4 2018
 @author: Dan Cutright, PhD
 """
 from __future__ import print_function
-from tools.sql_connector import DVH_SQL
+from tools.io.database.sql_connector import DVH_SQL
 from dateutil.parser import parse
 from os.path import dirname, join
 from bokeh.models.widgets import Select, Button, TextInput, CheckboxButtonGroup, Dropdown, CheckboxGroup, Div
@@ -15,8 +15,8 @@ from tools.utilities import get_study_instance_uids, clear_source_selection, cle
     group_constraint_count, calc_stats
 from bokeh.layouts import column, row
 from bokeh.palettes import Colorblind8 as palette
-from tools.sql_to_python import QuerySQL
-from tools.analysis_tools import DVH
+from tools.io.database.sql_to_python import QuerySQL
+from tools.io.database.analysis_tools import DVH
 from datetime import datetime
 import itertools
 import numpy as np

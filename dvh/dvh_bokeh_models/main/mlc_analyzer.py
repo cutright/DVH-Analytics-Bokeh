@@ -8,7 +8,7 @@ Created on Sat Nov 3 2018
 
 from __future__ import print_function
 from tools import mlc_analyzer as mlca
-from tools.sql_connector import DVH_SQL
+from tools.io.database.sql_connector import DVH_SQL
 from bokeh.models.widgets import Select, Button, Div, DataTable
 from bokeh.plotting import figure
 from bokeh.models import Range1d, Spacer

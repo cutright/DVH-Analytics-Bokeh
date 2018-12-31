@@ -1,5 +1,10 @@
 # Change log of DVH Analytics
 
+### 0.4.9 (TBD)
+* Organize modules in tools directory
+* Generalize update_all_in_db functions in database_editor.py
+* is RESAMPLED_DVH_BIN_SIZE reading from custom options?
+
 ### 0.4.8 (2018.12.27)
 * Reorganize python files into directories:
     * path updated with: import update_sys_path

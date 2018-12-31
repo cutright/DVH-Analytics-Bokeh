@@ -7,12 +7,10 @@ Created on Sat Mar  4 11:33:10 2017
 """
 
 from __future__ import print_function
-import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 import psycopg2
 from datetime import datetime
-from get_settings import get_settings, parse_settings_file
+from tools.get_settings import get_settings, parse_settings_file
 from paths import SCRIPT_DIR, DATA_DIR
 
 
@@ -458,7 +456,3 @@ def truncate_string(input_string, character_limit):
     if len(input_string) > character_limit:
         return input_string[0:(character_limit-1)]
     return input_string
-
-
-if __name__ == '__main__':
-    pass

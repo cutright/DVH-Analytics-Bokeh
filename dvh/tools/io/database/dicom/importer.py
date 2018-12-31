@@ -7,16 +7,16 @@ Created on Thu Mar  2 22:15:52 2017
 """
 
 from __future__ import print_function
-from sql_connector import DVH_SQL
-from dicom_to_python import DVHTable, PlanRow, BeamTable, RxTable
+from tools.io.database.sql_connector import DVH_SQL
+from tools.io.database.dicom.parser import DVHTable, PlanRow, BeamTable, RxTable
 import os
 import shutil
 from datetime import datetime
 try:
     import pydicom as dicom  # for pydicom >= 1.0
-except:
+except ImportError:
     import dicom
-from get_settings import get_settings, parse_settings_file
+from tools.get_settings import get_settings, parse_settings_file
 
 
 FILE_TYPES = {'rtplan', 'rtstruct', 'rtdose'}
@@ -78,17 +78,17 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
         mp, ms, md = [], [], []
         if plan_file:
             try:
-                mp = dicom.read_file(plan_file).ManufacturerModelName.lower()
+                mp = tools.database_io.dicom.read_file(plan_file).ManufacturerModelName.lower()
             except AttributeError:
                 mp = ''
         if struct_file:
             try:
-                ms = dicom.read_file(struct_file).ManufacturerModelName.lower()
+                ms = tools.database_io.dicom.read_file(struct_file).ManufacturerModelName.lower()
             except AttributeError:
                 ms = ''
         if dose_file:
             try:
-                md = dicom.read_file(dose_file).ManufacturerModelName.lower()
+                md = tools.database_io.dicom.read_file(dose_file).ManufacturerModelName.lower()
             except AttributeError:
                 ''
 
@@ -112,7 +112,7 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
                 continue
 
         if plan_file:
-            if not hasattr(dicom.read_file(plan_file), 'BrachyTreatmentType'):
+            if not hasattr(tools.database_io.dicom.read_file(plan_file), 'BrachyTreatmentType'):
                 if import_latest_only:
                     beams = BeamTable(plan_file)
                     sqlcnx.insert_beams(beams)
@@ -135,11 +135,11 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
         # get mrn for folder name, can't assume a complete set of dose, plan, struct files
         mrn = []
         if dose_file:
-            mrn = dicom.read_file(dose_file).PatientID
+            mrn = tools.database_io.dicom.read_file(dose_file).PatientID
         elif plan_file:
-            mrn = dicom.read_file(plan_file).PatientID
+            mrn = tools.database_io.dicom.read_file(plan_file).PatientID
         elif struct_file:
-            mrn = dicom.read_file(struct_file).PatientID
+            mrn = tools.database_io.dicom.read_file(struct_file).PatientID
         if mrn:
             mrn = "".join(x for x in mrn if x.isalnum())  # remove any special characters
         else:
@@ -201,7 +201,7 @@ def get_file_paths(start_path):
     file_paths = {}
     for file_path in f:
         try:
-            dicom_file = dicom.read_file(file_path)
+            dicom_file = tools.database_io.dicom.read_file(file_path)
         except:
             dicom_file = False
 
@@ -342,8 +342,3 @@ def update_dicom_catalogue(mrn, uid, dir_path, plan_file, struct_file, dose_file
     if not plan_file:
         dose_file = "(NULL)"
     DVH_SQL().insert_dicom_file_row(mrn, uid, dir_path, plan_file, struct_file, dose_file)
-
-
-if __name__ == '__main__':
-    DVH_SQL().reinitialize_database()
-    dicom_to_sql()

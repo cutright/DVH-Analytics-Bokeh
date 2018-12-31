@@ -15,7 +15,7 @@ from options import GROUP_LABELS
 from os.path import dirname, join
 from tools.utilities import clear_source_selection, clear_source_data, group_constraint_count, calc_stats,\
     Temp_DICOM_FileSet, get_csv
-from tools.analysis_tools import dose_to_volume, volume_of_dose
+from tools.io.database.analysis_tools import dose_to_volume, volume_of_dose
 import numpy as np
 from dicompylercore import dicomparser, dvhcalc
 
