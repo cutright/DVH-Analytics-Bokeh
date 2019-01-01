@@ -6,16 +6,15 @@ Created on Wed, Feb 28 2018
 @author: Dan Cutright, PhD
 """
 
-import sys
-from os.path import dirname, realpath
-sys.path.append(dirname(dirname(realpath(__file__))))
 from dicompylercore import dicomparser
 import numpy as np
 from shapely.geometry import Polygon
 from utilities import flatten_list_of_lists as flatten
-from options import MAX_FIELD_SIZE_X, MAX_FIELD_SIZE_Y, COMPLEXITY_SCORE_X_WEIGHT, COMPLEXITY_SCORE_Y_WEIGHT
+from tools.io.preferences.options import load_options
 from shapely import speedups
 
+
+options = load_options()
 
 # Enable shapely calculations using C, as opposed to the C++ default
 if speedups.available:
@@ -104,7 +103,7 @@ class Beam:
         x_paths = np.array([get_xy_path_lengths(cp)[0] for cp in self.aperture])
         y_paths = np.array([get_xy_path_lengths(cp)[1] for cp in self.aperture])
         area = [cp.area for cp in self.aperture]
-        c1, c2 = COMPLEXITY_SCORE_X_WEIGHT, COMPLEXITY_SCORE_Y_WEIGHT
+        c1, c2 = options.COMPLEXITY_SCORE_X_WEIGHT, options.COMPLEXITY_SCORE_Y_WEIGHT
         complexity_scores = np.divide(np.multiply(np.add(c1*x_paths, c2*y_paths), cp_mu), area)
         # Complexity score based on:
         # Younge KC, Matuszak MM, Moran JM, McShan DL, Fraass BA, Roberts DA. Penalization of aperture
@@ -165,10 +164,10 @@ def get_mlc_borders(control_point, leaf_boundaries):
     top = [float(i) for i in top]
     bottom = leaf_boundaries[1::] + leaf_boundaries[1::]
     bottom = [float(i) for i in bottom]
-    left = [- MAX_FIELD_SIZE_X / 2] * len(control_point.mlc[0])
+    left = [- options.MAX_FIELD_SIZE_X / 2] * len(control_point.mlc[0])
     left.extend(control_point.mlc[1])
     right = control_point.mlc[0].tolist()
-    right.extend([MAX_FIELD_SIZE_X / 2] * len(control_point.mlc[1]))
+    right.extend([options.MAX_FIELD_SIZE_X / 2] * len(control_point.mlc[1]))
 
     return {'top': top,
             'bottom': bottom,
@@ -224,14 +223,14 @@ def get_jaws(control_point):
         y_min = min(cp.asymy)
         y_max = max(cp.asymy)
     else:
-        y_min = -MAX_FIELD_SIZE_Y / 2.
-        y_max = MAX_FIELD_SIZE_Y / 2.
+        y_min = -options.MAX_FIELD_SIZE_Y / 2.
+        y_max = options.MAX_FIELD_SIZE_Y / 2.
     if hasattr(cp, 'asymx'):
         x_min = min(cp.asymx)
         x_max = max(cp.asymx)
     else:
-        x_min = -MAX_FIELD_SIZE_X / 2.
-        x_max = MAX_FIELD_SIZE_X / 2.
+        x_min = -options.MAX_FIELD_SIZE_X / 2.
+        x_max = options.MAX_FIELD_SIZE_X / 2.
 
     jaws = {'x_min': float(x_min),
             'x_max': float(x_max),
@@ -244,7 +243,7 @@ def get_jaws(control_point):
 def get_xy_path_lengths(shapely_object):
     """
     :param shapely_object: either 'GeometryCollection', 'MultiPolygon', or 'Polygon'
-    :return: pathl engths in the x and y directions
+    :return: path lengths in the x and y directions
     :rtype: list
     """
     path = np.array([0., 0.])
@@ -272,11 +271,10 @@ def update_missing_jaws(beam_list):
 
     for i, beam in enumerate(beam_list):
         for j, cp in enumerate(beam.jaws):
-            if cp['x_min'] == -MAX_FIELD_SIZE_X / 2 and \
-                            cp['x_max'] == MAX_FIELD_SIZE_X / 2 and \
-                            cp['y_min'] == -MAX_FIELD_SIZE_Y / 2 and \
-                            cp['y_max'] == MAX_FIELD_SIZE_Y / 2:
+            if cp['x_min'] == -options.MAX_FIELD_SIZE_X / 2 and \
+                            cp['x_max'] == options.MAX_FIELD_SIZE_X / 2 and \
+                            cp['y_min'] == -options.MAX_FIELD_SIZE_Y / 2 and \
+                            cp['y_max'] == options.MAX_FIELD_SIZE_Y / 2:
                 beam_list[i].jaws[j] = beam.jaws[0]
 
     return beam_list
-

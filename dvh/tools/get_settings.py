@@ -1,13 +1,8 @@
-import sys
-from os.path import isfile, dirname, join, realpath
-sys.path.append(dirname(dirname(realpath(__file__))))
-from paths import PREF_DIR
+from os.path import isfile
+from tools.io.preferences.options import load_options
 
 
-SETTINGS_PATHS = {'docker': {'import': "/import_and_connection/import_settings.txt",
-                             'sql': "/import_and_connection/sql_connection.cnf"},
-                  'default': {'import': join(PREF_DIR, 'import_settings.txt'),
-                              'sql': join(PREF_DIR, 'sql_connection.cnf')}}
+SETTINGS_PATHS = load_options(return_attr='SETTINGS_PATHS')
 
 
 def get_settings(settings_type):

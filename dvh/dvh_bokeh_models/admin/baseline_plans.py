@@ -7,7 +7,7 @@ Created on Tue Dec 25 2018
 """
 
 from __future__ import print_function
-from tools.sql_connector import DVH_SQL
+from tools.io.database.sql_connector import DVH_SQL
 from bokeh.models.widgets import Select, Button, TextInput, Div, TableColumn, DataTable
 from bokeh.layouts import row, column
 from bokeh.models import ColumnDataSource, Slider

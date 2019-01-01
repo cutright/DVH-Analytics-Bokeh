@@ -8,7 +8,7 @@ Created on Sat Nov 3 2018
 
 from __future__ import print_function
 from tools import mlc_analyzer as mlca
-from tools.sql_connector import DVH_SQL
+from tools.io.database.sql_connector import DVH_SQL
 from bokeh.models.widgets import Select, Button, Div, DataTable
 from bokeh.plotting import figure
 from bokeh.models import Range1d, Spacer
@@ -16,9 +16,12 @@ from bokeh.layouts import row, column
 import os
 from tools.get_settings import get_settings, parse_settings_file
 import numpy as np
-import options
+from tools.io.preferences.options import load_options
 import time
 from dvh_bokeh_models.main.columns import Columns
+
+
+options = load_options()
 
 
 class MLC_Analyzer:

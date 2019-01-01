@@ -9,7 +9,7 @@ Created on Tue Dec 25 2018
 from __future__ import print_function
 from os.path import isdir
 from future.utils import listvalues
-from tools.utilities import is_import_settings_defined, write_import_settings
+from tools.io.preferences.import_settings import is_import_settings_defined, write_import_settings
 from tools.get_settings import get_settings, parse_settings_file
 from bokeh.models.widgets import Button, TextInput, Div
 from bokeh.layouts import row, column

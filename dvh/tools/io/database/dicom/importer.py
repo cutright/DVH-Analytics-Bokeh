@@ -7,16 +7,16 @@ Created on Thu Mar  2 22:15:52 2017
 """
 
 from __future__ import print_function
-from sql_connector import DVH_SQL
-from dicom_to_python import DVHTable, PlanRow, BeamTable, RxTable
+from tools.io.database.sql_connector import DVH_SQL
+from tools.io.database.dicom.parser import DVHTable, PlanRow, BeamTable, RxTable
 import os
 import shutil
 from datetime import datetime
 try:
     import pydicom as dicom  # for pydicom >= 1.0
-except:
+except ImportError:
     import dicom
-from get_settings import get_settings, parse_settings_file
+from tools.get_settings import get_settings, parse_settings_file
 
 
 FILE_TYPES = {'rtplan', 'rtstruct', 'rtdose'}
@@ -74,7 +74,6 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
         print("dose file: %s" % dose_file)
 
         # Process DICOM files into Python objects
-        plan, beams, dvhs, rxs = [], [], [], []
         mp, ms, md = [], [], []
         if plan_file:
             try:
@@ -237,14 +236,11 @@ def get_file_paths(start_path):
 
 
 def rebuild_database(start_path):
-    print('connecting to SQL DB')
-    sqlcnx = DVH_SQL()
-    print('connection established')
 
-    sqlcnx.reinitialize_database()
-    print('DB reinitialized with no data')
-    dicom_to_sql(start_path=start_path, force_update=True)
-    sqlcnx.cnx.close()
+    DVH_SQL().reinitialize_database()
+    print('Database reinitialized with no data.')
+    print('Begin importing from data from %s' % start_path)
+    dicom_to_sql(start_path=start_path)
 
 
 def is_uid_imported(uid):
@@ -342,8 +338,3 @@ def update_dicom_catalogue(mrn, uid, dir_path, plan_file, struct_file, dose_file
     if not plan_file:
         dose_file = "(NULL)"
     DVH_SQL().insert_dicom_file_row(mrn, uid, dir_path, plan_file, struct_file, dose_file)
-
-
-if __name__ == '__main__':
-    DVH_SQL().reinitialize_database()
-    dicom_to_sql()

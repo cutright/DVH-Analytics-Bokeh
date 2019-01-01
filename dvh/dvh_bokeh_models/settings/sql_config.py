@@ -7,8 +7,8 @@ Created on Tue Dec 25 2018
 """
 
 from __future__ import print_function
-from tools.utilities import write_sql_connection_settings, validate_sql_connection, load_sql_settings
-from tools.sql_connector import DVH_SQL
+from tools.io.preferences.sql import write_sql_connection_settings, validate_sql_connection, load_sql_settings
+from tools.io.database.sql_connector import DVH_SQL
 import time
 from bokeh.models.widgets import Button, TextInput, Div, PasswordInput
 from bokeh.layouts import row, column

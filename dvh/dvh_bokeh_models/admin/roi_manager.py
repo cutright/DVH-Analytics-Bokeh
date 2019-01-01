@@ -7,9 +7,9 @@ Created on Tue Dec 25 2018
 """
 
 from __future__ import print_function
-from tools.utilities import validate_sql_connection, load_sql_settings
-from tools.roi_name_manager import DatabaseROIs, clean_name
-from tools.sql_connector import DVH_SQL
+from tools.io.preferences.sql import validate_sql_connection, load_sql_settings
+from tools.roi.name_manager import DatabaseROIs, clean_name
+from tools.io.database.sql_connector import DVH_SQL
 from bokeh.models.widgets import Select, Button, TextInput, RadioButtonGroup, Div, TableColumn, DataTable
 from bokeh.layouts import row, column
 from bokeh.plotting import figure

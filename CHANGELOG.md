@@ -1,5 +1,13 @@
 # Change log of DVH Analytics
 
+### 0.4.9 (TBD)
+* Organize modules in tools directory
+* Generalize update_all_in_db functions in database_editor.py
+* ensure all options read from custom options file if available
+* Backup tab functionality in Admin view was incomplete since modularization of bokeh views
+    * Backup selection menus now update
+    * Backup preferences works again
+
 ### 0.4.8 (2018.12.27)
 * Reorganize python files into directories:
     * path updated with: import update_sys_path

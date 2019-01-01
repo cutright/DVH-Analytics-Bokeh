@@ -6,13 +6,10 @@ Created on Thu Mar  9 18:48:19 2017
 """
 
 from __future__ import print_function
-import sys
-from os.path import dirname, realpath
-sys.path.append(dirname(dirname(realpath(__file__))))
 import numpy as np
 from sql_connector import DVH_SQL
-from sql_to_python import QuerySQL
-from options import RESAMPLED_DVH_BIN_COUNT
+from tools.io.database.sql_to_python import QuerySQL
+from tools.io.preferences.options import load_options
 
 
 # This class retrieves DVH data from the SQL database and calculates statistical DVHs (min, max, quartiles)
@@ -232,16 +229,19 @@ class DVH:
         """
         :return: x-axis, y-axis of resampled DVHs
         """
+
+        resampled_bin_count = load_options(return_attr='RESAMPLED_DVH_BIN_COUNT')
+
         min_rx_dose = np.min(self.rx_dose) * 100.
-        new_bin_count = int(np.divide(float(self.bin_count), min_rx_dose) * RESAMPLED_DVH_BIN_COUNT)
+        new_bin_count = int(np.divide(float(self.bin_count), min_rx_dose) * resampled_bin_count)
 
         x1 = np.linspace(0, self.bin_count, self.bin_count)
         y2 = np.zeros([new_bin_count, self.count])
         for i in range(self.count):
             x2 = np.multiply(np.linspace(0, new_bin_count, new_bin_count),
-                             self.rx_dose[i] * 100. / RESAMPLED_DVH_BIN_COUNT)
+                             self.rx_dose[i] * 100. / resampled_bin_count)
             y2[:, i] = np.interp(x2, x1, self.dvh[:, i])
-        x2 = np.divide(np.linspace(0, new_bin_count, new_bin_count), RESAMPLED_DVH_BIN_COUNT)
+        x2 = np.divide(np.linspace(0, new_bin_count, new_bin_count), resampled_bin_count)
         return x2, y2
 
 
@@ -298,7 +298,3 @@ def calc_eud(dvh, a):
     eud = np.round(eud, 2) * 0.01
 
     return eud
-
-
-if __name__ == '__main__':
-    pass

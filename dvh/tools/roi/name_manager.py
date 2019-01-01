@@ -7,12 +7,10 @@ Created on Fri Mar 24 13:43:28 2017
 """
 
 from __future__ import print_function
-import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 # from fuzzywuzzy import fuzz
-from sql_to_python import QuerySQL
-from sql_connector import DVH_SQL
+from tools.io.database.sql_to_python import QuerySQL
+from tools.io.database.sql_connector import DVH_SQL
 from paths import PREF_DIR, SCRIPT_DIR
 from shutil import copyfile
 

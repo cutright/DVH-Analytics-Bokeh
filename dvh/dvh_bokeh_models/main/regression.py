@@ -9,8 +9,7 @@ from __future__ import print_function
 from future.utils import listitems, listvalues
 from datetime import datetime
 import statsmodels.api as sm
-import options
-from options import GROUP_LABELS
+from tools.io.preferences.options import load_options
 from bokeh.plotting import figure
 from bokeh.models.widgets import Select, Button, Div, CheckboxGroup
 from bokeh.models import Legend, HoverTool, Spacer
@@ -18,6 +17,10 @@ from bokeh.layouts import row, column
 from scipy.stats import linregress
 import numpy as np
 from tools.utilities import clear_source_data, clear_source_selection
+
+
+options = load_options()
+GROUP_LABELS = options.GROUP_LABELS
 
 
 class Regression:

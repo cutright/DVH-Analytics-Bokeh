@@ -12,9 +12,9 @@ from bokeh.layouts import row, column
 from bokeh.io import curdoc
 from bokeh.models import Spacer
 from tools import auth
-from tools.utilities import initialize_directories_settings
+from tools.io.preferences.import_settings import initialize_directories_settings
 import time
-import options
+from tools.io.preferences.options import load_options
 from dvh_bokeh_models.admin.database_editor import DatabaseEditor
 from dvh_bokeh_models.admin.roi_manager import RoiManager
 from dvh_bokeh_models.admin.baseline_plans import Baseline
@@ -22,6 +22,7 @@ from dvh_bokeh_models.admin.backup import Backup
 
 
 initialize_directories_settings()
+options = load_options()
 
 
 # This depends on a user defined function in dvh/auth.py.  By default, this returns True

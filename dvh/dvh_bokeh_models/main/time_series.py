@@ -8,14 +8,17 @@ Created on Sat Nov 3 2018
 from bokeh.plotting import figure
 from bokeh.models import Select, TextInput, RadioGroup, Slider, Div, Legend, CustomJS, HoverTool, Button, Spacer
 from bokeh.layouts import column, row
-import options
+from tools.io.preferences.options import load_options
 from tools.utilities import clear_source_data, collapse_into_single_dates, moving_avg,\
     moving_avg_by_calendar_day, clear_source_selection, get_csv
 from scipy.stats import ttest_ind, ranksums, normaltest
 import numpy as np
-from options import GROUP_LABELS
 from datetime import datetime
 from os.path import dirname, join
+
+
+options = load_options()
+GROUP_LABELS = options.GROUP_LABELS
 
 
 class TimeSeries:
