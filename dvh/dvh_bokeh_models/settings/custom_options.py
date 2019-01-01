@@ -15,13 +15,10 @@ import matplotlib.colors as plot_colors
 from paths import PREF_DIR
 
 
-options = load_options()
-
-
 class CustomOptions:
     def __init__(self):
 
-        self.options = load_options(options)
+        self.options = load_options()
         self.option_types = ['AUTH_USER_REQ', 'DISABLE_BACKUP_TAB', 'OPTIONAL_TABS', 'LITE_VIEW', 'COLORS', 'SIZE',
                              'LINE_WIDTH', 'LINE_DASH', 'ALPHA', 'ENDPOINT_COUNT', 'RESAMPLED_DVH_BIN_COUNT']
         div = {key: Div(text=key) for key in self.option_types}

@@ -362,8 +362,7 @@ class DVH_SQL:
         self.cnx.commit()
 
     def initialize_database(self):
-        rel_path = "preferences/create_tables.sql"
-        abs_file_path = os.path.join(SCRIPT_DIR, rel_path)
+        abs_file_path = os.path.join(SCRIPT_DIR, 'preferences', 'create_tables.sql')
         self.execute_file(abs_file_path)
 
     def reinitialize_database(self):

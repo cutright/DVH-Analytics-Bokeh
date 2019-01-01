@@ -7,8 +7,8 @@ Created on Tue Dec 25 2018
 """
 
 from __future__ import print_function
-from os import remove, listdir, system, mkdir
-from os.path import isfile, isdir, dirname, join
+from os import remove, listdir, system, mkdir, rmdir
+from os.path import isfile, isdir, join
 from datetime import datetime
 from tools.io.database.sql_connector import DVH_SQL
 from bokeh.models.widgets import Select, Button, Div
@@ -48,7 +48,11 @@ class Backup:
         self.backup_db_button.on_click(self.backup_db)
         self.restore_db_button.on_click(self.restore_db)
 
+        self.delete_backup_button_pref.on_click(self.delete_backup_pref)
         self.backup_pref_button.on_click(self.backup_pref)
+        self.restore_pref_button.on_click(self.restore_preferences)
+
+        self.update_backup_select()
 
         self.layout = column(row(self.backup_select, self.delete_backup_button, self.restore_db_button,
                                  self.backup_db_button),
@@ -75,11 +79,14 @@ class Backup:
             backups = ['']
         backups.sort(reverse=True)
         self.backup_pref_select.options = backups
+        self.backup_pref_select.value = backups[0]
 
     def delete_backup(self):
         abs_file = join(BACKUP_DIR, self.backup_select.value)
         if isfile(abs_file):
             remove(abs_file)
+
+        self.update_backup_select()
 
     def backup_db(self):
         self.backup_db_button.button_type = 'warning'
@@ -98,21 +105,23 @@ class Backup:
         self.backup_db_button.button_type = 'success'
         self.backup_db_button.label = 'Backup'
 
+        self.update_backup_select()
+
     def restore_db(self):
         self.restore_db_button.label = 'Restoring...'
         self.restore_db_button.button_type = 'warning'
 
         DVH_SQL().drop_tables()
 
-        script_dir = dirname(__file__)
-        rel_path = join("backups", self.backup_select.value)
-        abs_file_path = join(script_dir, rel_path)
+        abs_file_path = join(BACKUP_DIR, self.backup_select.value)
 
         back_up_command = "psql " + self.config['dbname'] + " < " + abs_file_path
         system(back_up_command)
 
         self.restore_db_button.label = 'Restore'
         self.restore_db_button.button_type = 'primary'
+
+        self.update_backup_select()
 
     def backup_pref(self):
         self.backup_pref_button.button_type = 'warning'
@@ -129,6 +138,8 @@ class Backup:
 
         self.backup_pref_button.button_type = 'success'
         self.backup_pref_button.label = 'Backup'
+
+        self.update_backup_select()
 
     def restore_preferences(self):
         self.restore_pref_button.label = 'Restoring...'
@@ -147,3 +158,13 @@ class Backup:
 
         self.restore_pref_button.label = 'Restore'
         self.restore_pref_button.button_type = 'primary'
+
+    def delete_backup_pref(self):
+
+        src_path = join(BACKUP_DIR, self.backup_pref_select.value)
+
+        for f in listdir(src_path):
+            remove(join(src_path, f))
+        rmdir(src_path)
+
+        self.update_backup_select()
