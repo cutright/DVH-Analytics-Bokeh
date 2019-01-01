@@ -19,6 +19,9 @@ from getpass import getpass
 import argparse
 from subprocess import call
 from paths import INBOX_DIR, IMPORTED_DIR, REVIEW_DIR
+import sys
+if sys.version[0] == "3":
+    raw_input = input  # python 3 support
 
 
 SCRIPT_DIR = dirname(__file__)
