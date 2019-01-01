@@ -1,6 +1,6 @@
 # Change log of DVH Analytics
 
-### 0.4.9 (TBD)
+### 0.4.9 (2019.1.1)
 * Organize modules in tools directory
 * Generalize update_all_in_db functions in database_editor.py
 * ensure all options read from custom options file if available
