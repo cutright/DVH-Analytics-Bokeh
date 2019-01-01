@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-from dvh.options import VERSION
+from dvh.default_options import VERSION
 
 requires = [
     'numpy <= 1.14.5',
