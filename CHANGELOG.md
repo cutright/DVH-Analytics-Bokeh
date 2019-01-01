@@ -3,7 +3,7 @@
 ### 0.4.9 (TBD)
 * Organize modules in tools directory
 * Generalize update_all_in_db functions in database_editor.py
-* is RESAMPLED_DVH_BIN_SIZE reading from custom options?
+* ensure all options read from custom options file if available
 
 ### 0.4.8 (2018.12.27)
 * Reorganize python files into directories:

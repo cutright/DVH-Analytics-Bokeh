@@ -10,14 +10,17 @@ from bokeh.models.widgets import Select, Button, TableColumn, NumberFormatter, R
 from bokeh.models import Legend, CustomJS, HoverTool, Spacer
 from bokeh.plotting import figure
 from bokeh.layouts import column, row
-import options
-from options import GROUP_LABELS
+from tools.io.preferences.options import load_options
 from os.path import dirname, join
 from tools.utilities import clear_source_selection, clear_source_data, group_constraint_count, calc_stats,\
     Temp_DICOM_FileSet, get_csv
 from tools.io.database.analysis_tools import dose_to_volume, volume_of_dose
 import numpy as np
 from dicompylercore import dicomparser, dvhcalc
+
+
+options = load_options()
+GROUP_LABELS = options.GROUP_LABELS
 
 
 class DVHs:

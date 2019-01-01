@@ -11,6 +11,7 @@ except ImportError:
     import dicom
 from paths import PREF_DIR
 import types
+import default_options
 
 
 def save_options(options):
@@ -26,7 +27,7 @@ def save_options(options):
     outfile.close()
 
 
-def load_options(options):
+def load_options(return_attr=None):
     abs_file_path = os.path.join(PREF_DIR, 'options')
 
     if os.path.isfile(abs_file_path):
@@ -40,15 +41,27 @@ def load_options(options):
                 setattr(new_options, key, value)
 
             infile.close()
-
+            if return_attr:
+                if hasattr(new_options, return_attr):
+                    return getattr(new_options, return_attr)
+                else:
+                    print('Specified return attribute (%s) does not exist. Returning None.' % return_attr)
+                    return None
             return new_options
         except EOFError:
             print('Corrupt options file, loading defaults.')
 
+    if return_attr:
+        if hasattr(default_options, return_attr):
+            return getattr(default_options, return_attr)
+        else:
+            print('Specified return attribute (%s) does not exist. Returning None.' % return_attr)
+            return None
+
     out_options = Object()
-    for i in options.__dict__:
+    for i in default_options.__dict__:
         if not i.startswith('_'):
-            value = getattr(options, i)
+            value = getattr(default_options, i)
             if not isinstance(value, types.ModuleType):  # ignore imports in options.py
                 setattr(out_options, i, value)
     return out_options

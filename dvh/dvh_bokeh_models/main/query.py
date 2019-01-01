@@ -20,9 +20,12 @@ from tools.io.database.analysis_tools import DVH
 from datetime import datetime
 import itertools
 import numpy as np
-import options
-from options import GROUP_LABELS
+from tools.io.preferences.options import load_options
 import time
+
+
+options = load_options()
+GROUP_LABELS = options.GROUP_LABELS
 
 
 class Query:

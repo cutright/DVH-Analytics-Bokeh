@@ -10,8 +10,11 @@ from bokeh.models import Spacer
 from bokeh.layouts import column, row
 from tools.utilities import get_include_map
 from tools.io.database.analysis_tools import calc_eud
-import options
-from options import GROUP_LABELS
+from tools.io.preferences.options import load_options
+
+
+options = load_options()
+GROUP_LABELS = options.GROUP_LABELS
 
 
 class RadBio:

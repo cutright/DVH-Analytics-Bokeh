@@ -1,5 +1,8 @@
 from os.path import isfile
-from options import SETTINGS_PATHS
+from tools.io.preferences.options import load_options
+
+
+SETTINGS_PATHS = load_options(return_attr='SETTINGS_PATHS')
 
 
 def get_settings(settings_type):

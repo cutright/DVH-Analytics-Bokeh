@@ -8,14 +8,13 @@ Created on Sun Apr 21 2017
 
 from __future__ import print_function
 import update_sys_path
-from tools.io.preferences.options import load_options
 from tools import auth
 from bokeh.layouts import row
 from bokeh.models import Spacer
 from bokeh.io import curdoc
 from bokeh.models.widgets import Button, Panel, Tabs, TextInput, PasswordInput
 import time
-import options
+from tools.io.preferences.options import load_options
 from dvh_bokeh_models.main.sources import Sources
 from dvh_bokeh_models.main.custom_titles import CustomTitles
 from dvh_bokeh_models.main.mlc_analyzer import MLC_Analyzer
@@ -32,7 +31,7 @@ from dvh_bokeh_models.main.planning_data import PlanningData
 from dvh_bokeh_models.main.source_listener import SourceListener
 
 
-options = load_options(options)
+options = load_options()
 custom_title = CustomTitles().custom_title
 
 

@@ -16,9 +16,12 @@ from bokeh.layouts import row, column
 import os
 from tools.get_settings import get_settings, parse_settings_file
 import numpy as np
-import options
+from tools.io.preferences.options import load_options
 import time
 from dvh_bokeh_models.main.columns import Columns
+
+
+options = load_options()
 
 
 class MLC_Analyzer:

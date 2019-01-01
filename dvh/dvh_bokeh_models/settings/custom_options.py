@@ -9,11 +9,13 @@ Created on Tue Dec 25 2018
 from __future__ import print_function
 import os
 from tools.io.preferences.options import save_options, load_options
-from dvh import options
 from bokeh.models.widgets import Button, TextInput, Div, RadioButtonGroup, CheckboxGroup, Select
 from bokeh.layouts import row, column
 import matplotlib.colors as plot_colors
 from paths import PREF_DIR
+
+
+options = load_options()
 
 
 class CustomOptions:
@@ -68,7 +70,8 @@ class CustomOptions:
         self.input['LINE_DASH_var'] = Select(value=line_dash_variables[0], options=line_dash_variables)
         self.input['LINE_DASH_var'].on_change('value', self.update_line_dash_var)
         line_dash_options = ['solid', 'dashed', 'dotted', 'dotdash', 'dashdot']
-        self.input['LINE_DASH_val'] = Select(value=getattr(self.options, line_dash_variables[0]),  options=line_dash_options)
+        self.input['LINE_DASH_val'] = Select(value=getattr(self.options, line_dash_variables[0]),
+                                             options=line_dash_options)
         self.input['LINE_DASH_val'].on_change('value', self.update_line_dash_val)
 
         alpha_variables = [a for a in self.options.__dict__ if a.find('ALPHA') > -1]

@@ -13,7 +13,7 @@ from dvh_bokeh_models.settings.custom_options import CustomOptions
 from dvh_bokeh_models.settings.sql_config import SqlConfig
 from tools import auth
 from tools.io.preferences.import_settings import initialize_directories_settings
-from dvh import options
+from tools.io.preferences.options import load_options
 import time
 from bokeh.models.widgets import Button, TextInput, Div, PasswordInput
 from bokeh.models import Spacer
@@ -22,6 +22,7 @@ from bokeh.io import curdoc
 
 
 initialize_directories_settings()
+options = load_options()
 
 dicom_directories = DicomDirectories()
 sql_config = SqlConfig()

@@ -7,7 +7,7 @@ Created on Tue Oct 30 2018
 """
 
 from bokeh.models.widgets import TableColumn, NumberFormatter
-from options import ENDPOINT_COUNT
+from tools.io.preferences.options import load_options
 
 
 class Columns:
@@ -40,7 +40,7 @@ class Columns:
         self.endpoints = [TableColumn(field="mrn", title="MRN / Stat", width=175),
                           TableColumn(field="group", title="Group", width=175),
                           TableColumn(field="roi_name", title="ROI Name")]
-        for i in range(ENDPOINT_COUNT):
+        for i in range(load_options(return_attr='ENDPOINT_COUNT')):
             self.endpoints.append(TableColumn(field="ep%s" % (i+1), title="ep%s" % (i+1), width=80,
                                               formatter=NumberFormatter(format="0.00")))
 

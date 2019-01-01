@@ -10,13 +10,16 @@ from bokeh.models import Legend, CustomJS, HoverTool, CheckboxGroup, Spacer
 from bokeh.models.widgets import Button, Div
 from bokeh.plotting import figure
 from bokeh.layouts import row, column
-import options
-from options import GROUP_LABELS
+from tools.io.preferences.options import load_options
 from math import pi
 from scipy.stats import normaltest, pearsonr
 from os.path import dirname, join
 import numpy as np
 from tools.utilities import get_include_map, get_csv
+
+
+options = load_options()
+GROUP_LABELS = options.GROUP_LABELS
 
 
 class Correlation:
