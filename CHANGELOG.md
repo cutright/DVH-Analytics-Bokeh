@@ -1,5 +1,11 @@
 # Change log of DVH Analytics
 
+### 0.5.0 (TBD)
+* New ROI Name Manger views
+
+### 0.4.10 (2019.1.1)
+* Bad reference to SQL config settings in the Ignore DVH button of the ROI Name Mangaer of the Admin view
+
 ### 0.4.9 (2019.1.1)
 * Organize modules in tools directory
 * Generalize update_all_in_db functions in database_editor.py
@@ -31,13 +37,13 @@ or reimporting database
 * ROI Name Manager in the Admin view displays a table of the currently saved ROI Map of the 
 currently selected physician
 
-### 0.4.697 (2018.11.11)
+### 0.4.697 (2018.11.11) - _removed from PyPi_
 * The docker compose file for DVH Analytics Docker had a bug such that it would not share import and sql connection settings between 
 main, admin, and settings views.  A directory was created to share changes with each server.
 * DVH Analytics will detect if you're using Docker and have docker applicable default sql connection settings
 * Note that DVH Analytics Docker has only been validated on Mac
 
-### 0.4.62 & 0.4.68 (2018.11.11)
+### 0.4.62 & 0.4.68 (2018.11.11) - _removed from PyPi_
 * If a RT Plan that is incompatible with the current version of dicom_mlc_analyzer.py, DVH Analytics would crash. 
 Now the command prompt will print the failed RT Plan file, and skip the MLC Analyzer tab update, preventing a crash.
 * Moving to the bokeh_components directory caused relative import errors. As a temporary fix, all python files moved 

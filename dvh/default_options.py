@@ -8,7 +8,7 @@ import os
 import paths
 
 
-VERSION = '0.4.9'
+VERSION = '0.4.10'
 
 # Setting this to true enables log in screens
 # You must add your own code in into check_credentials of auth.py

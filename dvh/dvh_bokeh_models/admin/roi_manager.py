@@ -622,7 +622,6 @@ class RoiManager:
             self.unignore_button_roi.label = 'Unignore'
 
     def ignore_dvh(self):
-        global config
         if self.ignore_button_roi.label == 'Cancel Delete DVH':
             self.ignore_button_roi.button_type = 'primary'
             self.ignore_button_roi.label = 'Ignore'
@@ -630,7 +629,7 @@ class RoiManager:
             self.delete_uncategorized_button_roi.label = 'Delete DVH'
         else:
             cnx = DVH_SQL()
-            if validate_sql_connection(config=config, verbose=False):
+            if validate_sql_connection(config=load_sql_settings(), verbose=False):
                 condition = "physician_roi = 'uncategorized'"
                 cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', condition)
                 for row in cursor_rtn:
