@@ -10,7 +10,7 @@ from __future__ import print_function
 from tools.io.preferences.sql import validate_sql_connection, load_sql_settings
 from tools.roi.name_manager import DatabaseROIs, clean_name
 from tools.io.database.sql_connector import DVH_SQL
-from bokeh.models.widgets import Select, Button, TextInput, RadioButtonGroup, Div, TableColumn, DataTable
+from bokeh.models.widgets import Select, Button, TextInput, RadioButtonGroup, Div
 from bokeh.layouts import row, column
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, LabelSet, Range1d, Spacer
@@ -18,6 +18,8 @@ from bokeh.models import ColumnDataSource, LabelSet, Range1d, Spacer
 
 class RoiManager:
     def __init__(self):
+
+        widget_width = 200
 
         # Create empty Bokeh data sources
         self.source_table = ColumnDataSource(data=dict(institutional_roi=[], physician_roi=[], variation=[]))
@@ -45,7 +47,7 @@ class RoiManager:
         roi_options = self.db.get_institutional_rois()
         self.select_institutional_roi = Select(value=roi_options[0],
                                                options=roi_options,
-                                               width=300,
+                                               width=widget_width,
                                                title='All Institutional ROIs')
 
         physician_options = self.db.get_physicians()
@@ -55,19 +57,19 @@ class RoiManager:
             value = physician_options[0]
         self.select_physician = Select(value=value,
                                        options=physician_options,
-                                       width=300,
+                                       width=widget_width,
                                        title='Physician')
 
         phys_roi_options = self.db.get_physician_rois(self.select_physician.value)
         self.select_physician_roi = Select(value=phys_roi_options[0],
                                            options=phys_roi_options,
-                                           width=300,
+                                           width=widget_width,
                                            title='Physician ROIs')
 
         variations_options = self.db.get_variations(self.select_physician.value, self.select_physician_roi.value)
         self.select_variation = Select(value=variations_options[0],
                                        options=variations_options,
-                                       width=300,
+                                       width=widget_width,
                                        title='Variations')
 
         unused_roi_options = self.db.get_unused_institutional_rois(self.select_physician.value)
@@ -77,7 +79,7 @@ class RoiManager:
             unused_roi_options.sort()
         self.select_unlinked_institutional_roi = Select(value=value,
                                                         options=unused_roi_options,
-                                                        width=300,
+                                                        width=widget_width,
                                                         title='Linked Institutional ROI')
         self.uncategorized_variations = self.get_uncategorized_variations(self.select_physician.value)
         try:
@@ -87,7 +89,7 @@ class RoiManager:
         uncat_var_options.sort()
         self.select_uncategorized_variation = Select(value=uncat_var_options[0],
                                                      options=uncat_var_options,
-                                                     width=300,
+                                                     width=widget_width,
                                                      title='Uncategorized Variations')
         ignored_variations = self.get_ignored_variations(self.select_physician.value)
         try:
@@ -100,12 +102,12 @@ class RoiManager:
             ignored_var_options.sort()
         self.select_ignored_variation = Select(value=ignored_var_options[0],
                                                options=ignored_var_options,
-                                               width=300,
+                                               width=widget_width,
                                                title='Ignored Variations')
 
-        self.div_action = Div(text="<b>No Action</b>", width=600)
+        self.div_action = Div(text="<b>No Action</b>", width=widget_width*2)
 
-        self.input_text = TextInput(value='', title='Add Institutional ROI:', width=300)
+        self.input_text = TextInput(value='', title='Add Institutional ROI:', width=widget_width)
 
         # RadioButtonGroups
         self.category = RadioButtonGroup(labels=self.categories, active=0, width=400)
@@ -123,18 +125,19 @@ class RoiManager:
         self.select_uncategorized_variation.on_change('value', self.update_uncategorized_variation_change)
 
         # Button objects
-        self.action_button = Button(label='Add Institutional ROI', button_type='primary', width=200)
-        self.reload_button_roi = Button(label='Reload Map', button_type='primary', width=300)
-        self.save_button_roi = Button(label='Map Saved', button_type='primary', width=300)
-        self.ignore_button_roi = Button(label='Ignore', button_type='primary', width=150)
-        self.delete_uncategorized_button_roi = Button(label='Delete DVH', button_type='warning', width=150)
-        self.unignore_button_roi = Button(label='UnIgnore', button_type='primary', width=150)
-        self.delete_ignored_button_roi = Button(label='Delete DVH', button_type='warning', width=150)
+        self.action_button = Button(label='Add Institutional ROI', button_type='primary',
+                                    width=int(widget_width*(2./3)))
+        self.reload_button_roi = Button(label='Reload Map', button_type='primary', width=widget_width)
+        self.save_button_roi = Button(label='Map Saved', button_type='primary', width=widget_width)
+        self.ignore_button_roi = Button(label='Ignore', button_type='primary', width=widget_width/2)
+        self.delete_uncategorized_button_roi = Button(label='Delete DVH', button_type='warning', width=widget_width/2)
+        self.unignore_button_roi = Button(label='UnIgnore', button_type='primary', width=widget_width/2)
+        self.delete_ignored_button_roi = Button(label='Delete DVH', button_type='warning', width=widget_width/2)
         self.update_uncategorized_rois_button = Button(label='Update Uncategorized ROIs in DB', button_type='warning',
-                                                       width=300)
+                                                       width=widget_width)
         self.remap_all_rois_for_selected_physician_button = Button(label='Remap all ROIs for Physician',
-                                                                   button_type='warning', width=300)
-        self.remap_all_rois_button = Button(label='Remap all ROIs in DB', button_type='warning', width=300)
+                                                                   button_type='warning', width=widget_width)
+        self.remap_all_rois_button = Button(label='Remap all ROIs in DB', button_type='warning', width=widget_width)
 
         # Button calls
         self.action_button.on_click(self.execute_button_click)
@@ -149,67 +152,75 @@ class RoiManager:
         self.remap_all_rois_button.on_click(self.remap_all_rois_in_db)
 
         # Plot
-        self.roi_map_plot = figure(plot_width=1000, plot_height=500,
+        # self.select_plot_data = Select()
+        self.roi_map_plot = figure(plot_width=800, plot_height=800,
                                    x_range=["Institutional ROI", "Physician ROI", "Variations"],
                                    x_axis_location="above",
-                                   title="(Linked by Physician and Physician ROI dropdowns)",
-                                   tools="pan, ywheel_zoom",
+                                   title="(Linked by Physician dropdowns)",
+                                   tools="ywheel_zoom, ywheel_pan",
+                                   active_scroll='ywheel_pan',
                                    logo=None)
-        self.roi_map_plot.toolbar.active_scroll = "auto"
         self.roi_map_plot.title.align = 'center'
-        self.roi_map_plot.title.text_font_style = "italic"
+        # self.roi_map_plot.title.text_font_style = "italic"
+        self.roi_map_plot.title.text_font_size = "15pt"
         self.roi_map_plot.xaxis.axis_line_color = None
         self.roi_map_plot.xaxis.major_tick_line_color = None
         self.roi_map_plot.xaxis.minor_tick_line_color = None
-        self.roi_map_plot.xaxis.major_label_text_font_size = "15pt"
+        self.roi_map_plot.xaxis.major_label_text_font_size = "12pt"
         self.roi_map_plot.xgrid.grid_line_color = None
         self.roi_map_plot.ygrid.grid_line_color = None
         self.roi_map_plot.yaxis.visible = False
         self.roi_map_plot.outline_line_color = None
-        self.roi_map_plot.y_range = Range1d(-5, 5)
+        self.roi_map_plot.y_range = Range1d(-25, 0)
+        self.roi_map_plot.border_fill_color = "whitesmoke"
+        self.roi_map_plot.min_border_left = 50
+        self.roi_map_plot.min_border_bottom = 30
+        # self.roi_map_plot.toolbar.autohide = True  # bokeh > than 0.13?
 
-        self.source_map = ColumnDataSource(data={'name': [], 'x': [], 'y': [], 'x0': [], 'y0': [], 'x1': [], 'y1': []})
-        self.roi_map_plot.circle("x", "y", size=12, source=self.source_map, line_color="black", fill_alpha=0.8)
-        labels = LabelSet(x="x", y="y", text="name", y_offset=8,
-                          text_font_size="15pt", text_color="#555555",
+        self.source_map = ColumnDataSource(data={'name': [], 'color': [], 'x': [], 'y': [],
+                                                 'x0': [], 'y0': [], 'x1': [], 'y1': []})
+        self.roi_map_plot.circle("x", "y", size=12, source=self.source_map, line_color="black", fill_alpha=0.8,
+                                 color='color')
+        labels = LabelSet(x="x", y="y", text="name", y_offset=8, text_color="#555555",
                           source=self.source_map, text_align='center')
         self.roi_map_plot.add_layout(labels)
         self.roi_map_plot.segment(x0='x0', y0='y0', x1='x1', y1='y1', source=self.source_map, alpha=0.5)
         self.update_roi_map_source_data()
-        self.div_roi_map_table = Div(text='')
-        self.update_roi_map_table_source()
+        # self.div_roi_map_table = Div(text='')
+        # self.update_roi_map_table_source()
 
-        columns = [TableColumn(field="institutional_roi", title="Institutional", width=150),
-                   TableColumn(field="physician_roi", title="Physician", width=150),
-                   TableColumn(field="variation_roi", title="Variations", width=500)]
-        self.roi_map_table = DataTable(source=self.source_table, columns=columns, index_position=None, width=1000,
-                                       editable=True)
+        # columns = [TableColumn(field="institutional_roi", title="Institutional", width=150),
+        #            TableColumn(field="physician_roi", title="Physician", width=150),
+        #            TableColumn(field="variation_roi", title="Variations", width=500)]
+        # self.roi_map_table = DataTable(source=self.source_table, columns=columns, index_position=None, width=1000,
+        #                                editable=True)
 
         self.category_map = {0: self.select_institutional_roi.value,
                              1: self.select_physician.value,
                              2: self.select_physician_roi.value,
                              3: self.select_variation.value}
 
-        self.layout = column(self.select_institutional_roi,
-                             Div(text="<hr>", width=900),
-                             self.select_physician,
-                             row(self.select_physician_roi, self.select_variation,
-                                 self.select_unlinked_institutional_roi),
-                             row(self.select_uncategorized_variation, self.select_ignored_variation),
-                             row(self.ignore_button_roi, self.delete_uncategorized_button_roi, self.unignore_button_roi,
-                                 self.delete_ignored_button_roi),
-                             row(self.reload_button_roi, self.save_button_roi),
-                             row(self.update_uncategorized_rois_button,
-                                 self.remap_all_rois_for_selected_physician_button, self.remap_all_rois_button),
-                             Div(text="<b>WARNING:</b> Buttons in orange cannot be easily undone.", width=600),
-                             Div(text="<hr>", width=900),
-                             row(self.input_text, self.operator, self.category),
-                             self.div_action,
-                             self.action_button,
-                             self.roi_map_plot,
-                             self.div_roi_map_table,
-                             self.roi_map_table,
-                             Spacer(width=1000, height=100))
+        self.layout = row(column(self.select_institutional_roi,
+                                 Div(text="<hr>", width=widget_width*3),
+                                 self.select_physician,
+                                 row(self.select_physician_roi, self.select_variation,
+                                     self.select_unlinked_institutional_roi),
+                                 row(self.select_uncategorized_variation, self.select_ignored_variation),
+                                 row(self.ignore_button_roi, self.delete_uncategorized_button_roi,
+                                     self.unignore_button_roi, self.delete_ignored_button_roi),
+                                 row(self.reload_button_roi, self.save_button_roi),
+                                 row(self.update_uncategorized_rois_button,
+                                     self.remap_all_rois_for_selected_physician_button, self.remap_all_rois_button),
+                                 Div(text="<b>WARNING:</b> Buttons in orange cannot be easily undone.",
+                                     width=widget_width*3+100),
+                                 Div(text="<hr>", width=widget_width*3),
+                                 self.input_text,
+                                 row(self.operator, self.category),
+                                 self.div_action,
+                                 self.action_button),
+                          column(Spacer(height=30),
+                                 self.roi_map_plot,
+                                 Spacer(width=1000, height=100)))
 
     ###############################
     # Institutional roi functions
@@ -485,8 +496,9 @@ class RoiManager:
         self.update_roi_map_table_source()
 
     def update_roi_map_source_data(self):
-        self.source_map.data = self.db.get_physician_roi_visual_coordinates(self.select_physician.value,
-                                                                            self.select_physician_roi.value)
+        self.source_map.data = self.db.get_all_institutional_roi_visual_coordinates(self.select_physician.value)
+        self.roi_map_plot.title.text = 'ROI Map for %s' % self.select_physician.value
+        self.roi_map_plot.yaxis.bounds = (min(self.source_map.data['y']), max(self.source_map.data['y']))
 
     def execute_button_click(self):
         self.function_map[self.input_text.title.strip(':')]()

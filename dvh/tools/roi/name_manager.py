@@ -7,6 +7,7 @@ Created on Fri Mar 24 13:43:28 2017
 """
 
 from __future__ import print_function
+from future.utils import listitems, listvalues
 import os
 # from fuzzywuzzy import fuzz
 from tools.io.database.sql_to_python import QuerySQL
@@ -436,23 +437,26 @@ class DatabaseROIs:
 
         # x and y are coordinates for the circles
         # x0, y0 is beggining of line segment, x1, y1 is end of line-segment
-        table = {'name': [institutional_roi, physician_roi],
-                 'x': [1 - 0.5, 2 - 0.5],
-                 'y': [0, 0],
-                 'x0': [1 - 0.5, 2 - 0.5],
-                 'y0': [0, 0],
-                 'x1': [2 - 0.5, 1 - 0.5],
-                 'y1': [0, 0]}
+        if institutional_roi == 'uncategorized':
+            table = {'name': [physician_roi],
+                     'x': [2 - 0.5],
+                     'y': [0],
+                     'x0': [2 - 0.5],
+                     'y0': [0],
+                     'x1': [2 - 0.5],
+                     'y1': [0]}
+        else:
+            table = {'name': [institutional_roi, physician_roi],
+                     'x': [1 - 0.5, 2 - 0.5],
+                     'y': [0, 0],
+                     'x0': [1 - 0.5, 2 - 0.5],
+                     'y0': [0, 0],
+                     'x1': [2 - 0.5, 1 - 0.5],
+                     'y1': [0, 0]}
 
         variations = self.get_variations(physician, physician_roi)
-        variations_count = len(variations)
-        if not variations_count % 2:  # if even
-            initial_y = (float(variations_count) / float(2)) - 0.5
-        else:
-            initial_y = float(variations_count - 1) / float(2)
-        variation_counter = 0
-        for variation in variations:
-            y = initial_y - variation_counter - 0.25
+        for i, variation in enumerate(variations):
+            y = -i
             table['name'].append(variation)
             table['x'].append(3 - 0.5)
             table['y'].append(y)
@@ -460,7 +464,67 @@ class DatabaseROIs:
             table['y0'].append(0)
             table['x1'].append(3 - 0.5)
             table['y1'].append(y)
-            variation_counter += 1
+
+        table['color'] = ['#1F77B4'] * len(table['name'])
+
+        return table
+
+    def get_all_institutional_roi_visual_coordinates(self, physician):
+
+        p_rois = self.get_physician_rois(physician)
+        i_rois = [self.get_institutional_roi(physician, p_roi) for p_roi in p_rois]
+        for i, i_roi in enumerate(i_rois):
+            if i_roi == 'uncategorized':
+                i_rois[i] = 'zzzzzzzzzzzzzzzzzzz'
+        sorted_indices = [i[0] for i in sorted(enumerate(i_rois), key=lambda x:x[1])]
+        p_rois_sorted = [p_rois[i] for i in sorted_indices]
+        p_rois = p_rois_sorted
+
+        tables = {p_roi: self.get_physician_roi_visual_coordinates(physician, p_roi) for p_roi in p_rois}
+        heights = [3 - min(tables[p_roi]['y']) for p_roi in p_rois]
+
+        max_y_delta = sum(heights) + 2  # include 2 buffer to give space to read labels on plot
+        for i, p_roi in enumerate(p_rois):
+            y_delta = sum(heights[i:])
+
+            for key in ['y', 'y0', 'y1']:
+                for j in range(len(tables[p_roi][key])):
+                    tables[p_roi][key][j] += y_delta - max_y_delta
+
+        table = tables[p_rois[0]]
+        for i in range(1, len(p_rois)):
+            for key in list(table):
+                table[key].extend(tables[p_rois[i]][key])
+
+        return self.update_duplicate_y_entries(table, physician)
+
+    @staticmethod
+    def get_roi_visual_y_values(table):
+        y_values = {}
+        for i, x in enumerate(table['x']):
+            if x == 1 - 0.5:
+                name = table['name'][i]
+                y = table['y'][i]
+                if name not in list(y_values):
+                    y_values[name] = []
+                y_values[name].append(y)
+        for name in list(y_values):
+            y_values[name] = sum(y_values[name]) / len(y_values[name])
+        return y_values
+
+    def update_duplicate_y_entries(self, table, physician):
+
+        y_values = self.get_roi_visual_y_values(table)
+
+        for i, name in enumerate(table['name']):
+            if table['x'][i] == 1 - 0.5 and table['y'][i] != y_values[name]:
+                table['y'][i] = y_values[name]
+                table['y0'][i] = y_values[name]
+                table['color'][i] = 'red'
+            if table['x'][i] == 2 - 0.5:
+                inst_name = self.get_institutional_roi(physician, name)
+                if inst_name != 'uncategorized':
+                    table['y1'][i] = y_values[inst_name]
 
         return table
 
