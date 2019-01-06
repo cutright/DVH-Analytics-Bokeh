@@ -7,7 +7,7 @@ Created on Tue Dec 25 2018
 """
 
 from __future__ import print_function
-from tools.utilities import get_csv
+from tools.utilities import get_csv, print_run_time
 from tools.io.preferences.import_settings import load_directories
 import os
 from os.path import dirname, join
@@ -216,10 +216,7 @@ class DatabaseEditor:
         self.update_query_source()
 
     def delete_auth_text_ticker(self, attr, old, new):
-        if new == 'delete':
-            self.delete_from_db_button.button_type = 'danger'
-        else:
-            self.delete_from_db_button.button_type = 'warning'
+        self.delete_from_db_button.button_type = ['warning', 'danger'][new == 'delete']
 
     def import_inbox(self):
         if self.import_inbox_button.label in {'Cancel'}:
@@ -293,10 +290,8 @@ class DatabaseEditor:
                                  'spread': db_update.spread,
                                  'cross_section': db_update.cross_section,
                                  'ptv_centroids': db_update.dist_to_ptv_centroids}
-        if condition:
-            rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
-        else:
-            rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
+
         counter = 0.
         total_rois = float(len(rois))
         for roi in rois:
@@ -320,13 +315,13 @@ class DatabaseEditor:
     def update_all_dist_to_ptv_centoids_in_db(self, *condition):
         self.update_all('ptv_centroids', condition)
 
-    def update_all_except_age_in_db(self):
+    def update_all_except_age_in_db(self, *condition):
         for f in self.calculate_select.options:
             if f not in {'Patient Ages', 'Default Post-Import'}:
                 self.calculate_select.value = f
                 self.calculate_exec()
 
-    def update_default_post_import(self):
+    def update_default_post_import(self, *condition):
         for f in ['PTV Distances', 'PTV Overlap', 'OAR-PTV Centroid Dist']:
             self.calculate_select.value = f
             self.calculate_exec()
@@ -336,10 +331,8 @@ class DatabaseEditor:
     # This function is not in the GUI
     @staticmethod
     def recalculate_roi_volumes(*condition):
-        if condition:
-            rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
-        else:
-            rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
+
         counter = 0.
         total_rois = float(len(rois))
         for roi in rois:
@@ -351,15 +344,11 @@ class DatabaseEditor:
     # This function is not in the GUI
     @staticmethod
     def recalculate_surface_areas(*condition):
-        if condition:
-            rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
-        else:
-            rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi')
-        counter = 0.
-        total_rois = float(len(rois))
-        for roi in rois:
-            counter += 1.
-            print('updating surface area:', roi[1], int(100. * counter / total_rois), sep=' ')
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
+
+        roi_count = float(len(rois))
+        for i, roi in enumerate(rois):
+            print('updating surface area:', roi[1], int(100. * float(i) / roi_count), sep=' ')
             db_update.surface_area(roi[0], roi[1])
 
     def reimport_mrn_ticker(self, attr, old, new):
@@ -432,10 +421,7 @@ class DatabaseEditor:
             self.calculate_exec_button.label = 'Calculating...'
             self.calculate_exec_button.button_type = 'warning'
 
-            if self.calculate_condition.value:
-                calc_map[self.calculate_select.value](self.calculate_condition.value)
-            else:
-                calc_map[self.calculate_select.value]()
+            calc_map[self.calculate_select.value](self.calculate_condition.value)
 
             self.update_query_source()
 
@@ -445,17 +431,7 @@ class DatabaseEditor:
             end_time = datetime.now()
             print(str(end_time), 'Calculations complete', sep=' ')
 
-            total_time = end_time - start_time
-            seconds = total_time.seconds
-            m, s = divmod(seconds, 60)
-            h, m = divmod(m, 60)
-            if h:
-                print("Calculations for %s took %dhrs %02dmin %02dsec to complete" %
-                      (self.calculate_select.value, h, m, s))
-            elif m:
-                print("Calculations for %s took %02dmin %02dsec to complete" % (self.calculate_select.value, m, s))
-            else:
-                print("Calculations for %s took %02dsec to complete" % (self.calculate_select.value, s))
+            print_run_time(start_time, end_time, "Calculations for %s" % self.calculate_select.value)
 
     def update_csv(self):
         src_data = [self.source.data]

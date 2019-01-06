@@ -357,3 +357,17 @@ def change_angle_origin(angles, max_positive_angle):
         else:
             new_angles.append(angle)
     return new_angles
+
+
+def print_run_time(start_time, end_time, calc_title):
+    total_time = end_time - start_time
+    seconds = total_time.seconds
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    if h:
+        print("%s took %dhrs %02dmin %02dsec to complete" %
+              (calc_title, h, m, s))
+    elif m:
+        print("%s took %02dmin %02dsec to complete" % (calc_title, m, s))
+    else:
+        print("%s took %02dsec to complete" % (calc_title, s))
