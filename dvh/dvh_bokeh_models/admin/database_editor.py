@@ -174,7 +174,8 @@ class DatabaseEditor:
 
         table_columns = [TableColumn(field=c, title=c) for c in columns]
 
-        query_cursor = DVH_SQL().query(self.query_table.value, ','.join(columns).strip(), self.query_condition.value)
+        query_cursor = DVH_SQL().query(self.query_table.value, ','.join(columns).strip(),
+                                       self.query_condition.value, order_by='mrn')
         new_data = {c: [str(line[i]) for line in query_cursor] for i, c in enumerate(columns)}
 
         if new_data:
