@@ -324,7 +324,7 @@ def get_csv(data_dict_list, data_dict_names, columns):
         text.append(','.join(columns))  # Column headers
         row_count = len(data_dict[columns[0]])
         for r in range(row_count):
-            line = [str(data_dict[c][r]).replace(',', '^') for c in columns]
+            line = [str(data_dict[c][r]).replace(',', ';') for c in columns]
             text.append(','.join(line))
         text.append('')
 
