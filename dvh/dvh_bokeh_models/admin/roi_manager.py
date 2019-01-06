@@ -13,7 +13,7 @@ from tools.io.database.sql_connector import DVH_SQL
 from bokeh.models.widgets import Select, Button, TextInput, RadioButtonGroup, Div
 from bokeh.layouts import row, column
 from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource, LabelSet, Range1d, Spacer
+from bokeh.models import ColumnDataSource, LabelSet, Range1d, Spacer, CheckboxGroup
 
 
 class RoiManager:
@@ -105,7 +105,7 @@ class RoiManager:
                                                width=widget_width,
                                                title='Ignored Variations')
 
-        self.div_action = Div(text="<b>No Action</b>", width=widget_width*2)
+        self.div_action = Div(text="<b>No Action</b>", width=widget_width)
 
         self.input_text = TextInput(value='', title='Add Institutional ROI:', width=widget_width)
 
@@ -133,11 +133,21 @@ class RoiManager:
         self.delete_uncategorized_button_roi = Button(label='Delete DVH', button_type='warning', width=widget_width/2)
         self.unignore_button_roi = Button(label='UnIgnore', button_type='primary', width=widget_width/2)
         self.delete_ignored_button_roi = Button(label='Delete DVH', button_type='warning', width=widget_width/2)
-        self.update_uncategorized_rois_button = Button(label='Update Uncategorized ROIs in DB', button_type='warning',
-                                                       width=widget_width)
-        self.remap_all_rois_for_selected_physician_button = Button(label='Remap all ROIs for Physician',
-                                                                   button_type='warning', width=widget_width)
-        self.remap_all_rois_button = Button(label='Remap all ROIs in DB', button_type='warning', width=widget_width)
+
+        self.remap_rois_function_map = {'Selected Physician': self.remap_all_rois_for_selected_physician,
+                                        'Selected Physician Uncategorized': self.remap_uncategorized_rois_for_selected_physician,
+                                        'Selected Physician Ignored': self.remap_ignored_rois_for_selected_physician,
+                                        'All Uncategorized': self.remap_uncategorized_rois,
+                                        'All Ignored': self.remap_ignored_rois,
+                                        'Entire Database': self.remap_all_rois_in_db}
+        remap_options = ['Selected Physician', 'Selected Physician Uncategorized', 'Selected Physician Ignored',
+                         'All Uncategorized', 'All Ignored', 'Entire Database']
+        self.select_remap = Select(value=remap_options[0], options=remap_options, width=250,
+                                   title='Remap ROIs in Database:')
+        self.select_remap.on_change('value', self.select_remap_ticker)
+        self.remap_button = Button(label='Remap', button_type='warning', width=widget_width)
+        self.remap_checkbox_ignore = CheckboxGroup(labels=['Remap Ignored Variations'], active=[])
+        self.remap_checkbox_ignore.on_change('active', self.remap_checkbox_ignore_ticker)
 
         # Button calls
         self.action_button.on_click(self.execute_button_click)
@@ -147,9 +157,7 @@ class RoiManager:
         self.ignore_button_roi.on_click(self.ignore_dvh)
         self.delete_ignored_button_roi.on_click(self.delete_ignored_dvh)
         self.unignore_button_roi.on_click(self.unignore_dvh)
-        self.update_uncategorized_rois_button.on_click(self.update_uncategorized_rois_in_db)
-        self.remap_all_rois_for_selected_physician_button.on_click(self.remap_all_rois_for_selected_physician)
-        self.remap_all_rois_button.on_click(self.remap_all_rois_in_db)
+        self.remap_button.on_click(self.remap_button_click)
 
         # Plot
         self.select_plot_display = Select(value='All', width=widget_width, title='Institutional Data to Display:',
@@ -195,38 +203,32 @@ class RoiManager:
         self.roi_map_plot.add_layout(labels)
         self.roi_map_plot.segment(x0='x0', y0='y0', x1='x1', y1='y1', source=self.source_map, alpha=0.5)
         self.update_roi_map_source_data()
-        # self.div_roi_map_table = Div(text='')
-        # self.update_roi_map_table_source()
-
-        # columns = [TableColumn(field="institutional_roi", title="Institutional", width=150),
-        #            TableColumn(field="physician_roi", title="Physician", width=150),
-        #            TableColumn(field="variation_roi", title="Variations", width=500)]
-        # self.roi_map_table = DataTable(source=self.source_table, columns=columns, index_position=None, width=1000,
-        #                                editable=True)
 
         self.category_map = {0: self.select_institutional_roi.value,
                              1: self.select_physician.value,
                              2: self.select_physician_roi.value,
                              3: self.select_variation.value}
 
-        self.layout = row(column(self.select_institutional_roi,
+        self.layout = row(column(Div(text="<b>WARNING:</b> Buttons in orange cannot be easily undone.",
+                                     width=widget_width*3+100),
+                                 Div(text="<hr>", width=widget_width * 3),
+                                 row(self.select_institutional_roi, self.select_physician),
                                  Div(text="<hr>", width=widget_width*3),
-                                 self.select_physician,
                                  row(self.select_physician_roi, self.select_variation,
                                      self.select_unlinked_institutional_roi),
+                                 Div(text="<hr>", width=widget_width*3),
+                                 row(self.operator, self.category),
+                                 row(self.input_text, Spacer(width=30), self.action_button, Spacer(width=50),
+                                     self.div_action),
+                                 Div(text="<hr>", width=widget_width * 3),
                                  row(self.select_uncategorized_variation, self.select_ignored_variation),
                                  row(self.ignore_button_roi, self.delete_uncategorized_button_roi,
                                      self.unignore_button_roi, self.delete_ignored_button_roi),
-                                 row(self.reload_button_roi, self.save_button_roi),
-                                 row(self.update_uncategorized_rois_button,
-                                     self.remap_all_rois_for_selected_physician_button, self.remap_all_rois_button),
-                                 Div(text="<b>WARNING:</b> Buttons in orange cannot be easily undone.",
-                                     width=widget_width*3+100),
-                                 Div(text="<hr>", width=widget_width*3),
-                                 self.input_text,
-                                 row(self.operator, self.category),
-                                 self.div_action,
-                                 self.action_button),
+                                 Div(text="<hr>", width=widget_width * 3),
+                                 row(self.select_remap, self.remap_button),
+                                 self.remap_checkbox_ignore,
+                                 Div(text="<hr>", width=widget_width * 3),
+                                 row(self.reload_button_roi, self.save_button_roi)),
                           column(row(self.select_plot_display, Spacer(width=75), self.select_merge_physician_roi['a'],
                                      self.select_merge_physician_roi['b'], self.select_merge_physician_roi['button']),
                                  self.roi_map_plot,
@@ -527,12 +529,17 @@ class RoiManager:
         self.save_button_roi.button_type = 'primary'
         self.save_button_roi.label = 'Map Saved'
 
+        self.remap_button.button_type = 'warning'
+        self.remap_button.label = 'Remap'
+
         self.update_roi_map_source_data()
 
     def save_db(self):
         self.db.write_to_file()
         self.save_button_roi.button_type = 'primary'
         self.save_button_roi.label = 'Map Saved'
+        self.remap_button.button_type = 'warning'
+        self.remap_button.label = 'Remap'
         # self.update_roi_map_table_source()
         self.update_roi_map_source_data()
 
@@ -742,13 +749,15 @@ class RoiManager:
             self.update_ignored_variations_select()
             self.select_uncategorized_variation.value = to_be_unignored
 
-    def remap_rois(self, cursor_rtn, button, *physician):
+    def remap_rois(self, cursor_rtn, *physician):
         if physician:
             physician = physician[0]
         else:
             physician = False
 
-        initial_label = button.label
+        self.remap_button.button_type = 'success'
+        button = self.remap_button
+
         cnx = DVH_SQL()
         progress = 0
         complete = len(cursor_rtn)
@@ -776,33 +785,60 @@ class RoiManager:
 
                 percent = int(float(100) * (float(progress) / float(complete)))
                 button.label = "Remap progress: " + str(percent) + "%"
-        button.label = initial_label
+
+        button.label = 'Remap'
+        self.remap_button.button_type = 'warning'
 
         self.db.write_to_file()
         self.update_uncategorized_variation_select()
         self.update_ignored_variations_select()
 
-    def update_uncategorized_rois_in_db(self):
+    def remap_uncategorized_rois(self, condition):
         cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', "physician_roi = 'uncategorized'")
-        self.remap_rois(cursor_rtn, self.update_uncategorized_rois_button)
+        self.remap_rois(cursor_rtn)
 
-    def remap_all_rois_in_db(self):
-        cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid')
-        self.remap_rois(cursor_rtn, self.remap_all_rois_button)
+    def remap_ignored_rois(self, condition):
+        cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', "physician_roi = 'ignored")
+        self.remap_rois(cursor_rtn)
 
-    def remap_all_rois_for_selected_physician(self):
-        cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid')
-        self.remap_rois(cursor_rtn, self.remap_all_rois_for_selected_physician_button, self.select_physician.value)
+    def remap_all_rois_in_db(self, condition):
+        cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', condition)
+        self.remap_rois(cursor_rtn)
+
+    def remap_all_rois_for_selected_physician(self, condition):
+        cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', condition)
+        self.remap_rois(cursor_rtn, self.select_physician.value)
+
+    def remap_uncategorized_rois_for_selected_physician(self, condition):
+        if condition:
+            condition = "%s and physician_roi = 'uncategorized'" % condition
+        else:
+            condition = "physician_roi = 'uncategorized'" % condition
+        cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', condition)
+        self.remap_rois(cursor_rtn, self.select_physician.value)
+
+    def remap_ignored_rois_for_selected_physician(self, condition):
+        cursor_rtn = DVH_SQL().query('dvhs', 'roi_name, study_instance_uid', "physician_roi = 'ignored'")
+        self.remap_rois(cursor_rtn, self.select_physician.value)
+
+    def remap_button_click(self):
+        if self.remap_button.button_type == 'warning':
+            condition = ["physician_roi != 'ignored'", ''][len(self.remap_checkbox_ignore.active)]
+            self.remap_rois_function_map[self.select_remap.value](condition)
+
+    def select_remap_ticker(self, attr, old, new):
+        if 'Ignored' in new:
+            self.remap_checkbox_ignore.active = [0]
+        else:
+            self.remap_checkbox_ignore.active = []
+
+    def remap_checkbox_ignore_ticker(self, attr, old, new):
+        if 'Ignored' in self.select_remap.value:
+            self.remap_checkbox_ignore.active = [0]
 
     def update_save_button_status(self):
         self.save_button_roi.button_type = 'success'
         self.save_button_roi.label = 'Map Save Needed'
 
-    # def update_roi_map_table_source(self):
-    #     phys_roi = self.db.get_physician_rois(self.select_physician.value)
-    #     inst_roi = [self.db.get_institutional_roi(self.select_physician.value, roi) for roi in phys_roi]
-    #     vari_roi = [', '.join(self.db.get_variations(self.select_physician.value, roi)) for roi in phys_roi]
-    #     self.source_table.data = {'institutional_roi': inst_roi,
-    #                               'physician_roi': phys_roi,
-    #                               'variation_roi': vari_roi}
-    #     self.div_roi_map_table.text = "<b>Currently Saved ROI Map for %s" % self.select_physician.value
+        self.remap_button.button_type = 'default'
+        self.remap_button.label = 'Save or Reload Map'
