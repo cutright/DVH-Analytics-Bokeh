@@ -18,7 +18,7 @@ from tools.io.database import update as db_update
 from tools.io.database.recalculate import recalculate_ages
 from bokeh.models.widgets import Select, Button, TextInput, Div, MultiSelect, TableColumn, DataTable, CheckboxGroup
 from bokeh.layouts import row, column
-from bokeh.models import ColumnDataSource, Slider, CustomJS, Spacer
+from bokeh.models import ColumnDataSource, CustomJS, Spacer
 
 
 class DatabaseEditor:
@@ -37,10 +37,10 @@ class DatabaseEditor:
         self.rebuild_db_button.on_click(self.rebuild_db_button_click)
 
         self.query_table = Select(value='DVHs', options=['DVHs', 'Plans', 'Rxs', 'Beams', 'DICOM_Files'], width=200,
-                                  title='Table')
-        self.query_columns = MultiSelect(title="Columns (Ctrl or Shift Click enabled)", width=250,
+                                  title='Table:')
+        self.query_columns = MultiSelect(title="Columns (Ctrl or Shift Click enabled):", width=250,
                                          options=[tuple(['', ''])])
-        self.query_condition = TextInput(value='', title="Condition", width=300)
+        self.query_condition = TextInput(value='', title="Condition:", width=300)
         self.query_button = Button(label='Query', button_type='primary', width=100)
 
         self.query_table.on_change('value', self.update_query_columns_ticker)
@@ -48,10 +48,10 @@ class DatabaseEditor:
 
         self.update_db_title = Div(text="<b>Update Database</b>", width=1000)
         self.update_db_table = Select(value='DVHs', options=['DVHs', 'Plans', 'Rxs', 'Beams'], width=200, height=100,
-                                      title='Table')
+                                      title='Table:')
         self.update_db_column = Select(value='', options=[''], width=250, title='Column')
-        self.update_db_value = TextInput(value='', title="Value", width=300)
-        self.update_db_condition = TextInput(value='', title="Condition", width=300)
+        self.update_db_value = TextInput(value='', title="Value:", width=300)
+        self.update_db_condition = TextInput(value='', title="Condition:", width=300)
         self.update_db_button = Button(label='Update DB', button_type='warning', width=100)
 
         self.update_db_table.on_change('value', self.update_update_db_columns_ticker)
@@ -61,38 +61,38 @@ class DatabaseEditor:
         self.update_update_db_column()
 
         self.reimport_title = Div(text="<b>Reimport from DICOM</b>", width=1025)
-        self.reimport_mrn_text = TextInput(value='', width=200, title='MRN')
-        self.reimport_study_date_select = Select(value='', options=[''], width=200, height=100, title='Sim Study Date')
-        self.reimport_uid_select = Select(value='', options=[''], width=425, height=100, title='Study Instance UID')
+        self.reimport_mrn_text = TextInput(value='', width=200, title='MRN:')
+        self.reimport_study_date_select = Select(value='', options=[''], width=200, height=100, title='Sim Study Date:')
+        self.reimport_uid_select = Select(value='', options=[''], width=425, height=100, title='Study Instance UID:')
         self.reimport_old_data_select = Select(value='Delete from DB', options=['Delete from DB', 'Keep in DB'],
-                                               width=150, height=100, title='Current Data')
+                                               width=150, height=100, title='Current Data:')
         self.reimport_button = Button(label='Reimport', button_type='warning', width=100)
 
         self.reimport_mrn_text.on_change('value', self.reimport_mrn_ticker)
         self.reimport_study_date_select.on_change('value', self.reimport_study_date_ticker)
         self.reimport_button.on_click(self.reimport_button_click)
 
-        self.query_data_table = DataTable(source=self.source, columns=[], width=1000)
+        self.query_data_table = DataTable(source=self.source, columns=[], width=1000, editable=True)
 
         self.delete_from_db_title = Div(text="<b>Delete all data with mrn or study_instance_uid</b>", width=1000)
         self.delete_from_db_column = Select(value='mrn', options=['mrn', 'study_instance_uid'], width=200, height=100,
-                                            title='Patient Identifier')
-        self.delete_from_db_value = TextInput(value='', title="Value (required)", width=300)
+                                            title='Patient Identifier:')
+        self.delete_from_db_value = TextInput(value='', title="Value (required):", width=300)
         self.delete_from_db_button = Button(label='Delete', button_type='warning', width=100)
-        self.delete_auth_text = TextInput(value='', title="Type 'delete' here to authorize", width=300)
+        self.delete_auth_text = TextInput(value='', title="Type 'delete' here to authorize:", width=300)
         self.delete_auth_text.on_change('value', self.delete_auth_text_ticker)
         self.delete_from_db_button.on_click(self.delete_from_db)
 
         self.change_mrn_uid_title = Div(text="<b>Change mrn or study_instance_uid in all tables</b>", width=1000)
         self.change_mrn_uid_column = Select(value='mrn', options=['mrn', 'study_instance_uid'], width=200, height=100,
-                                            title='Patient Identifier')
-        self.change_mrn_uid_old_value = TextInput(value='', title="Old", width=300)
-        self.change_mrn_uid_new_value = TextInput(value='', title="New", width=300)
+                                            title='Patient Identifier:')
+        self.change_mrn_uid_old_value = TextInput(value='', title="Old:", width=300)
+        self.change_mrn_uid_new_value = TextInput(value='', title="New:", width=300)
         self.change_mrn_uid_button = Button(label='Rename', button_type='warning', width=100)
         self.change_mrn_uid_button.on_click(self.change_mrn_uid)
 
         self.calculations_title = Div(text="<b>Post Import Calculations</b>", width=1000)
-        self.calculate_condition = TextInput(value='', title="Condition", width=300)
+        self.calculate_condition = TextInput(value='', title="Condition:", width=300)
         self.calculate_options = ['Default Post-Import', 'PTV Distances', 'PTV Overlap', 'ROI Centroid',
                                   'ROI Spread', 'ROI Cross-Section', 'OAR-PTV Centroid Dist', 'All (except age)',
                                   'Patient Ages']
@@ -105,8 +105,11 @@ class DatabaseEditor:
         self.download.callback = CustomJS(args=dict(source=self.source_csv),
                                           code=open(join(dirname(dirname(__file__)), 'download_new.js')).read())
 
-        self.layout = column(row(self.import_inbox_button, self.rebuild_db_button),
-                             self.import_inbox_force,
+        self.layout = column(row(self.import_inbox_button, self.rebuild_db_button, Spacer(width=50),
+                                 self.import_inbox_force),
+                             self.calculations_title,
+                             row(self.calculate_select, self.calculate_condition, self.calculate_exec_button),
+                             Div(text="<hr>", width=1000),
                              Div(text="<b>Query Database</b>", width=1000),
                              row(self.query_table, self.query_columns, self.query_condition, self.query_button),
                              self.update_db_title,
@@ -122,8 +125,6 @@ class DatabaseEditor:
                              row(self.change_mrn_uid_title),
                              row(self.change_mrn_uid_column, self.change_mrn_uid_old_value,
                                  self.change_mrn_uid_new_value, self.change_mrn_uid_button),
-                             self.calculations_title,
-                             row(self.calculate_condition, self.calculate_select, self.calculate_exec_button),
                              self.download,
                              self.query_data_table)
 
@@ -154,34 +155,22 @@ class DatabaseEditor:
         self.update_db_column.value = new_options[0]
 
     def update_query_source(self):
-        columns = [v for v in self.query_columns.value]
-        if 'mrn' not in columns:
-            columns.insert(0, 'mrn')
-        if 'study_instance_uid' not in columns:
-            columns.insert(1, 'study_instance_uid')
-        new_data = {}
-        table_columns = []
-        if not columns[-1]:
-            columns.pop()
-        for c in columns:
-            new_data[c] = []
-            table_columns.append(TableColumn(field=c, title=c))
-        columns_str = ','.join(columns).strip()
-        if self.query_condition.value:
-            query_cursor = DVH_SQL().query(self.query_table.value, columns_str, self.query_condition.value)
-        else:
-            query_cursor = DVH_SQL().query(self.query_table.value, columns_str)
+        columns = [v for v in self.query_columns.value if v]
+        for i, key in enumerate(['mrn', 'study_instance_uid']):  # move/add mrn and study_instance_uid to the front
+            if key in columns:
+                columns.pop(columns.index(key))
+            columns.insert(i, key)
 
-        for row in query_cursor:
-            for i in range(len(columns)):
-                new_data[columns[i]].append(str(row[i]))
+        table_columns = [TableColumn(field=c, title=c) for c in columns]
+
+        query_cursor = DVH_SQL().query(self.query_table.value, ','.join(columns).strip(), self.query_condition.value)
+        new_data = {c: [str(line[i]) for line in query_cursor] for i, c in enumerate(columns)}
 
         if new_data:
             self.source.data = new_data
             self.query_data_table.columns = table_columns
-            self.query_data_table.width = 100*len(table_columns)
-
-        self.update_csv()
+            self.query_data_table.width = [1000, 150*len(table_columns)][len(table_columns) > 7]
+            self.update_csv()
 
     def update_db(self):
         if self.update_db_condition.value and self.update_db_value.value:
