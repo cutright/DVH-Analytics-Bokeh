@@ -13,7 +13,7 @@ from tools.io.database.sql_connector import DVH_SQL
 from bokeh.models.widgets import Select, Button, TextInput, RadioButtonGroup, Div
 from bokeh.layouts import row, column
 from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource, LabelSet, Range1d, Spacer, CheckboxGroup
+from bokeh.models import ColumnDataSource, LabelSet, Range1d, Spacer, CheckboxGroup, CustomJS
 
 
 class RoiManager:
@@ -192,6 +192,8 @@ class RoiManager:
         self.roi_map_plot.border_fill_color = "whitesmoke"
         self.roi_map_plot.min_border_left = 50
         self.roi_map_plot.min_border_bottom = 30
+        self.select_plot_display.js_on_change('value', CustomJS(args=dict(p=self.roi_map_plot), code="p.reset.emit()"))
+        self.select_physician.js_on_change('value', CustomJS(args=dict(p=self.roi_map_plot), code="p.reset.emit()"))
         # self.roi_map_plot.toolbar.autohide = True  # bokeh > than 0.13?
 
         self.source_map = ColumnDataSource(data={'name': [], 'color': [], 'x': [], 'y': [],
@@ -563,7 +565,7 @@ class RoiManager:
 
         self.source_map.data = new_data
         self.roi_map_plot.title.text = 'ROI Map for %s' % self.select_physician.value
-        self.roi_map_plot.yaxis.bounds = (min(self.source_map.data['y']), max(self.source_map.data['y']))
+        self.roi_map_plot.y_range.bounds = (min(self.source_map.data['y'])-3, max(self.source_map.data['y'])+3)
 
         self.update_merge()
 
