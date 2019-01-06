@@ -12,7 +12,7 @@ list.  The DEFAULT physician will include only institutional rois
     * Database editor now updates without recreating layout (much faster table update after query)
     * Database table no longer uses a slider for width
 * Downloading tables with values that have , in them now replaced with ; instead of ^
-
+* tables in Admin View sorted by mrn by default
 
 ### 0.4.10 (2019.1.1)
 * Bad reference to SQL config settings in the Ignore DVH button of the ROI Name Mangaer of the Admin view
