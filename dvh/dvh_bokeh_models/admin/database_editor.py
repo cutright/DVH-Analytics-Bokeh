@@ -42,7 +42,6 @@ class DatabaseEditor:
                                          options=[tuple(['', ''])])
         self.query_condition = TextInput(value='', title="Condition", width=300)
         self.query_button = Button(label='Query', button_type='primary', width=100)
-        self.table_slider = Slider(start=300, end=2000, value=1000, step=10, title="Table Width")
 
         self.query_table.on_change('value', self.update_query_columns_ticker)
         self.query_button.on_click(self.update_query_source)
@@ -109,8 +108,7 @@ class DatabaseEditor:
         self.layout = column(row(self.import_inbox_button, self.rebuild_db_button),
                              self.import_inbox_force,
                              Div(text="<b>Query Database</b>", width=1000),
-                             row(self.query_table, self.query_columns, self.query_condition, self.table_slider,
-                                 self.query_button),
+                             row(self.query_table, self.query_columns, self.query_condition, self.query_button),
                              self.update_db_title,
                              row(self.update_db_table, self.update_db_column, self.update_db_condition,
                                  self.update_db_value, self.update_db_button),
@@ -180,11 +178,8 @@ class DatabaseEditor:
 
         if new_data:
             self.source.data = new_data
-
-            data_table_new = DataTable(source=self.source, columns=table_columns,
-                                       width=int(self.table_slider.value), editable=True)
-            self.layout.children.pop()
-            self.layout.children.append(data_table_new)
+            self.query_data_table.columns = table_columns
+            self.query_data_table.width = 100*len(table_columns)
 
         self.update_csv()
 
