@@ -7,13 +7,13 @@ Created on Fri Mar 24 13:43:28 2017
 """
 
 from __future__ import print_function
-from future.utils import listitems, listvalues
 import os
 # from fuzzywuzzy import fuzz
 from tools.io.database.sql_to_python import QuerySQL
 from tools.io.database.sql_connector import DVH_SQL
 from paths import PREF_DIR, SCRIPT_DIR
 from shutil import copyfile
+from tools.utilities import flatten_list_of_lists
 
 
 class Physician:
@@ -60,12 +60,14 @@ class DatabaseROIs:
 
         physicians = get_physicians_from_roi_files()
         for physician in physicians:
-            self.add_physician(physician)
+            self.add_physician(physician, add_institutional_rois=(physician == 'DEFAULT'))
 
         self.import_physician_roi_maps()
 
         if 'uncategorized' not in self.institutional_rois:
             self.institutional_rois.append('uncategorized')
+
+        self.branched_institutional_rois = {}
 
     ##############################################
     # Import from file functions
@@ -98,12 +100,14 @@ class DatabaseROIs:
     ###################################
     # Physician functions
     ###################################
-    def add_physician(self, physician):
+    def add_physician(self, physician, add_institutional_rois=True):
         physician = clean_name(physician).upper()
         if physician not in self.get_physicians():
             self.physicians[physician] = Physician(physician)
-        for institutional_roi in self.institutional_rois:
-            self.add_physician_roi(physician, institutional_roi, institutional_roi)
+
+        if add_institutional_rois:
+            for institutional_roi in self.institutional_rois:
+                self.add_physician_roi(physician, institutional_roi, institutional_roi)
 
     def delete_physician(self, physician):
         physician = clean_name(physician).upper()
@@ -199,10 +203,8 @@ class DatabaseROIs:
             if physician_rois:
                 physician_rois.sort()
                 return physician_rois
-            else:
-                return ['']
-        else:
-            return ['']
+
+        return ['']
 
     def get_physician_roi(self, physician, roi):
         physician = clean_name(physician).upper()
@@ -248,12 +250,11 @@ class DatabaseROIs:
         if physician_roi in self.get_physician_rois(physician):
             self.physicians[physician].physician_rois.pop(physician_roi, None)
 
-    def is_physician_roi(self, roi):
+    def is_physician_roi(self, roi, physician):
         roi = clean_name(roi)
-        for physician in self.get_physicians():
-            for physician_roi in self.get_physician_rois(physician):
-                if roi == physician_roi:
-                    return True
+        for physician_roi in self.get_physician_rois(physician):
+            if roi == physician_roi:
+                return True
         return False
 
     def get_unused_physician_rois(self, physician):
@@ -268,6 +269,17 @@ class DatabaseROIs:
 
         return unused_rois
 
+    def merge_physician_rois(self, physician, physician_rois, final_physician_roi):
+
+        variation_lists = [self.get_variations(physician, physician_roi) for physician_roi in physician_rois]
+        variations = flatten_list_of_lists(variation_lists, remove_duplicates=True)
+        for variation in variations:
+            self.add_variation(physician, final_physician_roi, variation)
+
+        for physician_roi in physician_rois:
+            if physician_roi != final_physician_roi:
+                self.delete_physician_roi(physician, physician_roi)
+
     ###################################################
     # Variation-of-Physician-ROI functions
     ###################################################
@@ -276,14 +288,12 @@ class DatabaseROIs:
         physician_roi = clean_name(physician_roi)
         if physician_roi == 'uncategorized':
             return ['uncategorized']
-        try:
+
+        if self.is_physician_roi(physician_roi, physician):
             variations = self.physicians[physician].physician_rois[physician_roi]['variations']
             if variations:
                 return variations
-            else:
-                return ['']
-        except KeyError:
-            return ['']
+        return ['']
 
     def get_all_variations_of_physician(self, physician):
         physician = clean_name(physician).upper()
@@ -301,7 +311,7 @@ class DatabaseROIs:
         physician = clean_name(physician).upper()
         physician_roi = clean_name(physician_roi)
         variation = clean_name(variation)
-        if variation not in self.get_variations(physician, physician_roi):
+        if variation and variation not in self.get_variations(physician, physician_roi):
             self.physicians[physician].add_physician_roi_variation(physician_roi, variation)
 
     def delete_variation(self, physician, physician_roi, variation):
@@ -465,13 +475,16 @@ class DatabaseROIs:
             table['x1'].append(3 - 0.5)
             table['y1'].append(y)
 
-        table['color'] = ['#1F77B4'] * len(table['name'])
+        table_length = len(table['name'])
+        table['color'] = ['#1F77B4'] * table_length
+        table['institutional_roi'] = [institutional_roi] * table_length
+        table['physician_roi'] = [physician_roi] * table_length
 
         return table
 
-    def get_all_institutional_roi_visual_coordinates(self, physician):
+    def get_all_institutional_roi_visual_coordinates(self, physician, ignored_physician_rois=[]):
 
-        p_rois = self.get_physician_rois(physician)
+        p_rois = [roi for roi in self.get_physician_rois(physician) if roi not in ignored_physician_rois]
         i_rois = [self.get_institutional_roi(physician, p_roi) for p_roi in p_rois]
         for i, i_roi in enumerate(i_rois):
             if i_roi == 'uncategorized':
@@ -516,15 +529,21 @@ class DatabaseROIs:
 
         y_values = self.get_roi_visual_y_values(table)
 
+        self.branched_institutional_rois[physician] = []
+
         for i, name in enumerate(table['name']):
             if table['x'][i] == 1 - 0.5 and table['y'][i] != y_values[name]:
                 table['y'][i] = y_values[name]
                 table['y0'][i] = y_values[name]
                 table['color'][i] = 'red'
+                self.branched_institutional_rois[physician].append(name)
             if table['x'][i] == 2 - 0.5:
                 inst_name = self.get_institutional_roi(physician, name)
                 if inst_name != 'uncategorized':
                     table['y1'][i] = y_values[inst_name]
+
+        if self.branched_institutional_rois[physician]:
+            self.branched_institutional_rois[physician] = list(set(self.branched_institutional_rois[physician]))
 
         return table
 

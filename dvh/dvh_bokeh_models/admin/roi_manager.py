@@ -152,12 +152,21 @@ class RoiManager:
         self.remap_all_rois_button.on_click(self.remap_all_rois_in_db)
 
         # Plot
-        # self.select_plot_data = Select()
+        self.select_plot_display = Select(value='All', width=widget_width, title='Institutional Data to Display:',
+                                          options=['All', 'Linked', 'Unlinked', 'Branched'])
+        self.select_plot_display.on_change('value', self.select_plot_display_ticker)
+        self.select_merge_physician_roi = {'a': Select(value='', options=[''], width=widget_width,
+                                                       title='Merge Physician ROI A:'),
+                                           'b': Select(value='', options=[''], width=widget_width,
+                                                       title='Into Physician ROI B:'),
+                                           'button': Button(label='Merge', button_type='primary', width=widget_width/2)}
+        self.select_merge_physician_roi['button'].on_click(self.merge_click)
+
         self.roi_map_plot = figure(plot_width=800, plot_height=800,
                                    x_range=["Institutional ROI", "Physician ROI", "Variations"],
                                    x_axis_location="above",
                                    title="(Linked by Physician dropdowns)",
-                                   tools="ywheel_zoom, ywheel_pan",
+                                   tools="reset, ywheel_zoom, ywheel_pan",
                                    active_scroll='ywheel_pan',
                                    logo=None)
         self.roi_map_plot.title.align = 'center'
@@ -218,7 +227,8 @@ class RoiManager:
                                  row(self.operator, self.category),
                                  self.div_action,
                                  self.action_button),
-                          column(Spacer(height=30),
+                          column(row(self.select_plot_display, Spacer(width=75), self.select_merge_physician_roi['a'],
+                                     self.select_merge_physician_roi['b'], self.select_merge_physician_roi['button']),
                                  self.roi_map_plot,
                                  Spacer(width=1000, height=100)))
 
@@ -335,7 +345,7 @@ class RoiManager:
         self.update_select_unlinked_institutional_roi()
         self.update_uncategorized_variation_select()
         self.update_ignored_variations_select()
-        self.update_roi_map_table_source()
+        self.update_roi_map_source_data()
 
     def rename_physician(self):
         new = clean_name(self.input_text.value)
@@ -384,6 +394,34 @@ class RoiManager:
 
     def select_variation_change(self, attr, old, new):
         self.update_input_text()
+
+    ################
+    # Merge functions
+    ################
+    def update_merge(self):
+        physician = self.select_physician.value
+        if physician and physician != 'DEFAULT':
+            new_options = self.db.get_physician_rois(physician)
+
+            for key in ['a', 'b']:
+                self.select_merge_physician_roi[key].options = new_options
+                self.select_merge_physician_roi[key].value = new_options[0]
+
+        else:
+            for key in ['a', 'b']:
+                self.select_merge_physician_roi[key].options = ['']
+                self.select_merge_physician_roi[key].value = ''
+
+    def merge_click(self):
+        physician = self.select_physician.value
+        physician_rois = [self.select_merge_physician_roi[key].value for key in ['a', 'b']]
+        final_physician_roi = physician_rois[1]
+
+        if physician_rois[0] != physician_rois[1]:
+            self.db.merge_physician_rois(physician, physician_rois, final_physician_roi)
+
+        self.update_roi_map_source_data()
+        self.update_save_button_status()
 
     ################
     # Misc functions
@@ -489,16 +527,41 @@ class RoiManager:
         self.save_button_roi.button_type = 'primary'
         self.save_button_roi.label = 'Map Saved'
 
+        self.update_roi_map_source_data()
+
     def save_db(self):
         self.db.write_to_file()
         self.save_button_roi.button_type = 'primary'
         self.save_button_roi.label = 'Map Saved'
-        self.update_roi_map_table_source()
+        # self.update_roi_map_table_source()
+        self.update_roi_map_source_data()
 
     def update_roi_map_source_data(self):
-        self.source_map.data = self.db.get_all_institutional_roi_visual_coordinates(self.select_physician.value)
+        new_data = self.db.get_all_institutional_roi_visual_coordinates(self.select_physician.value)
+
+        i_roi = new_data['institutional_roi']
+        p_roi = new_data['physician_roi']
+        b_roi = self.db.branched_institutional_rois[self.select_physician.value]
+        if self.select_plot_display.value == 'Linked':
+            ignored_roi = [p_roi[i] for i in range(len(i_roi)) if i_roi[i] == 'uncategorized']
+        elif self.select_plot_display.value == 'Unlinked':
+            ignored_roi = [p_roi[i] for i in range(len(i_roi)) if i_roi[i] != 'uncategorized']
+        elif self.select_plot_display.value == 'Branched':
+            ignored_roi = [p_roi[i] for i in range(len(i_roi)) if i_roi[i] not in b_roi]
+        else:
+            ignored_roi = []
+
+        new_data = self.db.get_all_institutional_roi_visual_coordinates(self.select_physician.value,
+                                                                        ignored_physician_rois=ignored_roi)
+
+        self.source_map.data = new_data
         self.roi_map_plot.title.text = 'ROI Map for %s' % self.select_physician.value
         self.roi_map_plot.yaxis.bounds = (min(self.source_map.data['y']), max(self.source_map.data['y']))
+
+        self.update_merge()
+
+    def select_plot_display_ticker(self, attr, old, new):
+        self.update_roi_map_source_data()
 
     def execute_button_click(self):
         self.function_map[self.input_text.title.strip(':')]()
@@ -735,11 +798,11 @@ class RoiManager:
         self.save_button_roi.button_type = 'success'
         self.save_button_roi.label = 'Map Save Needed'
 
-    def update_roi_map_table_source(self):
-        phys_roi = self.db.get_physician_rois(self.select_physician.value)
-        inst_roi = [self.db.get_institutional_roi(self.select_physician.value, roi) for roi in phys_roi]
-        vari_roi = [', '.join(self.db.get_variations(self.select_physician.value, roi)) for roi in phys_roi]
-        self.source_table.data = {'institutional_roi': inst_roi,
-                                  'physician_roi': phys_roi,
-                                  'variation_roi': vari_roi}
-        self.div_roi_map_table.text = "<b>Currently Saved ROI Map for %s" % self.select_physician.value
+    # def update_roi_map_table_source(self):
+    #     phys_roi = self.db.get_physician_rois(self.select_physician.value)
+    #     inst_roi = [self.db.get_institutional_roi(self.select_physician.value, roi) for roi in phys_roi]
+    #     vari_roi = [', '.join(self.db.get_variations(self.select_physician.value, roi)) for roi in phys_roi]
+    #     self.source_table.data = {'institutional_roi': inst_roi,
+    #                               'physician_roi': phys_roi,
+    #                               'variation_roi': vari_roi}
+    #     self.div_roi_map_table.text = "<b>Currently Saved ROI Map for %s" % self.select_physician.value

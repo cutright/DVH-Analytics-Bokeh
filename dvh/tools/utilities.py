@@ -82,8 +82,11 @@ def moving_avg_by_calendar_day(xyw, avg_days):
     return x_final, moving_aves
 
 
-def flatten_list_of_lists(some_list):
-    return [item for sublist in some_list for item in sublist]
+def flatten_list_of_lists(some_list, remove_duplicates=False):
+    data = [item for sublist in some_list for item in sublist]
+    if remove_duplicates:
+        return list(set(data))
+    return data
 
 
 def calc_stats(data):
