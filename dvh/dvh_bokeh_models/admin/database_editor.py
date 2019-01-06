@@ -24,7 +24,7 @@ from bokeh.models import ColumnDataSource, CustomJS, Spacer
 class DatabaseEditor:
     def __init__(self, roi_manager):
 
-        column_width = 700
+        column_width = 600
 
         self.roi_manager = roi_manager  # allows ROI Name manager updates after importing data
 
@@ -112,29 +112,29 @@ class DatabaseEditor:
         self.layout = row(column(row(self.import_inbox_button, Spacer(width=20), self.rebuild_db_button,
                                      Spacer(width=50), self.import_inbox_force),
                                  self.calculations_title,
-                                 row(self.calculate_select, Spacer(width=30), self.calculate_exec_button),
+                                 row(self.calculate_select, Spacer(width=300), self.calculate_exec_button),
                                  self.calculate_condition,
                                  Div(text="<hr>", width=column_width),
                                  Div(text="<b>Query Database</b>", width=column_width),
-                                 row(self.query_table, self.query_columns, self.query_button),
+                                 row(self.query_table, self.query_columns, Spacer(width=50), self.query_button),
                                  self.query_condition,
                                  Div(text="<hr>", width=column_width),
                                  self.update_db_title,
                                  row(self.update_db_table, self.update_db_column, self.update_db_value,
-                                     Spacer(width=30), self.update_db_button),
+                                     Spacer(width=45), self.update_db_button),
                                  self.update_db_condition,
                                  Div(text="<hr>", width=column_width),
                                  self.reimport_title,
                                  row(self.reimport_mrn_text, Spacer(width=10),
-                                     self.reimport_old_data_select, Spacer(width=10), self.reimport_button),
+                                     self.reimport_old_data_select, Spacer(width=140), self.reimport_button),
                                  row(self.reimport_study_date_select, self.reimport_uid_select),
                                  Div(text="<hr>", width=column_width),
                                  row(self.delete_from_db_title),
-                                 row(self.delete_from_db_column, self.delete_from_db_button),
+                                 row(self.delete_from_db_column, Spacer(width=300), self.delete_from_db_button),
                                  row(self.delete_from_db_value, self.delete_auth_text),
                                  Div(text="<hr>", width=column_width),
                                  row(self.change_mrn_uid_title),
-                                 row(self.change_mrn_uid_column, self.change_mrn_uid_button),
+                                 row(self.change_mrn_uid_column, Spacer(width=300), self.change_mrn_uid_button),
                                  row(self.change_mrn_uid_old_value, self.change_mrn_uid_new_value)),
                           column(self.download,
                                  self.query_data_table))
