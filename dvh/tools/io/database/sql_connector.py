@@ -54,10 +54,21 @@ class DVH_SQL:
         else:
             return False
 
-    def query(self, table_name, return_col_str, *condition_str):
+    def query(self, table_name, return_col_str, *condition_str, **kwargs):
+        order, order_by = None, None
+        if kwargs:
+            if 'order' in kwargs:
+                order = kwargs['order']
+            if 'order_by' in kwargs:
+                order_by = kwargs['order_by']
+                if not order:
+                    order = 'ASC'
+
         query = "Select %s from %s;" % (return_col_str, table_name)
         if condition_str and condition_str[0]:
             query = "Select %s from %s where %s;" % (return_col_str, table_name, condition_str[0])
+        if order and order_by:
+            query = "%s Order By %s %s;" % (query[:-1], order_by, order)
 
         self.cursor.execute(query)
         results = self.cursor.fetchall()

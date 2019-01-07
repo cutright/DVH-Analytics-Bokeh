@@ -82,8 +82,11 @@ def moving_avg_by_calendar_day(xyw, avg_days):
     return x_final, moving_aves
 
 
-def flatten_list_of_lists(some_list):
-    return [item for sublist in some_list for item in sublist]
+def flatten_list_of_lists(some_list, remove_duplicates=False):
+    data = [item for sublist in some_list for item in sublist]
+    if remove_duplicates:
+        return list(set(data))
+    return data
 
 
 def calc_stats(data):
@@ -321,7 +324,7 @@ def get_csv(data_dict_list, data_dict_names, columns):
         text.append(','.join(columns))  # Column headers
         row_count = len(data_dict[columns[0]])
         for r in range(row_count):
-            line = [str(data_dict[c][r]).replace(',', '^') for c in columns]
+            line = [str(data_dict[c][r]).replace(',', ';') for c in columns]
             text.append(','.join(line))
         text.append('')
 
@@ -354,3 +357,17 @@ def change_angle_origin(angles, max_positive_angle):
         else:
             new_angles.append(angle)
     return new_angles
+
+
+def print_run_time(start_time, end_time, calc_title):
+    total_time = end_time - start_time
+    seconds = total_time.seconds
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    if h:
+        print("%s took %dhrs %02dmin %02dsec to complete" %
+              (calc_title, h, m, s))
+    elif m:
+        print("%s took %02dmin %02dsec to complete" % (calc_title, m, s))
+    else:
+        print("%s took %02dsec to complete" % (calc_title, s))

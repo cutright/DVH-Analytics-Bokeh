@@ -9,6 +9,7 @@ Created on Thu Mar  2 22:15:52 2017
 from __future__ import print_function
 from tools.io.database.sql_connector import DVH_SQL
 from tools.io.database.dicom.parser import DVHTable, PlanRow, BeamTable, RxTable
+from tools.utilities import print_run_time
 import os
 import shutil
 from datetime import datetime
@@ -176,17 +177,7 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
 
     end_time = datetime.now()
     print(str(end_time), 'Import complete', sep=' ')
-
-    total_time = end_time - start_time
-    seconds = total_time.seconds
-    m, s = divmod(seconds, 60)
-    h, m = divmod(m, 60)
-    if h:
-        print("This import took %dhrs %02dmin %02dsec to complete" % (h, m, s))
-    elif m:
-        print("This import took %02dmin %02dsec to complete" % (m, s))
-    else:
-        print("This import took %02dsec to complete" % s)
+    print_run_time(start_time, end_time, "This import")
 
 
 def get_file_paths(start_path):

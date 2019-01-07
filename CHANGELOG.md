@@ -1,7 +1,18 @@
 # Change log of DVH Analytics
 
 ### 0.5.0 (TBD)
-* New ROI Name Manger views
+* New ROI Name Manger layout
+    * plot now displays entire physician roi map
+    * you can show all data or filter institutional rois by linked, unlinked, or branched
+    * Functionality added to merge one physician roi into another
+* Previously, importing a ROI Map automatically added institutional rois to physician rois.  This behavior has been 
+removed.  Adding a new physician will still create a default list of physician rois based on the insitutional roi 
+list.  The DEFAULT physician will include only institutional rois
+* Minor changes to Database Editor layout
+    * Database editor now updates without recreating layout (much faster table update after query)
+    * Database table no longer uses a slider for width
+* Downloading tables with values that have , in them now replaced with ; instead of ^
+* tables in Admin View sorted by mrn by default
 
 ### 0.4.10 (2019.1.1)
 * Bad reference to SQL config settings in the Ignore DVH button of the ROI Name Mangaer of the Admin view
