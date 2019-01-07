@@ -237,20 +237,11 @@ class DatabaseEditor:
         else:
             self.import_inbox_button.button_type = 'warning'
             self.import_inbox_button.label = 'Importing...'
-            if 0 in self.import_inbox_force.active:
-                force_update = True
-            else:
-                force_update = False
 
-            if 2 in self.import_inbox_force.active:
-                move_files = True
-            else:
-                move_files = False
+            force_update = 0 in self.import_inbox_force.active
+            move_files = 2 in self.import_inbox_force.active
+            import_latest_only = 1 in self.import_inbox_force.active
 
-            if 1 in self.import_inbox_force.active:
-                import_latest_only = True
-            else:
-                import_latest_only = False
             dicom_to_sql(force_update=force_update, import_latest_only=import_latest_only, move_files=move_files)
 
         self.roi_manager.update_uncategorized_variation_select()
