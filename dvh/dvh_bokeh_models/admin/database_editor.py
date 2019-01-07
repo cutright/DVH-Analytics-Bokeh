@@ -275,11 +275,10 @@ class DatabaseEditor:
                     "LOWER(roi_name) NOT IN ('external', 'skin') OR " \
                     "LOWER(physician_roi) NOT IN ('uncategorized', 'ignored', 'external', 'skin')))" + condition
         rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition)
-        counter = 0.
+
         total_rois = float(len(rois))
-        for roi in rois:
-            self.calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
-            counter += 1.
+        for i, roi in enumerate(rois):
+            self.calculate_exec_button.label = str(int((float(i) / total_rois) * 100)) + '%'
             if roi[1].lower() not in {'external', 'skin'} and \
                     roi[2].lower() not in {'uncategorized', 'ignored', 'external', 'skin'}:
                 print('updating dist to ptv:', roi[1], sep=' ')
@@ -293,29 +292,28 @@ class DatabaseEditor:
                                  'spread': db_update.spread,
                                  'cross_section': db_update.cross_section,
                                  'ptv_centroids': db_update.dist_to_ptv_centroids}
+
         rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
 
-        counter = 0.
         total_rois = float(len(rois))
-        for roi in rois:
-            self.calculate_exec_button.label = str(int((counter / total_rois) * 100)) + '%'
-            counter += 1.
+        for i, roi in enumerate(rois):
+            self.calculate_exec_button.label = str(int((float(i) / total_rois) * 100)) + '%'
             print('updating %s:' % variable, roi[1], sep=' ')
             variable_function_map[variable](roi[0], roi[1])
 
-    def update_all_tv_overlaps_in_db(self, *condition):
+    def update_all_tv_overlaps_in_db(self, condition):
         self.update_all('ptv_overlap', condition)
 
-    def update_all_centroids_in_db(self, *condition):
+    def update_all_centroids_in_db(self, condition):
         self.update_all('centroid', condition)
 
-    def update_all_spreads_in_db(self, *condition):
+    def update_all_spreads_in_db(self, condition):
         self.update_all('spread', condition)
 
-    def update_all_cross_sections_in_db(self, *condition):
+    def update_all_cross_sections_in_db(self, condition):
         self.update_all('cross_section', condition)
 
-    def update_all_dist_to_ptv_centoids_in_db(self, *condition):
+    def update_all_dist_to_ptv_centoids_in_db(self, condition):
         self.update_all('ptv_centroids', condition)
 
     def update_all_except_age_in_db(self, *condition):
