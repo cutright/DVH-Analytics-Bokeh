@@ -276,7 +276,7 @@ class DatabaseEditor:
             self.rebuild_db_button.button_type = 'warning'
 
     def update_all_min_distances_in_db(self, *condition):
-        if condition:
+        if condition and condition[0]:
             condition = " AND (" + condition[0] + ")"
         else:
             condition = ''
@@ -425,25 +425,23 @@ class DatabaseEditor:
                     'All (except age)': self.update_all_except_age_in_db,
                     'Default Post-Import': self.update_default_post_import}
 
-        if self.calculate_select.value:
+        start_time = datetime.now()
+        print(str(start_time), 'Beginning %s calculations' % self.calculate_select.value, sep=' ')
 
-            start_time = datetime.now()
-            print(str(start_time), 'Beginning %s calculations' % self.calculate_condition.value, sep=' ')
+        self.calculate_exec_button.label = 'Calculating...'
+        self.calculate_exec_button.button_type = 'warning'
 
-            self.calculate_exec_button.label = 'Calculating...'
-            self.calculate_exec_button.button_type = 'warning'
+        calc_map[self.calculate_select.value](self.calculate_condition.value)
 
-            calc_map[self.calculate_select.value](self.calculate_condition.value)
+        self.update_query_source()
 
-            self.update_query_source()
+        self.calculate_exec_button.label = 'Perform Calc'
+        self.calculate_exec_button.button_type = 'primary'
 
-            self.calculate_exec_button.label = 'Perform Calc'
-            self.calculate_exec_button.button_type = 'primary'
+        end_time = datetime.now()
+        print(str(end_time), 'Calculations complete', sep=' ')
 
-            end_time = datetime.now()
-            print(str(end_time), 'Calculations complete', sep=' ')
-
-            print_run_time(start_time, end_time, "Calculations for %s" % self.calculate_select.value)
+        print_run_time(start_time, end_time, "Calculations for %s" % self.calculate_select.value)
 
     def update_csv(self):
         src_data = [self.source.data]
