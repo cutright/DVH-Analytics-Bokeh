@@ -7,18 +7,17 @@ Created on Tue Dec 25 2018
 """
 
 from __future__ import print_function
-import update_sys_path
-from dvh_bokeh_models.settings.dicom_directories import DicomDirectories
-from dvh_bokeh_models.settings.custom_options import CustomOptions
-from dvh_bokeh_models.settings.sql_config import SqlConfig
-from tools import auth
-from tools.io.preferences.import_settings import initialize_directories_settings
-from tools.io.preferences.options import load_options
 import time
 from bokeh.models.widgets import Button, TextInput, Div, PasswordInput
 from bokeh.models import Spacer
 from bokeh.layouts import layout, row, column
 from bokeh.io import curdoc
+from modules.settings.dicom_directories import DicomDirectories
+from modules.settings.custom_options import CustomOptions
+from modules.settings.sql_config import SqlConfig
+from modules.tools import auth
+from modules.tools.io.preferences.import_settings import initialize_directories_settings
+from modules.tools.io.preferences.options import load_options
 
 
 initialize_directories_settings()

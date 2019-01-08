@@ -9,16 +9,17 @@ This is the main python file for command line implementation.
 
 from __future__ import print_function
 from os.path import dirname, isfile, isdir, join
-from tools.io.database.dicom.importer import dicom_to_sql
-from tools.io.database.sql_connector import DVH_SQL
-from tools.io.preferences.import_settings import is_import_settings_defined, write_import_settings,\
-    initialize_directories_settings
-from tools.io.preferences.sql import is_sql_connection_defined, write_sql_connection_settings, validate_sql_connection
-from tools.get_settings import get_settings
-from getpass import getpass
 import argparse
 from subprocess import call
-from paths import INBOX_DIR, IMPORTED_DIR, REVIEW_DIR
+from modules.tools.io.database.dicom.importer import dicom_to_sql
+from modules.tools.io.database.sql_connector import DVH_SQL
+from modules.tools.io.preferences.import_settings import is_import_settings_defined, write_import_settings,\
+    initialize_directories_settings
+from modules.tools.io.preferences.sql import is_sql_connection_defined, write_sql_connection_settings,\
+    validate_sql_connection
+from modules.tools.get_settings import get_settings
+from getpass import getpass
+from modules.paths import INBOX_DIR, IMPORTED_DIR, REVIEW_DIR
 import sys
 if sys.version[0] == "3":
     raw_input = input  # python 3 support

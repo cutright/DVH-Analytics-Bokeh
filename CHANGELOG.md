@@ -1,5 +1,9 @@
 # Change log of DVH Analytics
 
+### 0.5.1 (2019.1.7)
+* 0.5.0 Code was not running with pip install
+    * Changed absolute imports to relative imports, some file reorganizing
+
 ### 0.5.0 (2019.1.6)
 * New ROI Name Manger layout
     * plot now displays entire physician roi map

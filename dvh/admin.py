@@ -6,19 +6,18 @@ Created on Fri Mar 24 13:43:28 2017
 """
 
 from __future__ import print_function
-import update_sys_path
 from bokeh.models.widgets import Button, Tabs, Panel, TextInput,Div, PasswordInput
 from bokeh.layouts import row, column
 from bokeh.io import curdoc
 from bokeh.models import Spacer
-from tools import auth
-from tools.io.preferences.import_settings import initialize_directories_settings
 import time
-from tools.io.preferences.options import load_options
-from dvh_bokeh_models.admin.database_editor import DatabaseEditor
-from dvh_bokeh_models.admin.roi_manager import RoiManager
-from dvh_bokeh_models.admin.baseline_plans import Baseline
-from dvh_bokeh_models.admin.backup import Backup
+from modules.tools import auth
+from modules.tools.io.preferences.import_settings import initialize_directories_settings
+from modules.tools.io.preferences.options import load_options
+from modules.admin.database_editor import DatabaseEditor
+from modules.admin.roi_manager import RoiManager
+from modules.admin.baseline_plans import Baseline
+from modules.admin.backup import Backup
 
 
 initialize_directories_settings()

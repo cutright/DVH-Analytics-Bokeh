@@ -7,28 +7,27 @@ Created on Sun Apr 21 2017
 """
 
 from __future__ import print_function
-import update_sys_path
-from tools import auth
 from bokeh.layouts import row
 from bokeh.models import Spacer
 from bokeh.io import curdoc
 from bokeh.models.widgets import Button, Panel, Tabs, TextInput, PasswordInput
 import time
-from tools.io.preferences.options import load_options
-from dvh_bokeh_models.main.sources import Sources
-from dvh_bokeh_models.main.custom_titles import CustomTitles
-from dvh_bokeh_models.main.mlc_analyzer import MLC_Analyzer
-from dvh_bokeh_models.main.time_series import TimeSeries
-from dvh_bokeh_models.main.correlation import Correlation
-from dvh_bokeh_models.main.roi_viewer import ROI_Viewer
-from dvh_bokeh_models.main.rad_bio import RadBio
-from dvh_bokeh_models.main.regression import Regression
-from dvh_bokeh_models.main.query import Query
-from dvh_bokeh_models.main.dvhs import DVHs
-from dvh_bokeh_models.main.data_tables import DataTables
-from dvh_bokeh_models.main.categories import Categories
-from dvh_bokeh_models.main.planning_data import PlanningData
-from dvh_bokeh_models.main.source_listener import SourceListener
+from modules.tools import auth
+from modules.tools.io.preferences.options import load_options
+from modules.main.sources import Sources
+from modules.main.custom_titles import CustomTitles
+from modules.main.mlc_analyzer import MLC_Analyzer
+from modules.main.time_series import TimeSeries
+from modules.main.correlation import Correlation
+from modules.main.roi_viewer import ROI_Viewer
+from modules.main.rad_bio import RadBio
+from modules.main.regression import Regression
+from modules.main.query import Query
+from modules.main.dvhs import DVHs
+from modules.main.data_tables import DataTables
+from modules.main.categories import Categories
+from modules.main.planning_data import PlanningData
+from modules.main.source_listener import SourceListener
 
 
 options = load_options()
