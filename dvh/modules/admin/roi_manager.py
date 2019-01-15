@@ -206,10 +206,10 @@ class RoiManager:
         self.roi_map_plot.segment(x0='x0', y0='y0', x1='x1', y1='y1', source=self.source_map, alpha=0.5)
         self.update_roi_map_source_data()
 
-        self.category_map = {0: self.select_institutional_roi.value,
-                             1: self.select_physician.value,
-                             2: self.select_physician_roi.value,
-                             3: self.select_variation.value}
+        self.category_map = {0: self.select_institutional_roi,
+                             1: self.select_physician,
+                             2: self.select_physician_roi,
+                             3: self.select_variation}
 
         self.layout = row(column(Div(text="<b>WARNING:</b> Buttons in orange cannot be easily undone.",
                                      width=widget_width*3+100),
@@ -443,7 +443,7 @@ class RoiManager:
 
     def update_input_text_value(self):
         if self.operator.active != 0:
-            self.input_text.value = self.category_map[self.category.active]
+            self.input_text.value = self.category_map[self.category.active].value
         elif self.operator.active == 0 and self.category.active == 3:
             self.input_text.value = self.select_uncategorized_variation.value
         else:
@@ -468,7 +468,7 @@ class RoiManager:
                    2: self.db.get_physician_rois(self.select_physician.value),
                    3: self.db.get_variations(self.select_physician.value, self.select_physician_roi.value)}
 
-        in_value = self.category_map[self.category.active]
+        in_value = self.category_map[self.category.active].value
 
         input_text_value = clean_name(self.input_text.value)
         if self.category.active == 1:
