@@ -127,12 +127,12 @@ class RoiManager:
         # Button objects
         self.action_button = Button(label='Add Institutional ROI', button_type='primary',
                                     width=int(widget_width*(2./3)))
-        self.reload_button_roi = Button(label='Reload Map', button_type='primary', width=widget_width)
-        self.save_button_roi = Button(label='Map Saved', button_type='primary', width=widget_width)
-        self.ignore_button_roi = Button(label='Ignore', button_type='primary', width=widget_width/2)
-        self.delete_uncategorized_button_roi = Button(label='Delete DVH', button_type='warning', width=widget_width/2)
-        self.unignore_button_roi = Button(label='UnIgnore', button_type='primary', width=widget_width/2)
-        self.delete_ignored_button_roi = Button(label='Delete DVH', button_type='warning', width=widget_width/2)
+        self.reload_button_roi = Button(label='Reload Map', button_type='primary', width=widget_width-5)
+        self.save_button_roi = Button(label='Map Saved', button_type='primary', width=widget_width-5)
+        self.ignore_button_roi = Button(label='Ignore', button_type='primary', width=widget_width/2-5)
+        self.delete_uncategorized_button_roi = Button(label='Delete DVH', button_type='warning', width=widget_width/2-5)
+        self.unignore_button_roi = Button(label='UnIgnore', button_type='primary', width=widget_width/2-5)
+        self.delete_ignored_button_roi = Button(label='Delete DVH', button_type='warning', width=widget_width/2-5)
 
         self.remap_rois_function_map = {'Selected Physician': self.remap_all_rois_for_selected_physician,
                                         'Selected Physician Uncategorized': self.remap_uncategorized_rois_for_selected_physician,
@@ -223,14 +223,16 @@ class RoiManager:
                                  row(self.input_text, Spacer(width=30), self.action_button, Spacer(width=50),
                                      self.div_action),
                                  Div(text="<hr>", width=widget_width * 3),
-                                 row(self.select_uncategorized_variation, self.select_ignored_variation),
-                                 row(self.ignore_button_roi, self.delete_uncategorized_button_roi,
-                                     self.unignore_button_roi, self.delete_ignored_button_roi),
+                                 row(self.select_uncategorized_variation, Spacer(width=50),
+                                     self.select_ignored_variation),
+                                 row(self.ignore_button_roi, Spacer(width=10), self.delete_uncategorized_button_roi,
+                                     Spacer(width=50),
+                                     self.unignore_button_roi, Spacer(width=10), self.delete_ignored_button_roi),
                                  Div(text="<hr>", width=widget_width * 3),
                                  row(self.select_remap, self.remap_button),
                                  self.remap_checkbox_ignore,
                                  Div(text="<hr>", width=widget_width * 3),
-                                 row(self.reload_button_roi, self.save_button_roi)),
+                                 row(self.reload_button_roi, Spacer(width=10), self.save_button_roi)),
                           column(row(self.select_plot_display, Spacer(width=75), self.select_merge_physician_roi['a'],
                                      self.select_merge_physician_roi['b'], self.select_merge_physician_roi['button']),
                                  self.roi_map_plot,
