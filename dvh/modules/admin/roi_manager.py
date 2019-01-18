@@ -127,12 +127,12 @@ class RoiManager:
         # Button objects
         self.action_button = Button(label='Add Institutional ROI', button_type='primary',
                                     width=int(widget_width*(2./3)))
-        self.reload_button_roi = Button(label='Reload Map', button_type='primary', width=widget_width)
-        self.save_button_roi = Button(label='Map Saved', button_type='primary', width=widget_width)
-        self.ignore_button_roi = Button(label='Ignore', button_type='primary', width=widget_width/2)
-        self.delete_uncategorized_button_roi = Button(label='Delete DVH', button_type='warning', width=widget_width/2)
-        self.unignore_button_roi = Button(label='UnIgnore', button_type='primary', width=widget_width/2)
-        self.delete_ignored_button_roi = Button(label='Delete DVH', button_type='warning', width=widget_width/2)
+        self.reload_button_roi = Button(label='Reload Map', button_type='primary', width=widget_width-5)
+        self.save_button_roi = Button(label='Map Saved', button_type='primary', width=widget_width-5)
+        self.ignore_button_roi = Button(label='Ignore', button_type='primary', width=widget_width/2-5)
+        self.delete_uncategorized_button_roi = Button(label='Delete DVH', button_type='warning', width=widget_width/2-5)
+        self.unignore_button_roi = Button(label='UnIgnore', button_type='primary', width=widget_width/2-5)
+        self.delete_ignored_button_roi = Button(label='Delete DVH', button_type='warning', width=widget_width/2-5)
 
         self.remap_rois_function_map = {'Selected Physician': self.remap_all_rois_for_selected_physician,
                                         'Selected Physician Uncategorized': self.remap_uncategorized_rois_for_selected_physician,
@@ -206,10 +206,10 @@ class RoiManager:
         self.roi_map_plot.segment(x0='x0', y0='y0', x1='x1', y1='y1', source=self.source_map, alpha=0.5)
         self.update_roi_map_source_data()
 
-        self.category_map = {0: self.select_institutional_roi.value,
-                             1: self.select_physician.value,
-                             2: self.select_physician_roi.value,
-                             3: self.select_variation.value}
+        self.category_map = {0: self.select_institutional_roi,
+                             1: self.select_physician,
+                             2: self.select_physician_roi,
+                             3: self.select_variation}
 
         self.layout = row(column(Div(text="<b>WARNING:</b> Buttons in orange cannot be easily undone.",
                                      width=widget_width*3+100),
@@ -223,14 +223,16 @@ class RoiManager:
                                  row(self.input_text, Spacer(width=30), self.action_button, Spacer(width=50),
                                      self.div_action),
                                  Div(text="<hr>", width=widget_width * 3),
-                                 row(self.select_uncategorized_variation, self.select_ignored_variation),
-                                 row(self.ignore_button_roi, self.delete_uncategorized_button_roi,
-                                     self.unignore_button_roi, self.delete_ignored_button_roi),
+                                 row(self.select_uncategorized_variation, Spacer(width=50),
+                                     self.select_ignored_variation),
+                                 row(self.ignore_button_roi, Spacer(width=10), self.delete_uncategorized_button_roi,
+                                     Spacer(width=50),
+                                     self.unignore_button_roi, Spacer(width=10), self.delete_ignored_button_roi),
                                  Div(text="<hr>", width=widget_width * 3),
                                  row(self.select_remap, self.remap_button),
                                  self.remap_checkbox_ignore,
                                  Div(text="<hr>", width=widget_width * 3),
-                                 row(self.reload_button_roi, self.save_button_roi)),
+                                 row(self.reload_button_roi, Spacer(width=10), self.save_button_roi)),
                           column(row(self.select_plot_display, Spacer(width=75), self.select_merge_physician_roi['a'],
                                      self.select_merge_physician_roi['b'], self.select_merge_physician_roi['button']),
                                  self.roi_map_plot,
@@ -443,7 +445,7 @@ class RoiManager:
 
     def update_input_text_value(self):
         if self.operator.active != 0:
-            self.input_text.value = self.category_map[self.category.active]
+            self.input_text.value = self.category_map[self.category.active].value
         elif self.operator.active == 0 and self.category.active == 3:
             self.input_text.value = self.select_uncategorized_variation.value
         else:
@@ -468,7 +470,7 @@ class RoiManager:
                    2: self.db.get_physician_rois(self.select_physician.value),
                    3: self.db.get_variations(self.select_physician.value, self.select_physician_roi.value)}
 
-        in_value = self.category_map[self.category.active]
+        in_value = self.category_map[self.category.active].value
 
         input_text_value = clean_name(self.input_text.value)
         if self.category.active == 1:
