@@ -38,7 +38,7 @@ class DatabaseEditor:
         self.rebuild_db_button = Button(label='Rebuild database', button_type='warning', width=200)
         self.rebuild_db_button.on_click(self.rebuild_db_button_click)
 
-        self.query_table = Select(value='DVHs', options=['DVHs', 'Plans', 'Rxs', 'Beams', 'DICOM_Files'], width=200,
+        self.query_table = Select(value='Plans', options=['DVHs', 'Plans', 'Rxs', 'Beams', 'DICOM_Files'], width=200,
                                   title='Table:')
         self.query_columns = MultiSelect(title="Columns (Ctrl or Shift Click enabled):", width=250,
                                          options=[tuple(['', ''])])
@@ -102,6 +102,7 @@ class DatabaseEditor:
                                   'Patient Ages']
         self.calculate_select = Select(value=self.calculate_options[0], options=self.calculate_options,
                                        title='Calculate:', width=150)
+        self.calculate_missing_only = CheckboxGroup(labels=['Only Calculate Missing Values'], active=[0], width=280)
         self.calculate_exec_button = Button(label='Perform Calc', button_type='primary', width=150)
         self.calculate_exec_button.on_click(self.calculate_exec)
 
@@ -112,7 +113,8 @@ class DatabaseEditor:
         self.layout = row(column(row(self.import_inbox_button, Spacer(width=20), self.rebuild_db_button,
                                      Spacer(width=50), self.import_inbox_force),
                                  self.calculations_title,
-                                 row(self.calculate_select, Spacer(width=300), self.calculate_exec_button),
+                                 row(self.calculate_select, Spacer(width=20), self.calculate_missing_only,
+                                     self.calculate_exec_button),
                                  self.calculate_condition,
                                  Div(text="<hr>", width=column_width),
                                  Div(text="<b>Query Database</b>", width=column_width),
@@ -274,6 +276,11 @@ class DatabaseEditor:
         condition = "(LOWER(roi_type) IN ('organ', 'ctv', 'gtv') AND (" \
                     "LOWER(roi_name) NOT IN ('external', 'skin') OR " \
                     "LOWER(physician_roi) NOT IN ('uncategorized', 'ignored', 'external', 'skin')))" + condition
+        if 0 in self.calculate_missing_only.active:
+            if condition:
+                condition = "(%s) AND dist_to_ptv_min is NULL" % condition
+            else:
+                condition = "dist_to_ptv_min is NULL"
         rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition)
 
         total_rois = float(len(rois))
@@ -292,8 +299,20 @@ class DatabaseEditor:
                                  'spread': db_update.spread,
                                  'cross_section': db_update.cross_section,
                                  'ptv_centroids': db_update.dist_to_ptv_centroids}
+        null_variable = variable
+        if variable == 'ptv_centroids':
+            null_variable = 'dist_to_ptv_centroids'
+        elif variable == 'spread':
+            null_variable = 'spread_x'
+        elif variable == 'cross_section':
+            null_variable = 'cross_section_max'
 
-        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', condition[0])
+        final_condition = {True: ["(%s is NULL)" % null_variable], False: []}[0 in self.calculate_missing_only.active]
+        if condition and condition[0]:
+            final_condition.append('(%s)' % condition[0])
+        final_condition = ' AND '.join(final_condition)
+
+        rois = DVH_SQL().query('dvhs', 'study_instance_uid, roi_name, physician_roi', final_condition)
 
         total_rois = float(len(rois))
         for i, roi in enumerate(rois):
