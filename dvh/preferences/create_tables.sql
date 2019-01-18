@@ -12,3 +12,9 @@ ALTER TABLE DVHs ADD COLUMN IF NOT EXISTS spread_y real;
 ALTER TABLE DVHs ADD COLUMN IF NOT EXISTS spread_z real;
 ALTER TABLE DVHs ADD COLUMN IF NOT EXISTS cross_section_max real;
 ALTER TABLE DVHs ADD COLUMN IF NOT EXISTS cross_section_median real;
+-- The following columns have been added as of DVH Analytics 0.5.2
+ALTER TABLE Plans ADD COLUMN IF NOT EXISTS toxicity_scales text;
+ALTER TABLE Plans ADD COLUMN IF NOT EXISTS toxicity_grades text;
+ALTER TABLE DVHs ADD COLUMN IF NOT EXISTS toxicity_scale text;
+ALTER TABLE DVHs ADD COLUMN IF NOT EXISTS toxicity_grade smallint;
+ALTER TABLE Plans ADD COLUMN IF NOT EXISTS protocol text;

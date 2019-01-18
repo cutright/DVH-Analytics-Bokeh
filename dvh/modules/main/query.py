@@ -792,7 +792,7 @@ class Query:
         attributes = ['rx_dose', 'volume', 'surface_area', 'min_dose', 'mean_dose', 'max_dose', 'dist_to_ptv_min',
                       'dist_to_ptv_median', 'dist_to_ptv_mean', 'dist_to_ptv_max', 'dist_to_ptv_centroids',
                       'ptv_overlap', 'cross_section_max', 'cross_section_median', 'spread_x', 'spread_y',
-                      'spread_z']
+                      'spread_z', 'toxicity_grade']
         if extra_rows > 0:
             dvh.study_instance_uid.extend(['N/A'] * extra_rows)
             dvh.institutional_roi.extend(['N/A'] * extra_rows)
@@ -832,6 +832,7 @@ class Query:
         dvh.spread_x.insert(0, 'N/A')
         dvh.spread_y.insert(0, 'N/A')
         dvh.spread_z.insert(0, 'N/A')
+        dvh.toxicity_grade.insert(0, -1)
         line_colors.insert(0, options.REVIEW_DVH_COLOR)
         x_data.insert(0, [0])
         y_data.insert(0, [0])
@@ -870,7 +871,8 @@ class Query:
                                   'y': y_data,
                                   'color': line_colors,
                                   'x_scale': x_scale,
-                                  'y_scale': y_scale}
+                                  'y_scale': y_scale,
+                                  'toxicity_grade': dvh.toxicity_grade}
 
         print(str(datetime.now()), 'begin updating beam, plan, rx data sources', sep=' ')
         self.update_beam_data(dvh.study_instance_uid)

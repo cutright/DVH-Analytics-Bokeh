@@ -1,5 +1,19 @@
 # Change log of DVH Analytics
 
+### 0.5.2 (TBD)
+* Beginning development for toxicity and protocol data
+    * New columns added to the Plans and DVHs SQL tables to tag toxicity scale and grade
+        * Toxicity grade must be a positive integer, default value is -1 indicating no reported toxicity
+        * New tab in Admin view to manage toxicity and protocol information
+    * New column added to Plans SQL table to indicate if a plan is part of a protocol
+    * Next version will have GUI in the Admin view to update this information more easily than via Database Editor
+* Input text for action selected by radio buttons in ROI Manager now properly updates based on current selections
+* If a plan for a given Study Instance UID is in your database when importing a plan with the same Study Instance UID,
+a message incorrectly indicated the plan was moved to the misc.  This message has been corrected and the files remain 
+in the inbox.
+* New radio button for Post Import Calculations easily allowing you calculate only missing values (instead of 
+recalculating the entire database or entering your own custom SQL condition)
+
 ### 0.5.1 (2019.1.7)
 * 0.5.0 Code was not running with pip install
     * Changed absolute imports to relative imports, some file reorganizing

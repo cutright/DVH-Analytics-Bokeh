@@ -115,7 +115,7 @@ class DVH_SQL:
                      'volume', 'min_dose', 'mean_dose', 'max_dose', 'dvh_string', 'roi_coord_string',
                      'dist_to_ptv_min', 'dist_to_ptv_mean', 'dist_to_ptv_median', 'dist_to_ptv_max', 'surface_area',
                      'ptv_overlap', 'centroid', 'spread_x', 'spread_y', 'spread_z', 'cross_section_max',
-                     'cross_section_median', 'import_time_stamp']
+                     'cross_section_median', 'import_time_stamp', 'toxicity_scale', 'toxicity_grade']
 
         # Import each ROI from ROI_PyTable, append to output text file
         if max(dvh_table.ptv_number) > 1:
@@ -150,7 +150,9 @@ class DVH_SQL:
                       str(round(dvh_table.spread_z[x], 3)),
                       str(round(dvh_table.cross_section_max[x], 3)),
                       str(round(dvh_table.cross_section_median[x], 3)),
-                      'NOW()']
+                      'NOW()',
+                      '(NULL)',
+                      '-1']
 
             cmd = "INSERT INTO DVHs (%s) VALUES ('%s');\n" % \
                   (','.join(col_names), "','".join(values).replace("'(NULL)'", "(NULL)"))
@@ -175,7 +177,7 @@ class DVH_SQL:
                      'tx_site', 'rx_dose', 'fxs', 'patient_orientation', 'plan_time_stamp', 'struct_time_stamp',
                      'dose_time_stamp', 'tps_manufacturer', 'tps_software_name', 'tps_software_version', 'tx_modality',
                      'tx_time', 'total_mu', 'dose_grid_res', 'heterogeneity_correction', 'baseline',
-                     'import_time_stamp']
+                     'import_time_stamp', 'toxicity_scales', 'toxicity_grades', 'protocol']
         plan.physician = truncate_string(plan.physician, 50)
         plan.tx_site = truncate_string(plan.tx_site, 50)
         plan.tps_manufacturer = truncate_string(plan.tps_manufacturer, 50)
@@ -204,7 +206,10 @@ class DVH_SQL:
                   plan.dose_grid_resolution,
                   plan.heterogeneity_correction,
                   'false',
-                  'NOW()']
+                  'NOW()',
+                  "(NULL)",
+                  "(NULL)",
+                  "(NULL)"]
 
         cmd = "INSERT INTO Plans (%s) VALUES ('%s');\n" % \
               (','.join(col_names), "','".join(values).replace("'(NULL)'", "(NULL)"))
@@ -401,6 +406,8 @@ class DVH_SQL:
         self.cursor.execute(query)
         cursor_return = self.cursor.fetchall()
         unique_values = [str(uv[0]) for uv in cursor_return]
+        if not unique_values:
+            unique_values = ['']
         unique_values.sort()
         return unique_values
 

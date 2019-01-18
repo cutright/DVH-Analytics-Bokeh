@@ -22,7 +22,9 @@ class Categories:
                          'Scan Mode': {'var_name': 'scan_mode', 'table': 'Beams'},
                          'MRN': {'var_name': 'mrn', 'table': 'Plans'},
                          'UID': {'var_name': 'study_instance_uid', 'table': 'Plans'},
-                         'Baseline': {'var_name': 'baseline', 'table': 'Plans'}}
+                         'Baseline': {'var_name': 'baseline', 'table': 'Plans'},
+                         'Toxicity Scale': {'var_name': 'toxicity_scale', 'table': 'DVHs'},
+                         'Protocol': {'var_name': 'protocol', 'table': 'Plans'}}
 
         # This is a maps quantitative data type selections to SQL columns and SQL tables, and the bokeh source
         self.range = {'Age': {'var_name': 'age', 'table': 'Plans', 'units': '', 'source': sources.plans},
@@ -72,7 +74,8 @@ class Categories:
                       'Beam MU per deg': {'var_name': 'beam_mu_per_deg', 'table': 'Beams', 'units': '', 'source': sources.beams},
                       'Beam MU per control point': {'var_name': 'beam_mu_per_cp', 'table': 'Beams', 'units': '', 'source': sources.beams},
                       'ROI Cross-Section Max': {'var_name': 'cross_section_max', 'table': 'DVHs', 'units': 'cm^2', 'source': sources.dvhs},
-                      'ROI Cross-Section Median': {'var_name': 'cross_section_median', 'table': 'DVHs', 'units': 'cm^2', 'source': sources.dvhs}}
+                      'ROI Cross-Section Median': {'var_name': 'cross_section_median', 'table': 'DVHs', 'units': 'cm^2', 'source': sources.dvhs},
+                      'Toxicity Grade': {'var_name': 'toxicity_grade', 'table': 'DVHs', 'units': '', 'source': sources.dvhs}}
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # Correlation and Regression variable names
@@ -82,7 +85,7 @@ class Categories:
         self.correlation_variables_beam = ['Beam Dose', 'Beam MU', 'Control Point Count', 'Gantry Range',
                                            'SSD', 'Beam MU per control point']
         for key in list(self.range):
-            if key.startswith('ROI') or key.startswith('PTV') or key in {'Total Plan MU', 'Rx Dose'}:
+            if key.startswith('ROI') or key.startswith('PTV') or key in {'Total Plan MU', 'Rx Dose', 'Toxicity Grade'}:
                 self.correlation_variables.append(key)
                 self.correlation_names.append(key)
             if key in self.correlation_variables_beam:
