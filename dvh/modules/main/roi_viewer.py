@@ -124,7 +124,7 @@ class ROI_Viewer:
         self.flip_y_axis_button.on_click(self.flip_y_axis)
         self.plot_tv_button.on_click(self.plot_tv)
 
-        self.fig = figure(plot_width=825, plot_height=600, logo=None, match_aspect=True,
+        self.fig = figure(plot_width=825, plot_height=600, match_aspect=True,
                           tools="pan,wheel_zoom,reset,crosshair,save")
         self.fig.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
         self.fig.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE

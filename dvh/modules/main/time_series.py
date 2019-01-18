@@ -30,7 +30,7 @@ class TimeSeries:
 
         # Control Chart layout (Time-Series)
         tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
-        self.plot = figure(plot_width=1050, plot_height=400, tools=tools, logo=None,
+        self.plot = figure(plot_width=1050, plot_height=400, tools=tools,
                            active_drag="box_zoom", x_axis_type='datetime')
         self.plot.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
         self.plot.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
@@ -113,7 +113,7 @@ class TimeSeries:
 
         # histograms
         tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
-        self.histograms = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
+        self.histograms = figure(plot_width=1050, plot_height=400, tools=tools, active_drag="box_zoom")
         self.histograms.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
         self.histograms.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
         self.histograms.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE

@@ -175,8 +175,7 @@ class RoiManager:
                                    x_axis_location="above",
                                    title="(Linked by Physician dropdowns)",
                                    tools="reset, ywheel_zoom, ywheel_pan",
-                                   active_scroll='ywheel_pan',
-                                   logo=None)
+                                   active_scroll='ywheel_pan')
         self.roi_map_plot.title.align = 'center'
         # self.roi_map_plot.title.text_font_style = "italic"
         self.roi_map_plot.title.text_font_size = "15pt"
