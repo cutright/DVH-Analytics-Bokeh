@@ -50,7 +50,7 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
             print("The UID from the following files is already imported.")
             if not force_update:
                 print("Must delete content associated with this UID from database before reimporting.")
-                print("These files have been moved into the 'misc' folder within your 'imported' folder.")
+                print('WARNING: These files will remain in their current location.')
                 for file_type in FILE_TYPES:
                     print(file_paths[uid][file_type]['file_path'])
                 print("The UID is %s" % uid)
@@ -108,7 +108,7 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
             print('WARNING: Missing complete set of plan, struct, and dose files for uid %s' % uid)
             if not force_update:
                 print('WARNING: Skipping this import. If you wish to import an incomplete DICOM set, use Force Update')
-                print('WARNING: The current file will be moved to the misc folder with in your imported folder')
+                print('WARNING: Files with this UID will remain in their current location.')
                 continue
 
         if plan_file:
@@ -182,6 +182,7 @@ def dicom_to_sql(start_path=None, force_update=False, move_files=True,
 
 def get_file_paths(start_path):
     print('Collecting DICOM file paths')
+    start_time = datetime.now()
     f = []
     for root, dirs, files in os.walk(start_path, topdown=False):
         for name in files:
@@ -191,7 +192,7 @@ def get_file_paths(start_path):
     file_paths = {}
     for file_path in f:
         try:
-            dicom_file = dicom.read_file(file_path)
+            dicom_file = dicom.read_file(file_path, defer_size='2KB', stop_before_pixels=True)
         except:
             dicom_file = False
 
@@ -222,7 +223,8 @@ def get_file_paths(start_path):
                 file_paths[uid][file_type]['latest_file'] = file_paths[uid][file_type]['file_path'][latest_index]
             else:
                 file_paths[uid][file_type]['latest_file'] = []
-    print('DICOM file paths collected')
+    end_time = datetime.now()
+    print_run_time(start_time, end_time, 'DICOM file paths collected. This')
     return file_paths
 
 
