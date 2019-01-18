@@ -1,6 +1,6 @@
 # Change log of DVH Analytics
 
-### 0.5.2 (TBD)
+### 0.5.2 (2019.1.18)
 * Beginning development for toxicity and protocol data
     * New columns added to the Plans and DVHs SQL tables to tag toxicity scale and grade
         * Toxicity grade must be a positive integer, default value is -1 indicating no reported toxicity
