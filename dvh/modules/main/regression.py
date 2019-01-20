@@ -32,7 +32,7 @@ class Regression:
 
         # Control Chart layout
         tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
-        self.figure = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
+        self.figure = figure(plot_width=1050, plot_height=400, tools=tools, active_drag="box_zoom")
         self.figure.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
         self.figure.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
         self.figure.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE
@@ -101,7 +101,7 @@ class Regression:
         self.text_2 = Div(text="<b>Group 2</b>:", width=1050)
 
         tools = "pan,wheel_zoom,box_zoom,lasso_select,poly_select,reset,crosshair,save"
-        self.residual_figure = figure(plot_width=1050, plot_height=400, tools=tools, logo=None, active_drag="box_zoom")
+        self.residual_figure = figure(plot_width=1050, plot_height=400, tools=tools, active_drag="box_zoom")
         self.residual_figure.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
         self.residual_figure.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
         self.residual_figure.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE

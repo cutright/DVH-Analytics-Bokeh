@@ -371,3 +371,7 @@ def print_run_time(start_time, end_time, calc_title):
         print("%s took %02dmin %02dsec to complete" % (calc_title, m, s))
     else:
         print("%s took %02dsec to complete" % (calc_title, s))
+
+
+def parse_text_area_input_to_list(text_area_input, delimeter='\t'):
+    return [r.split(delimeter) for r in text_area_input.split('\n')]

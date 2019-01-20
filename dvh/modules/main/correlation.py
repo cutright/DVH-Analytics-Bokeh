@@ -34,7 +34,7 @@ class Correlation:
         self.bad_uid = {n: [] for n in GROUP_LABELS}
 
         self.fig = figure(plot_width=900, plot_height=700, x_axis_location="above",
-                          tools="pan, box_zoom, wheel_zoom, reset, save", logo=None,  x_range=[''], y_range=[''])
+                          tools="pan, box_zoom, wheel_zoom, reset, save", x_range=[''], y_range=[''])
         self.fig.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
         self.fig.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
         self.fig.xaxis.major_label_text_font_size = options.PLOT_AXIS_MAJOR_LABEL_FONT_SIZE

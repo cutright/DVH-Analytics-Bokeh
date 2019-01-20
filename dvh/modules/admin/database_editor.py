@@ -41,7 +41,7 @@ class DatabaseEditor:
         self.query_table = Select(value='Plans', options=['DVHs', 'Plans', 'Rxs', 'Beams', 'DICOM_Files'], width=200,
                                   title='Table:')
         self.query_columns = MultiSelect(title="Columns (Ctrl or Shift Click enabled):", width=250,
-                                         options=[tuple(['', ''])])
+                                         options=[tuple(['', ''])], size=10)
         self.query_condition = TextInput(value='', title="Condition:", width=350)
         self.query_button = Button(label='Query', button_type='primary', width=100)
 
