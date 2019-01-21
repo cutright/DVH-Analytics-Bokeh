@@ -73,6 +73,10 @@ class DVH_SQL:
         self.cursor.execute(query)
         results = self.cursor.fetchall()
 
+        if 'bokeh_cds' in kwargs and kwargs['bokeh_cds']:
+            keys = [c.strip() for c in return_col_str.split(',')]
+            return {key: [results[r][i] for r in range(len(results))] for i, key in enumerate(keys)}
+
         return results
 
     def query_generic(self, query_str):

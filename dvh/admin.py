@@ -19,6 +19,7 @@ from modules.admin.roi_manager import RoiManager
 from modules.admin.baseline_plans import Baseline
 from modules.admin.backup import Backup
 from modules.admin.import_notes import ImportNotes
+from modules.admin.toxicity import Toxicity
 
 
 initialize_directories_settings()
@@ -34,6 +35,7 @@ ACCESS_GRANTED = not options.AUTH_USER_REQ
 
 roi_manager = RoiManager()
 database_editor = DatabaseEditor(roi_manager)
+toxicity = Toxicity()
 baseline = Baseline()
 backup = Backup()
 import_notes = ImportNotes()
@@ -67,15 +69,16 @@ layout_login = column(auth_div,
 
 
 import_notes_tab = Panel(child=import_notes.layout, title='Import Notes')
-roi_tab = Panel(child=roi_manager.layout, title='ROI Name Manager')
 db_tab = Panel(child=database_editor.layout, title='Database Editor')
+roi_tab = Panel(child=roi_manager.layout, title='ROI Name Manager')
+toxicity_tab = Panel(child=toxicity.layout, title='Toxicity')
 backup_tab = Panel(child=backup.layout, title='Backup & Restore')
 baseline_tab = Panel(child=baseline.layout, title='Baseline Plans')
 
 if options.DISABLE_BACKUP_TAB:
-    tabs = Tabs(tabs=[import_notes_tab, db_tab, roi_tab, baseline_tab])
+    tabs = Tabs(tabs=[import_notes_tab, db_tab, roi_tab, toxicity_tab, baseline_tab])
 else:
-    tabs = Tabs(tabs=[import_notes_tab, db_tab, roi_tab, baseline_tab, backup_tab])
+    tabs = Tabs(tabs=[import_notes_tab, db_tab, roi_tab, toxicity_tab, baseline_tab, backup_tab])
 
 if ACCESS_GRANTED:
     curdoc().add_root(tabs)
