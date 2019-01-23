@@ -76,9 +76,9 @@ backup_tab = Panel(child=backup.layout, title='Backup & Restore')
 baseline_tab = Panel(child=baseline.layout, title='Baseline Plans')
 
 if options.DISABLE_BACKUP_TAB:
-    tabs = Tabs(tabs=[import_notes_tab, db_tab, roi_tab, toxicity_tab, baseline_tab])
+    tabs = Tabs(tabs=[db_tab, roi_tab, toxicity_tab, baseline_tab, import_notes_tab])
 else:
-    tabs = Tabs(tabs=[import_notes_tab, db_tab, roi_tab, toxicity_tab, baseline_tab, backup_tab])
+    tabs = Tabs(tabs=[db_tab, roi_tab, toxicity_tab, baseline_tab, backup_tab, import_notes_tab])
 
 if ACCESS_GRANTED:
     curdoc().add_root(tabs)
