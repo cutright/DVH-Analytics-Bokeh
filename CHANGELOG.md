@@ -1,5 +1,10 @@
 # Change log of DVH Analytics
 
+### 0.5.3 (TBD)
+* Bokeh 1.0.4 now required
+* Import Notes tab added to Admin view for quick reference
+* Toxicity tab added to Admin view
+
 ### 0.5.2 (2019.1.18)
 * Beginning development for toxicity and protocol data
     * New columns added to the Plans and DVHs SQL tables to tag toxicity scale and grade

@@ -402,14 +402,17 @@ class DVH_SQL:
         count = self.cursor.fetchone()[0]
         return not(bool(count))
 
-    def get_unique_values(self, table, column, *condition):
-        if condition:
+    def get_unique_values(self, table, column, *condition, **kwargs):
+        if condition and condition[0]:
             query = "select distinct %s from %s where %s;" % (column, table, str(condition[0]))
         else:
             query = "select distinct %s from %s;" % (column, table)
         self.cursor.execute(query)
         cursor_return = self.cursor.fetchall()
-        unique_values = [str(uv[0]) for uv in cursor_return]
+        if 'ignore_null' in kwargs and kwargs['ignore_null']:
+            unique_values = [str(uv[0]) for uv in cursor_return if str(uv[0])]
+        else:
+            unique_values = [str(uv[0]) for uv in cursor_return]
         if not unique_values:
             unique_values = ['']
         unique_values.sort()
