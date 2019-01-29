@@ -214,3 +214,17 @@ def surface_area(study_instance_uid, roi_name):
 def update_dvhs_table(study_instance_uid, roi_name, column, value):
     DVH_SQL().update('dvhs', column, value,
                      "study_instance_uid = '%s' and roi_name = '%s'" % (study_instance_uid, roi_name))
+
+
+def update_plan_toxicity_grades(cnx, study_instance_uid):
+    toxicities = cnx.get_unique_values('DVHs', 'toxicity_grade', "study_instance_uid = '%s'" % study_instance_uid)
+    toxicities_str = ','.join(toxicities)
+    cnx.update('Plans', 'toxicity_grades', toxicities_str, "study_instance_uid = '%s'" % study_instance_uid)
+
+
+def update_all_plan_toxicity_grades():
+    cnx = DVH_SQL()
+    uids = cnx.get_unique_values('Plans', 'study_instance_uid')
+    for uid in uids:
+        update_plan_toxicity_grades(uid)
+    cnx.close()

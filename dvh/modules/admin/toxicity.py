@@ -13,6 +13,7 @@ from bokeh.models import ColumnDataSource, Spacer
 from bokeh.layouts import row, column
 import time
 from ..tools.io.database.sql_connector import DVH_SQL
+from ..tools.io.database.update import update_plan_toxicity_grades
 from ..tools.utilities import parse_text_area_input_to_list
 
 
@@ -179,12 +180,6 @@ class Toxicity:
         self.update_rois()
 
     @staticmethod
-    def update_plan_toxicity_grades_in_db(cnx, study_instance_uid):
-        toxicities = cnx.get_unique_values('DVHs', 'toxicity_grade', "study_instance_uid = '%s'" % study_instance_uid)
-        toxicities_str = ','.join(toxicities)
-        cnx.update('Plans', 'toxicity_grades', toxicities_str, "study_instance_uid = '%s'" % study_instance_uid)
-
-    @staticmethod
     def get_protocols(condition=None):
         return DVH_SQL().get_unique_values('Plans', 'protocol', condition, ignore_null=True)
 
@@ -202,7 +197,7 @@ class Toxicity:
                     roi_name = self.data['roi_name'][index]
                     cnx.update('DVHs', 'toxicity_grade', toxicities[i],
                                "study_instance_uid = '%s' and roi_name = '%s'" % (uid, roi_name))
-                    self.update_plan_toxicity_grades_in_db(cnx, uid)
+                    update_plan_toxicity_grades(cnx, uid)
             cnx.close()
             self.update_source()
 
