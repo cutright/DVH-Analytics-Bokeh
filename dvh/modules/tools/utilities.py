@@ -376,4 +376,7 @@ def print_run_time(start_time, end_time, calc_title):
 
 
 def parse_text_area_input_to_list(text_area_input, delimeter='\t'):
-    return [r.split(delimeter) for r in text_area_input.split('\n')]
+    if delimeter:
+        return [r.split(delimeter) for r in text_area_input.split('\n') if r]
+    else:
+        return [v for v in text_area_input.split('\n') if v]
