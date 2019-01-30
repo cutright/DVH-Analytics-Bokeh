@@ -57,7 +57,8 @@ class Toxicity:
 
         self.update_physicians()
 
-        note = Div(text='<b>NOTE</b>: MRNs input below that are not in the table to the left will be ignored.')
+        note = Div(text='<b>NOTE</b>: MRNs input below that are not in the table to the left will be '
+                        'ignored on update.')
 
         self.layout = column(self.protocol,
                              row(self.display_by, self.physician, self.roi),
@@ -86,7 +87,8 @@ class Toxicity:
 
         condition = ' AND '.join(condition)
 
-        self.data = cnx.query('DVHs', ', '.join(self.columns + ['study_instance_uid']), condition, bokeh_cds=True)
+        self.data = cnx.query('DVHs', ', '.join(self.columns + ['study_instance_uid']), condition,
+                              bokeh_cds=True, order_by='mrn')
         cnx.close()
 
         for col in ['protocol', 'physician']:
@@ -248,5 +250,3 @@ class Toxicity:
             self.update_button.button_type = button_type
 
         self.toxicity_grade_input.value = '\n'.join(validated_data)
-
-
