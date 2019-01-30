@@ -20,6 +20,7 @@ from ..tools.utilities import parse_text_area_input_to_list
 class Toxicity:
     def __init__(self):
         self.source = ColumnDataSource(data=dict(mrn=[]))
+        self.source.selected.on_change('indices', self.source_listener)
         self.data = []  # This will keep all data from query, self.source may display a subset
 
         self.protocol = Select(value='All Data', options=['All Data', 'None'], title='Protocol:')
@@ -65,6 +66,10 @@ class Toxicity:
                              row(self.table, Spacer(width=50), column(note,
                                                                       self.update_button,
                                                                       row(self.mrn_input, self.toxicity_grade_input))))
+
+    def source_listener(self, attr, old, new):
+        mrns = [self.source.data['mrn'][x] for x in new]
+        self.mrn_input.value = '\n'.join(mrns)
 
     def update_source(self):
         cnx = DVH_SQL()

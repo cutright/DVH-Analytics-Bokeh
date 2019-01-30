@@ -20,7 +20,8 @@ class Protocol:
         note = Div(text="<b>NOTE</b>: Each plan may only have one protocol assigned. "
                         "Updating database will over-write any existing data.")
 
-        self.source = ColumnDataSource(data=dict(mrn=[]))
+        self.source = ColumnDataSource(data=dict(mrn=['']))
+        self.source.selected.on_change('indices', self.source_listener)
 
         self.protocol = Select(value='', options=[''], title='Protocols:')
         self.physician = Select(value='', options=[''], title='Physician:', width=150)
@@ -49,6 +50,10 @@ class Protocol:
                              row(self.table, Spacer(width=30), column(note,
                                                                       row(self.protocol_input, self.update_button),
                                                                       self.mrn_input)))
+
+    def source_listener(self, attr, old, new):
+        mrns = [self.source.data['mrn'][x] for x in new]
+        self.mrn_input.value = '\n'.join(mrns)
 
     def update_source(self):
 
