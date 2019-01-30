@@ -20,6 +20,8 @@ class Protocol:
         note = Div(text="<b>NOTE</b>: Each plan may only have one protocol assigned. "
                         "Updating database will over-write any existing data.")
 
+        self.toxicity = []  # Will be used to link to Toxicity tab
+
         self.source = ColumnDataSource(data=dict(mrn=['']))
         self.source.selected.on_change('indices', self.source_listener)
 
@@ -126,5 +128,11 @@ class Protocol:
 
         self.update_protocol_options()
 
+        self.toxicity.update_protocol_options()
+        self.toxicity.update_source()
+
     def clear_source_selection(self):
         self.source.selected.indices = []
+
+    def add_toxicity_tab_link(self, toxicity):
+        self.toxicity = toxicity

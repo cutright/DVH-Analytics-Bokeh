@@ -18,7 +18,10 @@ from ..tools.utilities import parse_text_area_input_to_list
 
 
 class Toxicity:
-    def __init__(self):
+    def __init__(self, protocol):
+
+        self.protocol = protocol  # link to Protocol tab so we can info in the protocol tab
+
         self.source = ColumnDataSource(data=dict(mrn=[]))
         self.source.selected.on_change('indices', self.source_listener)
         self.data = []  # This will keep all data from query, self.source may display a subset
@@ -26,8 +29,8 @@ class Toxicity:
         self.clear_source_selection_button = Button(label='Clear Selection', button_type='primary', width=150)
         self.clear_source_selection_button.on_click(self.clear_source_selection)
 
-        self.protocol = Select(value='All Data', options=['All Data', 'None'], title='Protocol:')
-        self.protocol.on_change('value', self.protocol_ticker)
+        self.protocol_select = Select(value='All Data', options=['All Data', 'None'], title='Protocol:')
+        self.protocol_select.on_change('value', self.protocol_ticker)
         self.update_protocol_options()
 
         self.display_by = RadioGroup(labels=['Display by Institutional ROI', 'Display by Physician ROI'], active=0)
@@ -64,7 +67,7 @@ class Toxicity:
         note = Div(text='<b>NOTE</b>: MRNs input below that are not in the table to the left will be '
                         'ignored on update.')
 
-        self.layout = column(self.protocol,
+        self.layout = column(self.protocol_select,
                              row(self.display_by, self.physician, self.roi),
                              row(self.table, Spacer(width=50), column(note,
                                                                       self.update_button,
@@ -105,13 +108,13 @@ class Toxicity:
 
         self.clean_toxicity_grades()
 
-        if self.protocol.value == 'All Data':
+        if self.protocol_select.value == 'All Data':
             self.source.data = self.data
         else:
             self.source.data = self.get_data_filtered_by_protocol()
 
     def get_data_filtered_by_protocol(self):
-        selected_protocol = self.protocol.value
+        selected_protocol = self.protocol_select.value
         if selected_protocol == 'No Protocol':
             selected_protocol = ''
         protocols = self.get_sql_values_based_on_source('Plans', 'protocol')
@@ -134,9 +137,9 @@ class Toxicity:
 
     def update_protocol_options(self):
         options = ['All Data', 'Any Protocol', 'No Protocol'] + self.get_protocols()
-        self.protocol.options = options
-        if self.protocol.value not in options:
-            self.protocol.value = options[0]
+        self.protocol_select.options = options
+        if self.protocol_select.value not in options:
+            self.protocol_select.value = options[0]
 
     def get_sql_values_based_on_source(self, sql_table, sql_column, return_list=False):
         cnx = DVH_SQL()
@@ -214,6 +217,8 @@ class Toxicity:
 
             self.clear_source_selection()
             self.toxicity_grade_input.value = ''
+
+            self.protocol.update_source()  # update the table in the Protocol tab since it has toxicity grades in it
 
     def mrn_input_ticker(self, attr, old, new):
         count = len(parse_text_area_input_to_list(new))
