@@ -23,6 +23,9 @@ class Protocol:
         self.source = ColumnDataSource(data=dict(mrn=['']))
         self.source.selected.on_change('indices', self.source_listener)
 
+        self.clear_source_selection_button = Button(label='Clear Selection', button_type='primary', width=150)
+        self.clear_source_selection_button.on_click(self.clear_source_selection)
+
         self.protocol = Select(value='', options=[''], title='Protocols:')
         self.physician = Select(value='', options=[''], title='Physician:', width=150)
 
@@ -33,11 +36,12 @@ class Protocol:
 
         self.protocol_input = TextInput(value='', title='Protocol for MRN Input:')
         self.update_button = Button(label='Update', button_type='primary', width=150)
+        self.update_button.on_click(self.update_db)
 
         self.mrn_input = TextAreaInput(value='', title='MRN Input:', rows=30, cols=25, max_length=2000)
 
-        self.columns = ['mrn', 'protocol', 'physician', 'tx_site', 'sim_study_date', 'toxicity_grades']
-        relative_widths = [1, 1, 1, 1, 1, 1]
+        self.columns = ['mrn', 'protocol', 'physician', 'tx_site', 'sim_study_date', 'import_time_stamp', 'toxicity_grades']
+        relative_widths = [1, 0.8, 0.5, 1, 0.75, 1, 0.8]
         column_widths = [int(250. * rw) for rw in relative_widths]
         table_columns = [TableColumn(field=c, title=c, width=column_widths[i]) for i, c in enumerate(self.columns)]
         self.table = DataTable(source=self.source, columns=table_columns, width=800, editable=True, height=600)
@@ -49,6 +53,7 @@ class Protocol:
         self.layout = column(row(self.protocol, self.physician),
                              row(self.table, Spacer(width=30), column(note,
                                                                       row(self.protocol_input, self.update_button),
+                                                                      self.clear_source_selection_button,
                                                                       self.mrn_input)))
 
     def source_listener(self, attr, old, new):
@@ -105,3 +110,21 @@ class Protocol:
     def physician_ticker(self, attr, old, new):
         self.update_source()
 
+    def update_db(self):
+        cnx = DVH_SQL()
+        for i, mrn in enumerate(self.mrns_to_add):
+            if mrn in self.source.data['mrn']:
+                index = self.source.data['mrn'].index(mrn)
+                uid = self.source.data['study_instance_uid'][index]
+                cnx.update('Plans', 'protocol', self.protocol_input.value,
+                           "study_instance_uid = '%s'" % uid)
+        cnx.close()
+        self.update_source()
+
+        self.clear_source_selection()
+        self.protocol_input.value = ''
+
+        self.update_protocol_options()
+
+    def clear_source_selection(self):
+        self.source.selected.indices = []

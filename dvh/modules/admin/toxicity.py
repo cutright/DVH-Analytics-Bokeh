@@ -23,6 +23,9 @@ class Toxicity:
         self.source.selected.on_change('indices', self.source_listener)
         self.data = []  # This will keep all data from query, self.source may display a subset
 
+        self.clear_source_selection_button = Button(label='Clear Selection', button_type='primary', width=150)
+        self.clear_source_selection_button.on_click(self.clear_source_selection)
+
         self.protocol = Select(value='All Data', options=['All Data', 'None'], title='Protocol:')
         self.protocol.on_change('value', self.protocol_ticker)
         self.update_protocol_options()
@@ -65,6 +68,7 @@ class Toxicity:
                              row(self.display_by, self.physician, self.roi),
                              row(self.table, Spacer(width=50), column(note,
                                                                       self.update_button,
+                                                                      self.clear_source_selection_button,
                                                                       row(self.mrn_input, self.toxicity_grade_input))))
 
     def source_listener(self, attr, old, new):
@@ -208,7 +212,7 @@ class Toxicity:
             cnx.close()
             self.update_source()
 
-            self.mrn_input.value = ''
+            self.clear_source_selection()
             self.toxicity_grade_input.value = ''
 
     def mrn_input_ticker(self, attr, old, new):
@@ -255,3 +259,6 @@ class Toxicity:
             self.update_button.button_type = button_type
 
         self.toxicity_grade_input.value = '\n'.join(validated_data)
+
+    def clear_source_selection(self):
+        self.source.selected.indices = []
