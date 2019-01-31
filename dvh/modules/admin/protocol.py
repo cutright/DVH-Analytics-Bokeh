@@ -8,7 +8,8 @@ This module is to designed to update protocol information
 """
 
 from __future__ import print_function
-from bokeh.models.widgets import TextAreaInput, DataTable, Select, Button, TableColumn, TextInput, Div
+from bokeh.models.widgets import TextAreaInput, DataTable, Select, Button, TableColumn, TextInput, Div, DatePicker,\
+    CheckboxGroup
 from bokeh.models import ColumnDataSource, Spacer
 from bokeh.layouts import row, column
 from ..tools.io.database.sql_connector import DVH_SQL
@@ -18,7 +19,8 @@ from ..tools.utilities import parse_text_area_input_to_list
 class Protocol:
     def __init__(self):
         note = Div(text="<b>NOTE</b>: Each plan may only have one protocol assigned. "
-                        "Updating database will over-write any existing data.")
+                        "Updating database will overwrite any existing data.", width=700)
+        self.update_checkbox = CheckboxGroup(labels=["Only update plans in table."], active=[0])
 
         self.toxicity = []  # Will be used to link to Toxicity tab
 
@@ -30,6 +32,14 @@ class Protocol:
 
         self.protocol = Select(value='', options=[''], title='Protocols:')
         self.physician = Select(value='', options=[''], title='Physician:', width=150)
+
+        self.date_filter_by = Select(value='None', options=['None', 'sim_study_date', 'import_time_stamp'],
+                                     title='Date Filter Type:', width=150)
+        self.date_filter_by.on_change('value', self.date_ticker)
+        self.date_start = DatePicker(title='Start Date:', width=200)
+        self.date_start.on_change('value', self.date_ticker)
+        self.date_end = DatePicker(title='End Date:', width=200)
+        self.date_end.on_change('value', self.date_ticker)
 
         self.update_protocol_options()
         self.update_physician_options()
@@ -53,7 +63,10 @@ class Protocol:
         self.update_source()
 
         self.layout = column(row(self.protocol, self.physician),
-                             row(self.table, Spacer(width=30), column(note,
+                             row(self.date_filter_by, Spacer(width=30), self.date_start, Spacer(width=30),
+                                 self.date_end),
+                             note,
+                             row(self.table, Spacer(width=30), column(self.update_checkbox,
                                                                       row(self.protocol_input, self.update_button),
                                                                       self.clear_source_selection_button,
                                                                       self.mrn_input)))
@@ -75,6 +88,12 @@ class Protocol:
 
         if self.physician.value != self.physician.options[0]:
             condition.append("physician = '%s'" % self.physician.value)
+
+        if self.date_filter_by.value != 'None':
+            if self.date_start.value:
+                condition.append("%s >= '%s'::date" % (self.date_filter_by.value, self.date_start.value))
+            if self.date_end.value:
+                condition.append("%s >= '%s'::date" % (self.date_filter_by.value, self.date_end.value))
 
         condition = ' AND '.join(condition)
 
@@ -112,16 +131,24 @@ class Protocol:
     def physician_ticker(self, attr, old, new):
         self.update_source()
 
+    def date_ticker(self, attr, old, new):
+        self.update_source()
+
     def update_db(self):
-        cnx = DVH_SQL()
-        for i, mrn in enumerate(self.mrns_to_add):
-            if mrn in self.source.data['mrn']:
-                index = self.source.data['mrn'].index(mrn)
-                uid = self.source.data['study_instance_uid'][index]
-                cnx.update('Plans', 'protocol',
-                           self.protocol_input.value.replace("'", "").replace("\"", "").replace("\\", ""),
-                           "study_instance_uid = '%s'" % uid)
-        cnx.close()
+        if 0 in self.update_checkbox.active:
+            condition = "mrn in ('%s')" % "', '".join(self.mrns_to_add)
+        else:
+            uids = []
+            for i, mrn in enumerate(self.mrns_to_add):
+                if mrn in self.source.data['mrn']:
+                    index = self.source.data['mrn'].index(mrn)
+                    uids.append(self.source.data['study_instance_uid'][index])
+
+            condition = "study_instance_uid in ('%s')" % "', '".join(uids)
+
+        DVH_SQL().update('Plans', 'protocol',
+                         self.protocol_input.value.replace("'", "").replace("\"", "").replace("\\", ""), condition)
+
         self.update_source()
 
         self.clear_source_selection()
