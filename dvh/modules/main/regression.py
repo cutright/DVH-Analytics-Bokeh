@@ -165,6 +165,7 @@ class Regression:
 
         if new:
 
+            time_series_new = new  # time_series.range_categories needs this key
             # If new has something in parenthesis, extract and put in front
             new_split = new.split(' (')
             if len(new_split) > 1:
@@ -179,8 +180,8 @@ class Regression:
                 axis_label = 'EUD (Gy)'
             elif new == 'NTCP/TCP':
                 axis_label = 'NTCP or TCP'
-            elif self.time_series.range_categories[new]['units']:
-                axis_label = "%s (%s)" % (new_display, self.time_series.range_categories[new]['units'])
+            elif self.time_series.range_categories[time_series_new]['units']:
+                axis_label = "%s (%s)" % (new_display, self.time_series.range_categories[time_series_new]['units'])
             else:
                 axis_label = new_display
 
