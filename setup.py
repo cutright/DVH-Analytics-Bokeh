@@ -12,7 +12,7 @@ requires = [
     'Requests',
     'Tornado == 4.4.2',
     'PyYaml',
-    'bokeh == 1.0.4',
+    'bokeh >= 1.0.4',
     'python-dateutil',
     'psycopg2-binary',
     'shapely[vectorized]',
