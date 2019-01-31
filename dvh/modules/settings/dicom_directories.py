@@ -14,6 +14,7 @@ from bokeh.layouts import row, column
 import time
 from ..tools.io.preferences.import_settings import is_import_settings_defined, write_import_settings
 from ..tools.get_settings import get_settings, parse_settings_file
+from ..paths import INBOX_DIR, IMPORTED_DIR, REVIEW_DIR
 
 
 class DicomDirectories:
@@ -54,7 +55,10 @@ class DicomDirectories:
         if is_import_settings_defined():
             self.directories = parse_settings_file(get_settings('import'))
         else:
-            self.directories = {key: '' for key in self.directory_types}
+            self.directories = {'inbox': INBOX_DIR,
+                                'imported': IMPORTED_DIR,
+                                'review': REVIEW_DIR}
+            write_import_settings(self.directories)
 
         if update_widgets:
             for key in self.directory_types:

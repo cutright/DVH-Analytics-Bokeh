@@ -52,7 +52,7 @@ class MLC_Analyzer:
         self.beam_select.on_change('value', self.beam_ticker)
         self.cp_select.on_change('value', self.cp_ticker)
 
-        self.mlc_viewer = figure(plot_width=500, plot_height=500, logo=None, match_aspect=True,
+        self.mlc_viewer = figure(plot_width=500, plot_height=500, match_aspect=True,
                                  tools="crosshair,save")
         self.mlc_viewer.xaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE
         self.mlc_viewer.yaxis.axis_label_text_font_size = options.PLOT_AXIS_LABEL_FONT_SIZE

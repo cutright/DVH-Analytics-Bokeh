@@ -41,8 +41,8 @@ class DatabaseEditor:
         self.query_table = Select(value='Plans', options=['DVHs', 'Plans', 'Rxs', 'Beams', 'DICOM_Files'], width=200,
                                   title='Table:')
         self.query_columns = MultiSelect(title="Columns (Ctrl or Shift Click enabled):", width=250,
-                                         options=[tuple(['', ''])])
-        self.query_condition = TextInput(value='', title="Condition:", width=350)
+                                         options=[tuple(['', ''])], size=10)
+        self.query_condition = TextInput(value='', title="Condition:", width=450)
         self.query_button = Button(label='Query', button_type='primary', width=100)
 
         self.query_table.on_change('value', self.update_query_columns_ticker)
@@ -117,10 +117,6 @@ class DatabaseEditor:
                                      self.calculate_exec_button),
                                  self.calculate_condition,
                                  Div(text="<hr>", width=column_width),
-                                 Div(text="<b>Query Database</b>", width=column_width),
-                                 row(self.query_table, self.query_columns, Spacer(width=50), self.query_button),
-                                 self.query_condition,
-                                 Div(text="<hr>", width=column_width),
                                  self.update_db_title,
                                  row(self.update_db_table, self.update_db_column, self.update_db_value,
                                      Spacer(width=45), self.update_db_button),
@@ -138,7 +134,10 @@ class DatabaseEditor:
                                  row(self.change_mrn_uid_title),
                                  row(self.change_mrn_uid_column, Spacer(width=300), self.change_mrn_uid_button),
                                  row(self.change_mrn_uid_old_value, self.change_mrn_uid_new_value)),
-                          column(self.download,
+                          column(Div(text="<b>Query Database</b>", width=column_width),
+                                 row(self.query_table, self.query_columns),
+                                 self.query_condition,
+                                 row(self.query_button, Spacer(width=25), self.download),
                                  self.query_data_table))
 
     def update_query_columns_ticker(self, attr, old, new):

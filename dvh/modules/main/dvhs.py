@@ -56,7 +56,7 @@ class DVHs:
         self.delete_ep_row_button.on_click(self.delete_ep_row)
 
         tools = "pan,wheel_zoom,box_zoom,reset,crosshair,save"
-        self.plot = figure(plot_width=1050, plot_height=500, tools=tools, logo=None, active_drag="box_zoom")
+        self.plot = figure(plot_width=1050, plot_height=500, tools=tools, active_drag="box_zoom")
         self.plot.min_border_left = options.MIN_BORDER
         self.plot.min_border_bottom = options.MIN_BORDER
         self.plot.add_tools(HoverTool(show_arrow=False, line_policy='next',

@@ -23,7 +23,6 @@ class Categories:
                          'MRN': {'var_name': 'mrn', 'table': 'Plans'},
                          'UID': {'var_name': 'study_instance_uid', 'table': 'Plans'},
                          'Baseline': {'var_name': 'baseline', 'table': 'Plans'},
-                         'Toxicity Scale': {'var_name': 'toxicity_scale', 'table': 'DVHs'},
                          'Protocol': {'var_name': 'protocol', 'table': 'Plans'}}
 
         # This is a maps quantitative data type selections to SQL columns and SQL tables, and the bokeh source

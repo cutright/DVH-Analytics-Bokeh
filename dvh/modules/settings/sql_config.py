@@ -10,7 +10,8 @@ from __future__ import print_function
 import time
 from bokeh.models.widgets import Button, TextInput, Div, PasswordInput
 from bokeh.layouts import row, column
-from ..tools.io.preferences.sql import write_sql_connection_settings, validate_sql_connection, load_sql_settings
+from ..tools.io.preferences.sql import write_sql_connection_settings, validate_sql_connection, load_sql_settings,\
+    is_sql_connection_defined
 from ..tools.io.database.sql_connector import DVH_SQL
 
 
@@ -62,6 +63,8 @@ class SqlConfig:
 
     def load(self, update_widgets=True):
         self.config = load_sql_settings()
+        if not is_sql_connection_defined():
+            write_sql_connection_settings(self.config)
 
         if update_widgets:
             for key in self.input_types:

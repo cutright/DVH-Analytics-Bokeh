@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 from dvh.modules.default_options import VERSION
 
 requires = [
-    'numpy <= 1.14.5',
+    'numpy',
     'scipy',
     'pydicom >= 0.9.9',
     'matplotlib',
@@ -12,7 +12,7 @@ requires = [
     'Requests',
     'Tornado == 4.4.2',
     'PyYaml',
-    'bokeh == 0.13.0',
+    'bokeh >= 1.0.4',
     'python-dateutil',
     'psycopg2-binary',
     'shapely[vectorized]',

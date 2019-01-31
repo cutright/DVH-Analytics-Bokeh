@@ -1,5 +1,16 @@
 # Change log of DVH Analytics
 
+### 0.5.3 (2019.1.31)
+* Bokeh >=1.0.4 now required
+* Import Notes tab added to Admin view for quick reference
+* Protocol and Toxicity tabs added to Admin view
+    * Use Protocol tab to designate plans that are attached to a particular protocol
+    * Use Toxicity tab to enter toxicity grades (must be integer values)
+    * DVH Analytics 0.5.4 will have appropriate statistical tests for toxicity data
+    * Selecting rows in the table will auto-populate the MRN Input text area
+    * Note that you can copy and paste multiple rows from Excel into the text area inputs
+* Plotting PTV Distances in Regression tab previously caused a crash, issue resolved
+
 ### 0.5.2 (2019.1.18)
 * Beginning development for toxicity and protocol data
     * New columns added to the Plans and DVHs SQL tables to tag toxicity scale and grade

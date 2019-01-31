@@ -18,6 +18,9 @@ from modules.admin.database_editor import DatabaseEditor
 from modules.admin.roi_manager import RoiManager
 from modules.admin.baseline_plans import Baseline
 from modules.admin.backup import Backup
+from modules.admin.import_notes import ImportNotes
+from modules.admin.toxicity import Toxicity
+from modules.admin.protocol import Protocol
 
 
 initialize_directories_settings()
@@ -33,8 +36,12 @@ ACCESS_GRANTED = not options.AUTH_USER_REQ
 
 roi_manager = RoiManager()
 database_editor = DatabaseEditor(roi_manager)
+protocol = Protocol()
+toxicity = Toxicity(protocol)
+protocol.add_toxicity_tab_link(toxicity)
 baseline = Baseline()
 backup = Backup()
+import_notes = ImportNotes()
 
 
 def auth_button_click():
@@ -64,15 +71,18 @@ layout_login = column(auth_div,
                       row(auth_user, Spacer(width=50), auth_pass, Spacer(width=50), auth_button))
 
 
-roi_tab = Panel(child=roi_manager.layout, title='ROI Name Manager')
+import_notes_tab = Panel(child=import_notes.layout, title='Import Notes')
 db_tab = Panel(child=database_editor.layout, title='Database Editor')
+roi_tab = Panel(child=roi_manager.layout, title='ROI Name Manager')
+protocol_tab = Panel(child=protocol.layout, title='Protocol')
+toxicity_tab = Panel(child=toxicity.layout, title='Toxicity')
 backup_tab = Panel(child=backup.layout, title='Backup & Restore')
 baseline_tab = Panel(child=baseline.layout, title='Baseline Plans')
 
 if options.DISABLE_BACKUP_TAB:
-    tabs = Tabs(tabs=[db_tab, roi_tab, baseline_tab])
+    tabs = Tabs(tabs=[db_tab, roi_tab, protocol_tab, toxicity_tab, baseline_tab, import_notes_tab])
 else:
-    tabs = Tabs(tabs=[db_tab, roi_tab, baseline_tab, backup_tab])
+    tabs = Tabs(tabs=[db_tab, roi_tab, protocol_tab, toxicity_tab, baseline_tab, backup_tab, import_notes_tab])
 
 if ACCESS_GRANTED:
     curdoc().add_root(tabs)
