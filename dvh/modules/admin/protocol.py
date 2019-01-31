@@ -118,7 +118,8 @@ class Protocol:
             if mrn in self.source.data['mrn']:
                 index = self.source.data['mrn'].index(mrn)
                 uid = self.source.data['study_instance_uid'][index]
-                cnx.update('Plans', 'protocol', self.protocol_input.value,
+                cnx.update('Plans', 'protocol',
+                           self.protocol_input.value.replace("'", "").replace("\"", "").replace("\\", ""),
                            "study_instance_uid = '%s'" % uid)
         cnx.close()
         self.update_source()
