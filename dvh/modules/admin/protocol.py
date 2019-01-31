@@ -34,15 +34,15 @@ class Protocol:
         self.update_protocol_options()
         self.update_physician_options()
 
-        self.delete_protocol_button = Button(label='Delete', button_type='warning')
-
         self.protocol_input = TextInput(value='', title='Protocol for MRN Input:')
-        self.update_button = Button(label='Update', button_type='primary', width=150)
+        self.update_button = Button(label='Need MRNs to Update', button_type='default', width=150)
         self.update_button.on_click(self.update_db)
 
         self.mrn_input = TextAreaInput(value='', title='MRN Input:', rows=30, cols=25, max_length=2000)
+        self.mrn_input.on_change('value', self.mrn_input_ticker)
 
-        self.columns = ['mrn', 'protocol', 'physician', 'tx_site', 'sim_study_date', 'import_time_stamp', 'toxicity_grades']
+        self.columns = ['mrn', 'protocol', 'physician', 'tx_site', 'sim_study_date', 'import_time_stamp',
+                        'toxicity_grades']
         relative_widths = [1, 0.8, 0.5, 1, 0.75, 1, 0.8]
         column_widths = [int(250. * rw) for rw in relative_widths]
         table_columns = [TableColumn(field=c, title=c, width=column_widths[i]) for i, c in enumerate(self.columns)]
@@ -136,3 +136,14 @@ class Protocol:
 
     def add_toxicity_tab_link(self, toxicity):
         self.toxicity = toxicity
+
+    def mrn_input_ticker(self, attr, old, new):
+        self.update_update_button_status()
+
+    def update_update_button_status(self):
+        if self.mrns_to_add:
+            self.update_button.label = 'Update'
+            self.update_button.button_type = 'primary'
+        else:
+            self.update_button.label = 'Need MRNs to Update'
+            self.update_button.button_type = 'default'
