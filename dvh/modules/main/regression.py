@@ -164,9 +164,6 @@ class Regression:
         axis_label = ''
 
         if new:
-
-            time_series_new = new  # time_series.range_categories needs this key
-            # If new has something in parenthesis, extract and put in front
             new_split = new.split(' (')
             if len(new_split) > 1:
                 new_display = "%s %s" % (new_split[1].split(')')[0], new_split[0])
@@ -180,8 +177,8 @@ class Regression:
                 axis_label = 'EUD (Gy)'
             elif new == 'NTCP/TCP':
                 axis_label = 'NTCP or TCP'
-            elif self.time_series.range_categories[time_series_new]['units']:
-                axis_label = "%s (%s)" % (new_display, self.time_series.range_categories[time_series_new]['units'])
+            elif self.time_series.range_categories[new_split[0]]['units']:
+                axis_label = "%s (%s)" % (new_display, self.time_series.range_categories[new_split[0]]['units'])
             else:
                 axis_label = new_display
 

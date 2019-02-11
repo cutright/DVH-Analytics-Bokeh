@@ -1,5 +1,9 @@
 # Change log of DVH Analytics
 
+### 0.5.4 (TBD)
+* In the Regression tab, plotting any variable with min, median, mean, or max crashed on axis title update. Fixed.
+
+
 ### 0.5.3 (2019.1.31)
 * Bokeh >=1.0.4 now required
 * Import Notes tab added to Admin view for quick reference
