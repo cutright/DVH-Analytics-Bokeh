@@ -164,11 +164,9 @@ class Regression:
         axis_label = ''
 
         if new:
-            new_original = str(new)
             new_split = new.split(' (')
             if len(new_split) > 1:
                 new_display = "%s %s" % (new_split[1].split(')')[0], new_split[0])
-                new = new_split[0]
             else:
                 new_display = new
 
@@ -179,7 +177,7 @@ class Regression:
             elif new == 'NTCP/TCP':
                 axis_label = 'NTCP or TCP'
             elif 'PTV Distance' in new:
-                axis_label = "%s (%s)" % (new_display, self.time_series.range_categories[new_original]['units'])
+                axis_label = "%s (%s)" % (new_display, self.time_series.range_categories[new]['units'])
             elif self.time_series.range_categories[new_split[0]]['units']:
                 axis_label = "%s (%s)" % (new_display, self.time_series.range_categories[new_split[0]]['units'])
             else:
