@@ -599,7 +599,7 @@ class BeamTable:
                     mlc_data = {key: ['(NULL)'] * 6 for key in mlc_keys}
 
                 current_beam = BeamRow(mrn, study_instance_uid, beam_num + 1,
-                                       beam_name, fx_grp + 1, fxs,
+                                       beam_name, fx_grp, fxs,
                                        fx_grp_beam_count, beam_dose, beam_mu, radiation_type,
                                        round(min(energies), 2), round(min(energies), 2), beam_type, control_point_count,
                                        gantry['start'], gantry['end'], gantry['rot_dir'],
