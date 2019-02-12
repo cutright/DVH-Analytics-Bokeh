@@ -212,8 +212,8 @@ class Correlation:
                             current_uid = self.data[n][range_var]['uid'][i]
                             if current_uid not in self.bad_uid[n]:
                                 self.bad_uid[n].append(current_uid)
-                            print("%s[%s] is non-numerical, will remove this patient from correlation data"
-                                  % (range_var, i))
+                            print("%s[%s] (mrn: %s) is non-numerical, will remove this patient from correlation data"
+                                  % (range_var, i, self.data[n][range_var]['mrn'][i]))
 
                 new_correlation = {}
                 for range_var in list(self.data[n]):
@@ -263,7 +263,7 @@ class Correlation:
             table = self.range_categories[key]['table']
             units = self.range_categories[key]['units']
 
-            if table in {'Plans'}:
+            if table in {'Plans'} or key.startswith('Beam Complexity') or key.startswith('Beam Area') or key.startswith('CP MU'):
                 temp = {n: {k: [] for k in temp_keys} for n in GROUP_LABELS}
                 temp['units'] = units
 
@@ -288,7 +288,7 @@ class Correlation:
 
             stats = ['min', 'mean', 'median', 'max']
 
-            if table in {'Beams'}:
+            if table in {'Beams'} and not (key.startswith('Beam Complexity') or key.startswith('Beam Area') or key.startswith('CP MU')):
                 beam_keys = stats + ['uid', 'mrn']
                 temp = {n: {bk: [] for bk in beam_keys} for n in GROUP_LABELS}
                 for n in GROUP_LABELS:

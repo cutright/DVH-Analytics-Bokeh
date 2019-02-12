@@ -337,4 +337,5 @@ class Regression:
             self.y.value = ''
 
     def update_residual_y_axis_label(self):
-        self.residual_figure.yaxis.axis_label = self.get_axis_label(self.x)
+        # self.residual_figure.yaxis.axis_label = self.get_axis_label(self.x)
+        self.residual_figure.yaxis.axis_label = 'Residual'

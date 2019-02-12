@@ -2,7 +2,9 @@
 
 ### 0.5.4 (TBD)
 * In the Regression tab, plotting any variable with min, median, mean, or max crashed on axis title update. Fixed.
-
+* Min, mean, median and max of beam complexity, beam area, control point MU now calculated at time of import
+    * These new values are available for time-series, correlation, and regression tabs in the main view
+* Terminal now prints mrn of excluded plans due to non-numeral data used for correlation / regression
 
 ### 0.5.3 (2019.1.31)
 * Bokeh >=1.0.4 now required
