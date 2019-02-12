@@ -5,6 +5,7 @@
 * Min, mean, median and max of beam complexity, beam area, control point MU now calculated at time of import
     * These new values are available for time-series, correlation, and regression tabs in the main view
 * Terminal now prints mrn of excluded plans due to non-numeral data used for correlation / regression
+* Fixed bug causing crash at import due to some now missing SQL columns
 
 ### 0.5.3 (2019.1.31)
 * Bokeh >=1.0.4 now required
