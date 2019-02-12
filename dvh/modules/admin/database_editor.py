@@ -98,8 +98,8 @@ class DatabaseEditor:
         self.calculations_title = Div(text="<b>Post Import Calculations</b>", width=column_width)
         self.calculate_condition = TextInput(value='', title="Condition:", width=350)
         self.calculate_options = ['Default Post-Import', 'PTV Distances', 'PTV Overlap', 'ROI Centroid',
-                                  'ROI Spread', 'ROI Cross-Section', 'OAR-PTV Centroid Dist', 'Plan Complexities',
-                                  'All (except age)', 'Patient Ages']
+                                  'ROI Spread', 'ROI Cross-Section', 'OAR-PTV Centroid Dist', 'Beam Complexities',
+                                  'Plan Complexities', 'All (except age)', 'Patient Ages']
         self.calculate_select = Select(value=self.calculate_options[0], options=self.calculate_options,
                                        title='Calculate:', width=150)
         self.calculate_missing_only = CheckboxGroup(labels=['Only Calculate Missing Values'], active=[0], width=280)
@@ -344,6 +344,14 @@ class DatabaseEditor:
 
         db_update.plan_complexities(final_condition)
 
+    def update_all_beam_complexities_in_db(self, condition):
+        final_condition = {True: ["(complexity_min is NULL)"], False: []}[0 in self.calculate_missing_only.active]
+        if condition and condition[0]:
+            final_condition.append('(%s)' % condition[0])
+        final_condition = ' AND '.join(final_condition)
+
+        db_update.beam_complexities(final_condition)
+
     def update_all_except_age_in_db(self, *condition):
         for f in self.calculate_select.options:
             if f not in {'Patient Ages', 'Default Post-Import'}:
@@ -439,6 +447,7 @@ class DatabaseEditor:
                     'ROI Spread': self.update_all_spreads_in_db,
                     'ROI Cross-Section': self.update_all_cross_sections_in_db,
                     'OAR-PTV Centroid Dist': self.update_all_dist_to_ptv_centoids_in_db,
+                    'Beam Complexities': self.update_all_beam_complexities_in_db,
                     'Plan Complexities': self.update_all_plan_complexities_in_db,
                     'All (except age)': self.update_all_except_age_in_db,
                     'Default Post-Import': self.update_default_post_import}

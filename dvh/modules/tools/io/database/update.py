@@ -12,6 +12,13 @@ import numpy as np
 from sql_connector import DVH_SQL
 from ...roi import geometry as roi_geom
 from ...roi import formatter as roi_form
+from os.path import join as join_path
+from ....tools.mlc_analyzer import Beam as mlca
+from ....tools.utilities import calc_stats
+try:
+    import pydicom as dicom
+except:
+    import dicom
 
 
 def centroid(study_instance_uid, roi_name):
@@ -246,4 +253,43 @@ def plan_complexities(*condition):
     uids = cnx.get_unique_values('Plans', 'study_instance_uid', condition, return_empty=True)
     for uid in uids:
         plan_complexity(cnx, uid)
+    cnx.close()
+
+
+def beam_complexity(cnx, study_instance_uid):
+
+    rt_plan_query = cnx.query('DICOM_Files', 'folder_path, plan_file',
+                              "study_instance_uid = '%s'" % study_instance_uid)[0]
+    rt_plan_file_path = join_path(rt_plan_query[0], rt_plan_query[1])
+
+    rt_plan = dicom.read_file(rt_plan_file_path)
+
+    for beam_num, beam in enumerate(rt_plan.BeamSequence):
+        try:
+            condition = "study_instance_uid = '%s' and beam_number = '%s'" % (study_instance_uid, (beam_num + 1))
+            meterset = float(cnx.query('Beams', 'beam_mu', condition)[0][0])
+            mlca_data = mlca(beam, meterset, ignore_zero_mu_cp=True)
+            mlc_keys = ['area', 'x_perim', 'y_perim', 'cmp_score', 'cp_mu']
+            mlc_data = {key: calc_stats(mlca_data.summary[key]) for key in mlc_keys}
+
+            column_vars = {'area': 'area', 'x_perim': 'x_perim', 'y_perim': 'y_perim', 'complexity': 'cmp_score',
+                           'cp_mu': 'cp_mu'}
+            stat_map = {'min': 5, 'mean': 3, 'median': 2, 'max': 0}
+
+            for c in list(column_vars):
+                for s in list(stat_map):
+                    value = mlc_data[column_vars[c]][stat_map[s]]
+                    column = "%s_%s" % (c, s)
+                    cnx.update('Beams', column, value, condition)
+        except:
+            print('MLC Analyzer fail for beam number %s and uid %s' % ((beam_num+1), study_instance_uid))
+
+
+def beam_complexities(*condition):
+    if condition:
+        condition = condition[0]
+    cnx = DVH_SQL()
+    uids = cnx.get_unique_values('Beams', 'study_instance_uid', condition, return_empty=True)
+    for uid in uids:
+        beam_complexity(cnx, uid)
     cnx.close()
