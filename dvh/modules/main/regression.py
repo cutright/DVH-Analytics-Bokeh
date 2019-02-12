@@ -320,7 +320,7 @@ class Regression:
                                                                            'db_value': self.correlation.data[n][self.y.value]['data']}
                 else:
                     for k in ['multi_var_coeff_results', 'multi_var_model_results', 'residual_chart']:
-                        clear_source_data(self.sources, '%s_%s'(k, n))
+                        clear_source_data(self.sources, '%s_%s' % (k, n))
 
     def multi_var_include_selection(self, attr, old, new):
         row_index = self.sources.multi_var_include.selected.indices[0]
