@@ -1,6 +1,6 @@
 # Change log of DVH Analytics
 
-### 0.5.4 (TBD)
+### 0.5.4 (2019.2.11)
 * In the Regression tab, plotting any variable with min, median, mean, or max crashed on axis title update. Fixed.
 * Min, mean, median and max of beam complexity, beam area, control point MU now calculated at time of import
     * These new values are available for time-series, correlation, and regression tabs in the main view
