@@ -98,6 +98,8 @@ class DVH_SQL:
             value = "'%s'::date" % value.strip('::date')  # augment value string for postgresql date formatting
         elif value_is_numeric:
             value = str(value)
+        elif 'null' == str(value.lower()):
+            value = "NULL"
         else:
             value = "'%s'" % str(value)  # need quotes to input a string
 
