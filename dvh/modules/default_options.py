@@ -7,7 +7,7 @@ Created on Sat Oct 28 2017
 import os
 import paths
 
-VERSION = '0.5.3'
+VERSION = '0.5.4'
 
 # Setting this to true enables log in screens
 # You must add your own code in into check_credentials of auth.py
@@ -92,7 +92,7 @@ HISTOGRAM_1_ALPHA = 0.3
 HISTOGRAM_2_ALPHA = 0.3
 
 # Default selections for teh correlation matrix
-CORRELATION_MATRIX_DEFAULTS_1 = list(range(20, 28)) + [29, 30]
+CORRELATION_MATRIX_DEFAULTS_1 = list(range(32, 39)) + [41, 42, 43]
 CORRELATION_MATRIX_DEFAULTS_2 = list(range(0, 3))
 
 # Options for the plot in the Multi-Variable Regression tab

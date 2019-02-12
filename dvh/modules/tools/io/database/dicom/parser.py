@@ -17,9 +17,10 @@ try:
 except ImportError:
     import dicom
 from .....tools.roi.name_manager import DatabaseROIs, clean_name
-from .....tools.utilities import datetime_str_to_obj, change_angle_origin, date_str_to_obj
+from .....tools.utilities import datetime_str_to_obj, change_angle_origin, date_str_to_obj, calc_stats
 from .....tools.roi.formatter import dicompyler_roi_coord_to_db_string, get_planes_from_string
 from .....tools.roi import geometry as roi_calc
+from .....tools.mlc_analyzer import Beam as mlca
 
 
 class DVHRow:
@@ -43,7 +44,10 @@ class BeamRow:
                  couch_start, couch_end, couch_rot_dir,
                  couch_range, couch_min, couch_max,
                  beam_dose_pt, isocenter, ssd, treatment_machine, scan_mode, scan_spot_count,
-                 beam_mu_per_deg, beam_mu_per_cp):
+                 beam_mu_per_deg, beam_mu_per_cp, area_min, area_mean, area_median, area_max, x_perim_min,
+                 x_perim_mean, x_perim_median, x_perim_max, y_perim_min, y_perim_mean, y_perim_median,
+                 y_perim_max, complexity_min, complexity_mean, complexity_median, complexity_max, cp_mu_min,
+                 cp_mu_mean, cp_mu_median, cp_mu_max):
 
         for key, value in listitems(locals()):
             if key != 'self':
@@ -587,6 +591,13 @@ class BeamTable:
 
                 beam_mu_per_cp = round(beam_mu / float(control_point_count), 2)
 
+                mlc_keys = ['area', 'x_perim', 'y_perim', 'cmp_score', 'cp_mu']
+                try:
+                    mlc_analyzer_data = mlca(beam_seq, beam_mu, ignore_zero_mu_cp=True).summary
+                    mlc_data = {key: calc_stats(mlc_analyzer_data[key]) for key in mlc_keys}
+                except:
+                    mlc_data = {key: ['(NULL)'] * 6 for key in mlc_keys}
+
                 current_beam = BeamRow(mrn, study_instance_uid, beam_num + 1,
                                        beam_name, fx_grp + 1, fxs,
                                        fx_grp_beam_count, beam_dose, beam_mu, radiation_type,
@@ -598,7 +609,12 @@ class BeamTable:
                                        couch['start'], couch['end'], couch['rot_dir'],
                                        couch['range'], couch['min'], couch['max'],
                                        beam_dose_pt, isocenter, ssd, treatment_machine, scan_mode, scan_spot_count,
-                                       beam_mu_per_deg, beam_mu_per_cp)
+                                       beam_mu_per_deg, beam_mu_per_cp,
+                                       mlc_data['area'][5], mlc_data['area'][3], mlc_data['area'][2], mlc_data['area'][0],
+                                       mlc_data['x_perim'][5], mlc_data['x_perim'][3], mlc_data['x_perim'][2], mlc_data['x_perim'][0],
+                                       mlc_data['y_perim'][5], mlc_data['y_perim'][3], mlc_data['y_perim'][2], mlc_data['y_perim'][0],
+                                       mlc_data['cmp_score'][5], mlc_data['cmp_score'][3], mlc_data['cmp_score'][2], mlc_data['cmp_score'][0],
+                                       mlc_data['cp_mu'][5], mlc_data['cp_mu'][3], mlc_data['cp_mu'][2], mlc_data['cp_mu'][0])
 
                 values[beam_num] = current_beam
                 beam_num += 1

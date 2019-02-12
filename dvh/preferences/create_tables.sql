@@ -21,3 +21,25 @@ ALTER TABLE Plans ADD COLUMN IF NOT EXISTS protocol text;
 -- The following columns have been added as of DVH Analytics 0.5.3
 ALTER TABLE Plans DROP COLUMN IF EXISTS toxicity_scales;
 ALTER TABLE DVHs DROP COLUMN IF EXISTS toxicity_scale;
+-- The following columns have been added as of DVH Analytics 0.5.4
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS area_min real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS area_mean real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS area_median real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS area_max real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS x_perim_min real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS x_perim_mean real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS x_perim_median real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS x_perim_max real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS y_perim_min real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS y_perim_mean real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS y_perim_median real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS y_perim_max real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS complexity_min real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS complexity_mean real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS complexity_median real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS complexity_max real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS cp_mu_min real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS cp_mu_mean real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS cp_mu_median real;
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS cp_mu_max real;
+ALTER TABLE Plans ADD COLUMN IF NOT EXISTS complexity real;

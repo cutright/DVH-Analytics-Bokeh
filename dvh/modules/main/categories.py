@@ -74,7 +74,20 @@ class Categories:
                       'Beam MU per control point': {'var_name': 'beam_mu_per_cp', 'table': 'Beams', 'units': '', 'source': sources.beams},
                       'ROI Cross-Section Max': {'var_name': 'cross_section_max', 'table': 'DVHs', 'units': 'cm^2', 'source': sources.dvhs},
                       'ROI Cross-Section Median': {'var_name': 'cross_section_median', 'table': 'DVHs', 'units': 'cm^2', 'source': sources.dvhs},
-                      'Toxicity Grade': {'var_name': 'toxicity_grade', 'table': 'DVHs', 'units': '', 'source': sources.dvhs}}
+                      'Toxicity Grade': {'var_name': 'toxicity_grade', 'table': 'DVHs', 'units': '', 'source': sources.dvhs},
+                      'Plan Complexity': {'var_name': 'complexity', 'table': 'Plans', 'units': '', 'source': sources.plans},
+                      'Beam Complexity (Min)': {'var_name': 'complexity_min', 'table': 'Beams', 'units': '', 'source': sources.beams},
+                      'Beam Complexity (Mean)': {'var_name': 'complexity_mean', 'table': 'Beams', 'units': '', 'source': sources.beams},
+                      'Beam Complexity (Median)': {'var_name': 'complexity_median', 'table': 'Beams', 'units': '', 'source': sources.beams},
+                      'Beam Complexity (Max)': {'var_name': 'complexity_max', 'table': 'Beams', 'units': '', 'source': sources.beams},
+                      'Beam Area (Min)': {'var_name': 'area_min', 'table': 'Beams', 'units': 'cm^2', 'source': sources.beams},
+                      'Beam Area (Mean)': {'var_name': 'area_mean', 'table': 'Beams', 'units': 'cm^2', 'source': sources.beams},
+                      'Beam Area (Median)': {'var_name': 'area_median', 'table': 'Beams', 'units': 'cm^2', 'source': sources.beams},
+                      'Beam Area (Max)': {'var_name': 'area_max', 'table': 'Beams', 'units': 'cm^2', 'source': sources.beams},
+                      'CP MU (Min)': {'var_name': 'cp_mu_min', 'table': 'Beams', 'units': '', 'source': sources.beams},
+                      'CP MU (Mean)': {'var_name': 'cp_mu_mean', 'table': 'Beams', 'units': '', 'source': sources.beams},
+                      'CP MU (Median)': {'var_name': 'cp_mu_median', 'table': 'Beams', 'units': '', 'source': sources.beams},
+                      'CP MU (Max)': {'var_name': 'cp_mu_max', 'table': 'Beams', 'units': '', 'source': sources.beams}}
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # Correlation and Regression variable names
@@ -84,7 +97,8 @@ class Categories:
         self.correlation_variables_beam = ['Beam Dose', 'Beam MU', 'Control Point Count', 'Gantry Range',
                                            'SSD', 'Beam MU per control point']
         for key in list(self.range):
-            if key.startswith('ROI') or key.startswith('PTV') or key in {'Total Plan MU', 'Rx Dose', 'Toxicity Grade'}:
+            if key.startswith('ROI') or key.startswith('PTV') or 'Beam Complexity' in key or 'Beam Area' in key or \
+                    'CP MU' in key or key in {'Total Plan MU', 'Rx Dose', 'Toxicity Grade', 'Plan Complexity'}:
                 self.correlation_variables.append(key)
                 self.correlation_names.append(key)
             if key in self.correlation_variables_beam:

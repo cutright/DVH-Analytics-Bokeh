@@ -72,7 +72,7 @@ class FxGroup:
 
 
 class Beam:
-    def __init__(self, beam_seq, meter_set):
+    def __init__(self, beam_seq, meter_set, ignore_zero_mu_cp=False):
 
         cp_seq = beam_seq.ControlPointSequence
         self.control_point = [ControlPoint(cp) for cp in cp_seq]
@@ -128,6 +128,11 @@ class Beam:
         for key in self.summary:
             if len(self.summary[key]) == 1:
                 self.summary[key] = self.summary[key] * len(self.summary['cp'])
+
+        if ignore_zero_mu_cp:
+            non_zero_indices = [i for i, value in enumerate(self.summary['cp_mu']) if value != 0]
+            for key in list(self.summary):
+                self.summary[key] = [self.summary[key][i] for i in non_zero_indices]
 
 
 class ControlPoint:

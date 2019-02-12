@@ -568,7 +568,10 @@ class Query:
                       'gantry_end', 'gantry_rot_dir', 'gantry_range', 'gantry_min', 'gantry_max', 'collimator_start',
                       'collimator_end', 'collimator_rot_dir', 'collimator_range', 'collimator_min', 'collimator_max',
                       'couch_start', 'couch_end', 'couch_rot_dir', 'couch_range', 'couch_min', 'couch_max',
-                      'radiation_type', 'ssd', 'treatment_machine']
+                      'radiation_type', 'ssd', 'treatment_machine', 'area_min']
+        for i in ['min', 'mean', 'median', 'max']:
+            for j in ['area', 'complexity', 'cp_mu']:
+                attributes.append('%s_%s' % (j, i))
         data = {attr: getattr(beam_data, attr) for attr in attributes}
         data['anon_id'] = anon_id
         data['group'] = groups
@@ -588,9 +591,8 @@ class Query:
         anon_id = [self.anon_id_map[plan_data.mrn[i]] for i in range(len(plan_data.mrn))]
 
         attributes = ['mrn', 'age', 'birth_date', 'dose_grid_res', 'fxs', 'patient_orientation', 'patient_sex',
-                      'physician',
-                      'rx_dose', 'sim_study_date', 'total_mu', 'tx_modality', 'tx_site', 'heterogeneity_correction',
-                      'baseline']
+                      'physician', 'rx_dose', 'sim_study_date', 'total_mu', 'tx_modality', 'tx_site',
+                      'heterogeneity_correction', 'complexity']
         data = {attr: getattr(plan_data, attr) for attr in attributes}
         data['anon_id'] = anon_id
         data['group'] = groups

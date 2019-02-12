@@ -222,9 +222,28 @@ def update_plan_toxicity_grades(cnx, study_instance_uid):
     cnx.update('Plans', 'toxicity_grades', toxicities_str, "study_instance_uid = '%s'" % study_instance_uid)
 
 
-def update_all_plan_toxicity_grades():
+def update_all_plan_toxicity_grades(*condition):
+    if condition:
+        condition = condition[0]
     cnx = DVH_SQL()
-    uids = cnx.get_unique_values('Plans', 'study_instance_uid')
+    uids = cnx.get_unique_values('Plans', 'study_instance_uid', condition, return_empty=True)
     for uid in uids:
         update_plan_toxicity_grades(uid)
+    cnx.close()
+
+
+def plan_complexity(cnx, study_instance_uid):
+    beam_complexities = cnx.query('Beams', 'complexity_mean, beam_mu', "study_instance_uid = '%s'" % study_instance_uid)
+    plan_mu = float(np.sum([row[1] for row in beam_complexities]))
+    mean_complexity = float(np.sum([row[0] * row[1] for row in beam_complexities])) / plan_mu
+    cnx.update('Plans', 'complexity', mean_complexity, "study_instance_uid = '%s'" % study_instance_uid)
+
+
+def plan_complexities(*condition):
+    if condition:
+        condition = condition[0]
+    cnx = DVH_SQL()
+    uids = cnx.get_unique_values('Plans', 'study_instance_uid', condition, return_empty=True)
+    for uid in uids:
+        plan_complexity(cnx, uid)
     cnx.close()
