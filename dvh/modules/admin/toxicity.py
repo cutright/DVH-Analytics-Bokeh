@@ -201,7 +201,7 @@ class Toxicity:
         if self.update_button.label == 'Update':
             mrns = parse_text_area_input_to_list(self.mrn_input.value, delimeter=None)
             toxicities = parse_text_area_input_to_list(self.toxicity_grade_input.value, delimeter=None)
-            toxicities = [[t, '-1'][t == 'None'] for t in toxicities]
+            toxicities = [[t, 'NULL'][t == 'None'] for t in toxicities]
 
             cnx = DVH_SQL()
             for i, mrn in enumerate(mrns):
@@ -250,9 +250,8 @@ class Toxicity:
 
     def validate_toxicity_grade_input(self, toxicity_grades):
 
-        validated_data = [['-1', grade][grade.isdigit() and grade > -1] for grade in toxicity_grades]  # remove non-int > -1
+        validated_data = [['NULL', grade][grade.isdigit() and grade > -1] for grade in toxicity_grades]  # remove non-int > -1
         validated_data = [str(int(x)) for x in validated_data]  # clean, convert to string (removes leading zeros)
-        validated_data = [[x, 'None'][x == '-1'] for x in validated_data]  # convert -1 to 'None' for UI
 
         if 'None' in validated_data:
             label = self.update_button.label

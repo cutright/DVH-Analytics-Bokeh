@@ -43,3 +43,5 @@ ALTER TABLE Beams ADD COLUMN IF NOT EXISTS cp_mu_mean real;
 ALTER TABLE Beams ADD COLUMN IF NOT EXISTS cp_mu_median real;
 ALTER TABLE Beams ADD COLUMN IF NOT EXISTS cp_mu_max real;
 ALTER TABLE Plans ADD COLUMN IF NOT EXISTS complexity real;
+-- The following columns have been added as of DVH Analytics 0.5.5
+ALTER TABLE Beams ADD COLUMN IF NOT EXISTS complexity real;

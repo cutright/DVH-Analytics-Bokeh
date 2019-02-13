@@ -116,6 +116,7 @@ MLC_COLOR = 'green'
 JAW_COLOR = 'blue'
 COMPLEXITY_SCORE_X_WEIGHT = 1.
 COMPLEXITY_SCORE_Y_WEIGHT = 1.
+COMPLEXITY_SCORE_GLOBAL_SCALING_FACTOR = 1000.
 
 # The following tabs are not dependent on each other, therefore could be excluded from the user view
 # The layout for DVH Analytics is relatively large for Bokeh and can be relatively slow due to this

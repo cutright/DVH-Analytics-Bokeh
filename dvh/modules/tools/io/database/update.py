@@ -15,6 +15,7 @@ from ...roi import formatter as roi_form
 from os.path import join as join_path
 from ....tools.mlc_analyzer import Beam as mlca
 from ....tools.utilities import calc_stats
+from ....default_options import COMPLEXITY_SCORE_GLOBAL_SCALING_FACTOR
 try:
     import pydicom as dicom
 except:
@@ -240,10 +241,18 @@ def update_all_plan_toxicity_grades(*condition):
 
 
 def plan_complexity(cnx, study_instance_uid):
-    beam_complexities = cnx.query('Beams', 'complexity_mean, beam_mu', "study_instance_uid = '%s'" % study_instance_uid)
-    plan_mu = float(np.sum([row[1] for row in beam_complexities]))
-    mean_complexity = float(np.sum([row[0] * row[1] for row in beam_complexities])) / plan_mu
-    cnx.update('Plans', 'complexity', mean_complexity, "study_instance_uid = '%s'" % study_instance_uid)
+    condition = "study_instance_uid = '%s'" % study_instance_uid
+    beam_data = cnx.query('Beams', 'complexity, beam_mu', condition)
+    scores = [row[0] for row in beam_data]
+    include = [i for i, score in enumerate(scores) if score]
+    scores = [score for i, score in enumerate(scores) if i in include]
+    beam_mu = [row[1] for i, row in enumerate(beam_data) if i in include]
+    plan_mu = np.sum(beam_mu)
+    if plan_mu:
+        complexity = COMPLEXITY_SCORE_GLOBAL_SCALING_FACTOR * np.sum(np.multiply(scores, beam_mu)) / plan_mu
+        cnx.update('Plans', 'complexity', complexity, "study_instance_uid = '%s'" % study_instance_uid)
+    else:
+        print('Zero plan MU detected for uid %s' % study_instance_uid)
 
 
 def plan_complexities(*condition):
@@ -270,7 +279,7 @@ def beam_complexity(cnx, study_instance_uid):
             meterset = float(cnx.query('Beams', 'beam_mu', condition)[0][0])
             mlca_data = mlca(beam, meterset, ignore_zero_mu_cp=True)
             mlc_keys = ['area', 'x_perim', 'y_perim', 'cmp_score', 'cp_mu']
-            mlc_data = {key: calc_stats(mlca_data.summary[key]) for key in mlc_keys}
+            summary_stats = {key: calc_stats(mlca_data.summary[key]) for key in mlc_keys}
 
             column_vars = {'area': 'area', 'x_perim': 'x_perim', 'y_perim': 'y_perim', 'complexity': 'cmp_score',
                            'cp_mu': 'cp_mu'}
@@ -278,9 +287,10 @@ def beam_complexity(cnx, study_instance_uid):
 
             for c in list(column_vars):
                 for s in list(stat_map):
-                    value = mlc_data[column_vars[c]][stat_map[s]]
+                    value = summary_stats[column_vars[c]][stat_map[s]]
                     column = "%s_%s" % (c, s)
                     cnx.update('Beams', column, value, condition)
+            cnx.update('Beams', 'complexity', np.sum(mlca_data.summary['cmp_score']), condition)
         except:
             print('MLC Analyzer fail for beam number %s and uid %s' % ((beam_num+1), study_instance_uid))
 
