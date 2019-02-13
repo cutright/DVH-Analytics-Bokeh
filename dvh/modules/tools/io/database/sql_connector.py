@@ -160,10 +160,11 @@ class DVH_SQL:
                       str(round(dvh_table.cross_section_max[x], 3)),
                       str(round(dvh_table.cross_section_median[x], 3)),
                       'NOW()',
-                      '-1']
+                      'NULL']
 
             cmd = "INSERT INTO DVHs (%s) VALUES ('%s');\n" % \
                   (','.join(col_names), "','".join(values).replace("'(NULL)'", "(NULL)"))
+            cmd = cmd.replace("'NULL'", "NULL")  # toxicity
 
             with open(file_path, "a") as text_file:
                 text_file.write(cmd)
@@ -300,6 +301,7 @@ class DVH_SQL:
                           str(beams.cp_mu_min[x]), str(beams.cp_mu_mean[x]), str(beams.cp_mu_median[x]), str(beams.cp_mu_max[x])]
                 sql_input = "INSERT INTO Beams (%s) VALUES ('%s');\n" % \
                             (','.join(col_names), "','".join(values).replace("'(NULL)'", "(NULL)"))
+                sql_input = sql_input.replace("'NULL'", "NULL")  # complexity related values if mlc_analyzer fails
 
                 with open(file_path, "a") as text_file:
                     text_file.write(sql_input)

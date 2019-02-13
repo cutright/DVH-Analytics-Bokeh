@@ -592,11 +592,11 @@ class BeamTable:
                 beam_mu_per_cp = round(beam_mu / float(control_point_count), 2)
 
                 mlc_keys = ['area', 'x_perim', 'y_perim', 'cmp_score', 'cp_mu']
-                try:
-                    mlc_analyzer_data = mlca(beam_seq, beam_mu, ignore_zero_mu_cp=True).summary
-                    mlc_data = {key: calc_stats(mlc_analyzer_data[key]) for key in mlc_keys}
-                except:
-                    mlc_data = {key: ['(NULL)'] * 6 for key in mlc_keys}
+                # try:
+                #     mlc_analyzer_data = mlca(beam_seq, beam_mu, ignore_zero_mu_cp=True).summary
+                #     mlc_data = {key: calc_stats(mlc_analyzer_data[key]) for key in mlc_keys}
+                # except:
+                mlc_data = {key: ['NULL'] * 6 for key in mlc_keys}
 
                 current_beam = BeamRow(mrn, study_instance_uid, beam_num + 1,
                                        beam_name, fx_grp, fxs,
