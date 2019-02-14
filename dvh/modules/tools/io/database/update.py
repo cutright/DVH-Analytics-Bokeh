@@ -226,6 +226,7 @@ def update_dvhs_table(study_instance_uid, roi_name, column, value):
 
 def update_plan_toxicity_grades(cnx, study_instance_uid):
     toxicities = cnx.get_unique_values('DVHs', 'toxicity_grade', "study_instance_uid = '%s'" % study_instance_uid)
+    toxicities = [t for t in toxicities if t.isdigit()]
     toxicities_str = ','.join(toxicities)
     cnx.update('Plans', 'toxicity_grades', toxicities_str, "study_instance_uid = '%s'" % study_instance_uid)
 
