@@ -80,10 +80,18 @@ class Categories:
                       'Beam Complexity (Mean)': {'var_name': 'complexity_mean', 'table': 'Beams', 'units': '', 'source': sources.beams},
                       'Beam Complexity (Median)': {'var_name': 'complexity_median', 'table': 'Beams', 'units': '', 'source': sources.beams},
                       'Beam Complexity (Max)': {'var_name': 'complexity_max', 'table': 'Beams', 'units': '', 'source': sources.beams},
-                      'Beam Area (Min)': {'var_name': 'area_min', 'table': 'Beams', 'units': 'cm^2', 'source': sources.beams},
-                      'Beam Area (Mean)': {'var_name': 'area_mean', 'table': 'Beams', 'units': 'cm^2', 'source': sources.beams},
-                      'Beam Area (Median)': {'var_name': 'area_median', 'table': 'Beams', 'units': 'cm^2', 'source': sources.beams},
-                      'Beam Area (Max)': {'var_name': 'area_max', 'table': 'Beams', 'units': 'cm^2', 'source': sources.beams},
+                      'Beam Area (Min)': {'var_name': 'area_min', 'table': 'Beams', 'units': 'mm^2', 'source': sources.beams},
+                      'Beam Area (Mean)': {'var_name': 'area_mean', 'table': 'Beams', 'units': 'mm^2', 'source': sources.beams},
+                      'Beam Area (Median)': {'var_name': 'area_median', 'table': 'Beams', 'units': 'mm^2', 'source': sources.beams},
+                      'Beam Area (Max)': {'var_name': 'area_max', 'table': 'Beams', 'units': 'mm^2', 'source': sources.beams},
+                      'Beam Perimeter X (Min)': {'var_name': 'x_perim_min', 'table': 'Beams', 'units': 'mm', 'source': sources.beams},
+                      'Beam Perimeter X (Mean)': {'var_name': 'x_perim_mean', 'table': 'Beams', 'units': 'mm', 'source': sources.beams},
+                      'Beam Perimeter X (Median)': {'var_name': 'x_perim_median', 'table': 'Beams', 'units': 'mm', 'source': sources.beams},
+                      'Beam Perimeter X (Max)': {'var_name': 'x_perim_max', 'table': 'Beams', 'units': 'mm', 'source': sources.beams},
+                      'Beam Perimeter Y (Min)': {'var_name': 'y_perim_min', 'table': 'Beams', 'units': 'mm', 'source': sources.beams},
+                      'Beam Perimeter Y (Mean)': {'var_name': 'y_perim_mean', 'table': 'Beams', 'units': 'mm', 'source': sources.beams},
+                      'Beam Perimeter Y (Median)': {'var_name': 'y_perim_median', 'table': 'Beams', 'units': 'mm', 'source': sources.beams},
+                      'Beam Perimeter Y (Max)': {'var_name': 'y_perim_max', 'table': 'Beams', 'units': 'mm', 'source': sources.beams},
                       'CP MU (Min)': {'var_name': 'cp_mu_min', 'table': 'Beams', 'units': '', 'source': sources.beams},
                       'CP MU (Mean)': {'var_name': 'cp_mu_mean', 'table': 'Beams', 'units': '', 'source': sources.beams},
                       'CP MU (Median)': {'var_name': 'cp_mu_median', 'table': 'Beams', 'units': '', 'source': sources.beams},
@@ -97,8 +105,9 @@ class Categories:
         self.correlation_variables_beam = ['Beam Dose', 'Beam MU', 'Control Point Count', 'Gantry Range',
                                            'SSD', 'Beam MU per control point']
         for key in list(self.range):
-            if key.startswith('ROI') or key.startswith('PTV') or 'Beam Complexity' in key or 'Beam Area' in key or \
-                    'CP MU' in key or key in {'Total Plan MU', 'Rx Dose', 'Toxicity Grade', 'Plan Complexity'}:
+            if key.startswith('ROI') or key.startswith('PTV') or 'Beam Complexity' in key or\
+                    'Beam Perimeter' in key or 'Beam Area' in key or 'CP MU' in key or \
+                    key in {'Total Plan MU', 'Rx Dose', 'Plan Complexity'}:
                 self.correlation_variables.append(key)
                 self.correlation_names.append(key)
             if key in self.correlation_variables_beam:

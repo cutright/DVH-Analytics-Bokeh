@@ -263,7 +263,8 @@ class Correlation:
             table = self.range_categories[key]['table']
             units = self.range_categories[key]['units']
 
-            if table in {'Plans'} or key.startswith('Beam Complexity') or key.startswith('Beam Area') or key.startswith('CP MU'):
+            if table in {'Plans'} or key.startswith('Beam Complexity') or key.startswith('Beam Area') or \
+                    key.startswith('CP MU') or key.startswith('Beam Perimeter'):
                 temp = {n: {k: [] for k in temp_keys} for n in GROUP_LABELS}
                 temp['units'] = units
 
@@ -288,7 +289,8 @@ class Correlation:
 
             stats = ['min', 'mean', 'median', 'max']
 
-            if table in {'Beams'} and not (key.startswith('Beam Complexity') or key.startswith('Beam Area') or key.startswith('CP MU')):
+            if table in {'Beams'} and not (key.startswith('Beam Complexity') or key.startswith('Beam Area') or
+                                           key.startswith('CP MU') or key.startswith('Beam Perimeter')):
                 beam_keys = stats + ['uid', 'mrn']
                 temp = {n: {bk: [] for bk in beam_keys} for n in GROUP_LABELS}
                 for n in GROUP_LABELS:
