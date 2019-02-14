@@ -98,6 +98,8 @@ class DVH_SQL:
             value = "'%s'::date" % value.strip('::date')  # augment value string for postgresql date formatting
         elif value_is_numeric:
             value = str(value)
+        elif 'null' == str(value.lower()):
+            value = "NULL"
         else:
             value = "'%s'" % str(value)  # need quotes to input a string
 
@@ -158,10 +160,11 @@ class DVH_SQL:
                       str(round(dvh_table.cross_section_max[x], 3)),
                       str(round(dvh_table.cross_section_median[x], 3)),
                       'NOW()',
-                      '-1']
+                      'NULL']
 
             cmd = "INSERT INTO DVHs (%s) VALUES ('%s');\n" % \
                   (','.join(col_names), "','".join(values).replace("'(NULL)'", "(NULL)"))
+            cmd = cmd.replace("'NULL'", "NULL")  # toxicity
 
             with open(file_path, "a") as text_file:
                 text_file.write(cmd)
@@ -244,7 +247,7 @@ class DVH_SQL:
                      'import_time_stamp', 'area_min', 'area_mean', 'area_median', 'area_max', 'x_perim_min',
                      'x_perim_mean', 'x_perim_median', 'x_perim_max', 'y_perim_min', 'y_perim_mean', 'y_perim_median',
                      'y_perim_max', 'complexity_min', 'complexity_mean', 'complexity_median', 'complexity_max',
-                     'cp_mu_min', 'cp_mu_mean', 'cp_mu_median', 'cp_mu_max']
+                     'complexity', 'cp_mu_min', 'cp_mu_mean', 'cp_mu_median', 'cp_mu_max']
 
         # Import each ROI from ROI_PyTable, append to output text file
         for x in range(beams.count):
@@ -294,10 +297,11 @@ class DVH_SQL:
                           str(beams.area_min[x]), str(beams.area_mean[x]), str(beams.area_median[x]), str(beams.area_max[x]),
                           str(beams.x_perim_min[x]), str(beams.x_perim_mean[x]), str(beams.x_perim_median[x]), str(beams.x_perim_max[x]),
                           str(beams.y_perim_min[x]), str(beams.y_perim_mean[x]), str(beams.y_perim_median[x]), str(beams.y_perim_max[x]),
-                          str(beams.complexity_min[x]), str(beams.complexity_mean[x]), str(beams.complexity_median[x]), str(beams.complexity_max[x]),
+                          str(beams.complexity_min[x]), str(beams.complexity_mean[x]), str(beams.complexity_median[x]), str(beams.complexity_max[x]), str(beams.complexity[x]),
                           str(beams.cp_mu_min[x]), str(beams.cp_mu_mean[x]), str(beams.cp_mu_median[x]), str(beams.cp_mu_max[x])]
                 sql_input = "INSERT INTO Beams (%s) VALUES ('%s');\n" % \
                             (','.join(col_names), "','".join(values).replace("'(NULL)'", "(NULL)"))
+                sql_input = sql_input.replace("'NULL'", "NULL")  # complexity related values if mlc_analyzer fails
 
                 with open(file_path, "a") as text_file:
                     text_file.write(sql_input)

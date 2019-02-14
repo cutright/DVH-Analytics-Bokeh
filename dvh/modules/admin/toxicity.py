@@ -24,6 +24,7 @@ class Toxicity:
 
         self.source = ColumnDataSource(data=dict(mrn=[]))
         self.source.selected.on_change('indices', self.source_listener)
+        # self.source.on_change('data', self.update_toxicity_grades_from_table)
         self.data = []  # This will keep all data from query, self.source may display a subset
 
         self.clear_source_selection_button = Button(label='Clear Selection', button_type='primary', width=150)
@@ -75,8 +76,13 @@ class Toxicity:
                                                                       row(self.mrn_input, self.toxicity_grade_input))))
 
     def source_listener(self, attr, old, new):
+        new.sort()
         mrns = [self.source.data['mrn'][x] for x in new]
         self.mrn_input.value = '\n'.join(mrns)
+
+        toxicities = [str(self.source.data['toxicity_grade'][x]) for x in new]
+        toxicities = [['NULL', t][t.isdigit()] for t in toxicities]
+        self.toxicity_grade_input.value = '\n'.join(toxicities)
 
     def update_source(self):
         cnx = DVH_SQL()
@@ -201,7 +207,6 @@ class Toxicity:
         if self.update_button.label == 'Update':
             mrns = parse_text_area_input_to_list(self.mrn_input.value, delimeter=None)
             toxicities = parse_text_area_input_to_list(self.toxicity_grade_input.value, delimeter=None)
-            toxicities = [[t, '-1'][t == 'None'] for t in toxicities]
 
             cnx = DVH_SQL()
             for i, mrn in enumerate(mrns):
@@ -250,20 +255,39 @@ class Toxicity:
 
     def validate_toxicity_grade_input(self, toxicity_grades):
 
-        validated_data = [['-1', grade][grade.isdigit() and grade > -1] for grade in toxicity_grades]  # remove non-int > -1
-        validated_data = [str(int(x)) for x in validated_data]  # clean, convert to string (removes leading zeros)
-        validated_data = [[x, 'None'][x == '-1'] for x in validated_data]  # convert -1 to 'None' for UI
-
-        if 'None' in validated_data:
-            label = self.update_button.label
-            button_type = self.update_button.button_type
-            self.update_button.label = 'Invalid grade detected. Setting to None.'
-            self.update_button.button_type = 'danger'
-            time.sleep(2)
-            self.update_button.label = label
-            self.update_button.button_type = button_type
+        validated_data = [['NULL', grade][grade.isdigit() and grade > -1] for grade in toxicity_grades]  # remove non-int > -1
+        for i, x in enumerate(validated_data):
+            if x.isdigit():
+                validated_data[i] = str(int(x))  # clean, convert to string (removes leading zeros)
 
         self.toxicity_grade_input.value = '\n'.join(validated_data)
 
+        # if 'NULL' in validated_data:
+        #     label = self.update_button.label
+        #     button_type = self.update_button.button_type
+        #     self.update_button.label = 'Invalid grade detected. Setting to None.'
+        #     self.update_button.button_type = 'danger'
+        #     time.sleep(1)
+        #     self.update_button.label = label
+        #     self.update_button.button_type = button_type
+
     def clear_source_selection(self):
         self.source.selected.indices = []
+
+    # def update_toxicity_grades_from_table(self, attr, old, new):
+    #     if 'toxicity_grade' in list(old) and 'toxicity_grade' in list(new):
+    #         old_grades = old['toxicity_grade']
+    #         new_grades = new['toxicity_grade']
+    #         new_indices = [i for i, grade in enumerate(old_grades) if old_grades[i] == new_grades[i]]
+    #
+    #         mrns = [m for i, m in enumerate(self.source.data['mrn']) if i in new_indices]
+    #         uids = [u for i, u in enumerate(self.source.data['study_instance_uid']) if i in new_indices]
+    #         rois = [r for i, r in enumerate(self.source.data['roi_name']) if i in new_indices]
+    #
+    #         cnx = DVH_SQL()
+    #         for i, mrn in enumerate(mrns):
+    #             if mrn in self.data['mrn']:
+    #                 cnx.update('DVHs', 'toxicity_grade', toxicities[i],
+    #                            "study_instance_uid = '%s' and roi_name = '%s'" % (uids[i], rois[i]))
+    #                 update_plan_toxicity_grades(cnx, uids[i])
+    #         cnx.close()

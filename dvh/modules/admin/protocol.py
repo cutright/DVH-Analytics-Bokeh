@@ -100,7 +100,6 @@ class Protocol:
         columns = ', '.join(self.columns + ['study_instance_uid'])
 
         data = DVH_SQL().query('Plans', columns, condition, order_by='mrn', bokeh_cds=True)
-        data['toxicity_grades'] = [[x, ''][x == '-1'] for x in data['toxicity_grades']]
 
         self.source.data = data
 

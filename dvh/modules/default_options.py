@@ -7,7 +7,7 @@ Created on Sat Oct 28 2017
 import os
 import paths
 
-VERSION = '0.5.4'
+VERSION = '0.5.5'
 
 # Setting this to true enables log in screens
 # You must add your own code in into check_credentials of auth.py
@@ -24,8 +24,9 @@ SELECT_CATEGORY_DEFAULT = 'Rx Dose'
 
 # DVH Endpoint Table view cap, bokeh is very slow to delete a table and add another
 # This would need to happen if "changing" number of columns in a table, so DVH Analytics prints
-# and empty table with the number of endpoints set below.  All endpoints specified in main app will be calulated,
+# and empty table with the number of endpoints set below.  All endpoints specified in main app will be calculated,
 # but only the number specified below will be displayed
+# NOTE: This isn't true, follow example in database_editor to fix
 ENDPOINT_COUNT = 10
 
 GROUP_LABELS = ['1', '2']
@@ -92,7 +93,7 @@ HISTOGRAM_1_ALPHA = 0.3
 HISTOGRAM_2_ALPHA = 0.3
 
 # Default selections for teh correlation matrix
-CORRELATION_MATRIX_DEFAULTS_1 = list(range(32, 39)) + [41, 42, 43]
+CORRELATION_MATRIX_DEFAULTS_1 = list(range(40, 47)) + [49, 50, 51]
 CORRELATION_MATRIX_DEFAULTS_2 = list(range(0, 3))
 
 # Options for the plot in the Multi-Variable Regression tab
@@ -116,6 +117,7 @@ MLC_COLOR = 'green'
 JAW_COLOR = 'blue'
 COMPLEXITY_SCORE_X_WEIGHT = 1.
 COMPLEXITY_SCORE_Y_WEIGHT = 1.
+COMPLEXITY_SCORE_GLOBAL_SCALING_FACTOR = 1000.
 
 # The following tabs are not dependent on each other, therefore could be excluded from the user view
 # The layout for DVH Analytics is relatively large for Bokeh and can be relatively slow due to this

@@ -568,9 +568,9 @@ class Query:
                       'gantry_end', 'gantry_rot_dir', 'gantry_range', 'gantry_min', 'gantry_max', 'collimator_start',
                       'collimator_end', 'collimator_rot_dir', 'collimator_range', 'collimator_min', 'collimator_max',
                       'couch_start', 'couch_end', 'couch_rot_dir', 'couch_range', 'couch_min', 'couch_max',
-                      'radiation_type', 'ssd', 'treatment_machine', 'area_min']
+                      'radiation_type', 'ssd', 'treatment_machine']
         for i in ['min', 'mean', 'median', 'max']:
-            for j in ['area', 'complexity', 'cp_mu']:
+            for j in ['area', 'complexity', 'cp_mu', 'x_perim', 'y_perim']:
                 attributes.append('%s_%s' % (j, i))
         data = {attr: getattr(beam_data, attr) for attr in attributes}
         data['anon_id'] = anon_id
