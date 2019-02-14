@@ -1,6 +1,6 @@
 # Change log of DVH Analytics
 
-### 0.5.5 (TBD)
+### 0.5.5 (2019.2.14)
 * Beam complexity is now CP MU weighted sum (not mean complexity)
 * Plan complexity is MU weighted sum of beam complexity times scaling factor in default_options.py
 * Toxicity and complexity values now can be stored as NULL values
