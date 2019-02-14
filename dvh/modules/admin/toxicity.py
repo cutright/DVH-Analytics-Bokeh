@@ -75,8 +75,13 @@ class Toxicity:
                                                                       row(self.mrn_input, self.toxicity_grade_input))))
 
     def source_listener(self, attr, old, new):
+        new.sort()
         mrns = [self.source.data['mrn'][x] for x in new]
         self.mrn_input.value = '\n'.join(mrns)
+
+        toxicities = [str(self.source.data['toxicity_grade'][x]) for x in new]
+        toxicities = [['NULL', t][t.isdigit()] for t in toxicities]
+        self.toxicity_grade_input.value = '\n'.join(toxicities)
 
     def update_source(self):
         cnx = DVH_SQL()
@@ -209,7 +214,14 @@ class Toxicity:
                     index = self.data['mrn'].index(mrn)
                     uid = self.data['study_instance_uid'][index]
                     roi_name = self.data['roi_name'][index]
-                    cnx.update('DVHs', 'toxicity_grade', toxicities[i],
+                    try:
+                        value = int(toxicities[i])
+                        if value < 0:
+                            value = 'NULL'
+                    except ValueError:
+                        value = 'NULL'
+
+                    cnx.update('DVHs', 'toxicity_grade', value,
                                "study_instance_uid = '%s' and roi_name = '%s'" % (uid, roi_name))
                     update_plan_toxicity_grades(cnx, uid)
             cnx.close()
@@ -251,14 +263,16 @@ class Toxicity:
     def validate_toxicity_grade_input(self, toxicity_grades):
 
         validated_data = [['NULL', grade][grade.isdigit() and grade > -1] for grade in toxicity_grades]  # remove non-int > -1
-        validated_data = [str(int(x)) for x in validated_data]  # clean, convert to string (removes leading zeros)
+        for i, x in enumerate(validated_data):
+            if x.isdigit():
+                validated_data[i] = str(int(x))  # clean, convert to string (removes leading zeros)
 
-        if 'None' in validated_data:
+        if 'NULL' in validated_data:
             label = self.update_button.label
             button_type = self.update_button.button_type
             self.update_button.label = 'Invalid grade detected. Setting to None.'
             self.update_button.button_type = 'danger'
-            time.sleep(2)
+            time.sleep(.8)
             self.update_button.label = label
             self.update_button.button_type = button_type
 
