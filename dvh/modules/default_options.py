@@ -24,8 +24,9 @@ SELECT_CATEGORY_DEFAULT = 'Rx Dose'
 
 # DVH Endpoint Table view cap, bokeh is very slow to delete a table and add another
 # This would need to happen if "changing" number of columns in a table, so DVH Analytics prints
-# and empty table with the number of endpoints set below.  All endpoints specified in main app will be calulated,
+# and empty table with the number of endpoints set below.  All endpoints specified in main app will be calculated,
 # but only the number specified below will be displayed
+# NOTE: This isn't true, follow example in database_editor to fix
 ENDPOINT_COUNT = 10
 
 GROUP_LABELS = ['1', '2']
