@@ -1,5 +1,8 @@
 # Change log of DVH Analytics
 
+### 0.5.6 (2019.2.14)
+* Allow roi_name in query
+
 ### 0.5.5 (2019.2.14)
 * Beam complexity is now CP MU weighted sum (not mean complexity)
 * Plan complexity is MU weighted sum of beam complexity times scaling factor in default_options.py

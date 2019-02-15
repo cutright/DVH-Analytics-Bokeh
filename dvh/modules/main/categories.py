@@ -4,6 +4,7 @@ class Categories:
         # This is a maps categorical data type selections to SQL columns and SQL tables
         self.selector = {'ROI Institutional Category': {'var_name': 'institutional_roi', 'table': 'DVHs'},
                          'ROI Physician Category': {'var_name': 'physician_roi', 'table': 'DVHs'},
+                         'ROI Name': {'var_name': 'roi_name', 'table': 'DVHs'},
                          'ROI Type': {'var_name': 'roi_type', 'table': 'DVHs'},
                          'Beam Type': {'var_name': 'beam_type', 'table': 'Beams'},
                          'Collimator Rotation Direction': {'var_name': 'collimator_rot_dir', 'table': 'Beams'},
