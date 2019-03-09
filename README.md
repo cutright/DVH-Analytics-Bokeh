@@ -3,8 +3,6 @@
 </h3>
 
 # DVH Analytics
-<img src='https://user-images.githubusercontent.com/4778878/37943568-11f856fc-3146-11e8-85ec-4c0d3cbf2492.png' align='right' width='300' alt="DVH Analytics screenshot">  
-
 NOTE: We have begun a complete design overhaul using a new framework (wxPython), while using Bokeh in a more limited fashion 
 for just plotting. Development of the pure Bokeh app has been halted, but we can address bugs if (when) they come up 
 until the new application is ready. DVH Analytics v1.0 will be a desktop application instead of the current web-based 
@@ -19,6 +17,9 @@ for the purpose of historical comparisons and statistical analysis. This code is
 The application builds a SQL database of DVHs and various planning parameters from DICOM files 
 (i.e., Plan, Structure, Dose). Since the data is extracted directly from DICOM files, we intend
 to accommodate an array of treatment planning system vendors.
+
+<img src='https://user-images.githubusercontent.com/4778878/37943568-11f856fc-3146-11e8-85ec-4c0d3cbf2492.png' align='right' width='300' alt="DVH Analytics screenshot">  
+
 
 In addition to viewing DVH data, this software provides methods to:
 
