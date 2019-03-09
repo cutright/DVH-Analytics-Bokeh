@@ -7,7 +7,7 @@ NOTE: We have begun a complete design overhaul using a desktop application frame
 Bokeh for plotting. Development of the pure Bokeh app has been halted, but we can address bugs if (when) they come up 
 until the new application is ready. DVH Analytics v1.0 will be a desktop application instead of the current web-based 
 application. This will allow for significantly easier distribution. See screen shot of an alpha build below.  Public 
-expected in the next few months.
+release expected by Fall '19.
 
 <h3 align="center">
   <img src="https://user-images.githubusercontent.com/4778878/54063970-01c4eb00-41d6-11e9-95c1-8673773cfb11.png" alt="fastlane Logo" />
