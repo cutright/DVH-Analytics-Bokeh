@@ -8,7 +8,10 @@
 NOTE: We have begun a complete design overhaul using a new framework (wxPython), while using Bokeh in a more limited fashion 
 for just plotting. Development of the pure Bokeh app has been halted, but we can address bugs if (when) they come up 
 until the new application is ready. DVH Analytics v1.0 will be a desktop application instead of the current web-based 
-application. This will allow for significantly easier distribution.
+application. This will allow for significantly easier distribution. See screen shot of an alpha build below.  Public 
+expected in the next few months.
+
+<img src='https://user-images.githubusercontent.com/4778878/54063970-01c4eb00-41d6-11e9-95c1-8673773cfb11.png' align='right' width=500 alt="DVH Analytics Desktop">
  
 DVH Analytics is a software application to help radiation oncology departments build an in-house database of treatment planning data 
 for the purpose of historical comparisons and statistical analysis. This code is still in development.  Please contact the developer if  you are interested in testing or collaborating.
