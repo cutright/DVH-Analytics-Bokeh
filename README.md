@@ -3,8 +3,8 @@
 </h3>
 
 # DVH Analytics
-NOTE: We have begun a complete design overhaul using a new framework (wxPython), while using Bokeh in a more limited fashion 
-for just plotting. Development of the pure Bokeh app has been halted, but we can address bugs if (when) they come up 
+NOTE: We have begun a complete design overhaul using a desktop application framework (wxPython), while continuing to use 
+Bokeh in a more for just plotting. Development of the pure Bokeh app has been halted, but we can address bugs if (when) they come up 
 until the new application is ready. DVH Analytics v1.0 will be a desktop application instead of the current web-based 
 application. This will allow for significantly easier distribution. See screen shot of an alpha build below.  Public 
 expected in the next few months.
