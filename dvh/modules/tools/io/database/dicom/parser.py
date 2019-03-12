@@ -424,17 +424,23 @@ class BeamTable:
             fx_grp_beam_count = int(fx_grp_seq.NumberOfBeams)
 
             for fx_grp_beam in range(fx_grp_beam_count):
+
                 if hasattr(rt_plan, 'BeamSequence'):
                     beam_seq = rt_plan.BeamSequence[beam_num]  # Photons and electrons
+                    beam_number = rt_plan.BeamSequence[beam_num].BeamNumber
                 else:
                     beam_seq = rt_plan.IonBeamSequence[beam_num]  # Protons
+                    beam_number = rt_plan.IonBeamSequence[beam_num].BeamNumber
 
                 if 'BeamDescription' in beam_seq:
                     beam_name = beam_seq.BeamDescription
                 else:
                     beam_name = beam_seq.BeamName
 
-                ref_beam_seq = fx_grp_seq.ReferencedBeamSequence[fx_grp_beam]
+                ref_beam_seq_index = self.get_referenced_beam_sequence_index(fx_grp_seq, beam_number)
+                if ref_beam_seq_index is None:
+                    ref_beam_seq_index = fx_grp_beam  # This shouldn't ever occur, but just to be safe
+                ref_beam_seq = fx_grp_seq.ReferencedBeamSequence[ref_beam_seq_index]
 
                 if hasattr(beam_seq, 'TreatmentMachineName'):
                     treatment_machine = beam_seq.TreatmentMachineName
@@ -631,6 +637,15 @@ class BeamTable:
                 for x in beam_range:
                     new_list.append(getattr(values[x], attr))
                 setattr(self, attr, new_list)
+
+    @staticmethod
+    def get_referenced_beam_sequence_index(fx_grp_seq, beam_number):
+        for i, ref_beam_seq in enumerate(fx_grp_seq.ReferencedBeamSequence):
+            if ref_beam_seq.ReferencedBeamNumber == beam_number:
+                return i
+        print('ERROR: Failed to find a matching reference beam in '
+              'ReferencedBeamSequence for beam number %s' % beam_number)
+        return None
 
 
 class RxTable:
