@@ -6,6 +6,7 @@ Created on Wed, Feb 28 2018
 @author: Dan Cutright, PhD
 """
 
+from __future__ import print_function
 from dicompylercore import dicomparser
 import numpy as np
 from shapely.geometry import Polygon
@@ -50,6 +51,12 @@ class Plan:
     def __repr__(self):
         return self.__str__()
 
+    def __eq__(self, other):
+        for i, fx_group in enumerate(self.fx_group):
+            if not fx_group == other.fx_group[i]:
+                return False
+        return True
+
 
 class FxGroup:
     def __init__(self, fx_grp_seq, plan_beam_sequences):
@@ -69,6 +76,16 @@ class FxGroup:
         self.beam_names = [b.name for b in self.beam]
 
         self.beam = update_missing_jaws(self.beam)
+
+    def __eq__(self, other):
+        for i, beam in enumerate(self.beam):
+            status_str = 'beam %s\n\t%%s with other beam %s' % (self.beam_names[i], other.beam_names[i])
+            if not beam == other.beam[i]:
+                print(status_str % 'failed')
+                return False
+            else:
+                print(status_str % 'passed')
+        return True
 
 
 class Beam:
@@ -134,6 +151,13 @@ class Beam:
             for key in list(self.summary):
                 self.summary[key] = [self.summary[key][i] for i in non_zero_indices]
 
+    def __eq__(self, other):
+        for i, cp in enumerate(self.control_point):
+            if not cp == other.control_point[i]:
+                print('cp %s failed' % i)
+                return False
+        return True
+
 
 class ControlPoint:
     def __init__(self, cp_seq):
@@ -155,6 +179,15 @@ class ControlPoint:
 
         for key in cp:
             setattr(self, key, cp[key])
+
+    def __eq__(self, other):
+        if abs(self.cum_mu - other.cum_mu) > 0.00001:
+            return False
+        for side in [0, 1]:
+            for i, pos in enumerate(self.mlc[side]):
+                if abs(pos - other.mlc[side][i]) > 0.0001:
+                    print(abs(pos - other.mlc[side][i]))
+        return True
 
 
 def get_mlc_borders(control_point, leaf_boundaries):
