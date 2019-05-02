@@ -315,6 +315,8 @@ class DVHs:
             ep['mrn'] = self.query.current_dvh.mrn
             ep['uid'] = self.query.current_dvh.study_instance_uid
             ep['group'] = self.sources.dvhs.data['group']
+            if len(ep['group'] != len(ep['mrn'])):
+                ep['group'] = ['unknown'] * len(ep['mrn'])
             ep['roi_name'] = self.sources.dvhs.data['roi_name']
 
             table_columns.append(TableColumn(field='mrn', title='MRN'))
@@ -424,6 +426,8 @@ class DVHs:
             ep_view = {'mrn': self.sources.endpoint_calcs.data['mrn'],
                        'group': self.sources.endpoint_calcs.data['group'],
                        'roi_name': self.sources.endpoint_calcs.data['roi_name']}
+            if len(ep_view['group'] != len(ep_view['mrn'])):
+                ep_view['group'] = ['unknown'] * len(ep_view['mrn'])
             for i in range(1, options.ENDPOINT_COUNT + 1):
                 ep_view["ep%s" % i] = [''] * rows  # filling table with empty strings
 

@@ -577,6 +577,8 @@ class Query:
         data = {attr: getattr(beam_data, attr) for attr in attributes}
         data['anon_id'] = anon_id
         data['group'] = groups
+        if len(data['group']) != len(data['anon_id']):
+            data['group'] = ['unknown'] * len(data['anon_id'])
         data['uid'] = beam_data.study_instance_uid
 
         self.sources.beams.data = data
