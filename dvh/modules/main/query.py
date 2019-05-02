@@ -128,7 +128,7 @@ class Query:
                                                              source_beams=sources.beams),
                                                    code=open(join(dirname(dirname(__file__)), "download.js")).read())
 
-        self.layout = column(Div(text="<b>DVH Analytics v%s</b>" % options.VERSION),
+        self.layout = column(Div(text="<b>DVH Analytics v%s</b>" % '0.5.10'),
                              row(custom_title['1']['query'], Spacer(width=50), custom_title['2']['query'],
                                  Spacer(width=50), self.query_button, Spacer(width=50), self.download_dropdown),
                              Div(text="<b>Query by Categorical Data</b>", width=1000),
@@ -848,9 +848,10 @@ class Query:
         anon_id = [self.anon_id_map[dvh.mrn[i]] for i in range(len(dvh.mrn))]
 
         print(str(datetime.now()), "writing sources.dvhs.data", sep=' ')
+        groups = [['unknown'] * len(dvh.mrn), dvh_groups][len(dvh.mrn) == len(dvh_groups)]
         self.sources.dvhs.data = {'mrn': dvh.mrn,
                                   'anon_id': anon_id,
-                                  'group': dvh_groups,
+                                  'group': groups,
                                   'uid': dvh.study_instance_uid,
                                   'roi_institutional': dvh.institutional_roi,
                                   'roi_physician': dvh.physician_roi,
