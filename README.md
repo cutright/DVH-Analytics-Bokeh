@@ -3,7 +3,12 @@
 </h3>
 
 # DVH Analytics
-NOTE: We have begun a complete design overhaul using a desktop application framework (wxPython), while continuing to use 
+**UPDATE**: Development of the desktop application is progressing more quickly than anticipated. We will be ready for public 
+beta by this year's AAPM meeting in San Antonio. We'll sneak in a (very) quick demo at the end of our talk "Machine Learning
+in IMRT Plan Evaluation" during the Equipment and QA session on Sun July 24. And yes, this means we're implementing machine
+learning into DVH Analytics.
+
+**NOTE**: We have begun a complete design overhaul using a desktop application framework (wxPython), while continuing to use 
 Bokeh for plotting. Development of the pure Bokeh app has been halted, but we can address bugs if (when) they come up 
 until the new application is ready. DVH Analytics v1.0 will be a desktop application instead of the current web-based 
 application. This will allow for significantly easier distribution. See screen shot of an alpha build below.  Public 
