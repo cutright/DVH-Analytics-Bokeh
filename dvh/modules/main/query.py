@@ -529,7 +529,9 @@ class Query:
         if self.current_dvh.count:
             print(str(datetime.now()), 'initializing source data ', self.current_dvh.query, sep=' ')
             self.time_series.update_current_dvh_group(self.update_dvh_data(self.current_dvh))
-            if not options.LITE_VIEW:
+            if not options.LITE_VIEW and \
+                    (options.OPTIONAL_TABS['Time-Series'] or options.OPTIONAL_TABS['Correlation'] or
+                     options.OPTIONAL_TABS['Regression']):
                 print(str(datetime.now()), 'updating correlation data')
                 self.correlation.update_data(self.correlation_variables)
                 print(str(datetime.now()), 'correlation data updated')
