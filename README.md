@@ -2,17 +2,7 @@
   <img src="https://user-images.githubusercontent.com/4778878/30754005-b7a7e808-9f86-11e7-8b0f-79d1006babdf.jpg" alt="fastlane Logo" />
 </h3>
 
-# DVH Analytics
-
-**UPDATE**: Public beta of the source code for the new desktop application will be released July 7. We'll sneak in 
-a (very) quick demo at the end of our talk "Machine Learning in IMRT Plan Evaluation" during the Equipment and QA 
-session on Sun July 14.
-
-**NOTE**: We have begun a complete design overhaul using a desktop application framework (wxPython), while continuing to use 
-Bokeh for plotting. Development of the pure Bokeh app has been halted, but we can address bugs if (when) they come up 
-until the new application is ready. DVH Analytics v1.0 will be a desktop application instead of the current web-based 
-application. This will allow for significantly easier distribution. See screen shot of an alpha build below.  Public 
-release expected by Fall '19.
+**NOTE**: This verions is no longer being maintained. A new version written as native OS application can be found [here](https://github.com/cutright/DVH-Analytics).
 
 <h3 align="center">
   <img src="https://user-images.githubusercontent.com/4778878/54063970-01c4eb00-41d6-11e9-95c1-8673773cfb11.png" alt="fastlane Logo" />
