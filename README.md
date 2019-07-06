@@ -2,7 +2,7 @@
   <img src="https://user-images.githubusercontent.com/4778878/30754005-b7a7e808-9f86-11e7-8b0f-79d1006babdf.jpg" alt="fastlane Logo" />
 </h3>
 
-**NOTE**: This verions is no longer being maintained. A new version written as a native OS application can be found [here](https://github.com/cutright/DVH-Analytics).
+**NOTE**: This verion is no longer being maintained. The new native OS application can be found [here](https://github.com/cutright/DVH-Analytics).
 
 <h3 align="center">
   <img src="https://user-images.githubusercontent.com/4778878/54063970-01c4eb00-41d6-11e9-95c1-8673773cfb11.png" alt="fastlane Logo" />
