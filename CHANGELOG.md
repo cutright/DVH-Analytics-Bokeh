@@ -1,5 +1,8 @@
 # Change log of DVH Analytics
 
+### 0.5.11 (2019.8.1)
+* Bug fix in dvhs.py causing crash due to syntax typo on lines 318 and 429
+
 ### 0.5.6 (2019.2.14)
 * Allow roi_name in query
 
